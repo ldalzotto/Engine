@@ -1,0 +1,169 @@
+{
+    "compiler": "MSVC",
+    "environment": {
+        "DEBUG": [
+            {
+                "name": "TOKEN_TYPE_SAFETY",
+                "value": "1"
+            },
+            {
+                "name": "CONTAINER_BOUND_TEST",
+                "value": "1"
+            },
+            {
+                "name": "CONTAINER_MEMORY_TEST",
+                "value": "1"
+            },
+            {
+                "name": "MATH_NORMALIZATION_TEST",
+                "value": "1"
+            },
+            {
+                "name": "SCENE_BOUND_TEST",
+                "value": "1"
+            },
+            {
+                "name": "RENDER_BOUND_TEST",
+                "value": "1"
+            },
+            {
+                "name": "COLLIDER_BOUND_TEST",
+                "value": "1"
+            },
+            {
+                "name": "STANDARD_ALLOCATION_BOUND_TEST",
+                "value": "1"
+            },
+            {
+                "name": "USE_OPTICK",
+                "value": "0"
+            }
+        ],
+        "RELEASE_DEBUG": [
+            {
+                "name": "TOKEN_TYPE_SAFETY",
+                "value": "0"
+            },
+            {
+                "name": "CONTAINER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "CONTAINER_MEMORY_TEST",
+                "value": "0"
+            },
+            {
+                "name": "MATH_NORMALIZATION_TEST",
+                "value": "0"
+            },
+            {
+                "name": "SCENE_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "RENDER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "COLLIDER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "STANDARD_ALLOCATION_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "USE_OPTICK",
+                "value": "0"
+            }
+        ],
+        "RELEASE": [
+            {
+                "name": "TOKEN_TYPE_SAFETY",
+                "value": "0"
+            },
+            {
+                "name": "CONTAINER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "CONTAINER_MEMORY_TEST",
+                "value": "0"
+            },
+            {
+                "name": "MATH_NORMALIZATION_TEST",
+                "value": "0"
+            },
+            {
+                "name": "SCENE_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "RENDER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "COLLIDER_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "STANDARD_ALLOCATION_BOUND_TEST",
+                "value": "0"
+            },
+            {
+                "name": "USE_OPTICK",
+                "value": "0"
+            }
+        ]
+    },
+    "modules": [
+        {
+            "base_name": "Common2",
+            "module_type": "INTERFACE",
+            "root_folder": "Common2",
+            "include_directories": [
+                "Common2"
+            ],
+            "dependencies": []
+        },
+        {
+            "base_name": "Common2Test",
+            "module_type": "EXECUTABLE",
+            "build_type": "DEBUG",
+            "root_folder": "Common2",
+            "main_file": "test/test.cpp",
+            "include_directories": [],
+            "dependencies": [
+                {
+                    "module": "Common2"
+                }
+            ]
+        },
+        {
+            "base_name": "Math2",
+            "module_type": "INTERFACE",
+            "root_folder": "Math2",
+            "include_directories": [
+                "Math2"
+            ],
+            "dependencies": [
+                {
+                    "module": "Common2"
+                }
+            ]
+        },
+        {
+            "base_name": "Math2Test",
+            "module_type": "EXECUTABLE",
+            "build_type": "RELEASE",
+            "root_folder": "Math2",
+            "main_file": "test/test.cpp",
+            "include_directories": [],
+            "dependencies": [
+                {
+                    "module": "Math2"
+                }
+            ]
+        }
+    ]
+}
