@@ -29,6 +29,9 @@ struct Span
 
     inline ElementType& get(const uimax p_index)
     {
+#if CONTAINER_BOUND_TEST
+        assert_true(p_index < this->Capacity);
+#endif
         return this->Memory[p_index];
     };
 

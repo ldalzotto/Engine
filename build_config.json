@@ -155,13 +155,41 @@
         {
             "base_name": "Math2Test",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Math2",
             "main_file": "test/test.cpp",
             "include_directories": [],
             "dependencies": [
                 {
                     "module": "Math2"
+                }
+            ]
+        },
+        {
+            "base_name": "Collision",
+            "module_type": "STATIC_LIBRARY",
+            "build_type": "DEBUG",
+            "root_folder": "Collision",
+            "main_file": "Collision/collision.cpp",
+            "include_directories": [
+                "Collision/interface"
+            ],
+            "dependencies": [
+                {
+                    "module": "Math2"
+                }
+            ]
+        },
+        {
+            "base_name": "CollisionTest",
+            "module_type": "EXECUTABLE",
+            "build_type": "DEBUG",
+            "root_folder": "Collision",
+            "main_file": "test/test.cpp",
+            "include_directories": [],
+            "dependencies": [
+                {
+                    "module": "Collision"
                 }
             ]
         }
