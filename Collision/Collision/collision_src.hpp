@@ -1,8 +1,4 @@
 
-#include "Collision/collision.hpp"
-
-#include "./collision_definition.hpp"
-
 
 inline BoxCollider BoxCollider::build_from_local_aabb(const int8 p_enabled, const aabb& p_local_box)
 {
@@ -695,5 +691,3 @@ struct Collision2
 		};
 	};
 };
-
-#include "./collision_objects.hpp"

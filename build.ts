@@ -48,7 +48,7 @@ class CompileTypeProvider
         }
         else if (p_compiler_type == CompilerType.MSVC)
         {
-            return "";
+            return "/W3";
         }
     };
 

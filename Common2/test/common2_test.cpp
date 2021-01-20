@@ -1,7 +1,4 @@
-
 #include "Common2/common2.hpp"
-
-#include <stdio.h>
 
 namespace v2
 {
@@ -1020,7 +1017,7 @@ namespace v2
 	};
 }
 
-int main()
+int  main()
 {
 	v2::span_test();
 	v2::vector_test();
@@ -1034,4 +1031,4 @@ int main()
 	v2::heap_memory_test();
 	v2::string_test();
 	v2::deserialize_test();
-}
+};

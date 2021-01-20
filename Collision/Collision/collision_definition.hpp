@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
 	Collision Shape used for intersection calculation
 */
@@ -13,9 +12,23 @@ struct BoxCollider
 	static BoxCollider build_from_local_aabb(const int8 p_enabled, const aabb& p_local_box);;
 };
 
+
+struct Trigger
+{
+	enum class State
+	{
+		UNDEFINED = 0,
+		TRIGGER_ENTER = 1,
+		TRIGGER_STAY = 2,
+		TRIGGER_EXIT = 3,
+		NONE = 4
+	};
+
+};
+
 /*
-		State of the trigger intersection between owner BoxCollider and the other.
-	*/
+	State of the trigger intersection between owner BoxCollider and the other.
+*/
 struct TriggerEvent
 {
 	Token(BoxCollider) other;
