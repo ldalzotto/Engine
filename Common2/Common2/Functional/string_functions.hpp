@@ -4,6 +4,7 @@ namespace v2
 {
 	struct FromString
 	{
+		//TODO -> taking into account negatives
 		inline static float32 afloat32(Slice<int8> p_string)
 		{
 			uimax l_dot_index;
@@ -19,9 +20,16 @@ namespace v2
 					l_return += (float32)((p_string.get(i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
 				}
 				return l_return;
+			}
+			else
+			{
+				float32 l_return = 0.0f;
+				for (loop_reverse(i, p_string.Size - 1, (uimax)-1))
+				{
+					l_return += (float32)((p_string.get(i) - '0') * (pow(10, p_string.Size - 1 - (double)i)));
+				}
+				return l_return;
 			};
-
-			abort();
 		};
 	};
 }

@@ -152,7 +152,7 @@ namespace v2
 		void remove_node(const NodeEntry& p_node);
 
 
-		// Token(NodeComponentHeader) add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value);
+		Token(NodeComponentHeader) add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value);
 		template<class ComponentType>
 		Token(NodeComponentHeader) add_node_component_typed(const Token(Node) p_node, const ComponentType& p_intial_value);
 
@@ -164,6 +164,8 @@ namespace v2
 
 		template<class ComponentType>
 		void remove_node_component_typed(const Token(Node) p_node);
+
+		// void merge_scenetree(const SceneTree& p_scene_tree, const Token(Node) p_parent);
 
 	private:
 

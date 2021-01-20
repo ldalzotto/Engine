@@ -41,7 +41,7 @@ namespace v2
 			return l_vector;
 		};
 
-		inline Slice<ElementType> to_slice()
+		inline Slice<ElementType> to_slice() const
 		{
 			return Slice<ElementType>::build_memory_elementnb(this->Memory.Memory, this->Size);
 		};

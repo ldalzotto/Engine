@@ -928,7 +928,6 @@ namespace v2
 
 			l_deserialized.next_object("local_position2", &l_v3);
 
-
 			l_v3.next_field("x");
 			assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.550000f);
 			l_v3.next_field("y");
@@ -936,14 +935,11 @@ namespace v2
 			l_v3.next_field("z");
 			assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.750000f);
 
-			JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
-			l_deserialized.next_array("nodes", &l_array);
-
 
 			float32 l_delta = 0.0f;
-			while (l_array.next_array_object(&l_object))
+			json_deser_iterate_array_start("nodes", &l_deserialized);
 			{
-				l_object.next_object("local_position", &l_v3);
+				json_deser_iterate_array_object.next_object("local_position", &l_v3);
 				l_v3.next_field("x");
 				assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.550000f + l_delta);
 				l_v3.next_field("y");
@@ -952,6 +948,7 @@ namespace v2
 				assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
 				l_delta += 1;
 			}
+			json_deser_iterate_array_end();
 
 			l_deserialized.free();
 		}
@@ -1013,6 +1010,37 @@ namespace v2
 			assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.604988f);
 			l_deserialized.next_field("z");
 			assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.705424f);
+		}
+
+		// empty array - then filled array
+		{
+			const int8* l_json = "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
+
+			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+			JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+			
+			JSONDeserializer l_array = JSONDeserializer::allocate_default();
+			JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
+			assert_true(l_deserialized.next_array("empty_array", &l_array));
+			assert_true(!l_array.next_array_object(&l_array_object));
+			assert_true(l_deserialized.next_array("filled_array", &l_array));
+			assert_true(l_array.next_array_object(&l_array_object));
+
+			l_array_object.next_field("x");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.506252f);
+			l_array_object.next_field("y");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.604988f);
+			l_array_object.next_field("z");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.705424f);
+
+			assert_true(l_array.next_array_object(&l_array_object));
+
+			l_array_object.next_field("x");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.506252f);
+			l_array_object.next_field("y");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.604988f);
+			l_array_object.next_field("z");
+			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.705424f);
 		}
 	};
 }

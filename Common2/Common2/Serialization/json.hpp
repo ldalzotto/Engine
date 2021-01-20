@@ -36,6 +36,17 @@ namespace v2
 			return allocate(p_source.to_slice(), p_source.to_slice().slide_rv(l_start_index));
 		};
 
+		inline JSONDeserializer clone()
+		{
+			return JSONDeserializer
+			{
+				this->source,
+				this->parent_cursor,
+				Vector<FieldNode>::allocate_elements(this->stack_fields.to_slice()),
+				this->current_field
+			};
+		};
+
 		inline void free()
 		{
 			this->stack_fields.free();
@@ -119,11 +130,15 @@ namespace v2
 			String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
 			l_field_name_json.append(slice_int8_build_rawstr("\""));
 			l_field_name_json.append(slice_int8_build_rawstr(p_field_name));
-			l_field_name_json.append(slice_int8_build_rawstr("\":["));
+			l_field_name_json.append(slice_int8_build_rawstr("\":"));
 
 			FieldNode l_field_node;
 			if (find_next_json_field(l_compared_slice, l_field_name_json.to_slice(), '[', ']', &l_field_node.whole_field, &l_field_node.value))
 			{
+				// To skip the first "["
+				l_field_node.whole_field.Begin += 1;
+				l_field_node.value.Begin += 1;
+
 				*out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
 				this->stack_fields.push_back_element(l_field_node);
@@ -158,8 +173,7 @@ namespace v2
 				l_field_found = 1;
 			}
 			return l_field_found;
-		}
-
+		};
 
 		inline FieldNode& get_currentfield()
 		{
@@ -267,5 +281,59 @@ namespace v2
 		};
 
 	};
+
+	struct JSONUtil
+	{
+		inline static const Slice<int8> get_json_type(JSONDeserializer& p_deserializer)
+		{
+			p_deserializer.next_field("type");
+			return p_deserializer.get_currentfield().value;
+		};
+
+		inline static Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int8>& p_awaited_type)
+		{
+#if CONTAINER_BOUND_TEST
+			assert_true(p_type.compare(p_awaited_type));
+#endif
+			return p_type;
+		};
+	};
+
 }
 
+
+
+#define json_deser_iterate_array_start(JsonFieldName, DeserializerVariable) \
+{\
+JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default(); \
+(DeserializerVariable)->next_array(JsonFieldName, &l_array); \
+while(l_array.next_array_object(&l_object)) \
+{
+
+#define json_deser_iterate_array_end() \
+}\
+l_array.free(); l_object.free(); \
+}
+
+#define json_deser_iterate_array_object l_object
+
+#define json_deser_object_field(FieldNameValue, DeserializerVariable, OutValueTypedVariable, FromString) \
+(DeserializerVariable)->next_field(FieldNameValue); \
+OutValueTypedVariable = FromString((DeserializerVariable)->get_currentfield().value);
+
+#define json_deser_object(ObjectFieldNameValue, DeserializerVariable, TmpDeserializerVariable, OutValueTypedVariable, FromSerializer) \
+(DeserializerVariable)->next_object(ObjectFieldNameValue, TmpDeserializerVariable); \
+OutValueTypedVariable = FromSerializer(TmpDeserializerVariable);
+
+
+#if CONTAINER_BOUND_TEST
+
+#define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) \
+JSONUtil::validate_json_type(JSONUtil::get_json_type(DeserializerVariable), AwaitedTypeSlice);
+
+#else
+
+#define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) \
+JSONUtil::get_json_type(DeserializerVariable);
+
+#endif

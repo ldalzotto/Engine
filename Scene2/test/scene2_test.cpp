@@ -292,6 +292,46 @@ namespace v2
 
 		l_scene.free();
 	};
+
+	//TODO
+	inline void json_deserialization()
+	{
+		struct TMP
+		{
+			inline static void push_to_scene(JSONDeserializer& p_component_object, const Slice<int8>& p_type, const Token(Node) p_node, SceneTree* in_out_scene_tree)
+			{
+				if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
+				{
+					ComponentTest2 l_c = ComponentTest2{};
+					in_out_scene_tree->add_node_component(p_node, ComponentTest2::Type, (int8*)&l_c);
+					int ads = 10;
+				}
+				else if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
+				{
+
+				}
+			};
+		};
+
+		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"10\",\"test_value_2\":\"10\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"20\",\"test_value_2\":\"20\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"30\",\"test_value_2\":\"30\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"ComponentTest\",\"object\":{\"test_value_1\":\"40\",\"test_value_2\":\"40\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"ComponentTest2\",\"object\":{\"test_value_1\":\"50\",\"test_value_2\":\"50\"}}],\"childs\":[]}]}]}";
+
+		String l_scene_json_string = String::allocate(0);
+		l_scene_json_string.append(slice_int8_build_rawstr(l_scene_json));
+		JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
+		SceneTree l_scene_tree = SceneTree::allocate_default();
+		SceneDeserialization::json_to_scenetree<TMP>(l_serailizer, &l_scene_tree);
+
+		int16 l_counter = 0;
+
+		tree_traverse2_stateful_begin(Node, int16 * _counter, ForEach);
+		*_counter += 1;
+		tree_traverse2_stateful_end(Node, &l_scene_tree.node_tree, tk_b(NTreeNode, 0), &l_counter, ForEach);
+
+
+		l_scene_tree.free();
+		l_scene_json_string.free();
+	};
+
 }
 
 int main()
@@ -300,4 +340,5 @@ int main()
 	v2::add_remove_component();
 	v2::component_consume();
 	v2::math_hierarchy();
+	v2::json_deserialization();
 };

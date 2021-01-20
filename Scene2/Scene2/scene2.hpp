@@ -130,8 +130,6 @@ namespace v2
 		this->free_node_recurvise(p_node);
 	};
 
-
-
 	inline Token(NodeComponentHeader) SceneTree::add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value)
 	{
 		Token(NodeComponentHeader) l_component_header = this->heap.allocate_component(p_node, p_type, p_initial_value);
@@ -554,6 +552,13 @@ namespace v2
 		tree_traverse2_stateful_end(Node, &this->tree.node_tree, p_node.Node->index, &this->node_that_will_be_destroyed, GetAllNodes)
 	};
 
+	inline Token(NodeComponentHeader) Scene::add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value)
+	{
+		Token(NodeComponentHeader) l_added_component = this->tree.add_node_component(p_node, p_type, p_initial_value); 
+		this->component_events.push_back_element(ComponentEvent{ ComponentEvent::State::ADDED, p_node, l_added_component });
+		return l_added_component;
+	};
+
 	template<class ComponentType>
 	inline Token(NodeComponentHeader) Scene::add_node_component_typed(const Token(Node) p_node, const ComponentType& p_intial_value)
 	{
@@ -626,3 +631,5 @@ namespace v2
 		this->component_events.clear();
 	};
 }
+
+#include "./scene2_serialization.hpp"
