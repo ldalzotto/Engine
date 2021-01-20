@@ -103,7 +103,7 @@ inline void CollisionHeap2::push_boxcollider_transform(Token(BoxCollider) p_boxc
 inline void CollisionHeap2::free_boxcollider(const Token(BoxCollider) p_box_collider)
 {
 	Token(ColliderDetector)& l_collider_detector = this->get_colliderdetector_from_boxcollider(p_box_collider);
-	if (tk_v(l_collider_detector) != -1)
+	if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
 	{
 		this->free_colliderdetector(p_box_collider, l_collider_detector);
 	}
@@ -135,7 +135,7 @@ inline int8 CollisionHeap2::does_boxcollider_have_colliderdetector(const Token(B
 {
 	if (!this->box_colliders_to_collider_detector.is_element_free(tk_bf(Token(ColliderDetector), p_box_collider)))
 	{
-		if (tk_v(this->get_colliderdetector_from_boxcollider(p_box_collider)) != -1)
+		if (tk_neq(this->get_colliderdetector_from_boxcollider(p_box_collider), tk_b(ColliderDetector, -1)))
 		{
 			return 1;
 		}
@@ -349,7 +349,7 @@ inline void CollisionDetectionStep::remove_references_to_colliderdetector(const 
 	vector_erase_if_2_begin(&this->in_colliders_processed, j, l_disabled_collider);
 	int8 l_erased = false;
 	Token(ColliderDetector)& l_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_disabled_collider);
-	if (tk_v(l_collider_detector) != -1 && tk_eq(l_collider_detector, p_collider_detector))
+	if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
 	{
 		l_erased = true;
 	}
@@ -381,7 +381,7 @@ inline void CollisionDetectionStep::generate_exit_collision_for_collider(const T
 		if (this->heap->box_colliders.get(l_box_collider).enabled)
 		{
 			Token(ColliderDetector)& l_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_box_collider);
-			if (tk_v(l_collider_detector) != -1)
+			if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
 			{
 				this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_collider_detector, p_box_collider));
 			}
@@ -408,7 +408,7 @@ inline void CollisionDetectionStep::process_deleted_colliders()
 	{
 		Token(BoxCollider)& l_deleted_collider = this->deleted_colliders_from_last_step.get(i);
 		Token(ColliderDetector)& l_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_deleted_collider);
-		if (tk_v(l_collider_detector) != -1)
+		if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
 		{
 			this->remove_references_to_colliderdetector(l_collider_detector);
 			this->heap->free_colliderdetector(l_deleted_collider, l_collider_detector);
@@ -439,7 +439,7 @@ inline void CollisionDetectionStep::process_input_colliders()
 
 		// If the processed collider have a collider detector, we calculate intersection with other BoxColliders
 		// then push collision_event according to the intersection result
-		if (tk_v(l_left_collider_detector) != -1)
+		if (tk_neq(l_left_collider_detector, tk_b(ColliderDetector, -1)))
 		{
 			BoxCollider& l_left_collider = this->heap->box_colliders.get(l_left_collider_token);
 			if (l_left_collider.enabled)
@@ -467,7 +467,7 @@ inline void CollisionDetectionStep::process_input_colliders()
 							);
 
 							Token(ColliderDetector)& l_right_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_right_collider_token);
-							if (tk_v(l_right_collider_detector) != -1)
+							if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
 							{
 								this->currentstep_enter_intersection_events.push_back_element(
 									IntersectionEvent::build(
@@ -487,7 +487,7 @@ inline void CollisionDetectionStep::process_input_colliders()
 							);
 
 							Token(ColliderDetector)& l_right_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_right_collider_token);
-							if (tk_v(l_right_collider_detector) != -1)
+							if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
 							{
 								this->currentstep_exit_intersection_events.push_back_element(
 									IntersectionEvent::build(
@@ -518,7 +518,7 @@ inline void CollisionDetectionStep::process_input_colliders()
 					if (l_right_collider.enabled)
 					{
 						Token(ColliderDetector)& l_right_collider_detector = this->heap->get_colliderdetector_from_boxcollider(l_right_collider_token);
-						if (tk_v(l_right_collider_detector) != -1)
+						if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
 						{
 							obb l_right_projected = l_left_collider.local_box.add_position_rotation(l_right_collider.transform);
 

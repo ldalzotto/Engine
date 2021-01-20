@@ -134,9 +134,7 @@
             "main_file": "test/test.cpp",
             "include_directories": [],
             "dependencies": [
-                {
-                    "module": "Common2"
-                }
+                "Common2"
             ]
         },
         {
@@ -147,9 +145,7 @@
                 "Math2"
             ],
             "dependencies": [
-                {
-                    "module": "Common2"
-                }
+                "Common2"
             ]
         },
         {
@@ -160,9 +156,7 @@
             "main_file": "test/test.cpp",
             "include_directories": [],
             "dependencies": [
-                {
-                    "module": "Math2"
-                }
+                "Math2"
             ]
         },
         {
@@ -172,12 +166,11 @@
             "root_folder": "Collision",
             "main_file": "Collision/collision.cpp",
             "include_directories": [
-                "Collision/interface"
+                "Collision/interface",
+                "Collision/Collision"
             ],
             "dependencies": [
-                {
-                    "module": "Math2"
-                }
+                "Math2"
             ]
         },
         {
@@ -188,9 +181,29 @@
             "main_file": "test/test.cpp",
             "include_directories": [],
             "dependencies": [
-                {
-                    "module": "Collision"
-                }
+                "Collision"
+            ]
+        },
+        {
+            "base_name": "Scene2",
+            "module_type": "INTERFACE",
+            "root_folder": "Scene2",
+            "include_directories": [
+                "Scene2"
+            ],
+            "dependencies": [
+                "Math2"
+            ]
+        },
+        {
+            "base_name": "Scene2Test",
+            "module_type": "EXECUTABLE",
+            "build_type": "DEBUG",
+            "root_folder": "Scene2",
+            "main_file": "test/test.cpp",
+            "include_directories": [],
+            "dependencies": [
+                "Scene2"
             ]
         }
     ]

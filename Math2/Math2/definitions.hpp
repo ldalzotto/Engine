@@ -160,9 +160,9 @@ struct quat
 	v3f euler() const;
 };
 
-struct quat_const
+namespace quat_const
 {
-	static constexpr const quat IDENTITY = quat{ 0.0f, 0.0f, 0.0f, 1.0f };
+	const quat IDENTITY = quat{ 0.0f, 0.0f, 0.0f, 1.0f };
 };
 
 struct alignas(sizeof(float32)) m33f
