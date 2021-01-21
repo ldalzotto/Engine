@@ -55,8 +55,22 @@ namespace v2
 		};
 
 	};
+}
+
+#define poolindexed_foreach_token_2_begin(PoolIndexedVariable, IteratorName, TokenVariableName) \
+for (vector_loop((&(PoolIndexedVariable)->Indices), IteratorName)) \
+{ \
+auto& TokenVariableName = (PoolIndexedVariable)->Indices.get(IteratorName);
+
+#define poolindexed_foreach_token_2_end() \
+}
 
 
+#define poolindexed_foreach_value_begin(PoolIndexedVariable, IteratorName, TokenVariableName, ValueVariableName) \
+for (vector_loop(&(PoolIndexedVariable)->Indices, IteratorName)) \
+{\
+auto& TokenVariableName = (PoolIndexedVariable)->Indices.get(IteratorName); \
+auto& ValueVariableName = (PoolIndexedVariable)->Memory.get(TokenVariableName);
 
-
+#define poolindexed_foreach_value_end() \
 }

@@ -6,20 +6,20 @@ namespace v2
 
 	struct ComponentTest
 	{
-		static const SceneNodeComponentType Type;
+		static const ComponentType Type;
 
 		int i0, i1, i2;
 	};
 
-	constexpr SceneNodeComponentType ComponentTest::Type = SceneNodeComponentType::build(1, sizeof(ComponentTest));
+	constexpr ComponentType ComponentTest::Type = 1;
 
 	struct ComponentTest2
 	{
-		static const SceneNodeComponentType Type;
+		static const ComponentType Type;
 
 		uimax i0, i1, i2;
 	};
-	constexpr SceneNodeComponentType ComponentTest2::Type = SceneNodeComponentType::build(2, sizeof(ComponentTest2));
+	constexpr ComponentType ComponentTest2::Type = 2;
 
 	// There is no component removal test here
 	inline void add_remove_setparent_node()
@@ -85,74 +85,61 @@ namespace v2
 	{
 		Scene l_scene = Scene::allocate_default();
 
-		// Checking that added components can be retrieved later on
+		// Added components are directly added to the associated node of the SceneTree
 		{
 			transform l_node_1_transform = transform{ v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO };
 			Token(Node) l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
-			Token(NodeComponentHeader) l_node_1_component_1 = l_scene.add_node_component_typed<ComponentTest>(l_node_1, ComponentTest{ 0,1,2 });
+			token_t l_component_test_resource = 1;
+			l_scene.add_node_component_typed<ComponentTest>(l_node_1, l_component_test_resource);
 
-			ComponentTest* l_component_test = l_scene.get_node_component_typed<ComponentTest>(l_node_1);
-			assert_true(l_component_test->i0 == 0);
-			assert_true(l_component_test->i1 == 1);
-			assert_true(l_component_test->i2 == 2);
+			NodeComponent* l_component_test = l_scene.get_node_component_typed<ComponentTest>(l_node_1);
+			assert_true(l_component_test->type == ComponentTest::Type);
+			assert_true(l_component_test->resource == l_component_test_resource);
 
-			Token(NodeComponentHeader) l_node_1_component_2 = l_scene.add_node_component_typed<ComponentTest2>(l_node_1, ComponentTest2{ 0,1,2 });
-
-			// We added two components, so there is two component added events
-			assert_true(l_scene.component_events.Size == 2);
-			assert_true(tk_eq(l_scene.component_events.get(0).component, l_node_1_component_1));
-			assert_true(l_scene.component_events.get(0).state == Scene::ComponentEvent::State::ADDED);
-			assert_true(tk_eq(l_scene.component_events.get(0).node, l_node_1));
-			assert_true(tk_eq(l_scene.component_events.get(1).component, l_node_1_component_2));
-			assert_true(l_scene.component_events.get(1).state == Scene::ComponentEvent::State::ADDED);
-			assert_true(tk_eq(l_scene.component_events.get(1).node, l_node_1));
+			token_t l_component_test_2_resource = 2;
+			l_scene.add_node_component_typed<ComponentTest2>(l_node_1, l_component_test_2_resource);
 
 			l_scene.step();
 
-			assert_true(l_scene.component_events.Size == 0);
+			assert_true(l_scene.component_removed_events.Size == 0);
 
 			l_scene.remove_node_component_typed<ComponentTest>(l_node_1); //ensuring that no error
 			assert_true(l_scene.get_node_component_typed<ComponentTest2>(l_node_1) != NULL);
+			assert_true(l_scene.get_node_component_typed<ComponentTest2>(l_node_1)->resource == l_component_test_2_resource);
 
 			// One component removed event have been generated
-			assert_true(l_scene.component_events.Size == 1);
-			assert_true(tk_eq(l_scene.component_events.get(0).component, l_node_1_component_1));
-			assert_true(l_scene.component_events.get(0).state == Scene::ComponentEvent::State::REMOVED);
-			assert_true(tk_eq(l_scene.component_events.get(0).node, l_node_1));
+			assert_true(l_scene.component_removed_events.Size == 1);
+			assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
+			assert_true(tk_eq(l_scene.component_removed_events.get(0).node, l_node_1));
+		}
+
+		{
+		
 		}
 
 		l_scene.free();
 
 		l_scene = Scene::allocate_default();
 
-		// deleting a node with components will alse generate events
+		// deleting a node with components will generate events that can be consumed
 		{
 
 			transform l_node_1_transform = transform{ v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO };
 			Token(Node) l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
-			Token(NodeComponentHeader) l_node_1_component_1 = l_scene.add_node_component_typed<ComponentTest>(l_node_1, ComponentTest{ 0,1,2 });
-			Token(NodeComponentHeader) l_node_1_component_2 = l_scene.add_node_component_typed<ComponentTest2>(l_node_1, ComponentTest2{ 0,1,2 });
+			l_scene.add_node_component_typed<ComponentTest>(l_node_1, 0);
+			l_scene.add_node_component_typed<ComponentTest2>(l_node_1, 0);
 
 			l_scene.step();
 
-			assert_true(l_scene.component_events.Size == 0);
+			assert_true(l_scene.component_removed_events.Size == 0);
 
 			l_scene.remove_node(l_scene.get_node(l_node_1));
 
-			assert_true(l_scene.component_events.Size == 2);
-			assert_true(tk_eq(l_scene.component_events.get(0).component, l_node_1_component_1));
-			assert_true(l_scene.component_events.get(0).state == Scene::ComponentEvent::State::REMOVED);
-			assert_true(tk_eq(l_scene.component_events.get(0).node, l_node_1));
-			assert_true(tk_eq(l_scene.component_events.get(1).component, l_node_1_component_2));
-			assert_true(l_scene.component_events.get(1).state == Scene::ComponentEvent::State::REMOVED);
-			assert_true(tk_eq(l_scene.component_events.get(1).node, l_node_1));
-
-
-			// We can still retrieve the removed component value before step is called
-			ComponentTest* l_detached_component = l_scene.get_component_from_token_typed<ComponentTest>(l_node_1_component_1);
-			assert_true(l_detached_component->i0 == 0);
-			assert_true(l_detached_component->i1 == 1);
-			assert_true(l_detached_component->i2 == 2);
+			assert_true(l_scene.component_removed_events.Size == 2);
+			assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
+			assert_true(tk_eq(l_scene.component_removed_events.get(0).node, l_node_1));
+			assert_true(l_scene.component_removed_events.get(1).value.type == ComponentTest2::Type);
+			assert_true(tk_eq(l_scene.component_removed_events.get(1).node, l_node_1));
 
 			l_scene.step();
 		}
@@ -160,43 +147,28 @@ namespace v2
 		l_scene.free();
 	};
 
-
 	inline void component_consume()
 	{
+
 		struct component_consume_callbacks
 		{
-			int8 component_test_1_added_called;
-			int8 component_test_2_added_called;
 			int8 component_test_1_removed_called;
 			int8 component_test_2_removed_called;
 
 			inline static component_consume_callbacks build_default()
 			{
-				return component_consume_callbacks{ 0,0,0,0 };
+				return component_consume_callbacks{ 0,0 };
 			};
 
-
-			inline void on_component_added(Scene* p_scene, const NodeEntry& p_node, NodeComponentHeader* p_component)
+			inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
 			{
-				if (p_component->type->id == ComponentTest::Type.id)
+				if (p_component.type == ComponentTest::Type)
 				{
-					this->component_test_1_added_called = 1;
+					this->component_test_1_removed_called += 1;
 				}
-				else if (p_component->type->id == ComponentTest2::Type.id)
+				else if (p_component.type == ComponentTest2::Type)
 				{
-					this->component_test_2_added_called = 1;
-				}
-			};
-
-			inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, NodeComponentHeader* p_component)
-			{
-				if (p_component->type->id == ComponentTest::Type.id)
-				{
-					this->component_test_1_removed_called = 1;
-				}
-				else if (p_component->type->id == ComponentTest2::Type.id)
-				{
-					this->component_test_2_removed_called = 1;
+					this->component_test_2_removed_called += 1;
 				}
 			};
 
@@ -204,29 +176,45 @@ namespace v2
 
 		Scene l_scene = Scene::allocate_default();
 
-		// Checking that added components can be retrieved later on
+		// Checking that when components are removed and events are consumed, proper on_component_removed callback is called
 		{
 			transform l_node_1_transform = transform{ v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO };
 			Token(Node) l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
-			l_scene.add_node_component_typed<ComponentTest>(l_node_1, ComponentTest{ 0,1,2 });
-			l_scene.add_node_component_typed<ComponentTest2>(l_node_1, ComponentTest2{ 3,4,5 });
+			Token(Node) l_node_2 = l_scene.add_node(l_node_1_transform, l_node_1);
+
+			l_scene.add_node_component_typed<ComponentTest>(l_node_1, 0);
+			l_scene.add_node_component_typed<ComponentTest2>(l_node_1, 1);
+			l_scene.add_node_component_typed<ComponentTest2>(l_node_2, 1);
 
 			component_consume_callbacks l_callbacks = component_consume_callbacks::build_default();
-			l_scene.consume_component_events_stateful(l_callbacks);
+			assert_true(l_scene.component_removed_events.Size == 0);
+			// l_scene.consume_component_events_stateful(l_callbacks);
 
-			assert_true(l_callbacks.component_test_1_added_called);
-			assert_true(l_callbacks.component_test_2_added_called);
+			// assert_true(l_callbacks.component_test_1_added_called);
+			// assert_true(l_callbacks.component_test_2_added_called);
 
 			l_scene.remove_node_component_typed<ComponentTest2>(l_node_1);
+			assert_true(l_scene.component_removed_events.Size == 1); // 1 component from l_node_1
 
 			l_scene.consume_component_events_stateful(l_callbacks);
 
-			assert_true(l_callbacks.component_test_2_removed_called);
-			assert_true(!l_callbacks.component_test_1_removed_called);
+			assert_true(l_callbacks.component_test_2_removed_called == 1);
+			assert_true(l_callbacks.component_test_1_removed_called == 0);
+
+			l_scene.remove_node(l_scene.get_node(l_node_1));
+
+			assert_true(l_scene.component_removed_events.Size == 2); // 1 components from l_node_1 and 1 from l_node_2
+
+			l_scene.consume_component_events_stateful(l_callbacks);
+			assert_true(l_callbacks.component_test_2_removed_called == 2);
+			assert_true(l_callbacks.component_test_1_removed_called == 1);
+
 		}
 
 		l_scene.free();
+
 	};
+
 
 	inline void math_hierarchy()
 	{
@@ -296,15 +284,16 @@ namespace v2
 	//TODO
 	inline void json_deserialization()
 	{
+#if 1
 		struct TMP
 		{
 			inline static void push_to_scene(JSONDeserializer& p_component_object, const Slice<int8>& p_type, const Token(Node) p_node, SceneTree* in_out_scene_tree)
 			{
 				if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
 				{
-					ComponentTest2 l_c = ComponentTest2{};
-					in_out_scene_tree->add_node_component(p_node, ComponentTest2::Type, (int8*)&l_c);
-					int ads = 10;
+					// ComponentTest2 l_c = ComponentTest2{};
+					// in_out_scene_tree->add_node_component(p_node, ComponentTest2::Type, (int8*)&l_c);
+					// int ads = 10;
 				}
 				else if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
 				{
@@ -330,8 +319,9 @@ namespace v2
 
 		l_scene_tree.free();
 		l_scene_json_string.free();
-	};
 
+#endif
+	};
 }
 
 int main()

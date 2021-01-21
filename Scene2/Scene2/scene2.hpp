@@ -29,59 +29,20 @@ namespace v2
 		this->state = State{ true, true };
 	};
 
-
-	template<class ComponentType>
-	inline ComponentType* NodeComponentHeader::cast_to_object()
+	inline NodeComponent NodeComponent::build_default()
 	{
-		return cast(ComponentType*, this->get_component_object());
+		return NodeComponent{ (ComponentType)-1, (token_t)-1 };
 	};
 
-	inline int8* NodeComponentHeader::get_component_object()
+	inline NodeComponent NodeComponent::build(const ComponentType p_type, const token_t p_resource)
 	{
-		return cast(int8*, this) + sizeof(NodeComponentHeader);
+		return NodeComponent{ p_type, p_resource };
 	};
-
-
-	inline SceneTree::Heap SceneTree::Heap::allocate_default()
-	{
-		return Heap{
-			HeapMemory::allocate_default()
-		};
-	};
-
-	inline void SceneTree::Heap::free()
-	{
-		this->component_heap.free();
-	};
-
-	inline Token(NodeComponentHeader) SceneTree::Heap::allocate_component(const Token(Node) p_node, const SceneNodeComponentType& p_component_type, const int8* p_initial_value)
-	{
-		Slice<int8> l_allocated_chunk;
-		Token(SliceIndex) l_chunk_token = this->component_heap.allocate_empty_element_return_chunk(sizeof(NodeComponentHeader) + p_component_type.size, &l_allocated_chunk);
-		((NodeComponentHeader*)l_allocated_chunk.Begin)->type = &p_component_type;
-		slice_memcpy(l_allocated_chunk.slide_rv(sizeof(NodeComponentHeader)), Slice<int8>::build_memory_elementnb((int8*)p_initial_value, p_component_type.size));
-		return tk_bf(NodeComponentHeader, l_chunk_token);
-	};
-
-	inline NodeComponentHeader* SceneTree::Heap::get_component(const Token(NodeComponentHeader) p_component_header)
-	{
-		return (NodeComponentHeader*)this->component_heap.get(tk_bf(SliceIndex, p_component_header)).Begin;
-	};
-
-
-	inline void SceneTree::Heap::free_component(const Token(NodeComponentHeader) p_component)
-	{
-		this->component_heap.release_element(tk_bf(SliceIndex, p_component));
-	};
-
-
 
 	inline SceneTree SceneTree::allocate_default()
 	{
 		SceneTree l_scene = SceneTree{
-			Heap::allocate_default(),
-			NTree<Node>::allocate_default(),
-			PoolOfVector<Token(NodeComponentHeader)>::allocate_default()
+			NTree<Node>::allocate_default()
 		};
 
 		l_scene.allocate_root_node();
@@ -91,9 +52,7 @@ namespace v2
 
 	inline void SceneTree::free()
 	{
-		this->heap.free();
 		this->node_tree.free();
-		this->node_to_components.free();
 	};
 
 	inline Token(Node) SceneTree::add_node(const transform& p_initial_local_transform, const Token(Node) p_parent)
@@ -117,6 +76,11 @@ namespace v2
 		return sliceoftoken_cast(Node, l_childs);
 	};
 
+	inline void SceneTree::get_node_and_all_its_childrens(const NodeEntry& p_node, Vector<NodeEntry>* out_childs)
+	{
+
+	};
+
 	inline void SceneTree::add_child(const NodeEntry& p_parent, const NodeEntry& p_child)
 	{
 		if (this->node_tree.add_child(p_parent, p_child))
@@ -129,115 +93,6 @@ namespace v2
 	{
 		this->free_node_recurvise(p_node);
 	};
-
-	inline Token(NodeComponentHeader) SceneTree::add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value)
-	{
-		Token(NodeComponentHeader) l_component_header = this->heap.allocate_component(p_node, p_type, p_initial_value);
-		// We push to it's corresponding array
-		this->node_to_components.element_push_back_element(tk_bf(Slice<Token(NodeComponentHeader)>, p_node), l_component_header);
-		return l_component_header;
-	};
-
-	inline Slice<Token(NodeComponentHeader)> SceneTree::get_node_components_token(const Token(Node) p_node)
-	{
-		return this->node_to_components.get_vector(tk_bf(Slice<Token(NodeComponentHeader)>, p_node));
-	};
-
-	inline int8 SceneTree::get_node_component(const Token(Node) p_node, const Token(NodeComponentHeader) p_component, NodeComponentHeader** out_component)
-	{
-		Slice<Token(NodeComponentHeader)> l_components = this->get_node_components_token(p_node);
-		for (loop(i, 0, l_components.Size))
-		{
-			Token(NodeComponentHeader)& l_component = l_components.get(i);
-			if (tk_eq(p_component, l_component))
-			{
-				*out_component = this->heap.get_component(l_component);
-				return 1;
-			}
-		}
-
-		*out_component = NULL;
-		return 0;
-	};
-
-	inline int8 SceneTree::get_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type, NodeComponentHeader** out_component)
-	{
-		Slice<Token(NodeComponentHeader)> l_components = this->get_node_components_token(p_node);
-		for (loop(i, 0, l_components.Size))
-		{
-			NodeComponentHeader* l_component = this->heap.get_component(l_components.get(i));
-			if (l_component->type->id == p_type.id)
-			{
-				*out_component = l_component;
-				return 1;
-			}
-		}
-
-		*out_component = NULL;
-		return 0;
-	};
-
-	/*
-	inline int8 SceneTree::remove_node_component(const Token(Node) p_node, const Token(NodeComponentHeader) p_component)
-	{
-		Slice<Token(NodeComponentHeader)> l_components = this->get_node_components_token(p_node);
-		for (loop(i, 0, l_components.Size))
-		{
-			if (tk_eq(p_component, l_components.get(i)))
-			{
-				this->node_to_components.element_erase_element_at_always(tk_bf(Slice<Token(NodeComponentHeader)>, p_node), i);
-				return 1;
-				break;
-			}
-		}
-		return 0;
-	};
-
-	inline int8 SceneTree::remove_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type)
-	{
-		Slice<Token(NodeComponentHeader)> l_components = this->get_node_components_token(p_node);
-		for (loop(i, 0, l_components.Size))
-		{
-			NodeComponentHeader* l_component = this->heap.get_component(l_components.get(i));
-			if (l_component->type->id == p_type.id)
-			{
-				this->node_to_components.element_erase_element_at_always(tk_bf(Slice<Token(NodeComponentHeader)>, p_node), i);
-				return 1;
-				break;
-			}
-		}
-		return 0;
-	};
-	*/
-
-	inline void SceneTree::detach_all_node_components(const Token(Node) p_node)
-	{
-		this->node_to_components.element_clear(tk_bf(Slice<Token(NodeComponentHeader)>, p_node));
-	};
-
-	inline int8 SceneTree::detach_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type, Token(NodeComponentHeader)* out_component)
-	{
-		Slice<Token(NodeComponentHeader)> l_components = this->get_node_components_token(p_node);
-		for (loop(i, 0, l_components.Size))
-		{
-			Token(NodeComponentHeader)& l_component_token = l_components.get(i);
-			NodeComponentHeader* l_component = this->heap.get_component(l_component_token);
-			if (l_component->type->id == p_type.id)
-			{
-				*out_component = l_component_token;
-				this->node_to_components.element_erase_element_at_always(tk_bf(Slice<Token(NodeComponentHeader)>, p_node), i);
-				return 1;
-			}
-		}
-		*out_component = tk_bd(NodeComponentHeader);
-		return 0;
-	};
-
-	inline void SceneTree::free_component(const Token(NodeComponentHeader) p_component)
-	{
-		this->heap.free_component(p_component);
-	};
-
 
 	inline v3f& SceneTree::get_localposition(const NodeEntry& p_node)
 	{
@@ -375,7 +230,6 @@ namespace v2
 			Node::build(Node::State::build(1, 1), p_initial_local_transform),
 			p_parent
 		);
-		this->node_to_components.alloc_vector();
 		return l_node;
 	};
 
@@ -384,7 +238,6 @@ namespace v2
 		Token(Node) l_node = this->node_tree.push_root_value(
 			Node::build(Node::State::build(1, 1), transform_const::ORIGIN)
 		);
-		this->node_to_components.alloc_vector();
 		return l_node;
 	};
 
@@ -415,40 +268,29 @@ namespace v2
 		Vector<NodeEntry> l_deleted_nodes = Vector<NodeEntry>::allocate(0);
 		this->node_tree.get_nodes(p_node.Node->index, &l_deleted_nodes);
 
-		for (loop(i, 0, l_deleted_nodes.Size))
-		{
-			this->free_node_single(l_deleted_nodes.get(i));
-		}
-
 		Slice<NodeEntry> l_deleted_nodes_slice = l_deleted_nodes.to_slice();
 		this->node_tree.remove_nodes_and_detach(l_deleted_nodes_slice);
 		l_deleted_nodes.free();
 	};
 
-	inline void SceneTree::free_node_single(const NodeEntry& p_node)
+	inline Scene::ComponentRemovedEvent Scene::ComponentRemovedEvent::build(const Token(Node) p_node, const NodeComponent& p_component_value)
 	{
-		Slice<Token(NodeComponentHeader)> l_node_components = this->get_node_components_token(tk_bf(Node, p_node.Node->index));
-		for (loop(i, 0, l_node_components.Size))
-		{
-			this->heap.free_component(l_node_components.get(i));
-		}
-		this->node_to_components.release_vector(tk_bf(Slice<Token(NodeComponentHeader)>, p_node.Node->index));
+		return ComponentRemovedEvent{ p_node, p_component_value };
 	};
-
-
-
-
 
 
 
 	inline Scene Scene::allocate_default()
 	{
-		return Scene{
+		Scene l_scene = Scene{
 			SceneTree::allocate_default(),
+			PoolOfVector<NodeComponent>::allocate_default(),
 			Vector<Token(Node)>::allocate(0),
 			Vector<Token(Node)>::allocate(0),
-			Vector<ComponentEvent>::allocate(0)
+			Vector<ComponentRemovedEvent>::allocate(0)
 		};
+		l_scene.node_to_components.alloc_vector();
+		return l_scene;
 	};
 
 	inline void Scene::free()
@@ -458,64 +300,44 @@ namespace v2
 		this->tree.free();
 		this->orphan_nodes.free();
 		this->node_that_will_be_destroyed.free();
-		this->component_events.free();
+		this->component_removed_events.free();
 	};
 
-	template<class ComponentEventCallbackFunc>
+	template<class ComponentRemovedCallbackFunc>
 	inline void Scene::consume_component_events()
 	{
 		for (vector_loop(&this->component_events, i))
 		{
-			ComponentEvent& l_component_event = this->component_events.get(i);
-
-			if (l_component_event.state == ComponentEvent::State::REMOVED)
-			{
-				ComponentEventCallbackFunc::on_component_removed(this, this->get_node(l_component_event.node), this->tree.heap.get_component(l_component_event.component));
-				this->tree.free_component(l_component_event.component);
-			}
-			else
-			{
-				NodeComponentHeader* l_node_component;
-				this->tree.get_node_component(l_component_event.node, l_component_event.component, &l_node_component);
-				ComponentEventCallbackFunc::on_component_added(this, this->get_node(l_component_event.node), l_node_component);
-			};
+			ComponentRemovedEvent& l_component_event = this->component_events.get(i);
+			ComponentRemovedCallbackFunc::on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
 		};
 		this->component_events.clear();
 	};
 
-	template<class ComponentEventCallbackObj>
-	inline void Scene::consume_component_events_stateful(ComponentEventCallbackObj& p_closure)
+	template<class ComponentRemovedCallbackObj>
+	inline void Scene::consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
 	{
-		for (vector_loop(&this->component_events, i))
+		for (vector_loop(&this->component_removed_events, i))
 		{
-			ComponentEvent& l_component_event = this->component_events.get(i);
-
-			if (l_component_event.state == ComponentEvent::State::REMOVED)
-			{
-				p_closure.on_component_removed(this, this->get_node(l_component_event.node), this->tree.heap.get_component(l_component_event.component));
-				this->tree.free_component(l_component_event.component);
-			}
-			else
-			{
-				NodeComponentHeader* l_node_component;
-				this->tree.get_node_component(l_component_event.node, l_component_event.component, &l_node_component);
-				p_closure.on_component_added(this, this->get_node(l_component_event.node), l_node_component);
-			};
+			ComponentRemovedEvent& l_component_event = this->component_removed_events.get(i);
+			p_closure.on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
 		};
-		this->component_events.clear();
+		this->component_removed_events.clear();
 	};
 
 	inline void Scene::step()
 	{
 		this->destroy_orphan_nodes();
-		this->destroy_component_events();
+		this->destroy_component_removed_events();
 		this->tree.clear_nodes_state();
 	};
 
 
 	inline Token(Node) Scene::add_node(const transform& p_initial_local_transform, const Token(Node) p_parent)
 	{
-		return this->tree.add_node(p_initial_local_transform, p_parent);
+		Token(Node) l_node = this->tree.add_node(p_initial_local_transform, p_parent);
+		this->node_to_components.alloc_vector();
+		return l_node;
 	};
 
 	inline NodeEntry Scene::get_node(const Token(Node) p_node)
@@ -536,76 +358,99 @@ namespace v2
 	inline void Scene::remove_node(const NodeEntry& p_node)
 	{
 		// get all components -> for pushing events
-		Slice<Token(NodeComponentHeader)> l_node_component_tokens = this->tree.get_node_components_token(tk_bf(Node, p_node.Node->index));
-		for (loop(i, 0, l_node_component_tokens.Size))
-		{
-			this->component_events.push_back_element(ComponentEvent{ ComponentEvent::State::REMOVED, tk_bf(Node, p_node.Node->index), l_node_component_tokens.get(i) });
-		}
-		this->tree.detach_all_node_components(tk_bf(Node, p_node.Node->index));
 
 		NodeEntry l_node_copy = p_node;
 		this->tree.node_tree.make_node_orphan(l_node_copy);
 		this->orphan_nodes.push_back_element(tk_bf(Node, p_node.Node->index));
 
-		tree_traverse2_stateful_begin(Node, Vector<Token(Node)>*p_node_that_will_be_destroyed, GetAllNodes)
-			p_node_that_will_be_destroyed->push_back_element(tk_bf(Node, p_node.Node->index));
-		tree_traverse2_stateful_end(Node, &this->tree.node_tree, p_node.Node->index, &this->node_that_will_be_destroyed, GetAllNodes)
+		tree_traverse2_stateful_begin(Node, Scene * thiz, GetAllNodes)
+		{
+			thiz->node_that_will_be_destroyed.push_back_element(tk_bf(Node, p_node.Node->index));
+
+			Slice<NodeComponent> l_node_component_tokens = thiz->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node.Node->index));
+			for (loop(i, 0, l_node_component_tokens.Size))
+			{
+				thiz->component_removed_events.push_back_element(ComponentRemovedEvent::build(tk_bf(Node, p_node.Node->index), l_node_component_tokens.get(i)));
+			}
+			thiz->node_to_components.release_vector(tk_bf(Slice<NodeComponent>, p_node.Node->index));
+		}
+		tree_traverse2_stateful_end(Node, &this->tree.node_tree, p_node.Node->index, this, GetAllNodes)
 	};
 
-	inline Token(NodeComponentHeader) Scene::add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value)
+	inline void Scene::add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component)
 	{
-		Token(NodeComponentHeader) l_added_component = this->tree.add_node_component(p_node, p_type, p_initial_value); 
-		this->component_events.push_back_element(ComponentEvent{ ComponentEvent::State::ADDED, p_node, l_added_component });
-		return l_added_component;
+		this->node_to_components.element_push_back_element(tk_bf(Slice<NodeComponent>, p_node), p_component);
 	};
 
 	template<class ComponentType>
-	inline Token(NodeComponentHeader) Scene::add_node_component_typed(const Token(Node) p_node, const ComponentType& p_intial_value)
+	inline void Scene::add_node_component_typed(const Token(Node) p_node, const token_t p_component_ressource)
 	{
-		Token(NodeComponentHeader) l_added_component = this->tree.add_node_component(p_node, ComponentType::Type, cast(const int8*, &p_intial_value));
-		this->component_events.push_back_element(ComponentEvent{ ComponentEvent::State::ADDED, p_node, l_added_component });
-		return l_added_component;
+		this->add_node_component_by_value(p_node, NodeComponent{ ComponentType::Type , p_component_ressource });
 	};
 
-	template<class ComponentType>
-	inline ComponentType* Scene::get_node_component_typed(const Token(Node) p_node)
+	inline NodeComponent* Scene::get_node_component_by_type(const Token(Node) p_node, const ComponentType p_type)
 	{
-		NodeComponentHeader* l_component_header;
+		Slice<NodeComponent> l_components = this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node));
+		for (loop(i, 0, l_components.Size))
+		{
+			NodeComponent& l_component = l_components.get(i);
+			if (l_component.type == p_type)
+			{
+				return &l_component;
+			}
+		}
 
-#if SCENE_BOUND_TEST
-		if (!this->tree.get_node_component_by_type(p_node, ComponentType::Type, &l_component_header))
+		return NULL;
+	};
+
+
+	template<class ComponentType>
+	inline NodeComponent* Scene::get_node_component_typed(const Token(Node) p_node)
+	{
+		return this->get_node_component_by_type(p_node, ComponentType::Type);
+	};
+
+
+
+	inline void Scene::remove_node_component(const Token(Node) p_node, const ComponentType p_component_type)
+	{
+		NodeComponent l_detached_component;
+		if (!this->remove_node_component_by_type(p_node, p_component_type, &l_detached_component))
 		{
 			abort();
 		};
-#else
-		this->tree.get_node_component_by_type(p_node, ComponentType::Type, &l_component_header);
-#endif
-
-		return l_component_header->cast_to_object<ComponentType>();
-	};
-
-	template<class ComponentType>
-	inline ComponentType* Scene::get_component_from_token_typed(const Token(NodeComponentHeader) p_component)
-	{
-		return this->tree.heap.get_component(p_component)->cast_to_object<ComponentType>();
 	};
 
 	template<class ComponentType>
 	inline void Scene::remove_node_component_typed(const Token(Node) p_node)
 	{
-		Token(NodeComponentHeader) l_detached_component;
-		if (!this->tree.detach_node_component_by_type(p_node, ComponentType::Type, &l_detached_component))
+		this->remove_node_component(p_node, ComponentType::Type);
+	};
+
+	inline int8 Scene::remove_node_component_by_type(const Token(Node) p_node, const ComponentType p_type, NodeComponent* out_component)
+	{
+		Slice<NodeComponent> l_components = this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node));
+		for (loop(i, 0, l_components.Size))
 		{
-			abort();
-		};
-		this->component_events.push_back_element(ComponentEvent{ ComponentEvent::State::REMOVED, p_node, l_detached_component });
+			NodeComponent& l_component = l_components.get(i);
+			if (l_component.type == p_type)
+			{
+				*out_component = l_component;
+				this->node_to_components.element_erase_element_at_always(tk_bf(Slice<NodeComponent>, p_node), i);
+				this->component_removed_events.push_back_element(ComponentRemovedEvent::build(p_node, *out_component));
+				return 1;
+			}
+		}
+
+		*out_component = NodeComponent::build_default();
+		return 0;
 	};
 
 
 	inline void Scene::step_destroy_resource_only()
 	{
 		this->destroy_orphan_nodes();
-		this->destroy_component_events();
+		this->destroy_component_removed_events();
 	};
 
 	inline void Scene::destroy_orphan_nodes()
@@ -618,8 +463,9 @@ namespace v2
 		this->node_that_will_be_destroyed.clear();
 	};
 
-	inline void Scene::destroy_component_events()
+	inline void Scene::destroy_component_removed_events()
 	{
+		/*
 		for (vector_loop(&this->component_events, i))
 		{
 			ComponentEvent& l_component_event = this->component_events.get(i);
@@ -628,8 +474,10 @@ namespace v2
 				this->tree.free_component(l_component_event.component);
 			};
 		}
-		this->component_events.clear();
+		*/
+		this->component_removed_events.clear();
 	};
 }
+
 
 #include "./scene2_serialization.hpp"

@@ -25,7 +25,7 @@ struct Token
 	token_t tok;
 };
 
-#define tk_b(ElementType, TokenT) Token<ElementType> { (token_t)TokenT }
+#define tk_b(ElementType, TokenT) Token<ElementType> { (token_t)(TokenT)}
 
 #define tk_v(TokenVariable) ((TokenVariable).tok)
 

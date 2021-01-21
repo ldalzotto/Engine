@@ -28,10 +28,19 @@ if ((IfConditionVariableName))\
 };\
 }
 
-#define poolindexed_foreach_token_2_begin(PoolIndexedVariable, IteratorName, TokenVariableName) \
-for (vector_loop((&(PoolIndexedVariable)->Indices), IteratorName)) \
-{ \
-auto& TokenVariableName = (PoolIndexedVariable)->Indices.get(IteratorName);
 
-#define poolindexed_foreach_token_2_end() \
+#define vector_erase_if_2_break_end(VectorVariable, IteratorName, IfConditionVariableName) \
+if ((IfConditionVariableName))\
+{\
+	(VectorVariable)->erase_element_at(IteratorName);\
+	break; \
+};\
 }
+
+#define vector_erase_if_2_single_line(VectorVariable, IteratorName, VectorElementVariableName, IfConditionCode) \
+vector_erase_if_2_begin(VectorVariable, IteratorName, VectorElementVariableName) \
+vector_erase_if_2_end(VectorVariable, IteratorName, IfConditionCode)
+
+#define vector_erase_if_2_break_single_line(VectorVariable, IteratorName, VectorElementVariableName, IfConditionCode) \
+vector_erase_if_2_begin(VectorVariable, IteratorName, VectorElementVariableName) \
+vector_erase_if_2_break_end(VectorVariable, IteratorName, IfConditionCode)

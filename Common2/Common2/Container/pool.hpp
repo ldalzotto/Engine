@@ -126,11 +126,6 @@ namespace v2
 			this->free_blocks.push_back_element(p_token);
 		};
 
-		inline void release_element_1v(const Token(ElementType) p_token)
-		{
-			this->release_element(p_token);
-		};
-
 	private:
 
 		inline void element_free_check(const Token(ElementType) p_token)

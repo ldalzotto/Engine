@@ -2,10 +2,11 @@
 
 #include "Math2/math.hpp"
 
-#include "./component2.hpp"
-
 namespace v2
 {
+
+	using ComponentType = uimax;
+
 	struct Node
 	{
 		struct State
@@ -31,35 +32,19 @@ namespace v2
 
 	using NodeEntry = NTree<Node>::Resolve;
 
-	/* The header of every components allocated on the heap. */
-	struct NodeComponentHeader
+	struct NodeComponent
 	{
-		const SceneNodeComponentType* type = nullptr;
+		ComponentType type;
+		token_t resource;
 
-		template<class ComponentType>
-		ComponentType* cast_to_object();
-
-		int8* get_component_object();
+		static NodeComponent build_default();
+		static NodeComponent build(const ComponentType p_type, const token_t p_resource);
 	};
 
 	struct SceneTree
 	{
-		struct Heap
-		{
-			HeapMemory component_heap;
-
-			static Heap allocate_default();
-			void free();
-
-			Token(NodeComponentHeader) allocate_component(const Token(Node) p_node, const SceneNodeComponentType& p_component_type, const int8* p_initial_value);
-			NodeComponentHeader* get_component(const Token(NodeComponentHeader) p_component_header);
-			void free_component(const Token(NodeComponentHeader) p_component);
-		};
-
-		Heap heap;
 		NTree<Node> node_tree;
-		PoolOfVector<Token(NodeComponentHeader)> node_to_components;
-
+		
 		static SceneTree allocate_default();
 		void free();
 
@@ -68,20 +53,11 @@ namespace v2
 		NodeEntry get_node_parent(const NodeEntry& p_node);
 
 		Slice<Token(Node)> get_node_childs(const NodeEntry& p_node);
+		void get_node_and_all_its_childrens(const NodeEntry& p_node, Vector<NodeEntry>* out_childs);
+
 		void add_child(const NodeEntry& p_parent, const  NodeEntry& p_child);
 
 		void remove_node(const NodeEntry& p_node);
-
-		Token(NodeComponentHeader) add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value);
-		Slice<Token(NodeComponentHeader)> get_node_components_token(const Token(Node) p_node);
-		int8 get_node_component(const Token(Node) p_node, const Token(NodeComponentHeader) p_component, NodeComponentHeader** out_component);
-		int8 get_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type, NodeComponentHeader** out_component);
-
-		// int8 remove_node_component(const Token(Node) p_node, const Token(NodeComponentHeader) p_component);
-		// int8 remove_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type);
-		void detach_all_node_components(const Token(Node) p_node);
-		int8 detach_node_component_by_type(const Token(Node) p_node, const SceneNodeComponentType& p_type, Token(NodeComponentHeader)* out_component);
-		void free_component(const Token(NodeComponentHeader) p_component);
 
 		v3f& get_localposition(const NodeEntry& p_node);
 		quat& get_localrotation(const NodeEntry& p_node);
@@ -100,7 +76,6 @@ namespace v2
 		m44f& get_localtoworld(const NodeEntry& p_node);
 		m44f get_worldtolocal(const NodeEntry& p_node);
 
-
 		void clear_nodes_state();
 
 	private:
@@ -110,7 +85,6 @@ namespace v2
 		void updatematrices_if_necessary(const NodeEntry& p_node);
 
 		void free_node_recurvise(const NodeEntry& p_node);
-		void free_node_single(const NodeEntry& p_node);
 	};
 
 	namespace Scene_const
@@ -121,26 +95,36 @@ namespace v2
 
 	struct Scene
 	{
-		struct ComponentEvent
+		/*
+			When we add or remove components on a Scene, component events are generated.
+			These events can be consumed by consumer.
+			However, when the step method is called, Component events are automatically discarded;
+		*/
+		struct ComponentRemovedEvent
 		{
-			enum class State : int8 { ADDED = 0, REMOVED = 1 } state;
 			Token(Node) node;
-			Token(NodeComponentHeader) component;
+			// The component has already been detached. So we copy it's value;
+			NodeComponent value;
+
+			static ComponentRemovedEvent build(const Token(Node) p_node, const NodeComponent& p_component_value);
 		};
 
 		SceneTree tree;
+		PoolOfVector<NodeComponent> node_to_components;
+
 		Vector<Token(Node)> orphan_nodes;
 		Vector<Token(Node)> node_that_will_be_destroyed;
-		Vector<ComponentEvent> component_events;
+		Vector<ComponentRemovedEvent> component_removed_events;
 
 		static Scene allocate_default();
+
 		void free();
 
-		template<class ComponentEventCallbackFunc>
+		template<class ComponentRemovedCallbackFunc>
 		void consume_component_events();
 
-		template<class ComponentEventCallbackObj>
-		void consume_component_events_stateful(ComponentEventCallbackObj& p_closure);
+		template<class ComponentRemovedCallbackObj>
+		void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
 
 		void step();
 
@@ -152,27 +136,28 @@ namespace v2
 		void remove_node(const NodeEntry& p_node);
 
 
-		Token(NodeComponentHeader) add_node_component(const Token(Node) p_node, const SceneNodeComponentType& p_type, const int8* p_initial_value);
-		template<class ComponentType>
-		Token(NodeComponentHeader) add_node_component_typed(const Token(Node) p_node, const ComponentType& p_intial_value);
+		void add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component);
 
 		template<class ComponentType>
-		ComponentType* get_node_component_typed(const Token(Node) p_node);
-
+		void add_node_component_typed(const Token(Node) p_node, const token_t p_component_ressource);
+		
+		NodeComponent* get_node_component_by_type(const Token(Node) p_node, const ComponentType p_type);
 		template<class ComponentType>
-		ComponentType* get_component_from_token_typed(const Token(NodeComponentHeader) p_component);
+		NodeComponent* get_node_component_typed(const Token(Node) p_node);
 
+		void remove_node_component(const Token(Node) p_node, const ComponentType p_component_type);
 		template<class ComponentType>
 		void remove_node_component_typed(const Token(Node) p_node);
 
 		// void merge_scenetree(const SceneTree& p_scene_tree, const Token(Node) p_parent);
 
 	private:
+		int8 remove_node_component_by_type(const Token(Node) p_node, const ComponentType p_type, NodeComponent* out_component);
 
 		void step_destroy_resource_only();
 		void destroy_orphan_nodes();
 
-		void destroy_component_events();
+		void destroy_component_removed_events();
 	};
 
 }

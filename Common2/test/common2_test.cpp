@@ -213,7 +213,7 @@ namespace v2
 			Token(uimax) l_token = l_pool_sizet.alloc_element(l_element);
 
 			l_pool_sizet.alloc_element(cast(uimax, 10));
-			l_pool_sizet.release_element_1v(
+			l_pool_sizet.release_element(
 				l_pool_sizet.alloc_element(cast(uimax, 10))
 			);
 			l_pool_sizet.alloc_element(cast(uimax, 10));

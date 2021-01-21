@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(EngineCPP VERSION 0.0.1)
 
 enable_language(CXX)
@@ -49,6 +51,13 @@ add_library(Scene2 INTERFACE)
 target_include_directories(Scene2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2)
 target_link_libraries(Scene2 INTERFACE Math2)
 
+add_library(Scene2Middleware INTERFACE)
+target_include_directories(Scene2Middleware INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware)
+target_link_libraries(Scene2Middleware INTERFACE Scene2)
+target_link_libraries(Scene2Middleware INTERFACE Collision)
+
+
+
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
 
@@ -60,3 +69,6 @@ target_link_libraries(CollisionTest PUBLIC Collision)
 
 add_executable(Scene2Test ${CMAKE_CURRENT_SOURCE_DIR}/Scene2/test/scene2_test.cpp)
 target_link_libraries(Scene2Test PUBLIC Scene2)
+
+add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
+target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
