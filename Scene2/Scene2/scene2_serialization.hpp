@@ -24,6 +24,50 @@ namespace v2
 		};
 	};
 
+	struct SceneTreeAsset
+	{
+		NTree<transform> nodes;
+
+		//TODO -> we can replace the HeapMemory and the VectorOfVector by a VectorOfVaryingVector
+		HeapMemory component_asset_heap;
+		VectorOfVector<Token(SliceIndex)> node_to_components;
+
+		inline static SceneTreeAsset allocate_default()
+		{
+			return SceneTreeAsset{
+				NTree<transform>::allocate_default(),
+				HeapMemory::allocate_default(),
+				VectorOfVector<Token(SliceIndex)>::allocate_default()
+			};
+		};
+
+		inline void free()
+		{
+			this->nodes.free();
+			this->component_asset_heap.free();
+			this->node_to_components.free();
+		};
+
+		inline Token(transform) add_node_without_parent(const transform& p_node_local_transform)
+		{
+			Token(transform) l_node = this->nodes.push_root_value(p_node_local_transform);
+			this->node_to_components.push_back();
+			return l_node;
+		};
+
+		inline Token(transform) add_node(const transform& p_node_local_transform, const Token(transform) p_parent)
+		{
+			Token(transform) l_node = this->nodes.push_value(p_node_local_transform, p_parent);
+			this->node_to_components.push_back();
+			return l_node;
+		};
+
+		inline void add_component(const Token(transform) p_node, const Slice<int8>& p_component_memory)
+		{
+			this->node_to_components.element_push_back_element(tk_v(p_node), this->component_asset_heap.allocate_element(p_component_memory));
+		};
+	};
+
 	namespace SceneSerialization_const
 	{
 		const Slice<int8> scene_json_type = slice_int8_build_rawstr("scene");
@@ -41,30 +85,31 @@ namespace v2
 	struct SceneDeserialization
 	{
 		template<class ComponentDeserializationFunc>
-		inline static void json_to_scenetree(JSONDeserializer& p_scene_deserializer, SceneTree* out_scene_tree)
+		inline static void json_to_SceneTreeAsset(JSONDeserializer& p_scene_deserializer, SceneTreeAsset* out_SceneAssetTree)
 		{
 			json_get_type_checked(p_scene_deserializer, SceneSerialization_const::scene_json_type);
-			build_SceneTree_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_scene_tree);
+			build_SceneTree_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_SceneAssetTree);
 			p_scene_deserializer.free();
 		};
 
 	private:
 
 		template<class ComponentDeserializationFunc>
-		inline static void build_SceneTree_from_JSONNodes(JSONDeserializer& p_nodes, SceneTree* in_out_scene)
+		inline static void build_SceneTreeAsset_from_JSONNodes(JSONDeserializer& p_nodes, SceneTreeAsset* in_out_SceneAssetTree)
 		{
 			struct Stack
 			{
 				Vector<JSONDeserializer> node_object_iterator;
-				Vector<Token(Node)> allocated_nodes;
+				Vector<Token(transform)> allocated_nodes;
 				Vector<JSONDeserializer> node_childs_serializers;
 
 				inline static Stack allocate_default()
 				{
 					return Stack{
 					 Vector<JSONDeserializer>::allocate(0),
-					 Vector<Token(Node)>::allocate(0),
-					 Vector<JSONDeserializer>::allocate(0) };
+					 Vector<Token(transform)>::allocate(0),
+					 Vector<JSONDeserializer>::allocate(0) 
+					};
 				};
 
 				inline void free()
@@ -74,7 +119,7 @@ namespace v2
 					this->node_childs_serializers.free();
 				};
 
-				inline void push_stack(const Token(Node) p_allocated_node, const JSONDeserializer& p_node_object_iterator)
+				inline void push_stack(const Token(transform) p_allocated_node, const JSONDeserializer& p_node_object_iterator)
 				{
 					this->node_object_iterator.push_back_element(p_node_object_iterator);
 					this->allocated_nodes.push_back_element(p_allocated_node);
@@ -93,7 +138,7 @@ namespace v2
 					return this->node_object_iterator.get(this->node_object_iterator.Size - 1);
 				};
 
-				inline Token(Node) get_allocated_node()
+				inline Token(transform) get_allocated_node()
 				{
 					return this->allocated_nodes.get(this->allocated_nodes.Size - 1);
 				};
@@ -101,16 +146,18 @@ namespace v2
 
 			Stack l_stack = Stack::allocate_default();
 
+			in_out_SceneAssetTree->add_node_without_parent(transform_const::ORIGIN);
+
 			json_deser_iterate_array_start(SceneSerialization_const::scene_nodes_field, &p_nodes);
 			{
 
 				transform l_transform;
-				Token(Node) l_allocated_node;
+				Token(transform) l_allocated_node;
 				JSONDeserializer l_object_iterator = JSONDeserializer::allocate_default();
 
 				l_transform = deserialize_node_transform(l_object, l_object_iterator);
-				l_allocated_node = in_out_scene->add_node(l_transform, tk_b(Node, 0));
-				deserialize_components<ComponentDeserializationFunc>(l_object, l_object_iterator, l_allocated_node, in_out_scene);
+				l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, tk_b(transform, 0));
+				deserialize_components<ComponentDeserializationFunc>(l_object, l_object_iterator, l_allocated_node, in_out_SceneAssetTree);
 
 				l_object.next_array(SceneSerialization_const::node_childs_field, &l_object_iterator);
 
@@ -125,8 +172,8 @@ namespace v2
 					if (l_current_node.next_array_object(&l_child_node_iterator))
 					{
 						l_transform = deserialize_node_transform(l_child_node_iterator, l_object_iterator);
-						l_allocated_node = in_out_scene->add_node(l_transform, l_stack.get_allocated_node());
-						deserialize_components<ComponentDeserializationFunc>(l_child_node_iterator, l_object_iterator, l_allocated_node, in_out_scene);
+						l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, l_stack.get_allocated_node());
+						deserialize_components<ComponentDeserializationFunc>(l_child_node_iterator, l_object_iterator, l_allocated_node, in_out_SceneAssetTree);
 
 						l_child_node_iterator.next_array(SceneSerialization_const::node_childs_field, &l_object_iterator);
 						l_stack.push_stack(l_allocated_node, l_object_iterator.clone());
@@ -153,7 +200,7 @@ namespace v2
 		};
 
 		template<class ComponentDeserializationFunc>
-		inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token(Node) p_node_token, SceneTree* in_out_scene)
+		inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token(transform) p_node_token, SceneTreeAsset* in_in_out_SceneAssetTreeout_scene)
 		{
 			json_deser_iterate_array_start(SceneSerialization_const::node_components_field, &p_node);
 			{
@@ -162,7 +209,7 @@ namespace v2
 				JSONDeserializer l_component_object_iterator = JSONDeserializer::allocate_default();
 				json_deser_iterate_array_object.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
 				//TODO The type should be hashed
-				ComponentDeserializationFunc::push_to_scene(l_component_object_iterator, l_type, p_node_token, in_out_scene);
+				ComponentDeserializationFunc::push_to_scene(l_component_object_iterator, l_type, p_node_token, in_out_SceneAssetTree);
 				l_component_object_iterator.free();
 			}
 			json_deser_iterate_array_end();

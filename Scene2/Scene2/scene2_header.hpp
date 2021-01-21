@@ -7,10 +7,18 @@ namespace v2
 
 	using ComponentType = uimax;
 
+	/*
+		Value associated to every node of the SceneTree.
+		The Node stores local_transform and localtoworld matrix.
+	*/
 	struct Node
 	{
+		/*
+			The State of a Node idicates wether the node has moved since last Scene step and if the model matrices must be recalculated.
+		*/
 		struct State
 		{
+			//TODO -> we can merge these two int8 (bool) as a single one and execute bit comparisons
 			int8 matrices_mustBe_recalculated; /* = true;*/
 			int8 haschanged_thisframe; /* = false; */
 
@@ -41,6 +49,10 @@ namespace v2
 		static NodeComponent build(const ComponentType p_type, const token_t p_resource);
 	};
 
+	/*
+		A SceneTree provides convenient methods to add, detach and remove nodes from the tree.
+		It handles mathematic operations for local and world (position/rotation/scale/model matrix).
+	*/
 	struct SceneTree
 	{
 		NTree<Node> node_tree;
@@ -93,6 +105,13 @@ namespace v2
 	};
 
 
+	/*
+		A Scene is a functional object that enhance the SceneTree by allocating Components to every Nodes.
+		Components are typed tokens that points to an external allocated resource.
+		- When a Component is added, we suppose that external resource token has already been allocated.
+		- When a Component is released, then it's value is pushed to the component_removed_events stack. This stack is 
+		  consumed by caller and release the external allocated resource.
+	*/
 	struct Scene
 	{
 		/*

@@ -287,37 +287,57 @@ namespace v2
 #if 1
 		struct TMP
 		{
-			inline static void push_to_scene(JSONDeserializer& p_component_object, const Slice<int8>& p_type, const Token(Node) p_node, SceneTree* in_out_scene_tree)
+			inline static void push_to_scene(JSONDeserializer& p_component_object, const Slice<int8>& p_type, const Token(transform) p_node, SceneTreeAsset* in_out_SceneAssetTree)
 			{
-				if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
+				if (p_type.compare(slice_int8_build_rawstr("ComponentTest")))
 				{
-					// ComponentTest2 l_c = ComponentTest2{};
-					// in_out_scene_tree->add_node_component(p_node, ComponentTest2::Type, (int8*)&l_c);
-					// int ads = 10;
-				}
-				else if (p_type.compare(slice_int8_build_rawstr("ComponentTest1")))
-				{
+					ComponentTest l_component_test;
 
+					p_component_object.next_field("i0");
+					l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					p_component_object.next_field("i1");
+					l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					p_component_object.next_field("i2");
+					l_component_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					in_out_SceneAssetTree->add_component(p_node, Slice<ComponentTest>::build_asint8_memory_singleelement(&l_component_test));
+				}
+				else if (p_type.compare(slice_int8_build_rawstr("ComponentTest2")))
+				{
+					ComponentTest2 l_component_test;
+
+					p_component_object.next_field("i0");
+					l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					p_component_object.next_field("i1");
+					l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					p_component_object.next_field("i2");
+					l_component_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+					in_out_SceneAssetTree->add_component(p_node, Slice<ComponentTest2>::build_asint8_memory_singleelement(&l_component_test));
 				}
 			};
 		};
 
-		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"10\",\"test_value_2\":\"10\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"20\",\"test_value_2\":\"20\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"30\",\"test_value_2\":\"30\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"ComponentTest\",\"object\":{\"test_value_1\":\"40\",\"test_value_2\":\"40\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"ComponentTest2\",\"object\":{\"test_value_1\":\"50\",\"test_value_2\":\"50\"}}],\"childs\":[]}]}]}";
+		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"10\",\"test_value_2\":\"10\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"20\",\"test_value_2\":\"20\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"30\",\"test_value_2\":\"30\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"ComponentTest\",\"object\":{\"i0\":\"40\",\"i1\":\"60\",\"i2\":\"80\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"ComponentTest2\",\"object\":{\"i0\":\"50\",\"i1\":\"70\",\"i2\":\"90\"}}],\"childs\":[]}]}]}";
 
 		String l_scene_json_string = String::allocate(0);
 		l_scene_json_string.append(slice_int8_build_rawstr(l_scene_json));
 		JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
-		SceneTree l_scene_tree = SceneTree::allocate_default();
-		SceneDeserialization::json_to_scenetree<TMP>(l_serailizer, &l_scene_tree);
+		SceneTreeAsset l_scene_asset_tree = SceneTreeAsset::allocate_default();
+		SceneDeserialization::json_to_SceneTreeAsset<TMP>(l_serailizer, &l_scene_asset_tree);
 
 		int16 l_counter = 0;
 
-		tree_traverse2_stateful_begin(Node, int16 * _counter, ForEach);
+		tree_traverse2_stateful_begin(transform, int16 * _counter, ForEach);
 		*_counter += 1;
-		tree_traverse2_stateful_end(Node, &l_scene_tree.node_tree, tk_b(NTreeNode, 0), &l_counter, ForEach);
+		tree_traverse2_stateful_end(transform, &l_scene_asset_tree.nodes, tk_b(NTreeNode, 0), & l_counter, ForEach);
 
 
-		l_scene_tree.free();
+		l_scene_asset_tree.free();
 		l_scene_json_string.free();
 
 #endif
