@@ -873,6 +873,14 @@ namespace v2
 		l_str.free();
 	};
 
+	inline void fromstring_test()
+	{
+		assert_true(FromString::afloat32(slice_int8_build_rawstr("245.689")) == 245.689f);
+		assert_true(FromString::afloat32(slice_int8_build_rawstr("-245.689")) == -245.689f);
+		assert_true(FromString::afloat32(slice_int8_build_rawstr("245689.0")) == 245689.f);
+		assert_true(FromString::afloat32(slice_int8_build_rawstr("-245689.0")) == -245689.f);
+	};
+
 	inline void deserialize_test()
 	{
 		{
@@ -1058,5 +1066,6 @@ int  main()
 	v2::heap_test();
 	v2::heap_memory_test();
 	v2::string_test();
+	v2::fromstring_test();
 	v2::deserialize_test();
 };

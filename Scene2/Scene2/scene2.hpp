@@ -31,10 +31,10 @@ namespace v2
 
 	inline NodeComponent NodeComponent::build_default()
 	{
-		return NodeComponent{ (ComponentType)-1, (token_t)-1 };
+		return NodeComponent{ (component_t)-1, (token_t)-1 };
 	};
 
-	inline NodeComponent NodeComponent::build(const ComponentType p_type, const token_t p_resource)
+	inline NodeComponent NodeComponent::build(const component_t p_type, const token_t p_resource)
 	{
 		return NodeComponent{ p_type, p_resource };
 	};
@@ -388,7 +388,7 @@ namespace v2
 		this->add_node_component_by_value(p_node, NodeComponent{ ComponentType::Type , p_component_ressource });
 	};
 
-	inline NodeComponent* Scene::get_node_component_by_type(const Token(Node) p_node, const ComponentType p_type)
+	inline NodeComponent* Scene::get_node_component_by_type(const Token(Node) p_node, const component_t p_type)
 	{
 		Slice<NodeComponent> l_components = this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node));
 		for (loop(i, 0, l_components.Size))
@@ -412,7 +412,7 @@ namespace v2
 
 
 
-	inline void Scene::remove_node_component(const Token(Node) p_node, const ComponentType p_component_type)
+	inline void Scene::remove_node_component(const Token(Node) p_node, const component_t p_component_type)
 	{
 		NodeComponent l_detached_component;
 		if (!this->remove_node_component_by_type(p_node, p_component_type, &l_detached_component))
@@ -427,7 +427,7 @@ namespace v2
 		this->remove_node_component(p_node, ComponentType::Type);
 	};
 
-	inline int8 Scene::remove_node_component_by_type(const Token(Node) p_node, const ComponentType p_type, NodeComponent* out_component)
+	inline int8 Scene::remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component)
 	{
 		Slice<NodeComponent> l_components = this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node));
 		for (loop(i, 0, l_components.Size))

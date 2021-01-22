@@ -5,7 +5,7 @@
 namespace v2
 {
 
-	using ComponentType = uimax;
+	using component_t = hash_t;
 
 	/*
 		Value associated to every node of the SceneTree.
@@ -42,11 +42,11 @@ namespace v2
 
 	struct NodeComponent
 	{
-		ComponentType type;
+		component_t type;
 		token_t resource;
 
 		static NodeComponent build_default();
-		static NodeComponent build(const ComponentType p_type, const token_t p_resource);
+		static NodeComponent build(const component_t p_type, const token_t p_resource);
 	};
 
 	/*
@@ -157,21 +157,21 @@ namespace v2
 
 		void add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component);
 
-		template<class ComponentType>
+		template<class component_t>
 		void add_node_component_typed(const Token(Node) p_node, const token_t p_component_ressource);
 		
-		NodeComponent* get_node_component_by_type(const Token(Node) p_node, const ComponentType p_type);
-		template<class ComponentType>
+		NodeComponent* get_node_component_by_type(const Token(Node) p_node, const component_t p_type);
+		template<class component_t>
 		NodeComponent* get_node_component_typed(const Token(Node) p_node);
 
-		void remove_node_component(const Token(Node) p_node, const ComponentType p_component_type);
-		template<class ComponentType>
+		void remove_node_component(const Token(Node) p_node, const component_t p_component_type);
+		template<class component_t>
 		void remove_node_component_typed(const Token(Node) p_node);
 
 		// void merge_scenetree(const SceneTree& p_scene_tree, const Token(Node) p_parent);
 
 	private:
-		int8 remove_node_component_by_type(const Token(Node) p_node, const ComponentType p_type, NodeComponent* out_component);
+		int8 remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component);
 
 		void step_destroy_resource_only();
 		void destroy_orphan_nodes();

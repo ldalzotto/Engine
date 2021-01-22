@@ -31,6 +31,7 @@
 #include "./Container/Specialization/heap_memory.hpp"
 
 #include "./Functional/string_functions.hpp"
+#include "./Functional/hash.hpp"
 
 #include "./Serialization/json.hpp"
 

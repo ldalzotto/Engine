@@ -9,15 +9,14 @@ namespace v2
 
 	struct BoxColliderComponent
 	{
-		static ComponentType Type;
+		static component_t Type;
 		int8 force_update;
 
 		Token(Node) scene_node;
 		BoxColliderHandle box_collider;
 	};
 
-	//TODO -> hash
-	ComponentType BoxColliderComponent::Type = 0;
+	component_t BoxColliderComponent::Type = 0;
 
 	struct CollisionAllocator
 	{

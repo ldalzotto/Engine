@@ -6,20 +6,20 @@ namespace v2
 
 	struct ComponentTest
 	{
-		static const ComponentType Type;
+		static const component_t Type;
 
 		int i0, i1, i2;
 	};
 
-	constexpr ComponentType ComponentTest::Type = 1;
+	constexpr component_t ComponentTest::Type = 1;
 
 	struct ComponentTest2
 	{
-		static const ComponentType Type;
+		static const component_t Type;
 
 		uimax i0, i1, i2;
 	};
-	constexpr ComponentType ComponentTest2::Type = 2;
+	constexpr component_t ComponentTest2::Type = 2;
 
 	// There is no component removal test here
 	inline void add_remove_setparent_node()
@@ -114,7 +114,7 @@ namespace v2
 		}
 
 		{
-		
+
 		}
 
 		l_scene.free();
@@ -287,42 +287,50 @@ namespace v2
 #if 1
 		struct TMP
 		{
-			inline static void push_to_scene(JSONDeserializer& p_component_object, const Slice<int8>& p_type, const Token(transform) p_node, SceneTreeAsset* in_out_SceneAssetTree)
+
+			struct CameraTestComponent
 			{
-				if (p_type.compare(slice_int8_build_rawstr("ComponentTest")))
-				{
-					ComponentTest l_component_test;
+				float i0, i1;
+			};
 
-					p_component_object.next_field("i0");
+			struct MeshRendererTestComponent
+			{
+				float i0, i1, i2;
+			};
+
+			inline static void push_to_scene(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneTreeAsset* in_out_SceneAssetTree)
+			{
+				if (p_type == HashRaw("CameraTest"))
+				{
+					CameraTestComponent l_component_test;
+
+					p_component_object.next_field("test_value_1");
 					l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
 
-					p_component_object.next_field("i1");
+					p_component_object.next_field("test_value_2");
 					l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
 
-					p_component_object.next_field("i2");
-					l_component_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					in_out_SceneAssetTree->add_component(p_node, Slice<ComponentTest>::build_asint8_memory_singleelement(&l_component_test));
+					in_out_SceneAssetTree->add_component(p_node, Slice<CameraTestComponent>::build_asint8_memory_singleelement(&l_component_test));
 				}
-				else if (p_type.compare(slice_int8_build_rawstr("ComponentTest2")))
+				else if (p_type == HashRaw("MeshRendererTest"))
 				{
-					ComponentTest2 l_component_test;
+					MeshRendererTestComponent l_mesh_renderer_test;
 
 					p_component_object.next_field("i0");
-					l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
+					l_mesh_renderer_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
 
 					p_component_object.next_field("i1");
-					l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+					l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
 
 					p_component_object.next_field("i2");
-					l_component_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
+					l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
 
-					in_out_SceneAssetTree->add_component(p_node, Slice<ComponentTest2>::build_asint8_memory_singleelement(&l_component_test));
+					in_out_SceneAssetTree->add_component(p_node, Slice<MeshRendererTestComponent>::build_asint8_memory_singleelement(&l_mesh_renderer_test));
 				}
 			};
 		};
 
-		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"10\",\"test_value_2\":\"10\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"20\",\"test_value_2\":\"20\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"Camera\",\"object\":{\"test_value_1\":\"30\",\"test_value_2\":\"30\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"ComponentTest\",\"object\":{\"i0\":\"40\",\"i1\":\"60\",\"i2\":\"80\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"ComponentTest2\",\"object\":{\"i0\":\"50\",\"i1\":\"70\",\"i2\":\"90\"}}],\"childs\":[]}]}]}";
+		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"10.0\",\"test_value_2\":\"20.0\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"20.0\",\"test_value_2\":\"30.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"30.0\",\"test_value_2\":\"40.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"40.0\",\"i1\":\"60.0\",\"i2\":\"80.0\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"50.0\",\"i1\":\"70.0\",\"i2\":\"90.0\"}}],\"childs\":[]}]}]}";
 
 		String l_scene_json_string = String::allocate(0);
 		l_scene_json_string.append(slice_int8_build_rawstr(l_scene_json));
@@ -330,12 +338,22 @@ namespace v2
 		SceneTreeAsset l_scene_asset_tree = SceneTreeAsset::allocate_default();
 		SceneDeserialization::json_to_SceneTreeAsset<TMP>(l_serailizer, &l_scene_asset_tree);
 
+
+		// we check is the tree structure is respected
+		NTree<transform>::Resolve  l_first = l_scene_asset_tree.nodes.get(tk_b(transform, 1));
+		
+		assert_true(l_first.Element->operator==(transform{ v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f} }));
+		Slice<Token(SliceIndex)> l_first_components = l_scene_asset_tree.node_to_components.get(1);
+		assert_true(l_first_components.Size == 1);
+		
+
+		/*
 		int16 l_counter = 0;
 
 		tree_traverse2_stateful_begin(transform, int16 * _counter, ForEach);
 		*_counter += 1;
-		tree_traverse2_stateful_end(transform, &l_scene_asset_tree.nodes, tk_b(NTreeNode, 0), & l_counter, ForEach);
-
+		tree_traverse2_stateful_end(transform, &l_scene_asset_tree.nodes, tk_b(NTreeNode, 0), &l_counter, ForEach);
+		*/
 
 		l_scene_asset_tree.free();
 		l_scene_json_string.free();

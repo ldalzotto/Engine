@@ -88,7 +88,7 @@ namespace v2
 		inline static void json_to_SceneTreeAsset(JSONDeserializer& p_scene_deserializer, SceneTreeAsset* out_SceneAssetTree)
 		{
 			json_get_type_checked(p_scene_deserializer, SceneSerialization_const::scene_json_type);
-			build_SceneTree_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_SceneAssetTree);
+			build_SceneTreeAsset_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_SceneAssetTree);
 			p_scene_deserializer.free();
 		};
 
@@ -208,8 +208,7 @@ namespace v2
 				Slice<int8> l_type = json_deser_iterate_array_object.get_currentfield().value;
 				JSONDeserializer l_component_object_iterator = JSONDeserializer::allocate_default();
 				json_deser_iterate_array_object.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
-				//TODO The type should be hashed
-				ComponentDeserializationFunc::push_to_scene(l_component_object_iterator, l_type, p_node_token, in_out_SceneAssetTree);
+				ComponentDeserializationFunc::push_to_scene(l_component_object_iterator, HashSlice(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
 				l_component_object_iterator.free();
 			}
 			json_deser_iterate_array_end();
