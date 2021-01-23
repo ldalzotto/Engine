@@ -2,41 +2,20 @@
 
 namespace v2
 {
-	struct MathJSONDeserialization
-	{
-		inline static v3f _v3f(JSONDeserializer* p_json_object)
-		{
-			v3f l_return;
-			json_deser_object_field("x", p_json_object, l_return.x, FromString::afloat32);
-			json_deser_object_field("y", p_json_object, l_return.y, FromString::afloat32);
-			json_deser_object_field("z", p_json_object, l_return.z, FromString::afloat32);
-			return l_return;
-		};
-
-		inline static quat _quat(JSONDeserializer* p_json_object)
-		{
-			quat l_return;
-			json_deser_object_field("x", p_json_object, l_return.x, FromString::afloat32);
-			json_deser_object_field("y", p_json_object, l_return.y, FromString::afloat32);
-			json_deser_object_field("z", p_json_object, l_return.z, FromString::afloat32);
-			json_deser_object_field("w", p_json_object, l_return.w, FromString::afloat32);
-			return l_return;
-		};
-	};
-
-	struct SceneTreeAsset
+	/*
+		The SceneTreeAsset is the representation of the JSON Scene as inserted in the Asset database.
+	*/
+	struct SceneAsset
 	{
 		NTree<transform> nodes;
-
-		//TODO -> we can replace the HeapMemory and the VectorOfVector by a VectorOfVaryingVector
-		HeapMemory component_asset_heap;
+		VaryingVector component_assets;
 		VectorOfVector<Token(SliceIndex)> node_to_components;
 
-		inline static SceneTreeAsset allocate_default()
+		inline static SceneAsset allocate_default()
 		{
-			return SceneTreeAsset{
+			return SceneAsset{
 				NTree<transform>::allocate_default(),
-				HeapMemory::allocate_default(),
+				VaryingVector::allocate_default(),
 				VectorOfVector<Token(SliceIndex)>::allocate_default()
 			};
 		};
@@ -44,7 +23,7 @@ namespace v2
 		inline void free()
 		{
 			this->nodes.free();
-			this->component_asset_heap.free();
+			this->component_assets.free();
 			this->node_to_components.free();
 		};
 
@@ -64,8 +43,21 @@ namespace v2
 
 		inline void add_component(const Token(transform) p_node, const Slice<int8>& p_component_memory)
 		{
-			this->node_to_components.element_push_back_element(tk_v(p_node), this->component_asset_heap.allocate_element(p_component_memory));
+			this->component_assets.push_back(p_component_memory);
+			this->node_to_components.element_push_back_element(tk_v(p_node), tk_b(SliceIndex, this->component_assets.get_size() - 1));
 		};
+
+		inline Slice<Token(SliceIndex)> get_components(const NTree<transform>::Resolve& p_node)
+		{
+			return this->node_to_components.get(tk_v(p_node.Node->index));
+		};
+
+		template<class ComponentType>
+		inline ComponentType* get_component_typed(const Token(SliceIndex) p_component)
+		{
+			return this->component_assets.get_element_typed<ComponentType>(tk_v(p_component));
+		};
+
 	};
 
 	namespace SceneSerialization_const
@@ -84,18 +76,23 @@ namespace v2
 
 	struct SceneDeserialization
 	{
+		/*
+			Converts a JSON Scene to a SceneAsset.
+			The ComponentDeserializationFunc is used to convert a component JSON to it's ComponentAsset value. So that
+			it can be stored in memory.
+		*/
 		template<class ComponentDeserializationFunc>
-		inline static void json_to_SceneTreeAsset(JSONDeserializer& p_scene_deserializer, SceneTreeAsset* out_SceneAssetTree)
+		inline static void json_to_SceneAsset(JSONDeserializer& p_scene_deserializer, SceneAsset* out_SceneAssetTree)
 		{
 			json_get_type_checked(p_scene_deserializer, SceneSerialization_const::scene_json_type);
-			build_SceneTreeAsset_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_SceneAssetTree);
+			build_SceneAsset_from_JSONNodes<ComponentDeserializationFunc>(p_scene_deserializer, out_SceneAssetTree);
 			p_scene_deserializer.free();
 		};
 
 	private:
 
 		template<class ComponentDeserializationFunc>
-		inline static void build_SceneTreeAsset_from_JSONNodes(JSONDeserializer& p_nodes, SceneTreeAsset* in_out_SceneAssetTree)
+		inline static void build_SceneAsset_from_JSONNodes(JSONDeserializer& p_nodes, SceneAsset* in_out_SceneAssetTree)
 		{
 			struct Stack
 			{
@@ -108,7 +105,7 @@ namespace v2
 					return Stack{
 					 Vector<JSONDeserializer>::allocate(0),
 					 Vector<Token(transform)>::allocate(0),
-					 Vector<JSONDeserializer>::allocate(0) 
+					 Vector<JSONDeserializer>::allocate(0)
 					};
 				};
 
@@ -200,7 +197,7 @@ namespace v2
 		};
 
 		template<class ComponentDeserializationFunc>
-		inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token(transform) p_node_token, SceneTreeAsset* in_in_out_SceneAssetTreeout_scene)
+		inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token(transform) p_node_token, SceneAsset* in_in_out_SceneAssetTreeout_scene)
 		{
 			json_deser_iterate_array_start(SceneSerialization_const::node_components_field, &p_node);
 			{
@@ -208,7 +205,7 @@ namespace v2
 				Slice<int8> l_type = json_deser_iterate_array_object.get_currentfield().value;
 				JSONDeserializer l_component_object_iterator = JSONDeserializer::allocate_default();
 				json_deser_iterate_array_object.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
-				ComponentDeserializationFunc::push_to_scene(l_component_object_iterator, HashSlice(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
+				ComponentDeserializationFunc::push_json_to_sceneassettree(l_component_object_iterator, HashSlice(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
 				l_component_object_iterator.free();
 			}
 			json_deser_iterate_array_end();

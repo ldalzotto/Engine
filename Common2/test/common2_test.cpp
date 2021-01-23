@@ -248,7 +248,7 @@ namespace v2
 			l_varyingvector.push_back(l_slice);
 
 			assert_true(l_varyingvector.get_size() == 1);
-			Slice<int8> l_element_0 = l_varyingvector.get(0);
+			Slice<int8> l_element_0 = l_varyingvector.get_element(0);
 			assert_true(l_element_0.Size == 10);
 			assert_true(slice_memcompare_element(l_slice, l_element_0));
 		}
@@ -259,7 +259,7 @@ namespace v2
 			l_varyingvector.push_back_element(l_element);
 
 			uimax l_inserted_index = l_varyingvector.get_size() - 1;
-			Slice<int8> l_element_inserted = l_varyingvector.get(l_inserted_index);
+			Slice<int8> l_element_inserted = l_varyingvector.get_element(l_inserted_index);
 
 			assert_true(l_element_inserted.Size == sizeof(uimax));
 			assert_true(memory_compare(cast(const int8*, &l_element), l_element_inserted.Begin, l_element_inserted.Size));
@@ -291,8 +291,8 @@ namespace v2
 			l_varyingvector.erase_element_at(2);
 			assert_true(l_varyingvector.get_size() == 4);
 
-			assert_true(*l_varyingvector.get_element<uimax>(2).Begin == 3);
-			assert_true(*l_varyingvector.get_element<uimax>(3).Begin == 4);
+			assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 3);
+			assert_true(*l_varyingvector.get_element_typed<uimax>(3) == 4);
 		}
 
 		l_varyingvector.free();
@@ -309,7 +309,7 @@ namespace v2
 			l_varyingvector.erase_array_at(2, 2);
 			assert_true(l_varyingvector.get_size() == 3);
 
-			assert_true(*l_varyingvector.get_element<uimax>(2).Begin == 4);
+			assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 4);
 		}
 
 		l_varyingvector.free();
@@ -326,22 +326,22 @@ namespace v2
 			Slice<int8> l_expansion_slice = Slice<uimax>::build_asint8_memory_elementnb(&l_inserset_number, 1);
 			l_varyingvector.element_expand_with_value(2, l_expansion_slice);
 
-			Slice<uimax> l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get(2));
+			Slice<uimax> l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get_element(2));
 			assert_true(l_sizet_element_2.Size == 2);
 			assert_true(l_sizet_element_2.get(1) == l_inserset_number);
 
 			{
-				uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get(3));
+				uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get_element(3));
 				assert_true(*l_sizet_element_3 == 3);
 			}
 
 			l_varyingvector.element_shrink(2, sizeof(uimax));
-			l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get(2));
+			l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get_element(2));
 			assert_true(l_sizet_element_2.Size == 1);
 			assert_true(l_sizet_element_2.get(0) == 2);
 
 			{
-				uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get(3));
+				uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get_element(3));
 				assert_true(*l_sizet_element_3 == 3);
 			}
 		}
@@ -358,7 +358,7 @@ namespace v2
 			l_varyingvector.element_writeto(2, 1 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_1));
 
 
-			Slice<int8> l_varyingvector_element_2 = l_varyingvector.get(2);
+			Slice<int8> l_varyingvector_element_2 = l_varyingvector.get_element(2);
 			assert_true(*cast(uimax*, l_varyingvector_element_2.Begin) == l_element_0);
 			assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin) == l_element_1);
 			assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin) == l_element_2);
@@ -367,7 +367,7 @@ namespace v2
 		{
 			for (varyingvector_loop(&l_varyingvector, i))
 			{
-				l_varyingvector.get(i);
+				l_varyingvector.get_element(i);
 			}
 		}
 
@@ -1026,7 +1026,7 @@ namespace v2
 
 			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
 			JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
-			
+
 			JSONDeserializer l_array = JSONDeserializer::allocate_default();
 			JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
 			assert_true(l_deserialized.next_array("empty_array", &l_array));

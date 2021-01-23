@@ -56,7 +56,7 @@ namespace v2
 	struct SceneTree
 	{
 		NTree<Node> node_tree;
-		
+
 		static SceneTree allocate_default();
 		void free();
 
@@ -109,7 +109,7 @@ namespace v2
 		A Scene is a functional object that enhance the SceneTree by allocating Components to every Nodes.
 		Components are typed tokens that points to an external allocated resource.
 		- When a Component is added, we suppose that external resource token has already been allocated.
-		- When a Component is released, then it's value is pushed to the component_removed_events stack. This stack is 
+		- When a Component is released, then it's value is pushed to the component_removed_events stack. This stack is
 		  consumed by caller and release the external allocated resource.
 	*/
 	struct Scene
@@ -117,7 +117,7 @@ namespace v2
 		/*
 			When we add or remove components on a Scene, component events are generated.
 			These events can be consumed by consumer.
-			However, when the step method is called, Component events are automatically discarded;
+			However, when the step method is called, Component events are automatically discarded.
 		*/
 		struct ComponentRemovedEvent
 		{
@@ -137,11 +137,14 @@ namespace v2
 
 		static Scene allocate_default();
 
-		void free();
+		template<class ComponentRemovedCallbackFunc>
+		void free_and_consume_component_events();
+		template<class ComponentRemovedCallbackObj>
+		void free_and_consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
+
 
 		template<class ComponentRemovedCallbackFunc>
 		void consume_component_events();
-
 		template<class ComponentRemovedCallbackObj>
 		void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
 
@@ -157,20 +160,24 @@ namespace v2
 
 		void add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component);
 
-		template<class component_t>
+		template<class ComponentType>
 		void add_node_component_typed(const Token(Node) p_node, const token_t p_component_ressource);
-		
+
 		NodeComponent* get_node_component_by_type(const Token(Node) p_node, const component_t p_type);
-		template<class component_t>
+
+		template<class ComponentType>
 		NodeComponent* get_node_component_typed(const Token(Node) p_node);
 
 		void remove_node_component(const Token(Node) p_node, const component_t p_component_type);
-		template<class component_t>
+
+		template<class ComponentType>
 		void remove_node_component_typed(const Token(Node) p_node);
 
 		// void merge_scenetree(const SceneTree& p_scene_tree, const Token(Node) p_parent);
 
 	private:
+		void free();
+
 		int8 remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component);
 
 		void step_destroy_resource_only();

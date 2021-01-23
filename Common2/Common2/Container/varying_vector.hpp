@@ -196,7 +196,7 @@ namespace v2
 		};
 
 
-		inline Slice<int8> get(const uimax p_index)
+		inline Slice<int8> get_element(const uimax p_index)
 		{
 			SliceIndex& l_chunk = this->chunks.get(p_index);
 			return Slice<int8>::build_memory_offset_elementnb(
@@ -207,11 +207,9 @@ namespace v2
 		};
 
 		template<class ElementType>
-		inline Slice<ElementType> get_element(const uimax p_index)
+		inline ElementType* get_element_typed(const uimax p_index)
 		{
-			return slice_cast<ElementType>(
-				this->get(p_index)
-				);
+			return  slice_cast_singleelement<ElementType>(this->get_element(p_index));
 		};
 
 	};

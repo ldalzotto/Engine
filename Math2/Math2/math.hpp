@@ -8,3 +8,5 @@
 #include "./definitions.hpp"
 #include "./kernel.hpp"
 #include "./geometry.hpp"
+
+#include "./serialization.hpp"

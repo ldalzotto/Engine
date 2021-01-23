@@ -33,14 +33,14 @@ int main()
 
 	l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 
-	BoxColliderComponent& l_comp = l_collision_allocator.get_or_allocate_box_collider(l_box_collider_component);
+	l_collision_allocator.get_or_allocate_box_collider(l_box_collider_component);
 
 	l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
 	l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 
 	l_collision_allocator.step(&l_scene);
 
-	l_scene.free();
+	l_scene.free_and_consume_component_events_stateful(component_releaser);
 
 	l_collision_allocator.free();
 	Collision2::free(&l_collision);

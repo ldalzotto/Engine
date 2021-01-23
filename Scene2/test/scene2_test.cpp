@@ -3,7 +3,6 @@
 
 namespace v2
 {
-
 	struct ComponentTest
 	{
 		static const component_t Type;
@@ -20,6 +19,13 @@ namespace v2
 		uimax i0, i1, i2;
 	};
 	constexpr component_t ComponentTest2::Type = 2;
+
+
+	struct DefaulSceneComponentReleaser
+	{
+		inline static void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component) {};
+	};
+
 
 	// There is no component removal test here
 	inline void add_remove_setparent_node()
@@ -78,7 +84,7 @@ namespace v2
 			assert_true(l_scene.node_that_will_be_destroyed.Size == 0);
 		}
 
-		l_scene.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 	};
 
 	inline void add_remove_component()
@@ -117,7 +123,7 @@ namespace v2
 
 		}
 
-		l_scene.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 
 		l_scene = Scene::allocate_default();
 
@@ -144,7 +150,7 @@ namespace v2
 			l_scene.step();
 		}
 
-		l_scene.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 	};
 
 	inline void component_consume()
@@ -211,7 +217,7 @@ namespace v2
 
 		}
 
-		l_scene.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 
 	};
 
@@ -278,13 +284,11 @@ namespace v2
 		}
 
 
-		l_scene.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 	};
 
-	//TODO
 	inline void json_deserialization()
 	{
-#if 1
 		struct TMP
 		{
 
@@ -298,7 +302,7 @@ namespace v2
 				float i0, i1, i2;
 			};
 
-			inline static void push_to_scene(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneTreeAsset* in_out_SceneAssetTree)
+			inline static void push_json_to_sceneassettree(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneAsset* in_out_SceneAssetTree)
 			{
 				if (p_type == HashRaw("CameraTest"))
 				{
@@ -323,42 +327,88 @@ namespace v2
 					l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
 
 					p_component_object.next_field("i2");
-					l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+					l_mesh_renderer_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
 
 					in_out_SceneAssetTree->add_component(p_node, Slice<MeshRendererTestComponent>::build_asint8_memory_singleelement(&l_mesh_renderer_test));
 				}
 			};
 		};
 
-		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"10.0\",\"test_value_2\":\"20.0\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"20.0\",\"test_value_2\":\"30.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"30.0\",\"test_value_2\":\"40.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"40.0\",\"i1\":\"60.0\",\"i2\":\"80.0\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"50.0\",\"i1\":\"70.0\",\"i2\":\"90.0\"}}],\"childs\":[]}]}]}";
+		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"10.0\",\"test_value_2\":\"20.0\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"20.0\",\"test_value_2\":\"30.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"40.0\",\"i1\":\"60.0\",\"i2\":\"80.0\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"50.0\",\"i1\":\"70.0\",\"i2\":\"90.0\"}}],\"childs\":[]}]}]}";
 
 		String l_scene_json_string = String::allocate(0);
 		l_scene_json_string.append(slice_int8_build_rawstr(l_scene_json));
 		JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
-		SceneTreeAsset l_scene_asset_tree = SceneTreeAsset::allocate_default();
-		SceneDeserialization::json_to_SceneTreeAsset<TMP>(l_serailizer, &l_scene_asset_tree);
+		SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
+		SceneDeserialization::json_to_SceneAsset<TMP>(l_serailizer, &l_scene_asset_tree);
 
 
-		// we check is the tree structure is respected
-		NTree<transform>::Resolve  l_first = l_scene_asset_tree.nodes.get(tk_b(transform, 1));
-		
-		assert_true(l_first.Element->operator==(transform{ v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f} }));
-		Slice<Token(SliceIndex)> l_first_components = l_scene_asset_tree.node_to_components.get(1);
-		assert_true(l_first_components.Size == 1);
-		
+		// we check if the tree structure is respected
+		{
+			NTree<transform>::Resolve  l_first = l_scene_asset_tree.nodes.get(tk_b(transform, 1));
+			assert_true(l_first.Element->operator==(transform{ v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f} }));
+			Slice<Token(SliceIndex)> l_first_components = l_scene_asset_tree.get_components(l_first);
+			assert_true(l_first_components.Size == 1);
+			TMP::CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<TMP::CameraTestComponent>(l_first_components.get(0));
+			assert_true(l_camera_component->i0 == 10.0f);
+			assert_true(l_camera_component->i1 == 20.0f);
+			assert_true(l_scene_asset_tree.nodes.get_childs(l_first.Node->childs).Size == 0);
+		}
 
-		/*
+		{
+			NTree<transform>::Resolve  l_second = l_scene_asset_tree.nodes.get(tk_b(transform, 2));
+			assert_true(l_second.Element->operator==(transform{ v3f{2.0f, 2.0f, 2.0f}, quat{2.0f, 2.0f, 2.0f, 2.0f}, v3f{2.0f, 2.0f, 2.0f} }));
+			Slice<Token(SliceIndex)> l_second_components = l_scene_asset_tree.get_components(l_second);
+			assert_true(l_second_components.Size == 1);
+			TMP::CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<TMP::CameraTestComponent>(l_second_components.get(0));
+			assert_true(l_camera_component->i0 == 20.0f);
+			assert_true(l_camera_component->i1 == 30.0f);
+			assert_true(l_scene_asset_tree.nodes.get_childs(l_second.Node->childs).Size == 2);
+		}
+
+		{
+			NTree<transform>::Resolve  l_2_1 = l_scene_asset_tree.nodes.get(tk_b(transform, 3));
+			assert_true(l_2_1.Element->operator==(transform{ v3f{3.0f, 3.0f, 3.0f}, quat{3.0f, 3.0f, 3.0f, 3.0f}, v3f{3.0f, 3.0f, 3.0f} }));
+			Slice<Token(SliceIndex)> l_2_1_components = l_scene_asset_tree.get_components(l_2_1);
+			assert_true(l_2_1_components.Size == 0);
+			assert_true(l_scene_asset_tree.nodes.get_childs(l_2_1.Node->childs).Size == 1);
+		}
+
+		{
+			NTree<transform>::Resolve  l_2_1_1 = l_scene_asset_tree.nodes.get(tk_b(transform, 4));
+			assert_true(l_2_1_1.Element->operator==(transform{ v3f{4.0f, 4.0f, 4.0f}, quat{4.0f, 4.0f, 4.0f, 4.0f}, v3f{4.0f, 4.0f, 4.0f} }));
+			Slice<Token(SliceIndex)> l_2_1_1_components = l_scene_asset_tree.get_components(l_2_1_1);
+			assert_true(l_2_1_1_components.Size == 1);
+			TMP::MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<TMP::MeshRendererTestComponent>(l_2_1_1_components.get(0));
+			assert_true(l_mesh_renderer_test_component->i0 == 40.0f);
+			assert_true(l_mesh_renderer_test_component->i1 == 60.0f);
+			assert_true(l_mesh_renderer_test_component->i2 == 80.0f);
+			assert_true(l_scene_asset_tree.nodes.get_childs(l_2_1_1.Node->childs).Size == 0);
+		}
+
+		{
+			NTree<transform>::Resolve  l_2_2 = l_scene_asset_tree.nodes.get(tk_b(transform, 5));
+			assert_true(l_2_2.Element->operator==(transform{ v3f{5.0f, 5.0f, 5.0f}, quat{5.0f, 5.0f, 5.0f, 5.0f}, v3f{5.0f, 5.0f, 5.0f} }));
+			Slice<Token(SliceIndex)> l_2_2_components = l_scene_asset_tree.get_components(l_2_2);
+			assert_true(l_2_2_components.Size == 1);
+			TMP::MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<TMP::MeshRendererTestComponent>(l_2_2_components.get(0));
+			assert_true(l_mesh_renderer_test_component->i0 == 50.0f);
+			assert_true(l_mesh_renderer_test_component->i1 == 70.0f);
+			assert_true(l_mesh_renderer_test_component->i2 == 90.0f);
+			assert_true(l_scene_asset_tree.nodes.get_childs(l_2_2.Node->childs).Size == 0);
+		}
+
+
 		int16 l_counter = 0;
 
 		tree_traverse2_stateful_begin(transform, int16 * _counter, ForEach);
 		*_counter += 1;
 		tree_traverse2_stateful_end(transform, &l_scene_asset_tree.nodes, tk_b(NTreeNode, 0), &l_counter, ForEach);
-		*/
+
+		assert_true(l_counter == 6);
 
 		l_scene_asset_tree.free();
 		l_scene_json_string.free();
-
-#endif
 	};
 }
 
@@ -369,4 +419,9 @@ int main()
 	v2::component_consume();
 	v2::math_hierarchy();
 	v2::json_deserialization();
+	//TODO
+	/*
+		v2::json_serialization();
+		v2::scenetreeasset_merge();
+	*/
 };
