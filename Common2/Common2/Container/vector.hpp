@@ -113,6 +113,13 @@ namespace v2
 			return 1;
 		};
 
+		inline int8 push_back_array_empty(const uimax p_array_size)
+		{
+			this->Memory.resize_until_capacity_met(this->Size + p_array_size);
+			this->Size += p_array_size;
+			return 1;
+		};
+
 		inline int8 push_back_element_empty()
 		{
 			this->Memory.resize_until_capacity_met(this->Size + 1);

@@ -70,6 +70,13 @@ namespace v2
 			}
 		}
 
+		// push_back_array_empty
+		{
+			uimax l_old_size = l_vector_sizet.Size;
+			l_vector_sizet.push_back_array_empty(5);
+			assert_true(l_vector_sizet.Size = l_old_size + 5);
+		}
+
 		// vector_push_back_element
 		{
 			uimax l_old_size = l_vector_sizet.Size;
@@ -251,6 +258,13 @@ namespace v2
 			Slice<int8> l_element_0 = l_varyingvector.get_element(0);
 			assert_true(l_element_0.Size == 10);
 			assert_true(slice_memcompare_element(l_slice, l_element_0));
+		}
+
+		// push_back_empty
+		{
+			uimax l_slice_size = 5;
+			l_varyingvector.push_back_empty(l_slice_size);
+			assert_true(l_varyingvector.get_last_element().Size == l_slice_size);
 		}
 
 		// varyingvector_push_back_element
@@ -631,7 +645,7 @@ namespace v2
 			tree_traverse2_stateful_begin(uimax, uimax * l_counter, CounterForEach);
 			*this->l_counter += 1;
 			*(p_node.Element) += 1;
-			tree_traverse2_stateful_end(uimax, &l_uimax_tree, Token(NTreeNode){0}, & l_counter, CounterForEach);
+			tree_traverse2_stateful_end(&l_uimax_tree, 0, &l_counter, CounterForEach);
 
 			assert_true(l_counter == 7);
 
@@ -654,7 +668,7 @@ namespace v2
 				tree_traverse2_stateful_begin(uimax, uimax * l_counter, TreeForeach);
 				*this->l_counter += 1;
 				*p_node.Element += 1;
-				tree_traverse2_stateful_end(uimax, &l_uimax_tree, Token(NTreeNode){0}, & l_counter, TreeForeach);
+				tree_traverse2_stateful_end(&l_uimax_tree, 0, &l_counter, TreeForeach);
 
 				assert_true(l_counter == 4);
 			}

@@ -50,6 +50,13 @@ namespace v2
 			this->chunks.push_back_element(l_chunk);
 		};
 
+		inline void push_back_empty(const uimax p_slice_size)
+		{
+			SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_slice_size);
+			this->memory.push_back_array_empty(p_slice_size);
+			this->chunks.push_back_element(l_chunk);
+		};
+
 		template<class ElementType>
 		inline void push_back_element(const ElementType& p_element)
 		{
@@ -204,6 +211,11 @@ namespace v2
 				l_chunk.Begin,
 				l_chunk.Size
 			);
+		};
+
+		inline Slice<int8> get_last_element()
+		{
+			return this->get_element(this->get_size() - 1);
 		};
 
 		template<class ElementType>

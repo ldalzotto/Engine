@@ -2,6 +2,23 @@
 
 namespace v2
 {
+
+	struct SceneAssetComponent
+	{
+		component_t type;
+		uimax value_size;
+		Slice<int8> value;
+
+		inline static SceneAssetComponent build_from_memory(const Slice<int8>& p_memory)
+		{
+			return SceneAssetComponent{
+				*slice_cast_singleelement<component_t>(p_memory),
+				*slice_cast_singleelement<uimax>(p_memory.slide_rv(sizeof(component_t))),
+				p_memory.slide_rv(sizeof(component_t) + sizeof(uimax))
+			};
+		};
+	};
+
 	/*
 		The SceneTreeAsset is the representation of the JSON Scene as inserted in the Asset database.
 	*/
@@ -41,10 +58,24 @@ namespace v2
 			return l_node;
 		};
 
-		inline void add_component(const Token(transform) p_node, const Slice<int8>& p_component_memory)
+		inline void add_component(const Token(transform) p_node, const component_t p_component_type, const Slice<int8>& p_component_value_memory)
 		{
-			this->component_assets.push_back(p_component_memory);
+			this->component_assets.push_back_empty(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size) + p_component_value_memory.Size);
+			Slice<int8> l_element = this->component_assets.get_last_element();
+
+			slice_memcpy(l_element, Slice<component_t>::build_asint8_memory_singleelement((component_t*)&p_component_type));
+			l_element.slide(sizeof(SceneAssetComponent::type));
+			slice_memcpy(l_element, Slice<uimax>::build_asint8_memory_singleelement((uimax*)&p_component_value_memory.Size));
+			l_element.slide(sizeof(SceneAssetComponent::value_size));
+			slice_memcpy(l_element, p_component_value_memory);
+
 			this->node_to_components.element_push_back_element(tk_v(p_node), tk_b(SliceIndex, this->component_assets.get_size() - 1));
+		};
+
+		template<class ComponentType>
+		inline void add_component_typed(const Token(transform) p_node, const ComponentType& p_component)
+		{
+			this->add_component(p_node, ComponentType::Type, Slice<ComponentType>::build_asint8_memory_singleelement(&p_component));
 		};
 
 		inline Slice<Token(SliceIndex)> get_components(const NTree<transform>::Resolve& p_node)
@@ -55,9 +86,68 @@ namespace v2
 		template<class ComponentType>
 		inline ComponentType* get_component_typed(const Token(SliceIndex) p_component)
 		{
-			return this->component_assets.get_element_typed<ComponentType>(tk_v(p_component));
+			Slice<int8> l_component_element = this->component_assets.get_element(tk_v(p_component));
+#if SCENE_BOUND_TEST
+			assert_true(*(component_t*)l_component_element.Begin == ComponentType::Type);
+#endif
+			return (ComponentType*)l_component_element.slide_rv(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size)).Begin;
 		};
 
+		inline SceneAssetComponent get_component(const Token(SliceIndex) p_component)
+		{
+			return SceneAssetComponent::build_from_memory(this->component_assets.get_element(tk_v(p_component)));
+		};
+
+		/*
+			Insert the SceneAsset tree to the p_target_scene at the p_parent Node;
+			Component ressource allocation is ensured by calling ComponentAllocatorObj.allocate_component_resource.
+		*/
+		template<class ComponentResourceAllocatorObj>
+		inline void merge_to_scene_stateful(Scene* p_target_scene, const Token(Node) p_parent, ComponentResourceAllocatorObj& p_component_resource_allocator)
+		{
+			Span<Token(Node)> l_allocated_nodes = Span<Token(Node)>::allocate(this->nodes.Indices.get_size());
+
+			tree_traverse2_stateful_begin(transform, SceneAsset * thiz; Scene * p_target_scene; Span<Token(Node)> *p_allocated_nodes; Token(Node) p_scene_parent; ComponentResourceAllocatorObj * p_component_resource_allocator_2, ForeachObj);
+			{
+				Token(Node) l_allocated_node = merge_to_scene_²_allocate_node(p_node, p_target_scene, p_scene_parent, p_allocated_nodes);
+				merge_to_scene_²_allocate_components_from_sceneassetnode_stateful(thiz, p_node, p_target_scene, l_allocated_node, this->p_component_resource_allocator_2);
+			}
+			tree_traverse2_stateful_end(&this->nodes, 0, this COMA p_target_scene COMA & l_allocated_nodes COMA p_parent COMA & p_component_resource_allocator, ForeachObj);
+
+			l_allocated_nodes.free();
+		};
+
+	private:
+
+		inline static Token(Node) merge_to_scene_²_allocate_node(const NTree<transform>::Resolve& p_scene_asset_node, Scene* p_target_scene, const Token(Node) p_attach_root_node, Span<Token(Node)>* in_out_already_allocated_nodes)
+		{
+			Token(Node) l_allocated_node;
+			if (p_scene_asset_node.has_parent())
+			{
+				l_allocated_node = p_target_scene->add_node(*p_scene_asset_node.Element, in_out_already_allocated_nodes->get(tk_v(p_scene_asset_node.Node->parent)));
+			}
+			else
+			{
+				l_allocated_node = p_target_scene->add_node(*p_scene_asset_node.Element, p_attach_root_node);
+			}
+
+			in_out_already_allocated_nodes->get(tk_v(p_scene_asset_node.Node->index)) = l_allocated_node;
+			return l_allocated_node;
+		};
+
+		template<class ComponentResourceAllocatorObj>
+		inline static void merge_to_scene_²_allocate_components_from_sceneassetnode_stateful(
+			SceneAsset* thiz, const NTree<transform>::Resolve& p_scene_asset_node, Scene* p_target_scene, const Token(Node) p_target_node, ComponentResourceAllocatorObj* p_component_resource_allocator)
+		{
+			Slice<Token(SliceIndex)> l_components = thiz->get_components(p_scene_asset_node);
+			for (loop(i, 0, l_components.Size))
+			{
+				SceneAssetComponent l_scene_asset_component = thiz->get_component(l_components.get(i));
+				p_target_scene->add_node_component_by_value(p_target_node, NodeComponent::build(l_scene_asset_component.type,
+					p_component_resource_allocator->allocate_component_resource(l_scene_asset_component)
+				));
+			}
+		};
 	};
 
 	namespace SceneSerialization_const
@@ -74,7 +164,7 @@ namespace v2
 		const int8* node_component_object_field = "object";
 	};
 
-	struct SceneDeserialization
+	struct SceneJSON_TO_SceneAsset
 	{
 		/*
 			Converts a JSON Scene to a SceneAsset.
@@ -212,5 +302,12 @@ namespace v2
 		};
 	};
 
+	struct Scene_TO_SceneAsset
+	{
+		inline static void convert(Scene* p_scene, const Token(Node) p_start_node_included, SceneAsset* in_out_SceneAsset)
+		{
+			//TODO
+		};
+	};
 
 };

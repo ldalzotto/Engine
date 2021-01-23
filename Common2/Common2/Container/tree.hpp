@@ -159,7 +159,7 @@ namespace v2
 			{
 				this->traverse2_stateful<ForEachObj>(l_childs.get(i), p_foreach_obj);
 			};
-		}
+		};
 
 		inline void get_nodes(const Token(NTreeNode) p_start_node_included, Vector<Resolve>* in_out_nodes)
 		{
@@ -254,11 +254,11 @@ struct ForEachObjStructName\
 	inline void foreach(const NTree<ElementType>::Resolve& p_node) \
 	{
 
-#define tree_traverse2_stateful_end(ElementType, TreeVariable, StartToken, StateParameterValues, ForEachObjStructName) \
+#define tree_traverse2_stateful_end(TreeVariable, StartTokenValue, StateParameterValues, ForEachObjStructName) \
 	};\
 };\
 auto l_foreach_obj_##ForEachObjStructName = ForEachObjStructName{ StateParameterValues }; \
-(TreeVariable)->traverse2_stateful((StartToken), l_foreach_obj_##ForEachObjStructName);
+(TreeVariable)->traverse2_stateful(tk_b(NTreeNode, StartTokenValue), l_foreach_obj_##ForEachObjStructName);
 
 #define tree_traverse2_begin(ElementType, ForEachObjStructName) \
 struct ForEachObjStructName\
@@ -266,7 +266,7 @@ struct ForEachObjStructName\
 	inline static void foreach(const NTree<ElementType>::Resolve& p_node) \
 	{
 
-#define tree_traverse2_end(ElementType, TreeVariable, StartToken, ForEachObjStructName) \
+#define tree_traverse2_end(TreeVariable, StartTokenValue, ForEachObjStructName) \
 	};\
 };\
-(TreeVariable)->traverse2<ForEachObjStructName>((StartToken));
+(TreeVariable)->traverse2<ForEachObjStructName>(tk_b(NTreeNode, StartTokenValue));

@@ -6,19 +6,18 @@ namespace v2
 	struct ComponentTest
 	{
 		static const component_t Type;
-
 		int i0, i1, i2;
 	};
 
-	constexpr component_t ComponentTest::Type = 1;
+	const component_t ComponentTest::Type = HashRaw(STR(ComponentTest));
 
 	struct ComponentTest2
 	{
 		static const component_t Type;
-
 		uimax i0, i1, i2;
 	};
-	constexpr component_t ComponentTest2::Type = 2;
+
+	const component_t ComponentTest2::Type = HashRaw(STR(ComponentTest2));
 
 
 	struct DefaulSceneComponentReleaser
@@ -287,60 +286,68 @@ namespace v2
 		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 	};
 
+	struct CameraTestComponent
+	{
+		static const component_t Type;
+		float i0, i1;
+	};
+
+	const component_t CameraTestComponent::Type = HashRaw(STR(CameraTestComponent));
+
+	struct MeshRendererTestComponent
+	{
+		static const component_t Type;
+		float i0, i1, i2;
+	};
+
+	const component_t MeshRendererTestComponent::Type = HashRaw(STR(MeshRendererTestComponent));
+
+	struct SceneJSONTestAsset
+	{
+		static const char* scene_json;
+
+		inline static void push_json_to_sceneassettree(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneAsset* in_out_SceneAssetTree)
+		{
+			if (p_type == CameraTestComponent::Type)
+			{
+				CameraTestComponent l_component_test;
+
+				p_component_object.next_field("test_value_1");
+				l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+				p_component_object.next_field("test_value_2");
+				l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+				in_out_SceneAssetTree->add_component_typed(p_node, l_component_test);
+			}
+			else if (p_type == MeshRendererTestComponent::Type)
+			{
+				MeshRendererTestComponent l_mesh_renderer_test;
+
+				p_component_object.next_field("i0");
+				l_mesh_renderer_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+				p_component_object.next_field("i1");
+				l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+				p_component_object.next_field("i2");
+				l_mesh_renderer_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
+
+				in_out_SceneAssetTree->add_component_typed(p_node, l_mesh_renderer_test);
+			}
+		};
+	};
+
+	const char* SceneJSONTestAsset::scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"CameraTestComponent\",\"object\":{\"test_value_1\":\"10.0\",\"test_value_2\":\"20.0\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"CameraTestComponent\",\"object\":{\"test_value_1\":\"20.0\",\"test_value_2\":\"30.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"MeshRendererTestComponent\",\"object\":{\"i0\":\"40.0\",\"i1\":\"60.0\",\"i2\":\"80.0\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"MeshRendererTestComponent\",\"object\":{\"i0\":\"50.0\",\"i1\":\"70.0\",\"i2\":\"90.0\"}}],\"childs\":[]}]}]}";
+
 	inline void json_deserialization()
 	{
-		struct TMP
-		{
-
-			struct CameraTestComponent
-			{
-				float i0, i1;
-			};
-
-			struct MeshRendererTestComponent
-			{
-				float i0, i1, i2;
-			};
-
-			inline static void push_json_to_sceneassettree(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneAsset* in_out_SceneAssetTree)
-			{
-				if (p_type == HashRaw("CameraTest"))
-				{
-					CameraTestComponent l_component_test;
-
-					p_component_object.next_field("test_value_1");
-					l_component_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					p_component_object.next_field("test_value_2");
-					l_component_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					in_out_SceneAssetTree->add_component(p_node, Slice<CameraTestComponent>::build_asint8_memory_singleelement(&l_component_test));
-				}
-				else if (p_type == HashRaw("MeshRendererTest"))
-				{
-					MeshRendererTestComponent l_mesh_renderer_test;
-
-					p_component_object.next_field("i0");
-					l_mesh_renderer_test.i0 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					p_component_object.next_field("i1");
-					l_mesh_renderer_test.i1 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					p_component_object.next_field("i2");
-					l_mesh_renderer_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
-
-					in_out_SceneAssetTree->add_component(p_node, Slice<MeshRendererTestComponent>::build_asint8_memory_singleelement(&l_mesh_renderer_test));
-				}
-			};
-		};
-
-		const char* l_scene_json = "{\"type\":\"scene\",\"nodes\":[{\"local_position\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"local_rotation\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\",\"w\":\"1.0\"},\"local_scale\":{\"x\":\"1.0\",\"y\":\"1.0\",\"z\":\"1.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"10.0\",\"test_value_2\":\"20.0\"}}],\"childs\":[]},{\"local_position\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"local_rotation\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\",\"w\":\"2.0\"},\"local_scale\":{\"x\":\"2.0\",\"y\":\"2.0\",\"z\":\"2.0\"},\"components\":[{\"type\":\"CameraTest\",\"object\":{\"test_value_1\":\"20.0\",\"test_value_2\":\"30.0\"}}],\"childs\":[{\"local_position\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"local_rotation\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\",\"w\":\"3.0\"},\"local_scale\":{\"x\":\"3.0\",\"y\":\"3.0\",\"z\":\"3.0\"},\"components\":[],\"childs\":[{\"local_position\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"local_rotation\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\",\"w\":\"4.0\"},\"local_scale\":{\"x\":\"4.0\",\"y\":\"4.0\",\"z\":\"4.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"40.0\",\"i1\":\"60.0\",\"i2\":\"80.0\"}}],\"childs\":[]}]},{\"local_position\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"local_rotation\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\",\"w\":\"5.0\"},\"local_scale\":{\"x\":\"5.0\",\"y\":\"5.0\",\"z\":\"5.0\"},\"components\":[{\"type\":\"MeshRendererTest\",\"object\":{\"i0\":\"50.0\",\"i1\":\"70.0\",\"i2\":\"90.0\"}}],\"childs\":[]}]}]}";
-
+#if 1
 		String l_scene_json_string = String::allocate(0);
-		l_scene_json_string.append(slice_int8_build_rawstr(l_scene_json));
+		l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
 		JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
 		SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
-		SceneDeserialization::json_to_SceneAsset<TMP>(l_serailizer, &l_scene_asset_tree);
+		SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
 
 
 		// we check if the tree structure is respected
@@ -349,7 +356,7 @@ namespace v2
 			assert_true(l_first.Element->operator==(transform{ v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f} }));
 			Slice<Token(SliceIndex)> l_first_components = l_scene_asset_tree.get_components(l_first);
 			assert_true(l_first_components.Size == 1);
-			TMP::CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<TMP::CameraTestComponent>(l_first_components.get(0));
+			CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(l_first_components.get(0));
 			assert_true(l_camera_component->i0 == 10.0f);
 			assert_true(l_camera_component->i1 == 20.0f);
 			assert_true(l_scene_asset_tree.nodes.get_childs(l_first.Node->childs).Size == 0);
@@ -360,7 +367,7 @@ namespace v2
 			assert_true(l_second.Element->operator==(transform{ v3f{2.0f, 2.0f, 2.0f}, quat{2.0f, 2.0f, 2.0f, 2.0f}, v3f{2.0f, 2.0f, 2.0f} }));
 			Slice<Token(SliceIndex)> l_second_components = l_scene_asset_tree.get_components(l_second);
 			assert_true(l_second_components.Size == 1);
-			TMP::CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<TMP::CameraTestComponent>(l_second_components.get(0));
+			CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(l_second_components.get(0));
 			assert_true(l_camera_component->i0 == 20.0f);
 			assert_true(l_camera_component->i1 == 30.0f);
 			assert_true(l_scene_asset_tree.nodes.get_childs(l_second.Node->childs).Size == 2);
@@ -379,7 +386,7 @@ namespace v2
 			assert_true(l_2_1_1.Element->operator==(transform{ v3f{4.0f, 4.0f, 4.0f}, quat{4.0f, 4.0f, 4.0f, 4.0f}, v3f{4.0f, 4.0f, 4.0f} }));
 			Slice<Token(SliceIndex)> l_2_1_1_components = l_scene_asset_tree.get_components(l_2_1_1);
 			assert_true(l_2_1_1_components.Size == 1);
-			TMP::MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<TMP::MeshRendererTestComponent>(l_2_1_1_components.get(0));
+			MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(l_2_1_1_components.get(0));
 			assert_true(l_mesh_renderer_test_component->i0 == 40.0f);
 			assert_true(l_mesh_renderer_test_component->i1 == 60.0f);
 			assert_true(l_mesh_renderer_test_component->i2 == 80.0f);
@@ -391,7 +398,7 @@ namespace v2
 			assert_true(l_2_2.Element->operator==(transform{ v3f{5.0f, 5.0f, 5.0f}, quat{5.0f, 5.0f, 5.0f, 5.0f}, v3f{5.0f, 5.0f, 5.0f} }));
 			Slice<Token(SliceIndex)> l_2_2_components = l_scene_asset_tree.get_components(l_2_2);
 			assert_true(l_2_2_components.Size == 1);
-			TMP::MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<TMP::MeshRendererTestComponent>(l_2_2_components.get(0));
+			MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(l_2_2_components.get(0));
 			assert_true(l_mesh_renderer_test_component->i0 == 50.0f);
 			assert_true(l_mesh_renderer_test_component->i1 == 70.0f);
 			assert_true(l_mesh_renderer_test_component->i2 == 90.0f);
@@ -403,12 +410,111 @@ namespace v2
 
 		tree_traverse2_stateful_begin(transform, int16 * _counter, ForEach);
 		*_counter += 1;
-		tree_traverse2_stateful_end(transform, &l_scene_asset_tree.nodes, tk_b(NTreeNode, 0), &l_counter, ForEach);
+		tree_traverse2_stateful_end(&l_scene_asset_tree.nodes, 0, &l_counter, ForEach);
 
 		assert_true(l_counter == 6);
 
 		l_scene_asset_tree.free();
 		l_scene_json_string.free();
+#endif
+	};
+
+	struct ComponentAllocatorObjTest
+	{
+		uimax counter;
+
+		inline static ComponentAllocatorObjTest build()
+		{
+			return ComponentAllocatorObjTest{ 0 };
+		};
+
+		inline token_t allocate_component_resource(const SceneAssetComponent& p_scene_asset_component)
+		{
+			uimax l_return = this->counter;
+			this->counter += 1;
+			return l_return;
+		};
+	};
+
+	inline void scenetreeasset_merge()
+	{
+#if 1
+		String l_scene_json_string = String::allocate(0);
+		l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
+		JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
+		SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
+		SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
+
+
+		Scene l_scene = Scene::allocate_default();
+
+		Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
+		l_scene.add_node(transform{ v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+		Token(Node) l_node_3 = l_scene.add_node(transform{ v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+
+		assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 0);
+
+		ComponentAllocatorObjTest l_component_allocator = ComponentAllocatorObjTest::build();
+		l_scene_asset_tree.merge_to_scene_stateful(&l_scene, l_node_3, l_component_allocator);
+
+		assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 1);
+
+		Token(Node) l_sub_tree_root = l_scene.get_node_childs(l_scene.get_node(l_node_3)).get(0);
+		Slice<Token(Node)> l_sub_tree_root_childs = l_scene.get_node_childs(l_scene.get_node(l_sub_tree_root));
+		{
+			NodeEntry  l_first = l_scene.get_node(l_sub_tree_root_childs.get(0));
+			assert_true(l_first.Element->local_transform == transform{ v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f} });
+			NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(tk_bf(Node, l_first.Node->index));
+			assert_true(l_camera_component->type == CameraTestComponent::Type);
+			assert_true(l_camera_component->resource == 0);
+			assert_true(l_scene.get_node_childs(l_first).Size == 0);
+		}
+
+		{
+			NodeEntry  l_second = l_scene.get_node(l_sub_tree_root_childs.get(1));
+			assert_true(l_second.Element->local_transform == transform{ v3f{2.0f, 2.0f, 2.0f}, quat{2.0f, 2.0f, 2.0f, 2.0f}, v3f{2.0f, 2.0f, 2.0f} });
+			NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(tk_bf(Node, l_second.Node->index));
+			assert_true(l_camera_component->type == CameraTestComponent::Type);
+			assert_true(l_camera_component->resource == 1);
+
+			Slice<Token(Node)> l_second_childs = l_scene.get_node_childs(l_second);
+			assert_true(l_second_childs.Size == 2);
+
+			{
+				NodeEntry  l_2_1 = l_scene.get_node(l_second_childs.get(0));
+				assert_true(l_2_1.Element->local_transform == transform{ v3f{3.0f, 3.0f, 3.0f}, quat{3.0f, 3.0f, 3.0f, 3.0f}, v3f{3.0f, 3.0f, 3.0f} });
+
+
+				Slice<Token(Node)> l_2_1_childs = l_scene.get_node_childs(l_2_1);
+				assert_true(l_2_1_childs.Size == 1);
+
+				{
+					NodeEntry  l_2_1_1 = l_scene.get_node(l_2_1_childs.get(0));
+					assert_true(l_2_1_1.Element->local_transform == transform{ v3f{4.0f, 4.0f, 4.0f}, quat{4.0f, 4.0f, 4.0f, 4.0f}, v3f{4.0f, 4.0f, 4.0f} });
+					NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(tk_bf(Node, l_2_1_1.Node->index));
+					assert_true(l_camera_component->type == MeshRendererTestComponent::Type);
+					assert_true(l_camera_component->resource == 2);
+					assert_true(l_scene.get_node_childs(l_2_1_1).Size == 0);
+				}
+
+			}
+
+			{
+				NodeEntry  l_2_2 = l_scene.get_node(l_second_childs.get(1));
+				assert_true(l_2_2.Element->local_transform == transform{ v3f{5.0f, 5.0f, 5.0f}, quat{5.0f, 5.0f, 5.0f, 5.0f}, v3f{5.0f, 5.0f, 5.0f} });
+				NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(tk_bf(Node, l_2_2.Node->index));
+				assert_true(l_camera_component->type == MeshRendererTestComponent::Type);
+				assert_true(l_camera_component->resource == 3);
+				assert_true(l_scene.get_node_childs(l_2_2).Size == 0);
+			}
+		}
+
+		assert_true(l_component_allocator.counter == 4);
+
+		l_scene_asset_tree.free();
+		l_scene_json_string.free();
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
+#endif
 	};
 }
 
@@ -422,6 +528,6 @@ int main()
 	//TODO
 	/*
 		v2::json_serialization();
-		v2::scenetreeasset_merge();
 	*/
+	v2::scenetreeasset_merge();
 };

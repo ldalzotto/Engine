@@ -76,11 +76,6 @@ namespace v2
 		return sliceoftoken_cast(Node, l_childs);
 	};
 
-	inline void SceneTree::get_node_and_all_its_childrens(const NodeEntry& p_node, Vector<NodeEntry>* out_childs)
-	{
-
-	};
-
 	inline void SceneTree::add_child(const NodeEntry& p_parent, const NodeEntry& p_child)
 	{
 		if (this->node_tree.add_child(p_parent, p_child))
@@ -221,7 +216,7 @@ namespace v2
 	{
 		tree_traverse2_begin(Node, Foreach)
 			p_node.Element->state.haschanged_thisframe = false;
-		tree_traverse2_end(Node, &this->node_tree, tk_b(NTreeNode, 0), Foreach)
+		tree_traverse2_end(&this->node_tree, 0, Foreach)
 	};
 
 	inline Token(Node) SceneTree::allocate_node(const transform& p_initial_local_transform, const Token(Node) p_parent)
@@ -245,7 +240,7 @@ namespace v2
 	{
 		tree_traverse2_begin(Node, Foreach)
 			p_node.Element->mark_for_recaluclation();
-		tree_traverse2_end(Node, &this->node_tree, p_node.Node->index, Foreach)
+		tree_traverse2_end(&this->node_tree, tk_v(p_node.Node->index), Foreach)
 	};
 
 	inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
@@ -378,7 +373,7 @@ namespace v2
 			}
 			thiz->node_to_components.release_vector(tk_bf(Slice<NodeComponent>, p_node.Node->index));
 		}
-		tree_traverse2_stateful_end(Node, &this->tree.node_tree, p_node.Node->index, this, GetAllNodes)
+		tree_traverse2_stateful_end(&this->tree.node_tree, tk_v(p_node.Node->index), this, GetAllNodes)
 	};
 
 	inline void Scene::add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component)

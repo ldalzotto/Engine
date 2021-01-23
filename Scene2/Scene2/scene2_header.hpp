@@ -65,7 +65,6 @@ namespace v2
 		NodeEntry get_node_parent(const NodeEntry& p_node);
 
 		Slice<Token(Node)> get_node_childs(const NodeEntry& p_node);
-		void get_node_and_all_its_childrens(const NodeEntry& p_node, Vector<NodeEntry>* out_childs);
 
 		void add_child(const NodeEntry& p_parent, const  NodeEntry& p_child);
 
@@ -172,8 +171,6 @@ namespace v2
 
 		template<class ComponentType>
 		void remove_node_component_typed(const Token(Node) p_node);
-
-		// void merge_scenetree(const SceneTree& p_scene_tree, const Token(Node) p_parent);
 
 	private:
 		void free();
