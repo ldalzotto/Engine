@@ -3,7 +3,7 @@
 using hash_t = uimax;
 
 // http://www.cse.yorku.ca/~oz/hash.html
-inline constexpr uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
+inline uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
 {
 	hash_t hash = 5381;
 
@@ -17,7 +17,7 @@ inline constexpr uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
 }
 
 // http://www.cse.yorku.ca/~oz/hash.html
-inline constexpr uimax HashFunctionRawChecked(const int8* p_value, const uimax p_size)
+inline uimax HashFunctionRawChecked(const int8* p_value, const uimax p_size)
 {
 	hash_t hash = 5381;
 
@@ -36,24 +36,24 @@ inline constexpr uimax HashFunctionRawChecked(const int8* p_value, const uimax p
 }
 
 template<class TYPE>
-inline constexpr hash_t HashFunction(const TYPE& p_value)
+inline hash_t HashFunction(const TYPE& p_value)
 {
 	return HashFunctionRaw((int8*)&p_value, sizeof(TYPE));
 };
 
 template<class TYPE>
-inline constexpr hash_t HashCombineFunction(const uimax p_hash, const TYPE& p_value)
+inline hash_t HashCombineFunction(const uimax p_hash, const TYPE& p_value)
 {
 	return p_hash ^ (HashFunction<TYPE>(p_value) + 0x9e3779b9 + (p_hash << 6) + (p_hash >> 2));
 };
 
 template<class TYPE>
-inline constexpr hash_t HashSlice(const Slice<TYPE>& p_value)
+inline hash_t HashSlice(const Slice<TYPE>& p_value)
 {
 	return HashFunctionRaw((int8*)p_value.Begin, p_value.Size * sizeof(TYPE));
 };
 
-inline constexpr hash_t HashRaw(const int8* p_str)
+inline hash_t HashRaw(const int8* p_str)
 {
 	return HashFunctionRaw((int8*)p_str, strlen(p_str));
 };

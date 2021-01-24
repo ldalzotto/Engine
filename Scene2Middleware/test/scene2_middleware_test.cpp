@@ -4,6 +4,7 @@
 
 using namespace v2;
 
+
 int main()
 {
 	Scene l_scene = Scene::allocate_default();

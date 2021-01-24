@@ -138,37 +138,54 @@ namespace v2
 		};
 
 		template<class ForEachFunc>
-		inline void traverse2(const Token(NTreeNode) p_current_node)
+		inline void traverse3(const Token(NTreeNode) p_current_node, const ForEachFunc& p_foreach_func)
 		{
 			Resolve l_node = this->get(tk_bf(ElementType, p_current_node));
-			ForEachFunc::foreach(l_node);
+			p_foreach_func(l_node);
 			Slice<Token(NTreeNode)> l_childs = this->get_childs(l_node.Node->childs);
 			for (uimax i = 0; i < l_childs.Size; i++)
 			{
-				this->traverse2<ForEachFunc>(l_childs.get(i));
+				this->traverse3(l_childs.get(i), p_foreach_func);
 			};
 		};
 
-		template<class ForEachObj>
-		inline void traverse2_stateful(const Token(NTreeNode) p_current_node, ForEachObj& p_foreach_obj)
+		/*
+			Copy the Tree hierachy from p_start_node to an unknown data structure.
+
+			type TargetTreeTokenType : Is the token type of the target data structure.
+			type NodeAdderFunc : Is called to custom the insertion of the Nodes in the target data structure.
+
+			# TargetTreeTokenType NodeAdderFunc(const Resolve& p_source_node, TargetTreeTokenType p_parent);
+		*/
+		template<class TargetTreeTokenType, class NodeAdderFunc>
+		inline void copy_and_map_to(const Token(NTreeNode) p_start_node, const TargetTreeTokenType p_to_parent_node,
+			const NodeAdderFunc& p_node_adder_func)
 		{
-			Resolve l_node = this->get(tk_bf(ElementType, p_current_node));
-			p_foreach_obj.foreach(l_node);
-			Slice<Token(NTreeNode)> l_childs = this->get_childs(l_node.Node->childs);
-			for (uimax i = 0; i < l_childs.Size; i++)
+			Span<TargetTreeTokenType> l_allocated_nodes = Span<TargetTreeTokenType>::allocate(this->Indices.get_size());
 			{
-				this->traverse2_stateful<ForEachObj>(l_childs.get(i), p_foreach_obj);
-			};
+				this->traverse3(p_start_node, [&](const Resolve& p_node) {
+					TargetTreeTokenType l_allocated_node;
+					if (p_node.has_parent())
+					{
+						l_allocated_node = p_node_adder_func(p_node, l_allocated_nodes.get(tk_v(p_node.Node->parent)));
+					}
+					else
+					{
+						l_allocated_node = p_node_adder_func(p_node, p_to_parent_node);
+					}
+					l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
+					}
+				);
+			}
+			l_allocated_nodes.free();
 		};
+
 
 		inline void get_nodes(const Token(NTreeNode) p_start_node_included, Vector<Resolve>* in_out_nodes)
 		{
-			struct RemoveForEach {
-				Vector<Resolve>* involved_nodes;
-				inline void foreach(const Resolve& p_node) { this->involved_nodes->push_back_element(p_node); }
-			};
-			RemoveForEach l_remove_foreach = RemoveForEach{ in_out_nodes };
-			this->traverse2_stateful(p_start_node_included, l_remove_foreach);
+			this->traverse3(p_start_node_included,
+				[in_out_nodes](const Resolve& p_node) {in_out_nodes->push_back_element(p_node); }
+			);
 		};
 
 		inline void remove_node_recursively(const Token(NTreeNode) p_node)
@@ -243,30 +260,3 @@ namespace v2
 	};
 
 }
-
-
-
-
-#define tree_traverse2_stateful_begin(ElementType, StateParameters, ForEachObjStructName) \
-struct ForEachObjStructName\
-{\
-	StateParameters; \
-	inline void foreach(const NTree<ElementType>::Resolve& p_node) \
-	{
-
-#define tree_traverse2_stateful_end(TreeVariable, StartTokenValue, StateParameterValues, ForEachObjStructName) \
-	};\
-};\
-auto l_foreach_obj_##ForEachObjStructName = ForEachObjStructName{ StateParameterValues }; \
-(TreeVariable)->traverse2_stateful(tk_b(NTreeNode, StartTokenValue), l_foreach_obj_##ForEachObjStructName);
-
-#define tree_traverse2_begin(ElementType, ForEachObjStructName) \
-struct ForEachObjStructName\
-{\
-	inline static void foreach(const NTree<ElementType>::Resolve& p_node) \
-	{
-
-#define tree_traverse2_end(TreeVariable, StartTokenValue, ForEachObjStructName) \
-	};\
-};\
-(TreeVariable)->traverse2<ForEachObjStructName>(tk_b(NTreeNode, StartTokenValue));

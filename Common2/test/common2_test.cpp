@@ -74,7 +74,7 @@ namespace v2
 		{
 			uimax l_old_size = l_vector_sizet.Size;
 			l_vector_sizet.push_back_array_empty(5);
-			assert_true(l_vector_sizet.Size = l_old_size + 5);
+			assert_true(l_vector_sizet.Size = l_old_size + (uimax)5);
 		}
 
 		// vector_push_back_element
@@ -642,10 +642,12 @@ namespace v2
 		{
 			uimax l_counter = 0;
 
-			tree_traverse2_stateful_begin(uimax, uimax * l_counter, CounterForEach);
-			*this->l_counter += 1;
-			*(p_node.Element) += 1;
-			tree_traverse2_stateful_end(&l_uimax_tree, 0, &l_counter, CounterForEach);
+			l_uimax_tree.traverse3(tk_b(NTreeNode, 0),
+				[&l_counter](const NTree<uimax>::Resolve& p_node) {
+					l_counter += 1;
+					*(p_node.Element) += 1;
+				}
+			);
 
 			assert_true(l_counter == 7);
 
@@ -665,10 +667,12 @@ namespace v2
 
 			{
 				uimax l_counter = 0;
-				tree_traverse2_stateful_begin(uimax, uimax * l_counter, TreeForeach);
-				*this->l_counter += 1;
-				*p_node.Element += 1;
-				tree_traverse2_stateful_end(&l_uimax_tree, 0, &l_counter, TreeForeach);
+				l_uimax_tree.traverse3(tk_b(NTreeNode, 0),
+					[&l_counter](const NTree<uimax>::Resolve& p_node) {
+						l_counter += 1;
+						*p_node.Element += 1;
+					}
+				);
 
 				assert_true(l_counter == 4);
 			}
@@ -691,6 +695,37 @@ namespace v2
 			assert_true(tk_v(l_3_node_childs.get(1)) == tk_v(l_2_2_node));
 
 			assert_true(tk_v(l_uimax_tree.get(l_2_2_node).Node->parent) == tk_v(l_3_node));
+		}
+
+		l_uimax_tree.free();
+		l_uimax_tree = NTree<uimax>::allocate_default();
+
+		// copy_and_map_to
+		{
+			Token(uimax) l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
+			l_uimax_tree.push_value(cast(uimax, 1), l_root);
+			Token(uimax) l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
+			Token(uimax) l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+
+			NTree<int8> l_int8_tree = NTree<int8>::allocate_default();
+			l_int8_tree.push_root_value(0);
+
+			l_uimax_tree.copy_and_map_to(tk_b(NTreeNode, 0), tk_b(int8, 0),
+				[&l_int8_tree](const NTree<uimax>::Resolve& p_node, const Token(int8) p_parent) {
+					return l_int8_tree.push_value((*p_node.Element >= 2), p_parent);
+				}
+			);
+
+			Vector<NTree<int8>::Resolve> l_int8_nodes = Vector<NTree<int8>::Resolve>::allocate(0);
+			l_int8_tree.get_nodes(tk_b(NTreeNode, 0), &l_int8_nodes);
+			assert_true(l_int8_nodes.Size == 5);
+			assert_true(l_int8_tree.get_value(tk_b(int8, 1)) == 0);
+			assert_true(l_int8_tree.get_value(tk_b(int8, 2)) == 0);
+			assert_true(l_int8_tree.get_value(tk_b(int8, 3)) == 1);
+			assert_true(l_int8_tree.get_value(tk_b(int8, 4)) == 1);
+
+			l_int8_nodes.free();
+			l_int8_tree.free();
 		}
 
 		l_uimax_tree.free();
@@ -1065,6 +1100,7 @@ namespace v2
 			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.705424f);
 		}
 	};
+
 }
 
 int  main()

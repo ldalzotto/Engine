@@ -407,33 +407,13 @@ namespace v2
 
 
 		int16 l_counter = 0;
-
-		tree_traverse2_stateful_begin(transform, int16 * _counter, ForEach);
-		*_counter += 1;
-		tree_traverse2_stateful_end(&l_scene_asset_tree.nodes, 0, &l_counter, ForEach);
+		l_scene_asset_tree.nodes.traverse3(tk_b(NTreeNode, 0), [&l_counter](const auto&) { l_counter += 1; });
 
 		assert_true(l_counter == 6);
 
 		l_scene_asset_tree.free();
 		l_scene_json_string.free();
 #endif
-	};
-
-	struct ComponentAllocatorObjTest
-	{
-		uimax counter;
-
-		inline static ComponentAllocatorObjTest build()
-		{
-			return ComponentAllocatorObjTest{ 0 };
-		};
-
-		inline token_t allocate_component_resource(const SceneAssetComponent& p_scene_asset_component)
-		{
-			uimax l_return = this->counter;
-			this->counter += 1;
-			return l_return;
-		};
 	};
 
 	inline void scenetreeasset_merge()
@@ -454,8 +434,14 @@ namespace v2
 
 		assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 0);
 
-		ComponentAllocatorObjTest l_component_allocator = ComponentAllocatorObjTest::build();
-		l_scene_asset_tree.merge_to_scene_stateful(&l_scene, l_node_3, l_component_allocator);
+
+		uimax l_counter = 0;
+		auto l_component_allocator = [&l_counter](const SceneAssetComponent& p_sceneasset_component) {
+			uimax l_old_counter = l_counter;
+			l_counter += 1;
+			return l_old_counter;
+		};
+		l_scene_asset_tree.merge_to_scene(&l_scene, l_node_3, l_component_allocator);
 
 		assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 1);
 
@@ -509,12 +495,35 @@ namespace v2
 			}
 		}
 
-		assert_true(l_component_allocator.counter == 4);
+		assert_true(l_counter == 4);
 
 		l_scene_asset_tree.free();
 		l_scene_json_string.free();
 		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 #endif
+	};
+
+	inline void scene_to_sceneasset()
+	{
+		Scene l_scene = Scene::allocate_default();
+
+		Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
+		l_scene.add_node(transform{ v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+		Token(Node) l_node_3 = l_scene.add_node(transform{ v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+
+		SceneAsset l_scene_asset = SceneAsset::allocate_default();
+
+		l_scene_asset.scene_merged_to(&l_scene, tk_b(Node, 0), 
+			[&l_scene_asset](const NodeComponent& p_node_component) {
+				return Slice<int8>{1000, (int8*)&l_scene_asset};
+			}
+		);
+
+		//TODO
+
+		l_scene_asset.free();
+
+		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
 	};
 }
 
@@ -530,4 +539,5 @@ int main()
 		v2::json_serialization();
 	*/
 	v2::scenetreeasset_merge();
+	v2::scene_to_sceneasset();
 };

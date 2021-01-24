@@ -1,5 +1,5 @@
 {
-    "compiler": "GCC",
+    "compiler": "CLANG",
     "environment": {
         "DEBUG": [
             {

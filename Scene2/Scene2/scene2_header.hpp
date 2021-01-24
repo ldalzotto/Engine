@@ -151,6 +151,7 @@ namespace v2
 
 
 		Token(Node) add_node(const transform& p_initial_local_transform, const Token(Node) p_parent);
+
 		NodeEntry get_node(const Token(Node) p_node);
 		NodeEntry get_node_parent(const NodeEntry& p_node);
 		Slice<Token(Node)> get_node_childs(const NodeEntry& p_node);
@@ -166,6 +167,8 @@ namespace v2
 
 		template<class ComponentType>
 		NodeComponent* get_node_component_typed(const Token(Node) p_node);
+
+		Slice<NodeComponent> get_node_components(const Token(Node) p_node);
 
 		void remove_node_component(const Token(Node) p_node, const component_t p_component_type);
 

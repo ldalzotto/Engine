@@ -14,7 +14,8 @@ enum BuildType
 enum CompilerType
 {
     GCC = <any>"GCC",
-    MSVC = <any>"MSVC"
+    MSVC = <any>"MSVC",
+    CLANG = <any>"CLANG"
 };
 
 class CompileTypeProvider
@@ -28,6 +29,10 @@ class CompileTypeProvider
         else if (p_compiler_type == CompilerType.MSVC)
         {
             return "cl /nologo";
+        }
+        else if (p_compiler_type == CompilerType.CLANG)
+        {
+            return "clang";
         }
     };
 
@@ -50,11 +55,15 @@ class CompileTypeProvider
         {
             return "/W3";
         }
+        else if (p_compiler_type == CompilerType.CLANG)
+        {
+            return "";
+        }
     };
 
     public static preprocessor(p_compiler_type: CompilerType, p_preprocessor_name: string, p_preprocessor_value: string): string
     {
-        if (p_compiler_type == CompilerType.GCC)
+        if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
         {
             return `-D ${p_preprocessor_name}=${p_preprocessor_value}`;
         }
@@ -66,7 +75,7 @@ class CompileTypeProvider
 
     public static debug_symbols(p_compiler_type: CompilerType): string
     {
-        if (p_compiler_type == CompilerType.GCC)
+        if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
         {
             return "-g";
         }
@@ -74,6 +83,7 @@ class CompileTypeProvider
         {
             return "/Zi";
         }
+
     };
 
     public static optimization(p_compiler_type: CompilerType, p_build_type: BuildType): string
@@ -82,15 +92,15 @@ class CompileTypeProvider
         switch (p_build_type)
         {
             case BuildType.DEBUG:
-                if (p_compiler_type == CompilerType.GCC)
+                if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
                 {
                     l_optimisation_flags += "-O0";
                 }
                 break;
             case BuildType.RELEASE_DEBUG:
-                if (p_compiler_type == CompilerType.GCC)
+                if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
                 {
-                    l_optimisation_flags += "-O2";
+                    l_optimisation_flags += "-O1";
                 }
                 else if (p_compiler_type == CompilerType.MSVC)
                 {
@@ -98,9 +108,9 @@ class CompileTypeProvider
                 }
                 break;
             case BuildType.RELEASE:
-                if (p_compiler_type == CompilerType.GCC)
+                if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
                 {
-                    l_optimisation_flags += "-O2";
+                    l_optimisation_flags += "-O3";
                 }
                 else if (p_compiler_type == CompilerType.MSVC)
                 {
@@ -113,7 +123,7 @@ class CompileTypeProvider
 
     public static include_dir(p_compiler_type: CompilerType, p_dir: string): string
     {
-        if (p_compiler_type == CompilerType.GCC)
+        if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
         {
             return `-I${p_dir}`;
         }
@@ -125,7 +135,7 @@ class CompileTypeProvider
 
     public static compile_obj_flag(p_compiler_type: CompilerType): string
     {
-        if (p_compiler_type == CompilerType.GCC)
+        if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
         {
             return `-c`;
         }
@@ -145,6 +155,10 @@ class CompileTypeProvider
         {
             return `lib /nologo`;
         }
+        else if (p_compiler_type == CompilerType.CLANG)
+        {
+            return `rc`;
+        }
     };
 
     public static outfile_gcc(p_file: string): string
@@ -158,7 +172,7 @@ class CompileTypeProvider
 
     public static outfile(p_compile_type: CompilerType, p_file: string): string
     {
-        if (p_compile_type == CompilerType.GCC)
+        if (p_compile_type == CompilerType.GCC || p_compile_type == CompilerType.CLANG)
         {
             return this.outfile_gcc(p_file);
         }
@@ -287,7 +301,7 @@ class CommandConfiguration
                 {
                     l_linked_libs += ` ${path.join(build_directory, _linked_lib.name)}_${_linked_lib.build_type}.lib `;
                 }
-                else if (p_compiler_type == CompilerType.GCC)
+                else if (p_compiler_type == CompilerType.GCC || p_compiler_type == CompilerType.CLANG)
                 {
                     l_linked_libs += ` -L${build_directory} -l${_linked_lib.name}_${_linked_lib.build_type} `;
                 }

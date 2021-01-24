@@ -214,9 +214,10 @@ namespace v2
 
 	inline void SceneTree::clear_nodes_state()
 	{
-		tree_traverse2_begin(Node, Foreach)
-			p_node.Element->state.haschanged_thisframe = false;
-		tree_traverse2_end(&this->node_tree, 0, Foreach)
+		this->node_tree.traverse3(tk_b(NTreeNode, 0),
+			[](const NodeEntry& p_node) { p_node.Element->state.haschanged_thisframe = false;
+			}
+		);
 	};
 
 	inline Token(Node) SceneTree::allocate_node(const transform& p_initial_local_transform, const Token(Node) p_parent)
@@ -238,9 +239,11 @@ namespace v2
 
 	inline void SceneTree::mark_node_for_recalculation_recursive(const NodeEntry& p_node)
 	{
-		tree_traverse2_begin(Node, Foreach)
-			p_node.Element->mark_for_recaluclation();
-		tree_traverse2_end(&this->node_tree, tk_v(p_node.Node->index), Foreach)
+		this->node_tree.traverse3(tk_bf(NTreeNode, p_node.Node->index),
+			[](const NodeEntry& p_node) {
+				p_node.Element->mark_for_recaluclation();
+			}
+		);
 	};
 
 	inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
@@ -362,18 +365,18 @@ namespace v2
 		this->tree.node_tree.make_node_orphan(l_node_copy);
 		this->orphan_nodes.push_back_element(tk_bf(Node, p_node.Node->index));
 
-		tree_traverse2_stateful_begin(Node, Scene * thiz, GetAllNodes)
-		{
-			thiz->node_that_will_be_destroyed.push_back_element(tk_bf(Node, p_node.Node->index));
+		this->tree.node_tree.traverse3(tk_bf(NTreeNode, p_node.Node->index),
+			[this](const NodeEntry& p_tree_node) {
+				this->node_that_will_be_destroyed.push_back_element(tk_bf(Node, p_tree_node.Node->index));
 
-			Slice<NodeComponent> l_node_component_tokens = thiz->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node.Node->index));
-			for (loop(i, 0, l_node_component_tokens.Size))
-			{
-				thiz->component_removed_events.push_back_element(ComponentRemovedEvent::build(tk_bf(Node, p_node.Node->index), l_node_component_tokens.get(i)));
+				Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_tree_node.Node->index));
+				for (loop(i, 0, l_node_component_tokens.Size))
+				{
+					this->component_removed_events.push_back_element(ComponentRemovedEvent::build(tk_bf(Node, p_tree_node.Node->index), l_node_component_tokens.get(i)));
+				}
+				this->node_to_components.release_vector(tk_bf(Slice<NodeComponent>, p_tree_node.Node->index));
 			}
-			thiz->node_to_components.release_vector(tk_bf(Slice<NodeComponent>, p_node.Node->index));
-		}
-		tree_traverse2_stateful_end(&this->tree.node_tree, tk_v(p_node.Node->index), this, GetAllNodes)
+		);
 	};
 
 	inline void Scene::add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component)
@@ -409,7 +412,10 @@ namespace v2
 		return this->get_node_component_by_type(p_node, ComponentType::Type);
 	};
 
-
+	inline Slice<NodeComponent> Scene::get_node_components(const Token(Node) p_node)
+	{
+		return this->node_to_components.get_vector(tk_bf(Slice<NodeComponent>, p_node));
+	};
 
 	inline void Scene::remove_node_component(const Token(Node) p_node, const component_t p_component_type)
 	{

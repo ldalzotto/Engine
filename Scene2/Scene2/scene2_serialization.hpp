@@ -100,53 +100,48 @@ namespace v2
 
 		/*
 			Insert the SceneAsset tree to the p_target_scene at the p_parent Node;
-			Component ressource allocation is ensured by calling ComponentAllocatorObj.allocate_component_resource.
+			Component ressource allocation is ensured by calling the ComponentResourceAllocatorFunc.
+			
+			# token_t ComponentResourceAllocatorFunc(const SceneAssetComponent& p_asset_component);
 		*/
-		template<class ComponentResourceAllocatorObj>
-		inline void merge_to_scene_stateful(Scene* p_target_scene, const Token(Node) p_parent, ComponentResourceAllocatorObj& p_component_resource_allocator)
+		template<class ComponentResourceAllocatorFunc>
+		inline void merge_to_scene(Scene* p_target_scene, const Token(Node) p_parent, const ComponentResourceAllocatorFunc& p_component_resource_allocator)
 		{
-			Span<Token(Node)> l_allocated_nodes = Span<Token(Node)>::allocate(this->nodes.Indices.get_size());
+			this->nodes.copy_and_map_to(tk_b(NTreeNode, 0), p_parent,
+				[&](const NTree<transform>::Resolve& p_source_node, const Token(Node) p_to_parent) {
+					Token(Node) l_allocated_node = p_target_scene->add_node(*p_source_node.Element, p_to_parent);
 
-			tree_traverse2_stateful_begin(transform, SceneAsset * thiz; Scene * p_target_scene; Span<Token(Node)> *p_allocated_nodes; Token(Node) p_scene_parent; ComponentResourceAllocatorObj * p_component_resource_allocator_2, ForeachObj);
-			{
-				Token(Node) l_allocated_node = merge_to_scene_²_allocate_node(p_node, p_target_scene, p_scene_parent, p_allocated_nodes);
-				merge_to_scene_²_allocate_components_from_sceneassetnode_stateful(thiz, p_node, p_target_scene, l_allocated_node, this->p_component_resource_allocator_2);
-			}
-			tree_traverse2_stateful_end(&this->nodes, 0, this COMA p_target_scene COMA & l_allocated_nodes COMA p_parent COMA & p_component_resource_allocator, ForeachObj);
-
-			l_allocated_nodes.free();
+					Slice<Token(SliceIndex)> l_components = this->get_components(p_source_node);
+					for (loop(i, 0, l_components.Size))
+					{
+						SceneAssetComponent l_scene_asset_component = this->get_component(l_components.get(i));
+						p_target_scene->add_node_component_by_value(l_allocated_node, NodeComponent::build(l_scene_asset_component.type,
+							p_component_resource_allocator(l_scene_asset_component)
+						));
+					}
+					return l_allocated_node;
+				}
+			);
 		};
 
-	private:
-
-		inline static Token(Node) merge_to_scene_²_allocate_node(const NTree<transform>::Resolve& p_scene_asset_node, Scene* p_target_scene, const Token(Node) p_attach_root_node, Span<Token(Node)>* in_out_already_allocated_nodes)
+		/*
+			The inverse of 
+		*/
+		template<class ComponentResourceDeconstrcutorFunc>
+		inline void scene_merged_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
 		{
-			Token(Node) l_allocated_node;
-			if (p_scene_asset_node.has_parent())
-			{
-				l_allocated_node = p_target_scene->add_node(*p_scene_asset_node.Element, in_out_already_allocated_nodes->get(tk_v(p_scene_asset_node.Node->parent)));
-			}
-			else
-			{
-				l_allocated_node = p_target_scene->add_node(*p_scene_asset_node.Element, p_attach_root_node);
-			}
-
-			in_out_already_allocated_nodes->get(tk_v(p_scene_asset_node.Node->index)) = l_allocated_node;
-			return l_allocated_node;
-		};
-
-		template<class ComponentResourceAllocatorObj>
-		inline static void merge_to_scene_²_allocate_components_from_sceneassetnode_stateful(
-			SceneAsset* thiz, const NTree<transform>::Resolve& p_scene_asset_node, Scene* p_target_scene, const Token(Node) p_target_node, ComponentResourceAllocatorObj* p_component_resource_allocator)
-		{
-			Slice<Token(SliceIndex)> l_components = thiz->get_components(p_scene_asset_node);
-			for (loop(i, 0, l_components.Size))
-			{
-				SceneAssetComponent l_scene_asset_component = thiz->get_component(l_components.get(i));
-				p_target_scene->add_node_component_by_value(p_target_node, NodeComponent::build(l_scene_asset_component.type,
-					p_component_resource_allocator->allocate_component_resource(l_scene_asset_component)
-				));
-			}
+			p_scene->tree.node_tree.copy_and_map_to(tk_bf(NTreeNode, p_start_node_included), tk_b(transform, 0),
+				[&](const NodeEntry& p_scene_node, const Token(transform) p_parent) {
+					Token(transform) l_allocated_node = this->add_node(p_scene_node.Element->local_transform, p_parent);
+					Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, p_scene_node.Node->index));
+					for (loop(i, 0, l_components.Size))
+					{
+						NodeComponent& l_component = l_components.get(i);
+						this->add_component(l_allocated_node, l_component.type, p_component_resrouce_deconstructor(l_component));
+					}
+					return l_allocated_node;
+				}
+			);
 		};
 	};
 
@@ -304,10 +299,8 @@ namespace v2
 
 	struct Scene_TO_SceneAsset
 	{
-		inline static void convert(Scene* p_scene, const Token(Node) p_start_node_included, SceneAsset* in_out_SceneAsset)
-		{
-			//TODO
-		};
+
+
 	};
 
 };
