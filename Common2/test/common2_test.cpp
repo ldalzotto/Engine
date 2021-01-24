@@ -698,37 +698,6 @@ namespace v2
 		}
 
 		l_uimax_tree.free();
-		l_uimax_tree = NTree<uimax>::allocate_default();
-
-		// copy_and_map_to
-		{
-			Token(uimax) l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
-			l_uimax_tree.push_value(cast(uimax, 1), l_root);
-			Token(uimax) l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-			Token(uimax) l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
-
-			NTree<int8> l_int8_tree = NTree<int8>::allocate_default();
-			l_int8_tree.push_root_value(0);
-
-			l_uimax_tree.copy_and_map_to(tk_b(NTreeNode, 0), tk_b(int8, 0),
-				[&l_int8_tree](const NTree<uimax>::Resolve& p_node, const Token(int8) p_parent) {
-					return l_int8_tree.push_value((*p_node.Element >= 2), p_parent);
-				}
-			);
-
-			Vector<NTree<int8>::Resolve> l_int8_nodes = Vector<NTree<int8>::Resolve>::allocate(0);
-			l_int8_tree.get_nodes(tk_b(NTreeNode, 0), &l_int8_nodes);
-			assert_true(l_int8_nodes.Size == 5);
-			assert_true(l_int8_tree.get_value(tk_b(int8, 1)) == 0);
-			assert_true(l_int8_tree.get_value(tk_b(int8, 2)) == 0);
-			assert_true(l_int8_tree.get_value(tk_b(int8, 3)) == 1);
-			assert_true(l_int8_tree.get_value(tk_b(int8, 4)) == 1);
-
-			l_int8_nodes.free();
-			l_int8_tree.free();
-		}
-
-		l_uimax_tree.free();
 	};
 
 	inline void assert_heap_integrity(Heap* p_heap)

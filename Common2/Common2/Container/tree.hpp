@@ -149,37 +149,16 @@ namespace v2
 			};
 		};
 
-		/*
-			Copy the Tree hierachy from p_start_node to an unknown data structure.
-
-			type TargetTreeTokenType : Is the token type of the target data structure.
-			type NodeAdderFunc : Is called to custom the insertion of the Nodes in the target data structure.
-
-			# TargetTreeTokenType NodeAdderFunc(const Resolve& p_source_node, TargetTreeTokenType p_parent);
-		*/
-		template<class TargetTreeTokenType, class NodeAdderFunc>
-		inline void copy_and_map_to(const Token(NTreeNode) p_start_node, const TargetTreeTokenType p_to_parent_node,
-			const NodeAdderFunc& p_node_adder_func)
+		template<class ForEachFunc>
+		inline void traverse3_excluded(const Token(NTreeNode) p_current_node, const ForEachFunc& p_foreach_func)
 		{
-			Span<TargetTreeTokenType> l_allocated_nodes = Span<TargetTreeTokenType>::allocate(this->Indices.get_size());
+			Resolve l_node = this->get(tk_bf(ElementType, p_current_node));
+			Slice<Token(NTreeNode)> l_childs = this->get_childs(l_node.Node->childs);
+			for (uimax i = 0; i < l_childs.Size; i++)
 			{
-				this->traverse3(p_start_node, [&](const Resolve& p_node) {
-					TargetTreeTokenType l_allocated_node;
-					if (p_node.has_parent())
-					{
-						l_allocated_node = p_node_adder_func(p_node, l_allocated_nodes.get(tk_v(p_node.Node->parent)));
-					}
-					else
-					{
-						l_allocated_node = p_node_adder_func(p_node, p_to_parent_node);
-					}
-					l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
-					}
-				);
-			}
-			l_allocated_nodes.free();
+				this->traverse3(l_childs.get(i), p_foreach_func);
+			};
 		};
-
 
 		inline void get_nodes(const Token(NTreeNode) p_start_node_included, Vector<Resolve>* in_out_nodes)
 		{
@@ -258,5 +237,4 @@ namespace v2
 		};
 
 	};
-
 }

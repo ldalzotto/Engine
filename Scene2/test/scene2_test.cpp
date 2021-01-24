@@ -513,7 +513,7 @@ namespace v2
 
 		SceneAsset l_scene_asset = SceneAsset::allocate_default();
 
-		l_scene_asset.scene_merged_to(&l_scene, tk_b(Node, 0), 
+		l_scene_asset.scene_copied_to(&l_scene, tk_b(Node, 0), 
 			[&l_scene_asset](const NodeComponent& p_node_component) {
 				return Slice<int8>{1000, (int8*)&l_scene_asset};
 			}

@@ -101,47 +101,67 @@ namespace v2
 		/*
 			Insert the SceneAsset tree to the p_target_scene at the p_parent Node;
 			Component ressource allocation is ensured by calling the ComponentResourceAllocatorFunc.
-			
+
 			# token_t ComponentResourceAllocatorFunc(const SceneAssetComponent& p_asset_component);
 		*/
 		template<class ComponentResourceAllocatorFunc>
 		inline void merge_to_scene(Scene* p_target_scene, const Token(Node) p_parent, const ComponentResourceAllocatorFunc& p_component_resource_allocator)
 		{
-			this->nodes.copy_and_map_to(tk_b(NTreeNode, 0), p_parent,
-				[&](const NTree<transform>::Resolve& p_source_node, const Token(Node) p_to_parent) {
-					Token(Node) l_allocated_node = p_target_scene->add_node(*p_source_node.Element, p_to_parent);
+			Span<Token(Node)> l_allocated_nodes = Span<Token(Node)>::allocate(this->nodes.Indices.get_size());
+			{
+				this->nodes.traverse3(tk_b(NTreeNode, 0), [&](const NTree<transform>::Resolve& p_node) {
+					Token(Node) l_parent;
+					if (p_node.has_parent())
+					{
+						l_parent = l_allocated_nodes.get(tk_v(p_node.Node->parent));
+					}
+					else
+					{
+						l_parent = p_parent;
+					}
 
-					Slice<Token(SliceIndex)> l_components = this->get_components(p_source_node);
+					Token(Node) l_allocated_node = p_target_scene->add_node(*p_node.Element, l_parent);
+					l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
+
+					Slice<Token(SliceIndex)> l_components = this->get_components(p_node);
 					for (loop(i, 0, l_components.Size))
 					{
 						SceneAssetComponent l_scene_asset_component = this->get_component(l_components.get(i));
-						p_target_scene->add_node_component_by_value(l_allocated_node, NodeComponent::build(l_scene_asset_component.type,
-							p_component_resource_allocator(l_scene_asset_component)
-						));
+						p_target_scene->add_node_component_by_value(l_allocated_node, 
+							NodeComponent::build(l_scene_asset_component.type, p_component_resource_allocator(l_scene_asset_component)));;
 					}
-					return l_allocated_node;
-				}
-			);
+					
+					}
+				);
+			}
+			l_allocated_nodes.free();
 		};
 
 		/*
-			The inverse of 
+			The inverse of
 		*/
 		template<class ComponentResourceDeconstrcutorFunc>
-		inline void scene_merged_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
+		inline void scene_copied_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
 		{
-			p_scene->tree.node_tree.copy_and_map_to(tk_bf(NTreeNode, p_start_node_included), tk_b(transform, 0),
-				[&](const NodeEntry& p_scene_node, const Token(transform) p_parent) {
-					Token(transform) l_allocated_node = this->add_node(p_scene_node.Element->local_transform, p_parent);
-					Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, p_scene_node.Node->index));
-					for (loop(i, 0, l_components.Size))
-					{
-						NodeComponent& l_component = l_components.get(i);
-						this->add_component(l_allocated_node, l_component.type, p_component_resrouce_deconstructor(l_component));
-					}
-					return l_allocated_node;
+			Span<Token(transform)> l_allocated_nodes = Span<Token(transform)>::allocate(p_scene->tree.node_tree.Indices.get_size());
+
+			NodeEntry& l_node = p_scene->tree.node_tree.get(tk_b(Node, 0));
+			l_allocated_nodes.get(tk_v(l_node.Node->index)) = this->add_node_without_parent(l_node.Element->local_transform);
+
+			p_scene->tree.node_tree.traverse3_excluded(tk_b(NTreeNode, 0), [&](const NTree<Node>::Resolve& p_node) {
+				Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(tk_v(p_node.Node->parent)));
+				l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
+
+				Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, p_node.Node->index));
+				for (loop(i, 0, l_components.Size))
+				{
+					p_component_resrouce_deconstructor(l_components.get(i));
+				}
+
 				}
 			);
+
+			l_allocated_nodes.free();
 		};
 	};
 
