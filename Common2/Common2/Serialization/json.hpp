@@ -209,7 +209,7 @@ namespace v2
 
 	private:
 
-		
+
 
 		inline FieldNode* get_current_field()
 		{
@@ -332,6 +332,8 @@ OutValueTypedVariable = FromString((DeserializerVariable)->get_currentfield().va
 OutValueTypedVariable = FromSerializer(TmpDeserializerVariable);
 
 
+
+
 #if CONTAINER_BOUND_TEST
 
 #define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) \
@@ -340,7 +342,7 @@ JSONUtil::validate_json_type(JSONDeserializer::get_json_type(DeserializerVariabl
 #else
 
 #define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) \
-JSONUtil::get_json_type(DeserializerVariable);
+JSONDeserializer::get_json_type(DeserializerVariable);
 
 #endif
 

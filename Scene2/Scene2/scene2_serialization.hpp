@@ -151,6 +151,9 @@ namespace v2
 		/*
 			The inverse of merge_to_scene.
 			Copy the scene subtree defined by the p_start_node_included to a fresh new SceneAsset.
+			The ComponentResourceDeconstrcutorFunc consists of querying the allocated resource te rebuild the ComponentAsset.
+
+			# void ComponentResourceDeconstrcutorFunc(const NodeComponent& p_node_component, const AddComponentAssetToSceneAsset& p_add_component_callback);
 		*/
 		template<class ComponentResourceDeconstrcutorFunc>
 		inline void scene_copied_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)

@@ -661,33 +661,53 @@ struct Collision2
 		this->collision_detection_step.step();
 	};
 
-	struct ExternalInterface
+	inline Token(BoxCollider) allocate_boxcollider(const aabb& p_local_box)
 	{
-		inline static Token(BoxCollider) allocate_boxcollider(Collision2* thiz, const aabb& p_local_box)
-		{
-			return thiz->collision_heap.allocate_boxcollider(BoxCollider::build_from_local_aabb(true, p_local_box));
-		};
+		return this->collision_heap.allocate_boxcollider(BoxCollider::build_from_local_aabb(true, p_local_box));
+	};
 
-		inline static void on_collider_moved(Collision2* thiz, const Token(BoxCollider) p_moved_collider, const transform_pa& p_world_transform)
-		{
-			thiz->collision_heap.push_boxcollider_transform(p_moved_collider, p_world_transform);
-			thiz->collision_detection_step.push_collider_for_process(p_moved_collider);
-		};
+	inline void on_collider_moved(const Token(BoxCollider) p_moved_collider, const transform_pa& p_world_transform)
+	{
+		this->collision_heap.push_boxcollider_transform(p_moved_collider, p_world_transform);
+		this->collision_detection_step.push_collider_for_process(p_moved_collider);
+	};
 
-		inline static void free_collider(Collision2* thiz, const Token(BoxCollider) p_moved_collider)
+	inline void free_collider(const Token(BoxCollider) p_moved_collider)
+	{
+		this->collision_detection_step.push_collider_for_deletion(p_moved_collider);
+	};
+
+	inline BoxCollider get_box_collider_copy(const Token(BoxCollider) p_box_collider)
+	{
+		return this->collision_heap.box_colliders.get(p_box_collider);
+	};
+
+	inline int8 is_collider_queued_for_detection(const Token(BoxCollider) p_box_collider)
+	{
+		for (loop(i, 0, this->collision_detection_step.in_colliders_processed.Size))
 		{
-			thiz->collision_detection_step.push_collider_for_deletion(p_moved_collider);
-		};
+			if (tk_v(this->collision_detection_step.in_colliders_processed.get(i)) == tk_v(p_box_collider))
+			{
+				return 1;
+			}
+		}
+		return 0;
+	};
 
 
-		inline static Token(ColliderDetector) allocate_colliderdetector(Collision2* thiz, const Token(BoxCollider) p_box_collider)
-		{
-			return thiz->collision_heap.allocate_colliderdetector(p_box_collider);
-		};
+	inline Slice<TriggerEvent> get_collision_events(const Token(ColliderDetector) p_collider_detector)
+	{
+		return this->collision_heap.get_triggerevents_from_colliderdetector(p_collider_detector);
+	};
 
-		inline static void free_colliderdetector(Collision2* thiz, const  Token(BoxCollider) p_collider, const Token(ColliderDetector) p_collider_detector)
-		{
-			thiz->collision_detection_step.push_collider_detector_for_deletion(p_collider, p_collider_detector);
-		};
+
+	inline Token(ColliderDetector) allocate_colliderdetector(const Token(BoxCollider) p_box_collider)
+	{
+		return this->collision_heap.allocate_colliderdetector(p_box_collider);
+	};
+
+	inline void free_colliderdetector(const  Token(BoxCollider) p_collider, const Token(ColliderDetector) p_collider_detector)
+	{
+		this->collision_detection_step.push_collider_detector_for_deletion(p_collider, p_collider_detector);
 	};
 };

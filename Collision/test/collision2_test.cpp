@@ -1,5 +1,9 @@
 #include "Collision/Collision.hpp"
 
+
+// #define test_allocate_boxcollider() 
+
+
 /*
 	3 BoxColliders that intersect each other : (1,2,3)
 	ColliderDetector attached to 1
@@ -13,8 +17,8 @@
 */
 inline void collision_test_01()
 {
-	CollisionHandle l_collision;
-	l_collision.allocate();
+	Collision2* l_collision;
+	Collision2::allocate(&l_collision);
 
 	aabb l_unit_aabb = aabb{ v3f{0.0f, 0.0f, 0.0f}, v3f{0.5f, 0.5f, 0.5f} };
 	transform_pa l_box_collider_1_transform, l_box_collider_2_transform, l_box_collider_3_transform;
@@ -24,77 +28,75 @@ inline void collision_test_01()
 		l_box_collider_3_transform = transform_pa{ v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis() };
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle;
-	{
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-	}
+	Token(ColliderDetector) l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
 	l_box_collider_1_transform = transform_pa{ v3f{1000000.0f, 0.0f, 0.0f}, quat_const::IDENTITY.to_axis() };
-	l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
+	l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_box_collider_1.free(l_collision);
-	l_box_collider_2.free(l_collision);
-	l_box_collider_3.free(l_collision);
+	l_collision->free_collider(l_box_collider_1);
+	l_collision->free_collider(l_box_collider_2);
+	l_collision->free_collider(l_box_collider_3);
 
-	l_collision.free();
+	l_collision->free();
+
 }
 
 /*
@@ -112,8 +114,7 @@ inline void collision_test_01()
 */
 inline void collision_test_02()
 {
-	CollisionHandle l_collision;
-	l_collision.allocate();
+	Collision2* l_collision; Collision2::allocate(&l_collision);
 
 	aabb l_unit_aabb = aabb{ v3f{ 0.0f, 0.0f, 0.0f }, v3f{ 0.5f, 0.5f, 0.5f } };
 	transform_pa l_box_collider_1_transform, l_box_collider_2_transform, l_box_collider_3_transform;
@@ -123,82 +124,84 @@ inline void collision_test_02()
 		l_box_collider_3_transform = transform_pa{ v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis() };
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle;
 	{
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
 	}
 
-	l_collision.step();
+	l_collision->step();
 
-	l_collision.step();
+	l_collision->step();
 
 	l_box_collider_2_transform = transform_pa{ v3f{1000000.0f, 0.0f, 0.0f}, quat_const::IDENTITY.to_axis() };
-	l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
+	l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_box_collider_3.free(l_collision);
+	l_collision->free_collider(l_box_collider_3);
 
 	//Taking deletion into account
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 
-	l_box_collider_1.free(l_collision);
-	l_box_collider_2.free(l_collision);
+	l_collision->free_collider(l_box_collider_1);
+	l_collision->free_collider(l_box_collider_2);
 
-	l_collision.free();
+	l_collision->free();
 }
+
+
 
 /*
 	3 BoxColliders that intersect each other : (1,2,3).
@@ -220,8 +223,7 @@ inline void collision_test_02()
 */
 inline void collision_test_03()
 {
-	CollisionHandle l_collision;
-	l_collision.allocate();
+	Collision2* l_collision; Collision2::allocate(&l_collision);
 
 	aabb l_unit_aabb = aabb{ v3f{0.0f, 0.0f, 0.0f}, v3f{0.5f, 0.5f, 0.5f} };
 	transform_pa l_box_collider_1_transform, l_box_collider_2_transform, l_box_collider_3_transform;
@@ -231,136 +233,138 @@ inline void collision_test_03()
 		l_box_collider_3_transform = transform_pa{ v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis() };
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
 	{
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);
-		l_box_collider_3_detector_handle.allocate(l_collision, l_box_collider_3);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
+		l_box_collider_2_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_2);
+		l_box_collider_3_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_3);
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_2_events = l_box_collider_2_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_2_events = l_collision->get_collision_events(l_box_collider_2_detector_handle);
 
 		assert_true(l_box_collider_2_events.Size == 2);
 		assert_true(l_box_collider_2_events.get(0).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_2_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_2_events.get(1).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_2_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::TRIGGER_ENTER);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
 	l_box_collider_2_transform = transform_pa{ v3f{1000000.0f, 0.0f, 0.0f}, quat_const::IDENTITY.to_axis() };
-	l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
+	l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 
 		assert_true(l_box_collider_1_events.Size == 2);
 		assert_true(l_box_collider_1_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_1_events.get(0).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(0).other, l_box_collider_2));
 		assert_true(l_box_collider_1_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_1_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_2_events = l_box_collider_2_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_2_events = l_collision->get_collision_events(l_box_collider_2_detector_handle);
 
 		assert_true(l_box_collider_2_events.Size == 2);
 		assert_true(l_box_collider_2_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_2_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_2_events.get(1).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_2_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
-	l_box_collider_1.free(l_collision);
+	l_collision->free_collider( l_box_collider_1);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_2_events = l_box_collider_2_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_2_events = l_collision->get_collision_events(l_box_collider_2_detector_handle);
 
 		assert_true(l_box_collider_2_events.Size == 2);
 		assert_true(l_box_collider_2_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_2_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_2_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_2_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_2_events = l_box_collider_2_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_2_events = l_collision->get_collision_events(l_box_collider_2_detector_handle);
 
 		assert_true(l_box_collider_2_events.Size == 2);
 		assert_true(l_box_collider_2_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_2_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_2_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_2_events.get(1).other.handle == l_box_collider_3.handle);
+		assert_true(tk_eq(l_box_collider_2_events.get(1).other, l_box_collider_3));
 	}
 	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::NONE);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
-	l_box_collider_2.free(l_collision);
-	l_box_collider_3.free(l_collision);
+	l_collision->free_collider(l_box_collider_2);
+	l_collision->free_collider(l_box_collider_3);
 
-	l_collision.free();
+	l_collision->free();
 }
+
+
 
 /*
 	3 BoxColliders that intersect each other : (1,2,3).
@@ -374,8 +378,8 @@ inline void collision_test_03()
 */
 inline void collision_test_04()
 {
-	CollisionHandle l_collision;
-	l_collision.allocate();
+	Collision2* l_collision;
+	Collision2::allocate(&l_collision);
 
 	aabb l_unit_aabb = aabb{ v3f{0.0f, 0.0f, 0.0f}, v3f{0.5f, 0.5f, 0.5f} };
 	transform_pa l_box_collider_1_transform, l_box_collider_2_transform, l_box_collider_3_transform;
@@ -385,39 +389,39 @@ inline void collision_test_04()
 		l_box_collider_3_transform = transform_pa{ v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis() };
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
 	{
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);
-		l_box_collider_3_detector_handle.allocate(l_collision, l_box_collider_3);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
+		l_box_collider_2_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_2);
+		l_box_collider_3_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_3);
 	}
 
-	l_collision.step();
+	l_collision->step();
 
-	l_box_collider_1.free(l_collision);
-	l_box_collider_2_detector_handle.free(l_collision);
+	l_collision->free_collider(l_box_collider_1);
+	l_collision->free_colliderdetector(l_box_collider_2, l_box_collider_2_detector_handle);
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::TRIGGER_EXIT);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
 
@@ -425,28 +429,28 @@ inline void collision_test_04()
 	{
 		l_box_collider_4_transform = transform_pa{ v3f{100000.0f, 100000.0f, 100000.0f}, quat_const::IDENTITY.to_axis() };
 	}
-	BoxColliderHandle l_box_collider_4;
-	l_box_collider_4.allocate(l_collision, l_unit_aabb);
+	Token(BoxCollider) l_box_collider_4;
+	l_box_collider_4 =  l_collision->allocate_boxcollider(l_unit_aabb);
 
-	l_collision.step();
+	l_collision->step();
 
 
-	{
-		Slice<ITriggerEvent> l_box_collider_3_events = l_box_collider_3_detector_handle.get_collision_events(l_collision);
+	{		
+		Slice<TriggerEvent> l_box_collider_3_events = l_collision->get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
 		assert_true(l_box_collider_3_events.get(0).state == Trigger::State::NONE);
-		assert_true(l_box_collider_3_events.get(0).other.handle == l_box_collider_1.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(0).other, l_box_collider_1));
 		assert_true(l_box_collider_3_events.get(1).state == Trigger::State::TRIGGER_STAY);
-		assert_true(l_box_collider_3_events.get(1).other.handle == l_box_collider_2.handle);
+		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
 
-	l_box_collider_2.free(l_collision);
-	l_box_collider_3.free(l_collision);
-	l_box_collider_4.free(l_collision);
+	l_collision->free_collider(l_box_collider_2);
+	l_collision->free_collider(l_box_collider_3);
+	l_collision->free_collider(l_box_collider_4);
 
-	l_collision.free();
+	l_collision->free();
 }
 
 /*
@@ -460,8 +464,8 @@ inline void collision_test_04()
 */
 inline void collision_test_05()
 {
-	CollisionHandle l_collision;
-	l_collision.allocate();
+	Collision2* l_collision;
+	Collision2::allocate(&l_collision);
 
 	aabb l_unit_aabb = aabb{ v3f{0.0f, 0.0f, 0.0f}, v3f{0.5f, 0.5f, 0.5f} };
 	transform_pa l_box_collider_1_transform, l_box_collider_2_transform, l_box_collider_3_transform;
@@ -471,70 +475,69 @@ inline void collision_test_05()
 		l_box_collider_3_transform = transform_pa{ v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis() };
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
 	{
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);
-		l_box_collider_3_detector_handle.allocate(l_collision, l_box_collider_3);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
+		l_box_collider_2_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_2);
+		l_box_collider_3_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_3);
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		l_box_collider_1.free(l_collision);
-		l_box_collider_2.free(l_collision);
-		l_box_collider_3.free(l_collision);
+		l_collision->free_collider(l_box_collider_1);
+		l_collision->free_collider(l_box_collider_2);
+		l_collision->free_collider(l_box_collider_3);
 
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_2.allocate(l_collision, l_unit_aabb);
-		l_box_collider_3.allocate(l_collision, l_unit_aabb);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_2 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_3 = l_collision->allocate_boxcollider(l_unit_aabb);
 
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);
-		l_box_collider_3_detector_handle.allocate(l_collision, l_box_collider_3);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
+		l_box_collider_2_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_2);
+		l_box_collider_3_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_3);
 
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
-		l_box_collider_2.on_collider_moved(l_collision, l_box_collider_2_transform);
-		l_box_collider_3.on_collider_moved(l_collision, l_box_collider_3_transform);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
+		l_collision->on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
+		l_collision->on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 
-		l_box_collider_1.free(l_collision);
-		l_box_collider_2.free(l_collision);
-		l_box_collider_3.free(l_collision);
+		l_collision->free_collider(l_box_collider_1);
+		l_collision->free_collider(l_box_collider_2);
+		l_collision->free_collider(l_box_collider_3);
 
-		l_box_collider_1.allocate(l_collision, l_unit_aabb);
-		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
-		l_box_collider_1.on_collider_moved(l_collision, l_box_collider_1_transform);
+		l_box_collider_1 = l_collision->allocate_boxcollider(l_unit_aabb);
+		l_box_collider_1_detector_handle = l_collision->allocate_colliderdetector(l_box_collider_1);
+		l_collision->on_collider_moved(l_box_collider_1, l_box_collider_1_transform);
 	}
 
-	l_collision.step();
+	l_collision->step();
 
 	{
-		Slice<ITriggerEvent> l_box_collider_1_events = l_box_collider_1_detector_handle.get_collision_events(l_collision);
+		Slice<TriggerEvent> l_box_collider_1_events = l_collision->get_collision_events(l_box_collider_1_detector_handle);
 		assert_true(l_box_collider_1_events.Size == 0);
 	}
 
 
-	l_box_collider_1.free(l_collision);
+	l_collision->free_collider(l_box_collider_1);
 
-	l_collision.free();
+	l_collision->free();
 }
-
 
 /*
 inline void collision_test_06()
 {
-	CollisionHandle l_collision;
+	Collision2* l_collision;
 	l_collision.allocate();
 
 	aabb l_unit_aabb = aabb(v3f(0.0f, 0.0f, 0.0f), v3f(0.5f, 0.5f, 0.5f));
@@ -545,7 +548,7 @@ inline void collision_test_06()
 		l_box_collider_3_transform = Math::Transform(v3f(0.25f, 0.0f, -0.25f), Math::QuatConst::IDENTITY, Math::VecConst<float32>::ONE);
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
 		l_box_collider_1.allocate(l_collision, &l_unit_aabb);
 		l_box_collider_2.allocate(l_collision, &l_unit_aabb);
@@ -556,7 +559,7 @@ inline void collision_test_06()
 		l_box_collider_3.on_collider_moved(l_collision, &l_box_collider_3_transform, &Math::QuatConst::IDENTITY);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
 	{
 		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
 		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);
@@ -599,7 +602,7 @@ inline void collision_test_06()
 
 inline void collision_test_07()
 {
-	CollisionHandle l_collision;
+	Collision2* l_collision;
 	l_collision.allocate();
 
 	aabb l_unit_aabb = aabb(v3f(0.0f, 0.0f, 0.0f), v3f(0.5f, 0.5f, 0.5f));
@@ -610,7 +613,7 @@ inline void collision_test_07()
 		l_box_collider_3_transform = Math::Transform(v3f(0.25f, 0.0f, -0.25f), Math::QuatConst::IDENTITY, Math::VecConst<float32>::ONE);
 	}
 
-	BoxColliderHandle l_box_collider_1, l_box_collider_2, l_box_collider_3;
+	Token(BoxCollider) l_box_collider_1, l_box_collider_2, l_box_collider_3;
 	{
 		l_box_collider_1.allocate(l_collision, &l_unit_aabb);
 		l_box_collider_2.allocate(l_collision, &l_unit_aabb);
@@ -621,7 +624,7 @@ inline void collision_test_07()
 		l_box_collider_3.on_collider_moved(l_collision, &l_box_collider_3_transform, &Math::QuatConst::IDENTITY);
 	}
 
-	ColliderDetectorHandle l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+	Token(ColliderDetector) l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
 	{
 		l_box_collider_1_detector_handle.allocate(l_collision, l_box_collider_1);
 		l_box_collider_2_detector_handle.allocate(l_collision, l_box_collider_2);

@@ -5,4 +5,3 @@
 
 #include "./collision_definition.hpp"
 #include "./collision_src.hpp"
-#include "./collision_ext.hpp"
