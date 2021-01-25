@@ -3,7 +3,7 @@
 using hash_t = uimax;
 
 // http://www.cse.yorku.ca/~oz/hash.html
-inline uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
+inline constexpr uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
 {
 	hash_t hash = 5381;
 
@@ -56,4 +56,9 @@ inline hash_t HashSlice(const Slice<TYPE>& p_value)
 inline hash_t HashRaw(const int8* p_str)
 {
 	return HashFunctionRaw((int8*)p_str, strlen(p_str));
+};
+
+inline constexpr hash_t HashRaw_constexpr(const int8* p_str)
+{
+	return HashFunctionRaw((int8*)p_str, strlen_constexpr(p_str));
 };

@@ -13,8 +13,8 @@ namespace v2
 		{
 			return SceneAssetComponent{
 				*slice_cast_singleelement<component_t>(p_memory),
-				*slice_cast_singleelement<uimax>(p_memory.slide_rv(sizeof(component_t))),
-				p_memory.slide_rv(sizeof(component_t) + sizeof(uimax))
+				*slice_cast_singleelement<uimax>(p_memory.slide_rv(sizeof(SceneAssetComponent::type))),
+				p_memory.slide_rv(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size))
 			};
 		};
 	};
@@ -127,39 +127,60 @@ namespace v2
 					for (loop(i, 0, l_components.Size))
 					{
 						SceneAssetComponent l_scene_asset_component = this->get_component(l_components.get(i));
-						p_target_scene->add_node_component_by_value(l_allocated_node, 
+						p_target_scene->add_node_component_by_value(l_allocated_node,
 							NodeComponent::build(l_scene_asset_component.type, p_component_resource_allocator(l_scene_asset_component)));;
 					}
-					
-					}
-				);
+
+					});
 			}
 			l_allocated_nodes.free();
 		};
 
+		struct AddComponentAssetToSceneAsset
+		{
+			SceneAsset* thiz;
+			Token(transform) p_scene_asset_node;
+
+			template<class ComponentType>
+			inline void add(const ComponentType& p_component) const
+			{
+				thiz->add_component_typed(p_scene_asset_node, p_component);
+			};
+		};
+
 		/*
-			The inverse of
+			The inverse of merge_to_scene.
+			Copy the scene subtree defined by the p_start_node_included to a fresh new SceneAsset.
 		*/
 		template<class ComponentResourceDeconstrcutorFunc>
 		inline void scene_copied_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
 		{
 			Span<Token(transform)> l_allocated_nodes = Span<Token(transform)>::allocate(p_scene->tree.node_tree.Indices.get_size());
 
-			NodeEntry& l_node = p_scene->tree.node_tree.get(tk_b(Node, 0));
-			l_allocated_nodes.get(tk_v(l_node.Node->index)) = this->add_node_without_parent(l_node.Element->local_transform);
+			{
+				NodeEntry& l_node = p_scene->tree.node_tree.get(p_start_node_included);
+				Token(transform) l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
+				l_allocated_nodes.get(tk_v(l_node.Node->index)) = l_allocated_node;
+				Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, l_node.Node->index));
+				for (loop(i, 0, l_components.Size))
+				{
+					p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{ this, l_allocated_node });
+				}
 
-			p_scene->tree.node_tree.traverse3_excluded(tk_b(NTreeNode, 0), [&](const NTree<Node>::Resolve& p_node) {
+			}
+
+
+			p_scene->tree.node_tree.traverse3_excluded(tk_bf(NTreeNode, p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
 				Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(tk_v(p_node.Node->parent)));
 				l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
 
 				Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, p_node.Node->index));
 				for (loop(i, 0, l_components.Size))
 				{
-					p_component_resrouce_deconstructor(l_components.get(i));
+					p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{ this, l_allocated_node });
 				}
 
-				}
-			);
+				});
 
 			l_allocated_nodes.free();
 		};
@@ -315,12 +336,6 @@ namespace v2
 			}
 			json_deser_iterate_array_end();
 		};
-	};
-
-	struct Scene_TO_SceneAsset
-	{
-
-
 	};
 
 };

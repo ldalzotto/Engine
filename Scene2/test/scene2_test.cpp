@@ -288,19 +288,17 @@ namespace v2
 
 	struct CameraTestComponent
 	{
-		static const component_t Type;
+		static constexpr component_t Type = HashRaw_constexpr(STR(CameraTestComponent));
 		float i0, i1;
 	};
 
-	const component_t CameraTestComponent::Type = HashRaw(STR(CameraTestComponent));
+
 
 	struct MeshRendererTestComponent
 	{
-		static const component_t Type;
+		static constexpr component_t Type = HashRaw_constexpr(STR(MeshRendererTestComponent));
 		float i0, i1, i2;
 	};
-
-	const component_t MeshRendererTestComponent::Type = HashRaw(STR(MeshRendererTestComponent));
 
 	struct SceneJSONTestAsset
 	{
@@ -308,7 +306,9 @@ namespace v2
 
 		inline static void push_json_to_sceneassettree(JSONDeserializer& p_component_object, const hash_t p_type, const Token(transform) p_node, SceneAsset* in_out_SceneAssetTree)
 		{
-			if (p_type == CameraTestComponent::Type)
+			switch (p_type)
+			{
+			case CameraTestComponent::Type:
 			{
 				CameraTestComponent l_component_test;
 
@@ -320,7 +320,8 @@ namespace v2
 
 				in_out_SceneAssetTree->add_component_typed(p_node, l_component_test);
 			}
-			else if (p_type == MeshRendererTestComponent::Type)
+			break;
+			case MeshRendererTestComponent::Type:
 			{
 				MeshRendererTestComponent l_mesh_renderer_test;
 
@@ -334,6 +335,8 @@ namespace v2
 				l_mesh_renderer_test.i2 = FromString::afloat32(p_component_object.get_currentfield().value);
 
 				in_out_SceneAssetTree->add_component_typed(p_node, l_mesh_renderer_test);
+			}
+			break;
 			}
 		};
 	};
@@ -508,22 +511,52 @@ namespace v2
 		Scene l_scene = Scene::allocate_default();
 
 		Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
-		l_scene.add_node(transform{ v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+		Token(Node) l_node_2 = l_scene.add_node(transform{ v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
 		Token(Node) l_node_3 = l_scene.add_node(transform{ v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE }, l_node_1);
+
+		l_scene.add_node_component_typed<CameraTestComponent>(l_node_1, 0);
+		l_scene.add_node_component_typed<MeshRendererTestComponent>(l_node_1, 1);
+
+		l_scene.add_node_component_typed<CameraTestComponent>(l_node_2, 2);
+		l_scene.add_node_component_typed<MeshRendererTestComponent>(l_node_3, 3);
 
 		SceneAsset l_scene_asset = SceneAsset::allocate_default();
 
-		l_scene_asset.scene_copied_to(&l_scene, tk_b(Node, 0), 
-			[&l_scene_asset](const NodeComponent& p_node_component) {
-				return Slice<int8>{1000, (int8*)&l_scene_asset};
+		l_scene_asset.scene_copied_to(&l_scene, l_node_1,
+			[&l_scene_asset](const NodeComponent& p_node_component, const SceneAsset::AddComponentAssetToSceneAsset& p_add_componentasset_to_sceneasset_callback) {
+				switch (p_node_component.type)
+				{
+				case CameraTestComponent::Type:
+					p_add_componentasset_to_sceneasset_callback.add<CameraTestComponent>(CameraTestComponent{});
+					break;
+				case MeshRendererTestComponent::Type:
+					p_add_componentasset_to_sceneasset_callback.add<MeshRendererTestComponent>(MeshRendererTestComponent{});
+					break;
+				}
 			}
 		);
 
-		//TODO
+		Slice<Token(SliceIndex)> l_1_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 0)));
+		assert_true(l_1_components.Size == 2);
+		assert_true(l_scene_asset.get_component_typed<CameraTestComponent>(l_1_components.get(0))->Type == CameraTestComponent::Type);
+		assert_true(l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_1_components.get(1))->Type == MeshRendererTestComponent::Type);
+
+		Slice<Token(SliceIndex)> l_2_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 1)));
+		assert_true(l_2_components.Size == 1);
+		assert_true(l_scene_asset.get_component_typed<CameraTestComponent>(l_2_components.get(0))->Type == CameraTestComponent::Type);
+
+		Slice<Token(SliceIndex)> l_3_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 2)));
+		assert_true(l_3_components.Size == 1);
+		assert_true(l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_3_components.get(0))->Type == MeshRendererTestComponent::Type);
 
 		l_scene_asset.free();
 
 		l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
+	};
+
+	inline void sceneasset_to_json()
+	{
+
 	};
 }
 
@@ -534,10 +567,7 @@ int main()
 	v2::component_consume();
 	v2::math_hierarchy();
 	v2::json_deserialization();
-	//TODO
-	/*
-		v2::json_serialization();
-	*/
 	v2::scenetreeasset_merge();
 	v2::scene_to_sceneasset();
+	v2::sceneasset_to_json();
 };

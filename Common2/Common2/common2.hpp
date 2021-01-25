@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdlib.h>
-#include <string.h>
+#include <cstring>
 #include <math.h>
 
 #include "./Types/types.hpp"
