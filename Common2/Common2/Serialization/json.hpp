@@ -2,6 +2,27 @@
 
 namespace v2
 {
+
+	namespace JSONUtil
+	{
+		inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int8>& p_awaited_type)
+		{
+#if CONTAINER_BOUND_TEST
+			assert_true(p_type.compare(p_awaited_type));
+#endif
+			return p_type;
+		};
+
+		inline void remove_spaces(String& p_source)
+		{
+			p_source.remove_int8s(' ');
+			p_source.remove_int8s('\n');
+			p_source.remove_int8s('\r');
+			p_source.remove_int8s('\t');
+		};
+	};
+
+
 	struct JSONDeserializer
 	{
 		struct FieldNode
@@ -29,7 +50,7 @@ namespace v2
 
 		inline static JSONDeserializer start(String& p_source)
 		{
-			remove_spaces(p_source);
+			JSONUtil::remove_spaces(p_source);
 			uimax l_start_index;
 			p_source.to_slice().find(slice_int8_build_rawstr("{"), &l_start_index);
 			l_start_index += 1;
@@ -180,14 +201,15 @@ namespace v2
 			return this->stack_fields.get(this->current_field);
 		}
 
-	private:
-		inline static void remove_spaces(String& p_source)
+		inline static const Slice<int8> get_json_type(JSONDeserializer& p_deserializer)
 		{
-			p_source.remove_int8s(' ');
-			p_source.remove_int8s('\n');
-			p_source.remove_int8s('\r');
-			p_source.remove_int8s('\t');
+			p_deserializer.next_field("type");
+			return p_deserializer.get_currentfield().value;
 		};
+
+	private:
+
+		
 
 		inline FieldNode* get_current_field()
 		{
@@ -282,22 +304,6 @@ namespace v2
 
 	};
 
-	struct JSONUtil
-	{
-		inline static const Slice<int8> get_json_type(JSONDeserializer& p_deserializer)
-		{
-			p_deserializer.next_field("type");
-			return p_deserializer.get_currentfield().value;
-		};
-
-		inline static Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int8>& p_awaited_type)
-		{
-#if CONTAINER_BOUND_TEST
-			assert_true(p_type.compare(p_awaited_type));
-#endif
-			return p_type;
-		};
-	};
 
 }
 
@@ -329,7 +335,7 @@ OutValueTypedVariable = FromSerializer(TmpDeserializerVariable);
 #if CONTAINER_BOUND_TEST
 
 #define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) \
-JSONUtil::validate_json_type(JSONUtil::get_json_type(DeserializerVariable), AwaitedTypeSlice);
+JSONUtil::validate_json_type(JSONDeserializer::get_json_type(DeserializerVariable), AwaitedTypeSlice);
 
 #else
 
@@ -337,3 +343,110 @@ JSONUtil::validate_json_type(JSONUtil::get_json_type(DeserializerVariable), Awai
 JSONUtil::get_json_type(DeserializerVariable);
 
 #endif
+
+namespace v2
+{
+	struct JSONSerializer
+	{
+		String output;
+		uimax current_indentation;
+
+		inline static JSONSerializer allocate_default()
+		{
+			return JSONSerializer{
+				String::allocate(0),
+				0
+			};
+		}
+
+		inline void free()
+		{
+			this->output.free();
+			this->current_indentation = 0;
+		}
+
+		inline void start()
+		{
+			this->output.append(slice_int8_build_rawstr("{\n"));
+			this->current_indentation += 1;
+		};
+
+		inline void end()
+		{
+			this->remove_last_coma();
+			this->output.append(slice_int8_build_rawstr("}"));
+			this->current_indentation -= 1;
+		};
+
+		inline void push_field(const Slice<int8>& p_name, const Slice<int8>& p_value)
+		{
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("\""));
+			this->output.append(p_name);
+			this->output.append(slice_int8_build_rawstr("\": \""));
+			this->output.append(p_value);
+			this->output.append(slice_int8_build_rawstr("\",\n"));
+		};
+
+		inline void start_object(const Slice<int8>& p_name)
+		{
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("\""));
+			this->output.append(p_name);
+			this->output.append(slice_int8_build_rawstr("\": {\n"));
+			this->current_indentation += 1;
+		};
+
+		inline void start_object()
+		{
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("{\n"));
+			this->current_indentation += 1;
+		};
+
+		inline void end_object()
+		{
+			this->remove_last_coma();
+			this->current_indentation -= 1;
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("},\n"));
+		};
+
+		inline void start_array(const Slice<int8>& p_name)
+		{
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("\""));
+			this->output.append(p_name);
+			this->output.append(slice_int8_build_rawstr("\": [\n"));
+			this->current_indentation += 1;
+		};
+
+		inline void end_array()
+		{
+			this->remove_last_coma();
+			this->current_indentation -= 1;
+			this->push_indentation();
+			this->output.append(slice_int8_build_rawstr("],\n"));
+		};
+
+	private:
+		void push_indentation()
+		{
+			String l_indentation = String::allocate(this->current_indentation);
+			for (size_t i = 0; i < this->current_indentation; i++)
+			{
+				l_indentation.append(slice_int8_build_rawstr(" "));
+			}
+			this->output.append(l_indentation.to_slice());
+			l_indentation.free();
+		};
+
+		void remove_last_coma()
+		{
+			if (this->output.get(this->output.Memory.Size - 1 - 2) == ',')
+			{
+				this->output.erase_array_at(this->output.Memory.Size - 1 - 2, 1);
+			}
+		};
+	};
+}

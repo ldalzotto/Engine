@@ -59,12 +59,47 @@ namespace v2
 						}
 						return -1.0f * l_return;
 					}
-					
+
 				};
 				*/
 			}
 
 			return 0.0f;
+		};
+	};
+
+	struct ToString
+	{
+		static constexpr uimax float32str_size = ((CHAR_BIT * sizeof(Limits::tol_f) / 3) + 3);
+
+		inline static Slice<int8> afloat32(const float32 p_value, const Slice<int8>& out)
+		{
+#if CONTAINER_BOUND_TEST
+			if (out.Size < float32str_size)
+			{
+				abort();
+			};
+#endif
+
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning (disable:4996)
+#endif
+			int32 l_char_nb = sprintf(out.Begin, float_string_format_str, p_value);
+#ifdef _MSC_VER
+#pragma warning( pop ) 
+#endif
+
+
+			// int32 l_left = (int32)p_value;
+			// int32 l_right = (int32)nearbyintf(((p_value - l_left) * pow(10, Limits::tol_digit_number)));
+			// 
+			// int32 l_char_nb = sprintf(out.Begin, "%i", l_left);
+			// out.Begin[l_char_nb] = '.';
+			// l_char_nb += 1;
+			// l_char_nb += sprintf(out.Begin + l_char_nb, "%i", l_right);
+
+			return Slice<int8>::build_memory_elementnb(out.Begin, l_char_nb);
 		};
 	};
 }

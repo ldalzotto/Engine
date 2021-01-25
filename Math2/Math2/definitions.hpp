@@ -5,7 +5,6 @@ namespace v2
 
 	namespace Math_const
 	{
-		const float32 tol_f = 0.000001f;
 		const float32 zero_f = 0.0f;
 		const float32 one_f = 1.0f;
 		const float32 PI = 3.14159265358979323846f;

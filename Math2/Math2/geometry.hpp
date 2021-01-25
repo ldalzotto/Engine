@@ -173,7 +173,7 @@ inline int8 obb::overlap2(const obb& p_other) const
 		for (uint8 j = 0; j < 3; j++)
 		{
 			l_radii.Points2D[i].Points[j] = this->axis.Points2D[i].dot(p_other.axis.Points2D[j]);
-			l_radii_abs.Points2D[i].Points[j] = fabsf(l_radii.Points2D[i].Points[j]) + v2::Math_const::tol_f;
+			l_radii_abs.Points2D[i].Points[j] = fabsf(l_radii.Points2D[i].Points[j]) + (float32)v2::Limits::tol_f;
 		}
 	}
 

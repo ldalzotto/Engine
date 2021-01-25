@@ -38,6 +38,18 @@ namespace v2
 			this->Memory.insert_array_at(p_elements, p_index);
 		};
 
+		inline void erase_array_at(const uimax p_index, const uimax p_size)
+		{
+#if CONTAINER_BOUND_TEST
+			if ((p_index + p_size) == this->get_size()-1)
+			{
+				abort();
+			}
+#endif
+			this->Memory.erase_array_at(p_index, p_size);	
+		};
+	
+
 		inline int8& get(const uimax p_index)
 		{
 			return this->Memory.get(p_index);

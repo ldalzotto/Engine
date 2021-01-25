@@ -632,218 +632,123 @@ class RecursiveModuleBuilder
     };
 };
 
-
-if (args[0] == "compile_database")
+class ModuleRunner
 {
-    let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
-    let l_build_module_keys = Object.keys(build_modules);
-    for (let i = 0; i < l_build_module_keys.length; i++)
+    public static run_module(p_modue: BuildConfigurationEntry): boolean
     {
-        let l_module: BuildConfigurationEntry = build_modules[l_build_module_keys[i]];
-        if (l_module.module_type == ModuleType.EXECUTABLE || l_module.module_type == ModuleType.STATIC_LIBRARY)
+        let l_command: string = path.join(build_directory, `${p_modue.base_name}_${p_modue.build_type}.exe`);
+        return new Command(l_command, `run : ${p_modue.base_name}`).execute();
+    };
+};
+
+
+let execute_program = function (p_args: string[])
+{
+
+    if (p_args[0] == "compile_database")
+    {
+        let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
+        let l_build_module_keys = Object.keys(build_modules);
+        for (let i = 0; i < l_build_module_keys.length; i++)
         {
-            l_builder.start(l_module.base_name);
-            while (l_builder.step()) { }
-            l_all_commands = l_all_commands.concat(l_builder.generated_commands);
-            l_builder.clear_commands();
+            let l_module: BuildConfigurationEntry = build_modules[l_build_module_keys[i]];
+            if (l_module.module_type == ModuleType.EXECUTABLE || l_module.module_type == ModuleType.STATIC_LIBRARY)
+            {
+                l_builder.start(l_module.base_name);
+                while (l_builder.step()) { }
+                l_all_commands = l_all_commands.concat(l_builder.generated_commands);
+                l_builder.clear_commands();
+            }
         }
-    }
 
 
-    // compile_json_gneeration
-    class CommandGenerationEntry
-    {
-        public directory: string;
-        public command: string;
-        public file: string;
-
-        public constructor(p_directory: string, p_command: string, p_file: string)
+        // compile_json_gneeration
+        class CommandGenerationEntry
         {
-            this.directory = p_directory;
-            this.command = p_command;
-            this.file = p_file;
+            public directory: string;
+            public command: string;
+            public file: string;
+
+            public constructor(p_directory: string, p_command: string, p_file: string)
+            {
+                this.directory = p_directory;
+                this.command = p_command;
+                this.file = p_file;
+            };
         };
-    };
 
 
-    let l_compile_json_generation_file: string = path.join(build_directory, "compile_commands.json");
-    let compile_json_generation = JSON.stringify(
-        l_all_commands.map(_command => new CommandGenerationEntry(build_directory, _command.command, _command.file))
-    );
+        let l_compile_json_generation_file: string = path.join(build_directory, "compile_commands.json");
+        let compile_json_generation = JSON.stringify(
+            l_all_commands.map(_command => new CommandGenerationEntry(build_directory, _command.command, _command.file))
+        );
 
-    fs.writeFileSync(l_compile_json_generation_file, compile_json_generation);
+        fs.writeFileSync(l_compile_json_generation_file, compile_json_generation);
 
-}
-else if (args[0] == "all")
-{
-    let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
-    let l_build_module_keys = Object.keys(build_modules);
-    for (let i = 0; i < l_build_module_keys.length; i++)
+    }
+    else if (p_args[0] == "all")
     {
-        let l_module: BuildConfigurationEntry = build_modules[l_build_module_keys[i]];
-        if (l_module.module_type == ModuleType.EXECUTABLE)
+        let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
+        let l_build_module_keys = Object.keys(build_modules);
+        for (let i = 0; i < l_build_module_keys.length; i++)
         {
-            l_builder.start(l_module.base_name);
-            while (l_builder.step()) { }
-            l_all_commands = l_all_commands.concat(l_builder.generated_commands);
-            l_builder.clear_commands();
+            let l_module: BuildConfigurationEntry = build_modules[l_build_module_keys[i]];
+            if (l_module.module_type == ModuleType.EXECUTABLE)
+            {
+                l_builder.start(l_module.base_name);
+                while (l_builder.step()) { }
+                l_all_commands = l_all_commands.concat(l_builder.generated_commands);
+                l_builder.clear_commands();
+            }
+        }
+
+        for (let i = 0; i < l_all_commands.length; i++)
+        {
+            if (!l_all_commands[i].execute())
+            {
+                break;
+            }
+        };
+    }
+    else if (p_args[0] == "test")
+    {
+        execute_program(["all"]);
+
+
+        let l_build_module_keys = Object.keys(build_modules);
+        for (let i = 0; i < l_build_module_keys.length; i++)
+        {
+            let l_module: BuildConfigurationEntry = build_modules[l_build_module_keys[i]];
+            if (l_module.module_type == ModuleType.EXECUTABLE)
+            {
+                if (l_module.base_name.indexOf("Test") !== -1)
+                {
+                    // run
+                    ModuleRunner.run_module(l_module);
+                }
+            }
         }
     }
-
-    for (let i = 0; i < l_all_commands.length; i++)
+    else
     {
-        if (!l_all_commands[i].execute())
-        {
-            break;
-        }
-    };
-}
-else
-{
-    let asked_builded_module: string = args[0];
-    let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
-    l_builder.start(asked_builded_module);
-    while (l_builder.step()) { }
-    l_all_commands = l_builder.generated_commands;
+        let asked_builded_module: string = p_args[0];
+        let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
+        l_builder.start(asked_builded_module);
+        while (l_builder.step()) { }
+        l_all_commands = l_builder.generated_commands;
 
-    for (let i = 0; i < l_all_commands.length; i++)
-    {
-        if (!l_all_commands[i].execute())
+        for (let i = 0; i < l_all_commands.length; i++)
         {
-            break;
-        }
-    };
+            if (!l_all_commands[i].execute())
+            {
+                break;
+            }
+        };
+    }
+
+
+
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-class InterfaceLib
-{
-    public lib_include_dirs: string[];
-
-    public constructor(p_lib_include_dirs: string[])
-    {
-        this.lib_include_dirs = p_lib_include_dirs;
-    }
-};
-
-class StaticLib
-{
-    public lib_commands: Command[];
-    public lib: string;
-    public lib_include_dirs: string[];
-
-    public constructor(p_lib_commands: Command[], p_lib: string, p_include_dirs: string[])
-    {
-        this.lib_commands = p_lib_commands;
-        this.lib = p_lib;
-        this.lib_include_dirs = p_include_dirs;
-    }
-};
-
-
-
-class CommandBuilder
-{
-    public static build_common2(): InterfaceLib
-    {
-        return new InterfaceLib(build_modules["Common2"].include_directories);
-    };
-
-    public static build_math2(): InterfaceLib
-    {
-        return new InterfaceLib(build_modules["Math2"].include_directories);
-    };
-
-    public static build_Common2Test(p_common2: InterfaceLib): Command
-    {
-        let l_command_config = BuildConfigurationEntry.build_command_configuration(build_modules["Common2Test"], build_configuration.compiler);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_common2.lib_include_dirs);
-        return l_command_config.build_executable_command(build_configuration.compiler, preprocessor_constants);
-    };
-
-    public static build_Math2test(p_common2: InterfaceLib, p_math2: InterfaceLib): Command
-    {
-        let l_command_config = BuildConfigurationEntry.build_command_configuration(build_modules["Math2Test"], build_configuration.compiler);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_common2.lib_include_dirs);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_math2.lib_include_dirs);
-        return l_command_config.build_executable_command(build_configuration.compiler, preprocessor_constants);
-    };
-
-    public static build_Collision(p_common2: InterfaceLib, p_math2: InterfaceLib): StaticLib
-    {
-        let l_commands: Command[] = [];
-        let l_command_config = BuildConfigurationEntry.build_command_configuration(build_modules["Collision"], build_configuration.compiler);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_common2.lib_include_dirs);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_math2.lib_include_dirs);
-        l_command_config.linked_libs.push(l_command_config.name);
-
-        l_commands.push(l_command_config.build_obj_generation_command(build_configuration.compiler, preprocessor_constants));
-        l_commands.push(l_command_config.build_lib_generation_command(build_configuration.compiler, preprocessor_constants));
-        return new StaticLib(l_commands, l_command_config.name, l_command_config.include_directories);
-    };
-
-    public static build_CollisionTest(p_common2: InterfaceLib, p_math2: InterfaceLib, p_collision_link: StaticLib): Command[]
-    {
-        let l_commands: Command[] = p_collision_link.lib_commands;
-        let l_command_config = BuildConfigurationEntry.build_command_configuration(build_modules["CollisionTest"], build_configuration.compiler);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_common2.lib_include_dirs);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_math2.lib_include_dirs);
-        l_command_config.include_directories = l_command_config.include_directories.concat(p_collision_link.lib_include_dirs);
-        l_command_config.linked_libs.push(p_collision_link.lib);
-
-        return l_commands.concat(l_command_config.build_executable_command(build_configuration.compiler, preprocessor_constants));
-    };
-};
-
-
-l_all_commands.push(CommandBuilder.build_Common2Test(CommandBuilder.build_common2()));
-l_all_commands.push(CommandBuilder.build_Math2test(CommandBuilder.build_common2(), CommandBuilder.build_math2()));
-
-let l_command_lib: StaticLib = CommandBuilder.build_Collision(CommandBuilder.build_common2(), CommandBuilder.build_math2());
-
-l_all_commands = l_all_commands.concat(
-    CommandBuilder.build_CollisionTest(
-        CommandBuilder.build_common2(),
-        CommandBuilder.build_math2(),
-        l_command_lib
-    )
-);
-
-interface InterfaceLibs
-{
-    [p_module: string]: InterfaceLib;
-};
-
-interface StaticLibs
-{
-    [p_module: string]: StaticLib;
-};
-
-*/
+execute_program(args);

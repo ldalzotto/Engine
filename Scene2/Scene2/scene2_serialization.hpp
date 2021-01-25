@@ -158,7 +158,7 @@ namespace v2
 			Span<Token(transform)> l_allocated_nodes = Span<Token(transform)>::allocate(p_scene->tree.node_tree.Indices.get_size());
 
 			{
-				NodeEntry& l_node = p_scene->tree.node_tree.get(p_start_node_included);
+				NodeEntry l_node = p_scene->tree.node_tree.get(p_start_node_included);
 				Token(transform) l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
 				l_allocated_nodes.get(tk_v(l_node.Node->index)) = l_allocated_node;
 				Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, l_node.Node->index));

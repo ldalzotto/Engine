@@ -2,10 +2,13 @@
 
 #include <stdlib.h>
 #include <cstring>
+#include <cstdio>
+#include <climits>
 #include <math.h>
 
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
+#include "./Memory/limits.hpp"
 
 #include "./Functional/assert.hpp"
 

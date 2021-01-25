@@ -74,7 +74,7 @@ namespace v2
 		{
 			uimax l_old_size = l_vector_sizet.Size;
 			l_vector_sizet.push_back_array_empty(5);
-			assert_true(l_vector_sizet.Size = l_old_size + (uimax)5);
+			assert_true(l_vector_sizet.Size == (l_old_size + (uimax)5));
 		}
 
 		// vector_push_back_element
@@ -899,7 +899,7 @@ namespace v2
 		assert_true(FromString::afloat32(slice_int8_build_rawstr("-245689.0")) == -245689.f);
 	};
 
-	inline void deserialize_test()
+	inline void deserialize_json_test()
 	{
 		{
 			const int8* l_json =
@@ -1070,6 +1070,101 @@ namespace v2
 		}
 	};
 
+	inline void serialize_json_test()
+	{
+		const int8* l_json =
+			"{"
+			"\"local_position\":{"
+			"\"x\":  \"16.55000\","
+			"\"y\" : \"16.65000\","
+			"\"z\" : \"16.75000\""
+			"},"
+			"\"local_position2\":{"
+			"\"x\":\"  17.55000\","
+			"\"y\" : \"17.65000\","
+			"\"z\" : \"17.75000\""
+			"},"
+			"\"nodes\" : ["
+			"{"
+			"\"local_position\":{"
+			"\"x\":\"  10.55000\","
+			"\"y\" : \"10.65000\","
+			"\"z\" : \"10.75000\""
+			"}"
+			"},"
+			"{"
+			"\"local_position\":{"
+			"\"x\":\"  11.55000\","
+			"\"y\" : \"11.65000\","
+			"\"z\" : \"11.75000\""
+			"}"
+			"},"
+			"{"
+			"\"local_position\":{"
+			"\"x\":\"  12.55000\","
+			"\"y\" : \"12.65000\","
+			"\"z\" : \"12.75000\""
+			"}"
+			"}"
+			"]"
+			"}";
+
+		int8 l_float_buffer[ToString::float32str_size];
+		Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
+
+		JSONSerializer l_serializer = JSONSerializer::allocate_default();
+		l_serializer.start();
+
+		l_serializer.start_object(slice_int8_build_rawstr("local_position"));
+		l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(16.55f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(16.65f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(16.75f, l_float_buffer_slice));
+		l_serializer.end_object();
+
+		l_serializer.start_object(slice_int8_build_rawstr("local_position2"));
+		l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(17.55f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(17.65f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(17.75f, l_float_buffer_slice));
+		l_serializer.end_object();
+
+		l_serializer.start_array(slice_int8_build_rawstr("nodes"));
+
+		l_serializer.start_object();
+		l_serializer.start_object(slice_int8_build_rawstr("local_position"));
+		l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(10.55f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(10.65f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(10.75f, l_float_buffer_slice));
+		l_serializer.end_object();
+		l_serializer.end_object();
+
+		l_serializer.start_object();
+		l_serializer.start_object(slice_int8_build_rawstr("local_position"));
+		l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(11.55f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(11.65f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(11.75f, l_float_buffer_slice));
+		l_serializer.end_object();
+		l_serializer.end_object();
+
+		l_serializer.start_object();
+		l_serializer.start_object(slice_int8_build_rawstr("local_position"));
+		l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(12.55f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(12.65f, l_float_buffer_slice));
+		l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(12.75f, l_float_buffer_slice));
+		l_serializer.end_object();
+		l_serializer.end_object();
+
+		l_serializer.end_array();
+
+		l_serializer.end();
+
+		JSONUtil::remove_spaces(l_serializer.output);
+		String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
+		JSONUtil::remove_spaces(l_compared_json);
+
+		assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
+
+		l_serializer.free();
+	};
 }
 
 int  main()
@@ -1086,5 +1181,6 @@ int  main()
 	v2::heap_memory_test();
 	v2::string_test();
 	v2::fromstring_test();
-	v2::deserialize_test();
+	v2::deserialize_json_test();
+	v2::serialize_json_test();
 };
