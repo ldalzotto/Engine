@@ -448,6 +448,20 @@ class PreprocessorBuilder
             l_return += CompileTypeProvider.preprocessor(p_compiler_type, _entry.name, _entry.value);
             l_return += " ";
         });
+
+        if (process.platform == 'win32')
+        {
+            l_return += " ";
+            l_return += CompileTypeProvider.preprocessor(p_compiler_type, "_WIN32", "1");
+            l_return += " ";
+        }
+        else
+        {
+            l_return += " ";
+            l_return += CompileTypeProvider.preprocessor(p_compiler_type, "__linux__", "1");
+            l_return += " ";
+        };
+
         return l_return;
     };
 

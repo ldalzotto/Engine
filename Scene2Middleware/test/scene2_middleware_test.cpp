@@ -7,11 +7,12 @@ namespace v2
 {
 	struct ComponentReleaser2
 	{
+		Collision2& collision;
 		SceneMiddleware* scene_middleware;
 
 		inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
 		{
-			on_node_component_removed(this->scene_middleware, p_component);
+			on_node_component_removed(this->scene_middleware, this->collision, p_component);
 		};
 
 	};
@@ -19,10 +20,9 @@ namespace v2
 	inline void collision_middleware_component_allocation()
 	{
 		Scene l_scene = Scene::allocate_default();
-		Collision2* l_collision;
-		Collision2::allocate(&l_collision);
-		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default(l_collision);
-		ComponentReleaser2 component_releaser = ComponentReleaser2{ &l_scene_middleware };
+		Collision2 l_collision = Collision2::allocate();
+		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
+		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, &l_scene_middleware };
 
 		/*
 			We allocate the BoxCollider component with the "deferred" path.
@@ -43,13 +43,15 @@ namespace v2
 			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 
 			{
-				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_box_collider_node_component);
+				BoxColliderComponentAsset l_box_collider_component_asset = 
+					BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
 				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 1);
 			}
 			{
-				l_scene_middleware.step(&l_scene);
-				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_box_collider_node_component);
+				l_scene_middleware.step(&l_scene, l_collision);
+				BoxColliderComponentAsset l_box_collider_component_asset = 
+					BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
 				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
 			}
@@ -63,14 +65,14 @@ namespace v2
 		{
 			v3f l_half_extend = { 1.0f, 2.0f, 3.0f };
 			Token(Node) l_node = l_scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component(l_node, BoxColliderComponentAsset{ l_half_extend });
+			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component(l_collision, l_node, BoxColliderComponentAsset{ l_half_extend });
 
 			NodeComponent l_box_collider_node_component = BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component);
 			l_scene.add_node_component_by_value(l_node, l_box_collider_node_component);
 			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 
 			{
-				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_box_collider_node_component);
+				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
 				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
 			}
@@ -82,16 +84,15 @@ namespace v2
 		l_scene.free_and_consume_component_events_stateful(component_releaser);
 
 		l_scene_middleware.free();
-		Collision2::free(&l_collision);
+		l_collision.free();
 	};
 
 	inline void collision_middleware_queuing_for_calculation()
 	{
 		Scene l_scene = Scene::allocate_default();
-		Collision2* l_collision;
-		Collision2::allocate(&l_collision);
-		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default(l_collision);
-		ComponentReleaser2 component_releaser = ComponentReleaser2{ &l_scene_middleware };
+		Collision2 l_collision = Collision2::allocate();
+		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
+		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, &l_scene_middleware };
 
 		{
 			v3f l_half_extend = { 1.0f, 2.0f, 3.0f };
@@ -99,18 +100,18 @@ namespace v2
 			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{ l_half_extend });
 			l_scene.add_node_component_by_value(l_node, BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component));
 
-			assert_true(!l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_box_collider_component));
+			assert_true(!l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
 
-			l_scene_middleware.step(&l_scene);
+			l_scene_middleware.step(&l_scene, l_collision);
 
-			assert_true(l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_box_collider_component));
+			assert_true(l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
 
 			l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
 		}
 
 		l_scene.free_and_consume_component_events_stateful(component_releaser);
 		l_scene_middleware.free();
-		Collision2::free(&l_collision);
+		l_collision.free();
 	};
 };
 

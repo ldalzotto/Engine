@@ -1,5 +1,5 @@
 {
-    "compiler": "MSVC",
+    "compiler": "GCC",
     "environment": {
         "DEBUG": [
             {
@@ -172,6 +172,17 @@
             ]
         },
         {
+            "base_name": "Engine",
+            "module_type": "INTERFACE",
+            "root_folder": "_Engine",
+            "include_directories": [
+                "_Engine"
+            ],
+            "dependencies": [
+                "Scene2Middleware"
+            ]
+        },
+        {
             "base_name": "CollisionTest",
             "module_type": "EXECUTABLE",
             "build_type": "DEBUG",
@@ -224,6 +235,17 @@
             "include_directories": [],
             "dependencies": [
                 "Scene2Middleware"
+            ]
+        },
+        {
+            "base_name": "SandboxTest",
+            "module_type": "EXECUTABLE",
+            "build_type": "DEBUG",
+            "root_folder": "_Sandbox",
+            "main_file": "Sandbox/sandbox.cpp",
+            "include_directories": [],
+            "dependencies": [
+                "Engine"
             ]
         }
     ]

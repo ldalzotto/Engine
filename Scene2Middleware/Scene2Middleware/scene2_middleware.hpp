@@ -17,16 +17,16 @@ namespace v2
     {
         CollisionMiddleware collision_middleware;
 
-        static SceneMiddleware allocate_default(Collision2* p_collision);
+        static SceneMiddleware allocate_default();
         void free();
 
-        void step(Scene* p_scene);
+        void step(Scene* p_scene, Collision2& p_collision);
     };
 
-    inline SceneMiddleware SceneMiddleware::allocate_default(Collision2* p_collision)
+    inline SceneMiddleware SceneMiddleware::allocate_default()
     {
         return SceneMiddleware{
-            CollisionMiddleware::allocate_default(p_collision)
+            CollisionMiddleware::allocate_default()
         };
     };
 
@@ -35,9 +35,9 @@ namespace v2
         this->collision_middleware.free();
     };
 
-    void SceneMiddleware::step(Scene* p_scene)
+    void SceneMiddleware::step(Scene* p_scene, Collision2& p_collision)
     {
-        this->collision_middleware.step(p_scene);
+        this->collision_middleware.step(p_collision, p_scene);
     };
 }
 
