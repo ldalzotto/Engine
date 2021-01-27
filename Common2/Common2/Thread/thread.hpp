@@ -25,4 +25,12 @@ inline void Thread::wait(const uimax p_time_in_ms)
     WaitForSingleObject(get_current_thread(), (DWORD)p_time_in_ms);
 };
 
+#elif __linux__
+
+inline void Thread::wait(const uimax p_time_in_ms)
+{
+    usleep(p_time_in_ms * 1000);
+};
+
+
 #endif

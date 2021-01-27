@@ -76,5 +76,5 @@ target_link_libraries(Scene2Test PUBLIC Scene2)
 add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 
-add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/Sandbox/sandbox.cpp)
+add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)

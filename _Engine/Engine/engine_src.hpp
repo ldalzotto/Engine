@@ -20,6 +20,11 @@ struct Engine
 
 	template<class ExternalCallbacksFn>
 	void main_loop(ExternalCallbacksFn& p_callbacks);
+
+
+	template<class ExternalCallbacksFn>
+	void single_frame_forced_delta(const float32 p_delta, ExternalCallbacksFn& p_callbacks);
+
 private:
 
 	struct ComponentReleaser
@@ -43,6 +48,7 @@ private:
 
 	template<class ExternalCallbacksFn>
 	void single_frame(ExternalCallbacksFn& p_callbacks);
+
 };
 
 
@@ -88,6 +94,13 @@ inline void Engine::main_loop(ExternalCallbacksFn& p_callbacks)
 };
 
 template<class ExternalCallbacksFn>
+inline void Engine::single_frame_forced_delta(const float32 p_delta, ExternalCallbacksFn& p_callbacks)
+{
+	LoopCallbacks<ExternalCallbacksFn> engine_callbacks = LoopCallbacks<ExternalCallbacksFn>{ *this, p_callbacks };
+	this->engine_loop.update_forced_delta(p_delta, engine_callbacks);
+};
+
+template<class ExternalCallbacksFn>
 inline void Engine::single_frame(ExternalCallbacksFn& p_callbacks)
 {
 	LoopCallbacks<ExternalCallbacksFn> engine_callbacks = LoopCallbacks<ExternalCallbacksFn>{ *this, p_callbacks };
@@ -101,7 +114,6 @@ inline void Engine::LoopCallbacks<ExternalCallbacksFn>::newframe()
 	//TODO -> input
 };
 
-//TODO -> external hooks
 template<class ExternalCallbacksFn>
 inline void Engine::LoopCallbacks<ExternalCallbacksFn>::update(const float32 p_delta)
 {
@@ -125,5 +137,7 @@ inline void Engine::LoopCallbacks<ExternalCallbacksFn>::render() {};
 template<class ExternalCallbacksFn>
 inline void Engine::LoopCallbacks<ExternalCallbacksFn>::endofframe()
 {
+	ComponentReleaser l_component_releaser = ComponentReleaser{ this->engine };
+	this->engine.scene.consume_component_events_stateful(l_component_releaser);
 	this->engine.scene.step();
 };

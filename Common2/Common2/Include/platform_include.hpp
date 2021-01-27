@@ -1,8 +1,11 @@
 #pragma once
 
 #ifdef _WIN32
+
 #define NOMINMAX
+
 #include <Windows.h>
+#include <sysinfoapi.h>
 
 inline uint64 FILETIME_to_mics(FILETIME& p_filetime)
 {
@@ -11,5 +14,10 @@ inline uint64 FILETIME_to_mics(FILETIME& p_filetime)
 	ul.HighPart = p_filetime.dwHighDateTime;
 	return ul.QuadPart / 10;
 };
+
+#elif __linux__
+
+#include <time.h>
+#include <unistd.h>
 
 #endif

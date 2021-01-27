@@ -28,8 +28,6 @@ time_t clock_currenttime_mics();
 
 #ifdef _WIN32
 
-#include <sysinfoapi.h>
-
 inline time_t clock_currenttime_mics()
 {
 	FILETIME l_currentTime;
@@ -37,4 +35,13 @@ inline time_t clock_currenttime_mics()
 	return FILETIME_to_mics(l_currentTime);
 };
 
-#endif // _WIN32
+#elif __linux__
+
+inline time_t clock_currenttime_mics()
+{
+	struct timespec spec;
+	clock_gettime(CLOCK_REALTIME, &spec);
+	return round(spec.tv_nsec / 1000);
+};
+
+#endif

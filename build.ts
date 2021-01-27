@@ -656,10 +656,18 @@ class ModuleRunner
 };
 
 
+class ProgramArgumentConstants
+{
+    public static readonly COMPILE_DATABSE: string = "compile_database";
+    public static readonly ALL: string = "all";
+    public static readonly TEST: string = "test";
+    public static readonly TEST_RUN: string = "test_run";
+};
+
 let execute_program = function (p_args: string[])
 {
 
-    if (p_args[0] == "compile_database")
+    if (p_args[0] === ProgramArgumentConstants.COMPILE_DATABSE)
     {
         let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
         let l_build_module_keys = Object.keys(build_modules);
@@ -700,7 +708,7 @@ let execute_program = function (p_args: string[])
         fs.writeFileSync(l_compile_json_generation_file, compile_json_generation);
 
     }
-    else if (p_args[0] == "all")
+    else if (p_args[0] === ProgramArgumentConstants.ALL)
     {
         let l_builder = new RecursiveModuleBuilder(build_configuration.compiler, build_modules);
         let l_build_module_keys = Object.keys(build_modules);
@@ -724,11 +732,13 @@ let execute_program = function (p_args: string[])
             }
         };
     }
-    else if (p_args[0] == "test")
+    else if (p_args[0] === ProgramArgumentConstants.TEST)
     {
-        execute_program(["all"]);
-
-
+        execute_program([ProgramArgumentConstants.ALL]);
+        execute_program([ProgramArgumentConstants.TEST_RUN]);
+    }
+    else if (p_args[0] === ProgramArgumentConstants.TEST_RUN)
+    {
         let l_build_module_keys = Object.keys(build_modules);
         for (let i = 0; i < l_build_module_keys.length; i++)
         {

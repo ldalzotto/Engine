@@ -39,7 +39,7 @@ struct EngineLoop
 		}
 		else
 		{
-			Thread::wait((this->timebetweenupdates_mics - this->accumulatedelapsedtime_mics) * 0.0009999);
+			Thread::wait((uimax)  ((this->timebetweenupdates_mics - this->accumulatedelapsedtime_mics) * 0.0009999));
 		}
 	};
 

@@ -324,9 +324,12 @@ inline void CollisionDetectionStep::exit_collision(CollisionHeap2& p_collision_h
 		TriggerEvent& l_trigger_event = l_collider_triggerevents.get(i);
 		if (tk_eq(l_trigger_event.other, p_intersection_event.other))
 		{
-			l_trigger_event.state = Trigger::State::TRIGGER_EXIT;
-			// on next step, collision event will be deleted
-			this->is_waitingfor_trigger_none_nextframe_detector.push_back_element(p_intersection_event);
+			if(l_trigger_event.state != Trigger::State::NONE)
+			{
+				l_trigger_event.state = Trigger::State::TRIGGER_EXIT;
+				// on next step, collision event will be deleted
+				this->is_waitingfor_trigger_none_nextframe_detector.push_back_element(p_intersection_event);
+			}
 		}
 	}
 };
