@@ -36,8 +36,18 @@ else()
 endif()
 
 
+add_library(GLFW INTERFACE)
+target_include_directories(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW")
+target_link_libraries(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/win32/glfw3.lib")
+# target_link_libraries(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/linux/glfw3.a")
+
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
+
+add_library(Window INTERFACE)
+target_include_directories(Window INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Window)
+target_link_libraries(Window INTERFACE GLFW)
+target_link_libraries(Window INTERFACE Common2)
 
 add_library(Math2 INTERFACE)
 target_include_directories(Math2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Math2)
@@ -75,6 +85,9 @@ target_link_libraries(Scene2Test PUBLIC Scene2)
 
 add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
+
+add_executable(WindowTest ${CMAKE_CURRENT_SOURCE_DIR}/Window/test/window_test.cpp)
+target_link_libraries(WindowTest PUBLIC Window)
 
 add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)

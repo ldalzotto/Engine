@@ -172,6 +172,30 @@
             ]
         },
         {
+            "base_name": "GLFW",
+            "module_type": "BUILDED_STATIC_LIBRARY",
+            "root_folder": "ThirdParty/GLFW",
+            "include_directories": [
+                "ThirdParty/GLFW"
+            ],
+            "prebuild_linked_libs": [
+                "lib/${platform}/glfw3.lib"
+            ],
+            "dependencies": []
+        },
+        {
+            "base_name": "Window",
+            "module_type": "INTERFACE",
+            "root_folder": "Window",
+            "include_directories": [
+                "Window"
+            ],
+            "dependencies": [
+                "GLFW",
+                "Common2"
+            ]
+        },
+        {
             "base_name": "Engine",
             "module_type": "INTERFACE",
             "root_folder": "_Engine",
@@ -179,13 +203,14 @@
                 "_Engine"
             ],
             "dependencies": [
+                "Window",
                 "Scene2Middleware"
             ]
         },
         {
             "base_name": "CollisionTest",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Collision",
             "main_file": "test/collision2_test.cpp",
             "include_directories": [],
@@ -196,7 +221,7 @@
         {
             "base_name": "Math2Test",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Math2",
             "main_file": "test/math2_test.cpp",
             "include_directories": [],
@@ -207,7 +232,7 @@
         {
             "base_name": "Common2Test",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Common2",
             "main_file": "test/common2_test.cpp",
             "include_directories": [],
@@ -218,7 +243,7 @@
         {
             "base_name": "Scene2Test",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Scene2",
             "main_file": "test/scene2_test.cpp",
             "include_directories": [],
@@ -229,12 +254,23 @@
         {
             "base_name": "Scene2MiddlewareTest",
             "module_type": "EXECUTABLE",
-            "build_type": "RELEASE",
+            "build_type": "DEBUG",
             "root_folder": "Scene2Middleware",
             "main_file": "test/scene2_middleware_test.cpp",
             "include_directories": [],
             "dependencies": [
                 "Scene2Middleware"
+            ]
+        },
+        {
+            "base_name": "WindowTest",
+            "module_type": "EXECUTABLE",
+            "build_type": "DEBUG",
+            "root_folder": "Window",
+            "main_file": "test/window_test.cpp",
+            "include_directories": [],
+            "dependencies": [
+                "Window"
             ]
         },
         {
