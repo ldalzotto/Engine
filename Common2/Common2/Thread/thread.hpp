@@ -3,6 +3,8 @@
 using thread_t
 #ifdef _WIN32
 = HANDLE
+#elif __linux__
+= pthread_t
 #endif // _WIN32
 ;
 

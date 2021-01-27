@@ -1,4 +1,4 @@
-#include "Collision/Collision.hpp"
+#include "Collision/collision.hpp"
 
 
 /*
@@ -310,7 +310,7 @@ inline void collision_test_03()
 		assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
 	}
 
-	l_collision.free_collider( l_box_collider_1);
+	l_collision.free_collider(l_box_collider_1);
 
 	l_collision.step();
 
@@ -425,12 +425,12 @@ inline void collision_test_04()
 		l_box_collider_4_transform = transform_pa{ v3f{100000.0f, 100000.0f, 100000.0f}, quat_const::IDENTITY.to_axis() };
 	}
 	Token(BoxCollider) l_box_collider_4;
-	l_box_collider_4 =  l_collision.allocate_boxcollider(l_unit_aabb);
+	l_box_collider_4 = l_collision.allocate_boxcollider(l_unit_aabb);
 
 	l_collision.step();
 
 
-	{		
+	{
 		Slice<TriggerEvent> l_box_collider_3_events = l_collision.get_collision_events(l_box_collider_3_detector_handle);
 
 		assert_true(l_box_collider_3_events.Size == 2);
