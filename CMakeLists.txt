@@ -20,6 +20,7 @@ if("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug")
 	add_compile_definitions(MATH_NORMALIZATION_TEST=1)
 	add_compile_definitions(SCENE_BOUND_TEST=1)
 	add_compile_definitions(RENDER_BOUND_TEST=1)
+	add_compile_definitions(RENDER_DEBUG=1)
 	add_compile_definitions(COLLIDER_BOUND_TEST=1)
 	add_compile_definitions(STANDARD_ALLOCATION_BOUND_TEST=1)
 	add_compile_definitions(USE_OPTICK=0)
@@ -30,6 +31,7 @@ else()
 	add_compile_definitions(MATH_BOUND_TEST=0)
 	add_compile_definitions(SCENE_BOUND_TEST=0)
 	add_compile_definitions(RENDER_BOUND_TEST=0)
+	add_compile_definitions(RENDER_DEBUG=0)
 	add_compile_definitions(COLLIDER_BOUND_TEST=0)
 	add_compile_definitions(STANDARD_ALLOCATION_BOUND_TEST=0)
 	add_compile_definitions(USE_OPTICK=0)
@@ -41,8 +43,17 @@ target_include_directories(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdPart
 target_link_libraries(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/win32/glfw3.lib")
 # target_link_libraries(GLFW INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/GLFW/lib/linux/glfw3.a")
 
+add_library(VULKAN INTERFACE)
+target_include_directories(VULKAN INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/vulkan")
+target_link_libraries(VULKAN INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/vulkan/lib/win32/vulkan-1.lib")
+
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
+
+add_library(GPU INTERFACE)
+target_include_directories(GPU INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/GPU)
+target_link_libraries(GPU INTERFACE Common2)
+target_link_libraries(GPU INTERFACE VULKAN)
 
 add_library(Window INTERFACE)
 target_include_directories(Window INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Window)
@@ -73,6 +84,9 @@ target_link_libraries(Engine INTERFACE Scene2Middleware)
 
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
+
+add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
+target_link_libraries(GPUTest PUBLIC GPU)
 
 add_executable(Math2Test ${CMAKE_CURRENT_SOURCE_DIR}/Math2/test/math2_test.cpp)
 target_link_libraries(Math2Test PUBLIC Math2)

@@ -108,6 +108,20 @@ namespace v2
 			return AllocationState::ALLOCATED;
 		};
 
+		inline AllocationState allocate_element_norealloc_with_alignment(const uimax p_size, const uimax p_alignement_modulo, AllocatedElementReturn* out_chunk)
+		{
+			if (!_allocate_element_with_alignment(p_size, p_alignement_modulo, out_chunk))
+			{
+				this->defragment();
+				if (!_allocate_element_with_alignment(p_size, p_alignement_modulo, out_chunk))
+				{
+					return AllocationState::NOT_ALLOCATED;
+				}
+				return AllocationState::ALLOCATED;
+			}
+			return AllocationState::ALLOCATED;
+		};
+
 		inline SliceIndex* get(const Token(SliceIndex) p_chunk)
 		{
 			return &this->AllocatedChunks.get(p_chunk);

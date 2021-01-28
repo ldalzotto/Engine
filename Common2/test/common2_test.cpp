@@ -799,6 +799,20 @@ namespace v2
 
 			assert_true(l_heap.Size == l_initial_heap_size);
 		}
+
+		l_heap.free();
+
+		l_heap = Heap::allocate(l_initial_heap_size);
+		assert_heap_integrity(&l_heap);
+		{
+			Heap::AllocatedElementReturn l_allocated_chunk;
+			
+			assert_true(l_heap.AllocatedChunks.get_size() == 0);
+			assert_true(l_heap.allocate_element_norealloc_with_alignment(l_initial_heap_size + 10, 0, &l_allocated_chunk) == Heap::AllocationState::NOT_ALLOCATED);
+			assert_true(l_heap.AllocatedChunks.get_size() == 0);
+		}
+
+		l_heap.free();
 	};
 
 	inline void heap_memory_test()

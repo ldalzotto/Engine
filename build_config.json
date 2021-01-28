@@ -1,290 +1,337 @@
 {
-    "compiler": "GCC",
-    "environment": {
-        "DEBUG": [
-            {
-                "name": "TOKEN_TYPE_SAFETY",
-                "value": "1"
-            },
-            {
-                "name": "CONTAINER_BOUND_TEST",
-                "value": "1"
-            },
-            {
-                "name": "CONTAINER_MEMORY_TEST",
-                "value": "1"
-            },
-            {
-                "name": "MATH_NORMALIZATION_TEST",
-                "value": "1"
-            },
-            {
-                "name": "SCENE_BOUND_TEST",
-                "value": "1"
-            },
-            {
-                "name": "RENDER_BOUND_TEST",
-                "value": "1"
-            },
-            {
-                "name": "COLLIDER_BOUND_TEST",
-                "value": "1"
-            },
-            {
-                "name": "STANDARD_ALLOCATION_BOUND_TEST",
-                "value": "1"
-            },
-            {
-                "name": "USE_OPTICK",
-                "value": "0"
-            }
-        ],
-        "RELEASE_DEBUG": [
-            {
-                "name": "TOKEN_TYPE_SAFETY",
-                "value": "0"
-            },
-            {
-                "name": "CONTAINER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "CONTAINER_MEMORY_TEST",
-                "value": "0"
-            },
-            {
-                "name": "MATH_NORMALIZATION_TEST",
-                "value": "0"
-            },
-            {
-                "name": "SCENE_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "RENDER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "COLLIDER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "STANDARD_ALLOCATION_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "USE_OPTICK",
-                "value": "0"
-            }
-        ],
-        "RELEASE": [
-            {
-                "name": "TOKEN_TYPE_SAFETY",
-                "value": "0"
-            },
-            {
-                "name": "CONTAINER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "CONTAINER_MEMORY_TEST",
-                "value": "0"
-            },
-            {
-                "name": "MATH_NORMALIZATION_TEST",
-                "value": "0"
-            },
-            {
-                "name": "SCENE_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "RENDER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "COLLIDER_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "STANDARD_ALLOCATION_BOUND_TEST",
-                "value": "0"
-            },
-            {
-                "name": "USE_OPTICK",
-                "value": "0"
-            }
-        ]
-    },
-    "modules": [
-        {
-            "base_name": "Common2",
-            "module_type": "INTERFACE",
-            "root_folder": "Common2",
-            "include_directories": [
-                "Common2"
-            ],
-            "dependencies": []
-        },
-        {
-            "base_name": "Math2",
-            "module_type": "INTERFACE",
-            "root_folder": "Math2",
-            "include_directories": [
-                "Math2"
-            ],
-            "dependencies": [
-                "Common2"
-            ]
-        },
-        {
-            "base_name": "Collision",
-            "module_type": "INTERFACE",
-            "root_folder": "Collision",
-            "include_directories": [
-                "Collision"
-            ],
-            "dependencies": [
-                "Math2"
-            ]
-        },
-        {
-            "base_name": "Scene2",
-            "module_type": "INTERFACE",
-            "root_folder": "Scene2",
-            "include_directories": [
-                "Scene2"
-            ],
-            "dependencies": [
-                "Math2"
-            ]
-        },
-        {
-            "base_name": "Scene2Middleware",
-            "module_type": "INTERFACE",
-            "root_folder": "Scene2Middleware",
-            "include_directories": [
-                "Scene2Middleware"
-            ],
-            "dependencies": [
-                "Scene2",
-                "Collision"
-            ]
-        },
-        {
-            "base_name": "GLFW",
-            "module_type": "BUILDED_STATIC_LIBRARY",
-            "root_folder": "ThirdParty/GLFW",
-            "include_directories": [
-                "ThirdParty/GLFW"
-            ],
-            "prebuild_linked_libs": [
-                "lib/${platform}/glfw3.lib"
-            ],
-            "dependencies": []
-        },
-        {
-            "base_name": "Window",
-            "module_type": "INTERFACE",
-            "root_folder": "Window",
-            "include_directories": [
-                "Window"
-            ],
-            "dependencies": [
-                "GLFW",
-                "Common2"
-            ]
-        },
-        {
-            "base_name": "Engine",
-            "module_type": "INTERFACE",
-            "root_folder": "_Engine",
-            "include_directories": [
-                "_Engine"
-            ],
-            "dependencies": [
-                "Window",
-                "Scene2Middleware"
-            ]
-        },
-        {
-            "base_name": "CollisionTest",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Collision",
-            "main_file": "test/collision2_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Collision"
-            ]
-        },
-        {
-            "base_name": "Math2Test",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Math2",
-            "main_file": "test/math2_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Math2"
-            ]
-        },
-        {
-            "base_name": "Common2Test",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Common2",
-            "main_file": "test/common2_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Common2"
-            ]
-        },
-        {
-            "base_name": "Scene2Test",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Scene2",
-            "main_file": "test/scene2_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Scene2"
-            ]
-        },
-        {
-            "base_name": "Scene2MiddlewareTest",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Scene2Middleware",
-            "main_file": "test/scene2_middleware_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Scene2Middleware"
-            ]
-        },
-        {
-            "base_name": "WindowTest",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "Window",
-            "main_file": "test/window_test.cpp",
-            "include_directories": [],
-            "dependencies": [
-                "Window"
-            ]
-        },
-        {
-            "base_name": "SandboxTest",
-            "module_type": "EXECUTABLE",
-            "build_type": "DEBUG",
-            "root_folder": "_Sandbox",
-            "main_file": "sandbox.cpp",
-            "include_directories": [
-                "_Sandbox"
-            ],
-            "dependencies": [
-                "Engine"
-            ]
-        }
+  "compiler": "GCC",
+  "environment": {
+    "DEBUG": [
+      {
+        "name": "TOKEN_TYPE_SAFETY",
+        "value": "1"
+      },
+      {
+        "name": "CONTAINER_BOUND_TEST",
+        "value": "1"
+      },
+      {
+        "name": "CONTAINER_MEMORY_TEST",
+        "value": "1"
+      },
+      {
+        "name": "MATH_NORMALIZATION_TEST",
+        "value": "1"
+      },
+      {
+        "name": "SCENE_BOUND_TEST",
+        "value": "1"
+      },
+      {
+        "name": "RENDER_BOUND_TEST",
+        "value": "1"
+      },
+      {
+        "name": "RENDER_DEBUG",
+        "value": "1"
+      },
+      {
+        "name": "COLLIDER_BOUND_TEST",
+        "value": "1"
+      },
+      {
+        "name": "STANDARD_ALLOCATION_BOUND_TEST",
+        "value": "1"
+      },
+      {
+        "name": "USE_OPTICK",
+        "value": "0"
+      }
+    ],
+    "RELEASE_DEBUG": [
+      {
+        "name": "TOKEN_TYPE_SAFETY",
+        "value": "0"
+      },
+      {
+        "name": "CONTAINER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "CONTAINER_MEMORY_TEST",
+        "value": "0"
+      },
+      {
+        "name": "MATH_NORMALIZATION_TEST",
+        "value": "0"
+      },
+      {
+        "name": "SCENE_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "RENDER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "RENDER_DEBUG",
+        "value": "0"
+      },
+      {
+        "name": "COLLIDER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "STANDARD_ALLOCATION_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "USE_OPTICK",
+        "value": "0"
+      }
+    ],
+    "RELEASE": [
+      {
+        "name": "TOKEN_TYPE_SAFETY",
+        "value": "0"
+      },
+      {
+        "name": "CONTAINER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "CONTAINER_MEMORY_TEST",
+        "value": "0"
+      },
+      {
+        "name": "MATH_NORMALIZATION_TEST",
+        "value": "0"
+      },
+      {
+        "name": "SCENE_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "RENDER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "RENDER_DEBUG",
+        "value": "0"
+      },
+      {
+        "name": "COLLIDER_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "STANDARD_ALLOCATION_BOUND_TEST",
+        "value": "0"
+      },
+      {
+        "name": "USE_OPTICK",
+        "value": "0"
+      }
     ]
+  },
+  "modules": [
+    {
+      "base_name": "Common2",
+      "module_type": "INTERFACE",
+      "root_folder": "Common2",
+      "include_directories": [
+        "Common2"
+      ],
+      "dependencies": []
+    },
+    {
+      "base_name": "Math2",
+      "module_type": "INTERFACE",
+      "root_folder": "Math2",
+      "include_directories": [
+        "Math2"
+      ],
+      "dependencies": [
+        "Common2"
+      ]
+    },
+    {
+      "base_name": "Collision",
+      "module_type": "INTERFACE",
+      "root_folder": "Collision",
+      "include_directories": [
+        "Collision"
+      ],
+      "dependencies": [
+        "Math2"
+      ]
+    },
+    {
+      "base_name": "Scene2",
+      "module_type": "INTERFACE",
+      "root_folder": "Scene2",
+      "include_directories": [
+        "Scene2"
+      ],
+      "dependencies": [
+        "Math2"
+      ]
+    },
+    {
+      "base_name": "Scene2Middleware",
+      "module_type": "INTERFACE",
+      "root_folder": "Scene2Middleware",
+      "include_directories": [
+        "Scene2Middleware"
+      ],
+      "dependencies": [
+        "Scene2",
+        "Collision"
+      ]
+    },
+    {
+      "base_name": "GLFW",
+      "module_type": "BUILDED_STATIC_LIBRARY",
+      "root_folder": "ThirdParty/GLFW",
+      "include_directories": [
+        "ThirdParty/GLFW"
+      ],
+      "prebuild_linked_libs": [
+        "lib/${platform}/glfw3.lib"
+      ],
+      "dependencies": []
+    },
+    {
+      "base_name": "VULKAN",
+      "module_type": "BUILDED_STATIC_LIBRARY",
+      "root_folder": "ThirdParty/vulkan",
+      "include_directories": [
+        "ThirdParty/vulkan"
+      ],
+      "prebuild_linked_libs": [
+        "lib/${platform}/vulkan-1.lib"
+      ],
+      "dependencies": []
+    },
+    {
+      "base_name": "GPU",
+      "module_type": "INTERFACE",
+      "root_folder": "GPU",
+      "include_directories": [
+        "GPU"
+      ],
+      "dependencies": [
+        "VULKAN",
+        "Common2"
+      ]
+    },
+    {
+      "base_name": "Window",
+      "module_type": "INTERFACE",
+      "root_folder": "Window",
+      "include_directories": [
+        "Window"
+      ],
+      "dependencies": [
+        "GLFW",
+        "Common2"
+      ]
+    },
+    {
+      "base_name": "Engine",
+      "module_type": "INTERFACE",
+      "root_folder": "_Engine",
+      "include_directories": [
+        "_Engine"
+      ],
+      "dependencies": [
+        "Window",
+        "Scene2Middleware"
+      ]
+    },
+    {
+      "base_name": "CollisionTest",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Collision",
+      "main_file": "test/collision2_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Collision"
+      ]
+    },
+    {
+      "base_name": "Math2Test",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Math2",
+      "main_file": "test/math2_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Math2"
+      ]
+    },
+    {
+      "base_name": "Common2Test",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Common2",
+      "main_file": "test/common2_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Common2"
+      ]
+    },
+    {
+      "base_name": "Scene2Test",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Scene2",
+      "main_file": "test/scene2_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Scene2"
+      ]
+    },
+    {
+      "base_name": "Scene2MiddlewareTest",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Scene2Middleware",
+      "main_file": "test/scene2_middleware_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Scene2Middleware"
+      ]
+    },
+    {
+      "base_name": "WindowTest",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "Window",
+      "main_file": "test/window_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "Window"
+      ]
+    },
+    {
+      "base_name": "GPUTest",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "GPU",
+      "main_file": "test/gpu_test.cpp",
+      "include_directories": [],
+      "dependencies": [
+        "GPU"
+      ]
+    },
+    {
+      "base_name": "SandboxTest",
+      "module_type": "EXECUTABLE",
+      "build_type": "DEBUG",
+      "root_folder": "_Sandbox",
+      "main_file": "sandbox.cpp",
+      "include_directories": [
+        "_Sandbox"
+      ],
+      "dependencies": [
+        "Engine"
+      ]
+    }
+  ]
 }
