@@ -3,15 +3,6 @@
 
 namespace v2
 {
-	enum GPUMemoryType
-	{
-		// * HostWrite : Allow cpu memory map
-		HostWrite = 0,
-		// * GPUWrite : Allow writing by copying from a source buffer.
-		//              Cannot be accesses from from host.
-		GPUWrite = 1
-	};
-
 	struct HeapGPU
 	{
 		Heap heap;
@@ -69,9 +60,6 @@ namespace v2
 		//TODO -> creating a SliceOffset type ?
 		void get_host_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset);
 		void get_gpu_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset);
-
-		int8 allocate_element_always(const gc_t p_transfer_device, const GPUMemoryType p_memory_type, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token);
-		void release_element_always(const GPUMemoryType p_memory_type, const GPUMemoryToken& p_memory);
 	};
 
 	struct TransferDevice
@@ -80,6 +68,8 @@ namespace v2
 		gcqueue_t transfer_queue;
 
 		GraphicsCardHeap heap;
+		CommandPool command_pool;
+		CommandBuffer command_buffer;
 
 		static TransferDevice allocate(const GPUInstance& p_instance);
 		void free();
@@ -94,15 +84,16 @@ namespace v2
 
 			static MappedMemory build_default();
 
-			void map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory, const uimax p_element_count);
+			void map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory);
 			void unmap(TransferDevice& p_device);
 			void copy_from(const Slice<int8>& p_from);
 			int8 is_mapped();
 		} memory;
 		GPUMemoryToken heap_token;
 		VkBuffer buffer;
+		uimax size;
 
-		static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_element_count, const uimax p_element_size, const VkBufferUsageFlags p_usage_flags);
+		static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const VkBufferUsageFlags p_usage_flags);
 		void free(TransferDevice& p_transfer_device);
 
 		void push(const Slice<int8>& p_from);
@@ -117,15 +108,70 @@ namespace v2
 	{
 		GPUMemoryToken heap_token;
 		VkBuffer buffer;
+		uimax size;
 
-		static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_element_count, const uimax p_element_size, const VkBufferUsageFlags p_usage_flags);
+		static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const VkBufferUsageFlags p_usage_flags);
 		void free(TransferDevice& p_transfer_device);
 
 	private:
 		void bind(TransferDevice& p_transfer_device);
 	};
 
-}
+
+
+	enum class BufferUsageFlag
+	{
+		GPU_READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		GPU_WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT
+	};
+
+	typedef VkFlags BufferUsageFlags;
+
+	struct BufferAllocator
+	{
+		TransferDevice device;
+
+		Pool<BufferHost> host_buffers;
+		Pool<BufferGPU> gpu_buffers;
+
+		Vector<Token(BufferHost)> garbage_host_buffers;
+
+		struct HosttoGPU_CopyEvent
+		{
+			Token(BufferHost) staging_buffer;
+			Token(BufferGPU) target_buffer;
+		};
+
+		Vector<HosttoGPU_CopyEvent> host_to_gpu_copy_events;
+
+		struct GPUtoHost_CopyEvent
+		{
+			Token(BufferGPU) source_buffer;
+			Token(BufferHost) target_buffer;
+		};
+
+		Vector<GPUtoHost_CopyEvent> gpu_to_host_copy_events;
+
+		static BufferAllocator allocate_default(const GPUInstance& p_instance);
+		void free();
+
+		Token(BufferHost) allocate_bufferhost(const Slice<int8>& p_value, const VkBufferUsageFlags p_usage_flags);
+		Token(BufferHost) allocate_bufferhost_empty(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
+		void free_bufferhost(const Token(BufferHost) p_buffer_host);
+
+		Token(BufferGPU) allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
+		void free_buffergpu(const Token(BufferGPU) p_buffer_gpu);
+
+		void write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value);
+		Token(BufferHost) read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu);
+
+		void step();
+
+	private:
+		void clean_garbage_buffers();
+	};
+
+};
 
 
 
@@ -155,7 +201,7 @@ namespace v2
 
 	inline void HeapGPU::map(gc_t p_transfer_device, const uimax p_memory_size)
 	{
-		vkMapMemory(p_transfer_device, this->gpu_memory, 0, p_memory_size, 0, (void**)&this->mapped_memory);
+		vk_handle_result(vkMapMemory(p_transfer_device, this->gpu_memory, 0, p_memory_size, 0, (void**)&this->mapped_memory));
 	};
 
 	inline int8 HeapGPU::allocate_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, Token(SliceIndex)* out_token)
@@ -207,8 +253,6 @@ namespace v2
 		}
 
 		HeapGPU l_created_heap = HeapGPU::allocate(p_transfer_device, 8, this->chunk_size);
-
-		// l_created_heap.map(p_transfer_device, this->chunk_size);
 
 		this->page_buffers.push_back_element(l_created_heap);
 		int8 l_success = this->page_buffers.get(this->page_buffers.Size - 1).allocate_element(p_transfer_device, p_size, p_alignmenent_constaint, &out_chunk->chunk);
@@ -307,32 +351,6 @@ namespace v2
 		*out_offset = *l_heap.heap.get(p_token.chunk);
 	};
 
-	inline int8 GraphicsCardHeap::allocate_element_always(const gc_t p_transfer_device, const GPUMemoryType p_memory_type, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token)
-	{
-		switch (p_memory_type)
-		{
-		case GPUMemoryType::GPUWrite:
-			return allocate_gpu_write_element(p_transfer_device, p_size, p_alignement_constraint, out_token);
-		case GPUMemoryType::HostWrite:
-			return allocate_host_write_element(p_transfer_device, p_size, p_alignement_constraint, out_token);
-		}
-	};
-
-	inline void GraphicsCardHeap::release_element_always(const GPUMemoryType p_memory_type, const GPUMemoryToken& p_memory)
-	{
-		switch (p_memory_type)
-		{
-		case GPUMemoryType::GPUWrite:
-			return release_gpu_write_element(p_memory);
-			break;
-		case GPUMemoryType::HostWrite:
-			return release_host_write_element(p_memory);
-			break;
-		}
-	};
-
-
-
 
 	inline TransferDevice TransferDevice::allocate(const GPUInstance& p_instance)
 	{
@@ -345,7 +363,6 @@ namespace v2
 		const float32 l_priority = 1.0f;
 		l_devicequeue_create_info.pQueuePriorities = &l_priority;
 
-		// VkPhysicalDeviceFeatures l_devicefeatures;
 		VkDeviceCreateInfo l_device_create_info{};
 		l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
@@ -371,55 +388,19 @@ namespace v2
 
 		l_transfer_device.heap = GraphicsCardHeap::allocate_default(l_transfer_device.device);
 
+		l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family);
+		l_transfer_device.command_buffer = l_transfer_device.command_pool.allocate_command_buffer(l_transfer_device.device, l_transfer_device.transfer_queue);
+
 		return l_transfer_device;
 	};
 
 	inline void TransferDevice::free()
 	{
 		this->heap.free(this->device);
+		this->command_buffer.flush();
+		this->command_pool.free(this->device);
 		vkDestroyDevice(this->device, NULL);
 	};
-
-	inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
-	{
-
-		String l_severity = String::allocate(100);
-
-		int8 is_error = 0;
-
-		switch (messageSeverity)
-		{
-		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			l_severity.append(slice_int8_build_rawstr("[Verbose] - "));
-			break;
-		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-			l_severity.append(slice_int8_build_rawstr("[Warn] - "));
-			break;
-		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-			l_severity.append(slice_int8_build_rawstr("[Error] - "));
-			is_error = true;
-			break;
-		}
-		l_severity.append(slice_int8_build_rawstr("validation layer: "));
-		l_severity.append(slice_int8_build_rawstr(pCallbackData->pMessage));
-		l_severity.append(slice_int8_build_rawstr("\n"));
-		printf(l_severity.get_memory());
-
-		l_severity.free();
-
-		if (is_error)
-		{
-			abort();
-		}
-
-		return VK_FALSE;
-	};
-
-
 
 	inline BufferHost::MappedMemory BufferHost::MappedMemory::build_default()
 	{
@@ -428,7 +409,7 @@ namespace v2
 		};
 	};
 
-	inline void BufferHost::MappedMemory::map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory, const uimax p_element_count)
+	inline void BufferHost::MappedMemory::map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory)
 	{
 		if (!this->is_mapped())
 		{
@@ -455,16 +436,17 @@ namespace v2
 	};
 
 
-	inline BufferHost BufferHost::allocate(TransferDevice& p_transfer_device, const uimax p_element_count, const uimax p_element_size, const VkBufferUsageFlags p_usage_flags)
+	inline BufferHost BufferHost::allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const VkBufferUsageFlags p_usage_flags)
 	{
 		BufferHost l_buffer_host;
 
+		l_buffer_host.size = p_buffer_size;
 		l_buffer_host.memory = MappedMemory::build_default();
 
 		VkBufferCreateInfo l_buffercreate_info{};
 		l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		l_buffercreate_info.usage = p_usage_flags | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		l_buffercreate_info.size = p_element_count * p_element_size;
+		l_buffercreate_info.usage = p_usage_flags;
+		l_buffercreate_info.size = p_buffer_size;
 
 		vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_host.buffer));
 
@@ -472,8 +454,7 @@ namespace v2
 		vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_host.buffer, &l_requirements);
 
 		p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_buffer_host.heap_token);
-		// p_transfer_device.heap.allocate_element_always(p_transfer_device.device, GPUMemoryType::HostWrite, l_requirements.size, l_requirements.alignment, &l_buffer_host.heap_token);
-		l_buffer_host.memory.map(p_transfer_device, l_buffer_host.heap_token, p_element_count);
+		l_buffer_host.memory.map(p_transfer_device, l_buffer_host.heap_token);
 		l_buffer_host.bind(p_transfer_device);
 
 		return l_buffer_host;
@@ -510,7 +491,7 @@ namespace v2
 
 	inline void BufferHost::map(TransferDevice& p_transfer_device, const uimax p_element_count)
 	{
-		this->memory.map(p_transfer_device, this->heap_token, p_element_count);
+		this->memory.map(p_transfer_device, this->heap_token);
 	};
 
 	inline void BufferHost::unmap(TransferDevice& p_transfer_device)
@@ -519,14 +500,16 @@ namespace v2
 	};
 
 
-	inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const uimax p_element_count, const uimax p_element_size, const VkBufferUsageFlags p_usage_flags)
+	inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const uimax p_size, const VkBufferUsageFlags p_usage_flags)
 	{
 		BufferGPU l_buffer_gpu;
 
+		l_buffer_gpu.size = p_size;
+
 		VkBufferCreateInfo l_buffercreate_info{};
 		l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		l_buffercreate_info.usage = p_usage_flags | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		l_buffercreate_info.size = p_element_count * p_element_size;
+		l_buffercreate_info.usage = p_usage_flags;
+		l_buffercreate_info.size = p_size;
 
 		vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_gpu.buffer));
 
@@ -552,6 +535,167 @@ namespace v2
 		SliceIndex l_offset;
 		p_transfer_device.heap.get_gpu_write_gcmemory_and_offset(this->heap_token, &l_memory, &l_offset);
 		vkBindBufferMemory(p_transfer_device.device, this->buffer, l_memory, l_offset.Begin);
+	};
+
+	inline BufferAllocator BufferAllocator::allocate_default(const GPUInstance& p_instance)
+	{
+		return BufferAllocator{
+			TransferDevice::allocate(p_instance),
+			Pool<BufferHost>::allocate(0),
+			Pool<BufferGPU>::allocate(0),
+			Vector<Token(BufferHost)>::allocate(0),
+			Vector<HosttoGPU_CopyEvent>::allocate(0)
+		};
+	};
+
+	inline void BufferAllocator::free()
+	{
+		this->step();
+		this->device.command_buffer.wait_for_completion();
+		this->clean_garbage_buffers();
+
+		this->host_buffers.free();
+		this->device.free();
+	};
+
+	inline Token(BufferHost) BufferAllocator::allocate_bufferhost(const Slice<int8>& p_value, const VkBufferUsageFlags p_usage_flags)
+	{
+		BufferHost l_buffer = BufferHost::allocate(this->device, p_value.Size, p_usage_flags);
+		l_buffer.push(p_value);
+		return this->host_buffers.alloc_element(l_buffer);
+	};
+
+	inline Token(BufferHost) BufferAllocator::allocate_bufferhost_empty(const uimax p_size, const VkBufferUsageFlags p_usage_flags)
+	{
+		return this->host_buffers.alloc_element(BufferHost::allocate(this->device, p_size, p_usage_flags));
+	};
+
+	inline void BufferAllocator::free_bufferhost(const Token(BufferHost) p_buffer_host)
+	{
+		BufferHost& l_buffer = this->host_buffers.get(p_buffer_host);
+		l_buffer.free(this->device);
+		this->host_buffers.release_element(p_buffer_host);
+	};
+
+	inline Token(BufferGPU) BufferAllocator::allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags)
+	{
+		return this->gpu_buffers.alloc_element(BufferGPU::allocate(this->device, p_size, p_usage_flags));
+	};
+
+	inline void BufferAllocator::free_buffergpu(const Token(BufferGPU) p_buffer_gpu)
+	{
+		for (vector_loop_reverse(&this->gpu_to_host_copy_events, i))
+		{
+			GPUtoHost_CopyEvent& l_event = this->gpu_to_host_copy_events.get(i);
+			if (tk_eq(l_event.source_buffer, p_buffer_gpu))
+			{
+				this->garbage_host_buffers.push_back_element(l_event.target_buffer);
+				this->gpu_to_host_copy_events.erase_element_at(i);
+			}
+		}
+
+		for (vector_loop_reverse(&this->host_to_gpu_copy_events, i))
+		{
+			HosttoGPU_CopyEvent& l_event = this->host_to_gpu_copy_events.get(i);
+			if (tk_eq(l_event.target_buffer, p_buffer_gpu))
+			{
+				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
+				this->host_to_gpu_copy_events.erase_element_at(i);
+			}
+		}
+
+		BufferGPU& l_buffer = this->gpu_buffers.get(p_buffer_gpu);
+		l_buffer.free(this->device);
+		this->gpu_buffers.release_element(p_buffer_gpu);
+	};
+
+	inline void BufferAllocator::write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value)
+	{
+		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost(p_value, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+		this->host_to_gpu_copy_events.push_back_element(HosttoGPU_CopyEvent{ l_staging_buffer, p_buffer_gpu });
+	};
+
+	inline Token(BufferHost) BufferAllocator::read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu)
+	{
+		BufferGPU& l_buffer_gpu = this->gpu_buffers.get(p_buffer_gpu);
+		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost_empty(l_buffer_gpu.size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		this->gpu_to_host_copy_events.push_back_element(GPUtoHost_CopyEvent{ p_buffer_gpu, l_staging_buffer });
+		return l_staging_buffer;
+	};
+
+
+	inline void BufferAllocator::step()
+	{
+		this->clean_garbage_buffers();
+
+		this->device.command_buffer.begin();
+
+		if (this->host_to_gpu_copy_events.Size > 0)
+		{
+			for (loop(i, 0, this->host_to_gpu_copy_events.Size))
+			{
+				HosttoGPU_CopyEvent& l_event = this->host_to_gpu_copy_events.get(i);
+				BufferHost& l_source_buffer = this->host_buffers.get(l_event.staging_buffer);
+				BufferGPU& l_target_buffer = this->gpu_buffers.get(l_event.target_buffer);
+
+#if CONTAINER_MEMORY_TEST
+				assert_true(l_source_buffer.size <= l_target_buffer.size);
+#endif
+
+				VkBufferCopy l_buffer_copy{};
+				l_buffer_copy.size = l_source_buffer.size;
+				vkCmdCopyBuffer(this->device.command_buffer.command_buffer,
+					l_source_buffer.buffer,
+					l_target_buffer.buffer,
+					1,
+					&l_buffer_copy
+				);
+
+				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
+			}
+
+			this->host_to_gpu_copy_events.clear();
+		}
+
+		if (this->gpu_to_host_copy_events.Size > 0)
+		{
+
+			for (loop(i, 0, this->gpu_to_host_copy_events.Size))
+			{
+				GPUtoHost_CopyEvent& l_event = this->gpu_to_host_copy_events.get(i);
+				BufferGPU& l_source_buffer = this->gpu_buffers.get(l_event.source_buffer);
+				BufferHost& l_target_buffer = this->host_buffers.get(l_event.target_buffer);
+
+#if CONTAINER_MEMORY_TEST
+				assert_true(l_source_buffer.size <= l_target_buffer.size);
+#endif
+
+				VkBufferCopy l_buffer_copy{};
+				l_buffer_copy.size = l_source_buffer.size;
+				vkCmdCopyBuffer(this->device.command_buffer.command_buffer,
+					l_source_buffer.buffer,
+					l_target_buffer.buffer,
+					1,
+					&l_buffer_copy
+				);
+
+			}
+
+			this->gpu_to_host_copy_events.clear();
+		}
+
+
+		this->device.command_buffer.end();
+	};
+
+	inline void BufferAllocator::clean_garbage_buffers()
+	{
+		for (loop(i, 0, this->garbage_host_buffers.Size))
+		{
+			this->free_bufferhost(this->garbage_host_buffers.get(i));
+		}
+
+		this->garbage_host_buffers.clear();
 	};
 
 
