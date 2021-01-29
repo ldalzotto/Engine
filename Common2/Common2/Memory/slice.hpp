@@ -233,3 +233,21 @@ struct SliceIndex
 		*out_right = SliceIndex::build(p_break_point, l_source_initial_size - out_left->Size);
 	};
 };
+
+template<class ElementType>
+struct SliceOffset
+{
+	uimax Offset;
+	ElementType* Memory;
+
+	inline static SliceOffset<ElementType> build(ElementType* p_memory, const uimax p_offset)
+	{
+		return SliceOffset<ElementType> {p_offset, p_memory	};
+	};
+
+	inline static SliceOffset<ElementType> build_from_sliceindex(ElementType* p_memory, const SliceIndex& p_slice_index)
+	{
+		return SliceOffset<ElementType> {p_slice_index.Begin, p_memory};
+	};
+
+};

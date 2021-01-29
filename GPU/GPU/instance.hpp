@@ -3,6 +3,9 @@
 namespace v2
 {
 
+    /*
+        The GraphicsCard is the hardware responsible of all GPU related operations.
+    */
     struct GraphicsCard
     {
         VkPhysicalDevice device;
@@ -10,6 +13,10 @@ namespace v2
         uint32 transfer_queue_family;
     };
 
+    /*
+        The GPUInstance is the root of all GPU related operations.
+        When instanciated, it detects compatible GraphicsCard devices.
+    */
     struct GPUInstance
     {
         gpuinstance_t instance;
@@ -64,6 +71,7 @@ namespace v2
         l_app_info.pApplicationName = "vk";
 
         VkInstanceCreateInfo l_instance_create_info{};
+        l_instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         l_instance_create_info.pApplicationInfo = &l_app_info;
 
 
@@ -71,9 +79,9 @@ namespace v2
 
 #if RENDER_DEBUG
 
-        int8* l_validation_layers_str[1];
-        l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
-        Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb((const int8**)l_validation_layers_str, 1);
+        const int8* l_validation_layers_str[1] = { "VK_LAYER_KHRONOS_validation" };
+        // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
+        Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb(l_validation_layers_str, 1);
 
 
         Span<VkLayerProperties> l_available_layers = vk::enumerateInstanceLayerProperties();

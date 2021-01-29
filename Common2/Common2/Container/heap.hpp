@@ -150,7 +150,7 @@ namespace v2
 				sort_linear2_begin(SliceIndex, defragment_sort);
 				return p_left.Begin > p_right.Begin;
 				sort_linear2_end(this->FreeChunks.to_slice(), SliceIndex, defragment_sort);
-				
+
 				SliceIndex& l_compared_chunk = this->FreeChunks.get(0);
 				for (loop(i, 1, this->FreeChunks.Size))
 				{
@@ -268,4 +268,103 @@ namespace v2
 			);
 		};
 	};
-} // namespace v2
+
+
+	struct HeapPagedToken
+	{
+		uimax PageIndex;
+		Token(SliceIndex) token;
+	};
+
+	//TODO -> The internal structure of the HeapPaged can be further improved.
+	//        Instead of having a vector of Heap, we can flatten them and operate on this flattened structure.
+	//		  This would involved a refactor of the Heap allocation algorithm to work with generic Slice<>.
+	/*
+		A HeapPaged is a function object that calculates : "what is the offset of the chunk of data you want to allocate ?".
+		It has the same behavior of the Heap. But, allocated chunks are never deallocated.
+		Instead, when allocation is not possible with the current chunks, it allocates another chunk.
+	*/
+	struct HeapPaged
+	{
+
+		typedef uint8 AllocationStateFlags;
+		enum class AllocationState
+		{
+			NOT_ALLOCATED = 0,
+			ALLOCATED = 1,
+			PAGE_CREATED = 2,
+			ALLOCATED_AND_PAGE_CREATED = (AllocationStateFlags)AllocationState::ALLOCATED | (AllocationStateFlags)AllocationState::PAGE_CREATED
+		};
+
+		struct AllocatedElementReturn
+		{
+			HeapPagedToken token;
+			uimax Offset;
+
+			inline static AllocatedElementReturn buid_from_HeapAllocatedElementReturn(const uimax p_page_index,
+				const Heap::AllocatedElementReturn& p_heap_allocated_element_return)
+			{
+				return AllocatedElementReturn{ HeapPagedToken{p_page_index, p_heap_allocated_element_return.token}, p_heap_allocated_element_return.Offset };
+			};
+		};
+
+		Vector<Heap> Heaps;
+		uimax PageSize;
+
+		inline static HeapPaged allocate_default(const uimax p_page_size)
+		{
+			return HeapPaged{ Vector<Heap>::allocate(0), p_page_size };
+		};
+
+		inline void free()
+		{
+			for (loop(i, 0, this->Heaps.Size))
+			{
+				this->Heaps.get(i).free();
+			}
+			this->Heaps.free();
+		};
+
+		inline AllocationState allocate_element_norealloc_with_alignment(const uimax p_size, const uimax p_alignement_modulo, AllocatedElementReturn* out_chunk)
+		{
+			Heap::AllocatedElementReturn l_heap_allocated_element_return;
+			for (loop(i, 0, this->Heaps.Size))
+			{
+				if ((uint8)this->Heaps.get(i).allocate_element_norealloc_with_alignment(p_size, p_alignement_modulo, &l_heap_allocated_element_return)
+					& (uint8)Heap::AllocationState::ALLOCATED)
+				{
+					*out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(i, l_heap_allocated_element_return);
+					return AllocationState::ALLOCATED;
+				};
+			}
+
+			this->create_new_page();
+			if ((uint8)this->Heaps.get(this->Heaps.Size - 1).allocate_element_norealloc_with_alignment(p_size, p_alignement_modulo, &l_heap_allocated_element_return)
+				& (uint8)Heap::AllocationState::ALLOCATED)
+			{
+				*out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(this->Heaps.Size - 1, l_heap_allocated_element_return);
+				return (AllocationState)((AllocationStateFlags)AllocationState::ALLOCATED | (AllocationStateFlags)AllocationState::PAGE_CREATED);
+			}
+
+			return AllocationState::NOT_ALLOCATED;
+		};
+
+		inline void release_element(const HeapPagedToken& p_token)
+		{
+			this->Heaps.get(p_token.PageIndex).release_element(p_token.token);
+		};
+
+		inline SliceIndex* get_sliceindex_only(const HeapPagedToken& p_token)
+		{
+			return this->Heaps.get(p_token.PageIndex).get(p_token.token);
+		};
+
+	private:
+		inline void create_new_page()
+		{
+			this->Heaps.push_back_element(Heap::allocate(this->PageSize));
+		};
+
+	};
+
+}

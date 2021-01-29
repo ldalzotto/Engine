@@ -806,7 +806,7 @@ namespace v2
 		assert_heap_integrity(&l_heap);
 		{
 			Heap::AllocatedElementReturn l_allocated_chunk;
-			
+
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
 			assert_true(l_heap.allocate_element_norealloc_with_alignment(l_initial_heap_size + 10, 0, &l_allocated_chunk) == Heap::AllocationState::NOT_ALLOCATED);
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
@@ -814,6 +814,35 @@ namespace v2
 
 		l_heap.free();
 	};
+
+
+	// The HeapPaged uses the same allocation functions as the Heap.
+	// We just test the fact that new pages are created.
+	inline void heappaged_test()
+	{
+		uimax l_heappaged_chunk_size = 10;
+		HeapPaged l_heap_paged = HeapPaged::allocate_default(l_heappaged_chunk_size);
+
+		{
+			assert_true(l_heap_paged.PageSize == l_heappaged_chunk_size);
+			assert_true(l_heap_paged.Heaps.Size == 0);
+
+			HeapPaged::AllocatedElementReturn l_allocated_element;
+			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
+			assert_true(l_heap_paged.Heaps.Size == 1);
+			assert_true(l_allocated_element.Offset == 0);
+
+			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
+			assert_true(l_heap_paged.Heaps.Size == 2);
+			assert_true(l_allocated_element.Offset == 0);
+
+			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(3, 3, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED);
+			assert_true(l_heap_paged.Heaps.Size == 2);
+			assert_true(l_allocated_element.Offset == 6);
+		}
+
+		l_heap_paged.free();
+	}
 
 	inline void heap_memory_test()
 	{
@@ -1192,6 +1221,7 @@ int  main()
 	v2::ntree_test();
 	v2::sort_test();
 	v2::heap_test();
+	v2::heappaged_test();
 	v2::heap_memory_test();
 	v2::string_test();
 	v2::fromstring_test();

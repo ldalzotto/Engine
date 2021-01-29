@@ -3,71 +3,70 @@
 
 namespace v2
 {
-	struct HeapGPU
+	struct HeapPagedGPU
 	{
-		Heap heap;
-		gcmemory_t gpu_memory;
-		int8* mapped_memory;
+		struct MemoryGPU
+		{
+			gcmemory_t gpu_memory;
+			int8* mapped_memory;
 
-		static HeapGPU allocate(const gc_t p_transfer_device, const uint32 p_memory_type, const uimax p_memory_size);
+			static MemoryGPU allocate(const gc_t p_transfer_device, const uint32 p_memory_type, const uimax p_memory_size);
+			void free(const gc_t p_transfer_device);
+			void map(const gc_t p_transfer_device, const uimax p_memory_size);
+		};
 
+		HeapPaged heap;
+		Vector<MemoryGPU> gpu_memories;
+		uint32 memory_type;
+
+		static HeapPagedGPU allocate_default(const gc_t p_transfer_device, const uimax p_memory_chunk_size, const uint32 p_memory_type);
 		void free(const gc_t p_transfer_device);
 
-		void map(gc_t p_transfer_device, const uimax p_memory_size);
+		int8 allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, HeapPagedToken* out_chunk);
 
-		int8 allocate_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, Token(SliceIndex)* out_token);
-		void release_element(const Token(SliceIndex) p_token);
+		/*
+			Same as allocate_element, but if a new page is allocated, MemoryGPU::map is called.
+		*/
+		int8 allocate_element_and_map_page_if_created(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, HeapPagedToken* out_chunk);
+		void release_element(const HeapPagedToken& p_token);
 	};
 
-	struct GPUMemoryToken
+	/*
+		Holds HeapPagedGPU based on the memory_type value.
+		Vulkan allows to allocate memory based on their type.
+	*/
+	struct TransferDeviceHeap
 	{
-		uint8 pagedbuffer_index;
-		Token(SliceIndex) chunk;
-	};
+		// Memory that is visible by the GPU only.
+		HeapPagedGPU gpu_write;
 
-	//TODO -> this can moved to the common module so that the paged heap logic can be reused anywhere
-	struct GraphicsCardPagedHeap
-	{
-		Vector<HeapGPU> page_buffers;
-		uimax chunk_size;
+		// Memory that can be accessed by the CPU.
+		HeapPagedGPU host_write;
 
-		static GraphicsCardPagedHeap allocate(const uimax p_chunk_size);
+		static TransferDeviceHeap allocate_default(const gc_t p_transfer_device);
 		void free(const gc_t p_transfer_device);
 
-		int8 allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, GPUMemoryToken* out_chunk);
-		int8 allocate_element_and_map_heapmemory_if_created(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, GPUMemoryToken* out_chunk);
+		int8 allocate_gpu_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, HeapPagedToken* out_token);
+		void release_gpu_write_element(const HeapPagedToken& p_memory);
+		int8 allocate_host_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, HeapPagedToken* out_token);
+		void release_host_write_element(const HeapPagedToken& p_memory);
 
-		void release_element(const GPUMemoryToken& p_token);
+		Slice<int8> get_host_write_element_as_slice(const HeapPagedToken& p_token);
+
+		SliceOffset<int8> get_host_write_gcmemory_and_offset(const HeapPagedToken& p_token);
+		SliceOffset<int8> get_gpu_write_gcmemory_and_offset(const HeapPagedToken& p_token);
 	};
 
-	struct GraphicsCardHeap
-	{
-		GraphicsCardPagedHeap gpu_write;
-		GraphicsCardPagedHeap host_write;
-
-		static GraphicsCardHeap allocate_default(const gc_t p_transfer_device);
-		void free(const gc_t p_transfer_device);
-
-		int8 allocate_gpu_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token);
-		void release_gpu_write_element(const GPUMemoryToken& p_memory);
-		int8 allocate_host_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token);
-		void release_host_write_element(const GPUMemoryToken& p_memory);
-
-		SliceIndex* get_gpu_write_element(const GPUMemoryToken& p_token);
-		SliceIndex* get_host_write_element(const GPUMemoryToken& p_token);
-		Slice<int8> get_host_write_element_as_slice(const GPUMemoryToken& p_token);
-
-		//TODO -> creating a SliceOffset type ?
-		void get_host_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset);
-		void get_gpu_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset);
-	};
-
+	/*
+		A TransferDevice is a logical instance of the GraphicsCard.
+		It holds the command buffer that will execute all commands related to memory allocation or copy
+	*/
 	struct TransferDevice
 	{
 		gc_t device;
 		gcqueue_t transfer_queue;
 
-		GraphicsCardHeap heap;
+		TransferDeviceHeap heap;
 		CommandPool command_pool;
 		CommandBuffer command_buffer;
 
@@ -76,6 +75,9 @@ namespace v2
 
 	};
 
+	/*
+		A BufferHost is a pointer to a HeapPaged chunk that have been specified to be visible by the CPU.
+	*/
 	struct BufferHost
 	{
 		struct MappedMemory
@@ -84,12 +86,12 @@ namespace v2
 
 			static MappedMemory build_default();
 
-			void map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory);
+			void map(TransferDevice& p_transfer_device, const HeapPagedToken& p_memory);
 			void unmap(TransferDevice& p_device);
 			void copy_from(const Slice<int8>& p_from);
 			int8 is_mapped();
 		} memory;
-		GPUMemoryToken heap_token;
+		HeapPagedToken heap_token;
 		VkBuffer buffer;
 		uimax size;
 
@@ -98,15 +100,20 @@ namespace v2
 
 		void push(const Slice<int8>& p_from);
 
+		Slice<int8>& get_mapped_memory();
+
 	private:
 		void bind(TransferDevice& p_transfer_device);
 		void map(TransferDevice& p_transfer_device, const uimax p_element_count);
 		void unmap(TransferDevice& p_transfer_device);
 	};
 
+	/*
+		A BufferHost is a pointer to a HeapPaged chunk that have been specified to be visible by the GPU.
+	*/
 	struct BufferGPU
 	{
-		GPUMemoryToken heap_token;
+		HeapPagedToken heap_token;
 		VkBuffer buffer;
 		uimax size;
 
@@ -118,15 +125,17 @@ namespace v2
 	};
 
 
-
 	enum class BufferUsageFlag
 	{
-		GPU_READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		GPU_WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT
+		READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT
 	};
 
 	typedef VkFlags BufferUsageFlags;
 
+	/*
+		The BufferAllocator is the front layer that register and execute all allocation, copy of buffers.
+	*/
 	struct BufferAllocator
 	{
 		TransferDevice device;
@@ -158,14 +167,15 @@ namespace v2
 		Token(BufferHost) allocate_bufferhost(const Slice<int8>& p_value, const VkBufferUsageFlags p_usage_flags);
 		Token(BufferHost) allocate_bufferhost_empty(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
 		void free_bufferhost(const Token(BufferHost) p_buffer_host);
+		Slice<int8>& get_bufferhost_mapped_memory(const Token(BufferHost) p_buffer_host);
 
 		Token(BufferGPU) allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
 		void free_buffergpu(const Token(BufferGPU) p_buffer_gpu);
-
 		void write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value);
 		Token(BufferHost) read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu);
 
 		void step();
+		void force_command_buffer_execution_sync();
 
 	private:
 		void clean_garbage_buffers();
@@ -174,15 +184,12 @@ namespace v2
 };
 
 
-
-
-
 namespace v2
 {
-	inline HeapGPU HeapGPU::allocate(const gc_t p_transfer_device, const uint32 p_memory_type, const uimax p_memory_size)
+
+	inline HeapPagedGPU::MemoryGPU HeapPagedGPU::MemoryGPU::allocate(const gc_t p_transfer_device, const uint32 p_memory_type, const uimax p_memory_size)
 	{
-		HeapGPU l_heap_gpu;
-		l_heap_gpu.heap = Heap::allocate(p_memory_size);
+		MemoryGPU l_heap_gpu;
 
 		VkMemoryAllocateInfo l_memoryallocate_info{};
 		l_memoryallocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -191,164 +198,132 @@ namespace v2
 
 		vkAllocateMemory(p_transfer_device, &l_memoryallocate_info, NULL, &l_heap_gpu.gpu_memory);
 
+		l_heap_gpu.mapped_memory = NULL;
+
 		return l_heap_gpu;
 	};
 
-	inline void HeapGPU::free(const gc_t p_transfer_device)
+	inline void HeapPagedGPU::MemoryGPU::free(const gc_t p_transfer_device)
 	{
 		vkFreeMemory(p_transfer_device, this->gpu_memory, NULL);
 	};
 
-	inline void HeapGPU::map(gc_t p_transfer_device, const uimax p_memory_size)
+	inline void HeapPagedGPU::MemoryGPU::map(const gc_t p_transfer_device, const uimax p_memory_size)
 	{
 		vk_handle_result(vkMapMemory(p_transfer_device, this->gpu_memory, 0, p_memory_size, 0, (void**)&this->mapped_memory));
 	};
 
-	inline int8 HeapGPU::allocate_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, Token(SliceIndex)* out_token)
+	inline HeapPagedGPU HeapPagedGPU::allocate_default(const gc_t p_transfer_device, const uimax p_memory_chunk_size, const uint32 p_memory_type)
 	{
-		Heap::AllocatedElementReturn l_allocation;
-		Heap::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignement_constraint, &l_allocation);
-		if ((Heap::AllocationState_t)l_allocation_state & (Heap::AllocationState_t)Heap::AllocationState::ALLOCATED)
+		return HeapPagedGPU
 		{
-			*out_token = l_allocation.token;
-			return 1;
+			HeapPaged::allocate_default(p_memory_chunk_size),
+			Vector<MemoryGPU>::allocate(0),
+			p_memory_type
 		};
-
-		return 0;
 	};
 
-	inline void HeapGPU::release_element(const Token(SliceIndex) p_token)
+	inline void HeapPagedGPU::free(const gc_t p_transfer_device)
+	{
+		for (loop(i, 0, this->gpu_memories.Size))
+		{
+			this->gpu_memories.get(i).free(p_transfer_device);
+		}
+		this->gpu_memories.free();
+		this->heap.free();
+	};
+
+	inline int8 HeapPagedGPU::allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, HeapPagedToken* out_chunk)
+	{
+		HeapPaged::AllocatedElementReturn l_allocated_chunk;
+		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignmenent_constaint, &l_allocated_chunk);
+		if ((HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::PAGE_CREATED)
+		{
+			this->gpu_memories.push_back_element(MemoryGPU::allocate(p_transfer_device, this->memory_type, this->heap.PageSize));
+		}
+
+		*out_chunk = l_allocated_chunk.token;
+
+		return (HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::ALLOCATED;
+	};
+
+	inline int8 HeapPagedGPU::allocate_element_and_map_page_if_created(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, HeapPagedToken* out_chunk)
+	{
+		HeapPaged::AllocatedElementReturn l_allocated_chunk;
+		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignmenent_constaint, &l_allocated_chunk);
+		if ((HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::PAGE_CREATED)
+		{
+			this->gpu_memories.push_back_element(MemoryGPU::allocate(p_transfer_device, this->memory_type, this->heap.PageSize));
+			this->gpu_memories.get(l_allocated_chunk.token.PageIndex).map(p_transfer_device, this->heap.PageSize);
+		}
+
+		*out_chunk = l_allocated_chunk.token;
+
+		return (HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::ALLOCATED;
+	};
+
+	inline void HeapPagedGPU::release_element(const HeapPagedToken& p_token)
 	{
 		this->heap.release_element(p_token);
 	};
 
-
-
-	inline GraphicsCardPagedHeap GraphicsCardPagedHeap::allocate(const uimax p_chunk_size)
+	inline TransferDeviceHeap TransferDeviceHeap::allocate_default(const gc_t p_transfer_device)
 	{
-		return GraphicsCardPagedHeap{
-			Vector<HeapGPU>::allocate(0),
-			p_chunk_size
+		return TransferDeviceHeap{
+			HeapPagedGPU::allocate_default(p_transfer_device,16000000, 7),
+			HeapPagedGPU::allocate_default(p_transfer_device,16000000, 8)
 		};
 	};
 
-	inline void GraphicsCardPagedHeap::free(const gc_t p_transfer_device)
-	{
-		for (loop(i, 0, this->page_buffers.Size))
-		{
-			this->page_buffers.get(i).free(p_transfer_device);
-		}
-		this->page_buffers.free();
-	};
-
-	inline int8 GraphicsCardPagedHeap::allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, GPUMemoryToken* out_chunk)
-	{
-		for (loop(i, 0, this->page_buffers.Size))
-		{
-			if (this->page_buffers.get(i).allocate_element(p_transfer_device, p_size, p_alignmenent_constaint, &out_chunk->chunk))
-			{
-				out_chunk->pagedbuffer_index = (uint8)i;
-				return 1;
-			}
-		}
-
-		HeapGPU l_created_heap = HeapGPU::allocate(p_transfer_device, 8, this->chunk_size);
-
-		this->page_buffers.push_back_element(l_created_heap);
-		int8 l_success = this->page_buffers.get(this->page_buffers.Size - 1).allocate_element(p_transfer_device, p_size, p_alignmenent_constaint, &out_chunk->chunk);
-		out_chunk->pagedbuffer_index = (uint8)this->page_buffers.Size - 1;
-		return l_success;
-	};
-
-	inline int8 GraphicsCardPagedHeap::allocate_element_and_map_heapmemory_if_created(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, GPUMemoryToken* out_chunk)
-	{
-		for (loop(i, 0, this->page_buffers.Size))
-		{
-			if (this->page_buffers.get(i).allocate_element(p_transfer_device, p_size, p_alignmenent_constaint, &out_chunk->chunk))
-			{
-				out_chunk->pagedbuffer_index = (uint8)i;
-				return 1;
-			}
-		}
-
-		HeapGPU l_created_heap = HeapGPU::allocate(p_transfer_device, 8, this->chunk_size);
-
-		l_created_heap.map(p_transfer_device, this->chunk_size);
-
-		this->page_buffers.push_back_element(l_created_heap);
-		int8 l_success = this->page_buffers.get(this->page_buffers.Size - 1).allocate_element(p_transfer_device, p_size, p_alignmenent_constaint, &out_chunk->chunk);
-		out_chunk->pagedbuffer_index = (uint8)this->page_buffers.Size - 1;
-		return l_success;
-	};
-
-	inline void GraphicsCardPagedHeap::release_element(const GPUMemoryToken& p_token)
-	{
-		this->page_buffers.get(p_token.pagedbuffer_index).release_element(p_token.chunk);
-	};
-
-	inline GraphicsCardHeap GraphicsCardHeap::allocate_default(const gc_t p_transfer_device)
-	{
-		return GraphicsCardHeap{
-			GraphicsCardPagedHeap::allocate(16000000),
-			GraphicsCardPagedHeap::allocate(16000000)
-		};
-	};
-
-	inline void GraphicsCardHeap::free(const gc_t p_transfer_device)
+	inline void TransferDeviceHeap::free(const gc_t p_transfer_device)
 	{
 		this->gpu_write.free(p_transfer_device);
 		this->host_write.free(p_transfer_device);
 	};
 
-	inline int8 GraphicsCardHeap::allocate_gpu_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token)
+	inline int8 TransferDeviceHeap::allocate_gpu_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, HeapPagedToken* out_token)
 	{
 		return this->gpu_write.allocate_element(p_size, p_alignement_constraint, p_transfer_device, out_token);
 	};
 
-	inline void GraphicsCardHeap::release_gpu_write_element(const GPUMemoryToken& p_memory)
+	inline void TransferDeviceHeap::release_gpu_write_element(const HeapPagedToken& p_memory)
 	{
 		this->gpu_write.release_element(p_memory);
 	};
 
-	inline int8 GraphicsCardHeap::allocate_host_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, GPUMemoryToken* out_token)
+	inline int8 TransferDeviceHeap::allocate_host_write_element(const gc_t p_transfer_device, const uimax p_size, const uimax p_alignement_constraint, HeapPagedToken* out_token)
 	{
-		return this->host_write.allocate_element_and_map_heapmemory_if_created(p_size, p_alignement_constraint, p_transfer_device, out_token);
+		return this->host_write.allocate_element_and_map_page_if_created(p_size, p_alignement_constraint, p_transfer_device, out_token);
 	};
 
-	inline void GraphicsCardHeap::release_host_write_element(const GPUMemoryToken& p_memory)
+	inline void TransferDeviceHeap::release_host_write_element(const HeapPagedToken& p_memory)
 	{
 		this->host_write.release_element(p_memory);
 	};
 
-	inline SliceIndex* GraphicsCardHeap::get_gpu_write_element(const GPUMemoryToken& p_token)
+	inline Slice<int8> TransferDeviceHeap::get_host_write_element_as_slice(const HeapPagedToken& p_token)
 	{
-		return this->gpu_write.page_buffers.get(p_token.pagedbuffer_index).heap.get(p_token.chunk);
+		SliceIndex* l_slice_index = this->host_write.heap.get_sliceindex_only(p_token);
+		return Slice<int8>::build_memory_offset_elementnb(
+			this->host_write.gpu_memories.get(p_token.PageIndex).mapped_memory,
+			l_slice_index->Begin, l_slice_index->Size
+		);
 	};
 
-	inline SliceIndex* GraphicsCardHeap::get_host_write_element(const GPUMemoryToken& p_token)
+	inline SliceOffset<int8> TransferDeviceHeap::get_host_write_gcmemory_and_offset(const HeapPagedToken& p_token)
 	{
-		return this->host_write.page_buffers.get(p_token.pagedbuffer_index).heap.get(p_token.chunk);
+		return SliceOffset<int8>::build_from_sliceindex(
+			(int8*)this->host_write.gpu_memories.get(p_token.PageIndex).gpu_memory,
+			*this->host_write.heap.get_sliceindex_only(p_token)
+		);
 	};
 
-	inline Slice<int8> GraphicsCardHeap::get_host_write_element_as_slice(const GPUMemoryToken& p_token)
+	inline SliceOffset<int8> TransferDeviceHeap::get_gpu_write_gcmemory_and_offset(const HeapPagedToken& p_token)
 	{
-		HeapGPU& l_heap = this->host_write.page_buffers.get(p_token.pagedbuffer_index);
-		SliceIndex* l_slice_index = l_heap.heap.get(p_token.chunk);
-		return Slice<int8>::build_memory_offset_elementnb(l_heap.mapped_memory, l_slice_index->Begin, l_slice_index->Size);
-	};
-
-	inline void GraphicsCardHeap::get_host_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset)
-	{
-		HeapGPU& l_heap = this->host_write.page_buffers.get(p_token.pagedbuffer_index);
-		*out_gc_memory = l_heap.gpu_memory;
-		*out_offset = *l_heap.heap.get(p_token.chunk);
-	};
-
-	inline void GraphicsCardHeap::get_gpu_write_gcmemory_and_offset(const GPUMemoryToken& p_token, gcmemory_t* out_gc_memory, SliceIndex* out_offset)
-	{
-		HeapGPU& l_heap = this->gpu_write.page_buffers.get(p_token.pagedbuffer_index);
-		*out_gc_memory = l_heap.gpu_memory;
-		*out_offset = *l_heap.heap.get(p_token.chunk);
+		return SliceOffset<int8>::build_from_sliceindex(
+			(int8*)this->gpu_write.gpu_memories.get(p_token.PageIndex).gpu_memory,
+			*this->gpu_write.heap.get_sliceindex_only(p_token)
+		);
 	};
 
 
@@ -386,7 +361,7 @@ namespace v2
 
 		vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family, 0, &l_transfer_device.transfer_queue);
 
-		l_transfer_device.heap = GraphicsCardHeap::allocate_default(l_transfer_device.device);
+		l_transfer_device.heap = TransferDeviceHeap::allocate_default(l_transfer_device.device);
 
 		l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family);
 		l_transfer_device.command_buffer = l_transfer_device.command_pool.allocate_command_buffer(l_transfer_device.device, l_transfer_device.transfer_queue);
@@ -409,7 +384,7 @@ namespace v2
 		};
 	};
 
-	inline void BufferHost::MappedMemory::map(TransferDevice& p_transfer_device, const GPUMemoryToken& p_memory)
+	inline void BufferHost::MappedMemory::map(TransferDevice& p_transfer_device, const HeapPagedToken& p_memory)
 	{
 		if (!this->is_mapped())
 		{
@@ -477,16 +452,18 @@ namespace v2
 		this->memory.copy_from(p_from);
 	};
 
+	inline Slice<int8>& BufferHost::get_mapped_memory()
+	{
+		return this->memory.memory;
+	};
 
 	inline void BufferHost::bind(TransferDevice& p_transfer_device)
 	{
 #if RENDER_BOUND_TEST
 		assert_true(this->memory.is_mapped());
 #endif
-		gcmemory_t l_memory;
-		SliceIndex l_offset;
-		p_transfer_device.heap.get_host_write_gcmemory_and_offset(this->heap_token, &l_memory, &l_offset);
-		vkBindBufferMemory(p_transfer_device.device, this->buffer, l_memory, l_offset.Begin);
+		SliceOffset<int8> l_memory = p_transfer_device.heap.get_host_write_gcmemory_and_offset(this->heap_token);
+		vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
 	};
 
 	inline void BufferHost::map(TransferDevice& p_transfer_device, const uimax p_element_count)
@@ -531,10 +508,8 @@ namespace v2
 
 	inline void BufferGPU::bind(TransferDevice& p_transfer_device)
 	{
-		gcmemory_t l_memory;
-		SliceIndex l_offset;
-		p_transfer_device.heap.get_gpu_write_gcmemory_and_offset(this->heap_token, &l_memory, &l_offset);
-		vkBindBufferMemory(p_transfer_device.device, this->buffer, l_memory, l_offset.Begin);
+		SliceOffset<int8> l_memory = p_transfer_device.heap.get_gpu_write_gcmemory_and_offset(this->heap_token);
+		vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
 	};
 
 	inline BufferAllocator BufferAllocator::allocate_default(const GPUInstance& p_instance)
@@ -551,7 +526,8 @@ namespace v2
 	inline void BufferAllocator::free()
 	{
 		this->step();
-		this->device.command_buffer.wait_for_completion();
+		this->force_command_buffer_execution_sync();
+
 		this->clean_garbage_buffers();
 
 		this->host_buffers.free();
@@ -575,6 +551,11 @@ namespace v2
 		BufferHost& l_buffer = this->host_buffers.get(p_buffer_host);
 		l_buffer.free(this->device);
 		this->host_buffers.release_element(p_buffer_host);
+	};
+
+	inline Slice<int8>& BufferAllocator::get_bufferhost_mapped_memory(const Token(BufferHost) p_buffer_host)
+	{
+		return this->host_buffers.get(p_buffer_host).get_mapped_memory();
 	};
 
 	inline Token(BufferGPU) BufferAllocator::allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags)
@@ -686,6 +667,12 @@ namespace v2
 
 
 		this->device.command_buffer.end();
+	};
+
+	inline void BufferAllocator::force_command_buffer_execution_sync()
+	{
+		this->device.command_buffer.submit();
+		this->device.command_buffer.wait_for_completion();
 	};
 
 	inline void BufferAllocator::clean_garbage_buffers()

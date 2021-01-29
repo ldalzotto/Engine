@@ -45,14 +45,22 @@ namespace v2
 		switch (messageSeverity)
 		{
 		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-			l_severity.append(slice_int8_build_rawstr("[Verbose] - "));
+			// l_severity.append(slice_int8_build_rawstr("[Verbose] - "));
+			l_severity.free();
+			return VK_FALSE;
+			break;
+		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+			l_severity.append(slice_int8_build_rawstr("[Info] - "));
 			break;
 		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
 			l_severity.append(slice_int8_build_rawstr("[Warn] - "));
 			break;
 		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
 			l_severity.append(slice_int8_build_rawstr("[Error] - "));
-			is_error = true;
+			is_error = 1;
+			break;
+		case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+			is_error = 1;
 			break;
 		}
 		l_severity.append(slice_int8_build_rawstr("validation layer: "));
