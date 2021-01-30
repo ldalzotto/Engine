@@ -14,7 +14,7 @@ namespace v2
         {
             return HeapMemory{
                 Heap::allocate(p_heap_size),
-                Span<int8>::allocate(p_heap_size)};
+                Span<int8>::allocate(p_heap_size) };
         };
 
         inline static HeapMemory allocate_default()
@@ -28,9 +28,9 @@ namespace v2
             this->Memory.free();
         };
 
-        inline Token(SliceIndex) allocate_element(const Slice<int8> *p_element_bytes)
+        inline Token(SliceIndex) allocate_element(const Slice<int8>* p_element_bytes)
         {
-            Heap::AllocatedElementReturn l_heap_allocated_element;
+            HeapA::AllocatedElementReturn l_heap_allocated_element;
             this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_bytes->Size, &l_heap_allocated_element));
             this->Memory.copy_memory(l_heap_allocated_element.Offset, *p_element_bytes);
             return l_heap_allocated_element.token;
@@ -38,14 +38,14 @@ namespace v2
 
         inline Token(SliceIndex) allocate_empty_element(const uimax p_element_size)
         {
-            Heap::AllocatedElementReturn l_heap_allocated_element;
+            HeapA::AllocatedElementReturn l_heap_allocated_element;
             this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
             return l_heap_allocated_element.token;
         };
 
         inline Token(SliceIndex) allocate_empty_element_return_chunk(const uimax p_element_size, Slice<int8>* out_chunk)
         {
-            Heap::AllocatedElementReturn l_heap_allocated_element;
+            HeapA::AllocatedElementReturn l_heap_allocated_element;
             this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
             *out_chunk = Slice<int8>::build_memory_elementnb(&this->Memory.Memory[l_heap_allocated_element.Offset], p_element_size);
             return l_heap_allocated_element.token;
@@ -57,7 +57,7 @@ namespace v2
         };
 
         template <class ELementType>
-        inline Token(SliceIndex) allocate_element_typed(const ELementType *p_element)
+        inline Token(SliceIndex) allocate_element_typed(const ELementType* p_element)
         {
             return this->allocate_element(Slice<ELementType>::build_asint8_memory_singleelement(p_element));
         };
@@ -75,20 +75,20 @@ namespace v2
 
         inline Slice<int8> get(const Token(SliceIndex) p_chunk)
         {
-            SliceIndex *l_chunk_slice = this->_Heap.get(p_chunk);
+            SliceIndex* l_chunk_slice = this->_Heap.get(p_chunk);
             return Slice<int8>::build_memory_offset_elementnb(this->Memory.Memory, l_chunk_slice->Begin, l_chunk_slice->Size);
         };
 
         template <class ElementType>
-        inline ElementType *get_typed(const Token(SliceIndex) p_chunk)
+        inline ElementType* get_typed(const Token(SliceIndex) p_chunk)
         {
             return slice_cast_singleelement<ElementType>(this->get(p_chunk));
         };
 
     private:
-        void handle_heap_allocation_state(const Heap::AllocationState p_allocation_state)
+        void handle_heap_allocation_state(const HeapA::AllocationState p_allocation_state)
         {
-            if ((Heap::AllocationState_t)p_allocation_state & (Heap::AllocationState_t)Heap::AllocationState::HEAP_RESIZED)
+            if ((HeapA::AllocationState_t)p_allocation_state & (HeapA::AllocationState_t)HeapA::AllocationState::HEAP_RESIZED)
             {
 #if CONTAINER_MEMORY_TEST
                 if (!this->Memory.resize(this->_Heap.Size))
@@ -101,7 +101,7 @@ namespace v2
             };
 
 #if CONTAINER_MEMORY_TEST
-            if (!((Heap::AllocationState_t)p_allocation_state & (Heap::AllocationState_t)Heap::AllocationState::ALLOCATED))
+            if (!((HeapA::AllocationState_t)p_allocation_state & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED))
             {
                 abort();
             }

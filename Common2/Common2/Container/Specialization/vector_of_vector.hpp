@@ -252,7 +252,55 @@ namespace v2
 		inline void element_clear(const uimax p_nested_vector_index)
 		{
 			this->get_vectorheader(p_nested_vector_index)->Size = 0;
-		}
+		};
+
+
+		/*
+			Element_ShadowVector is a wrapper around a VectorOfVector that acts like a regular Vector.
+			It can be used in some templated algorithm that uses Vector.
+		*/
+		struct Element_ShadowVector
+		{
+			VectorOfVector<ElementType>& vectorOfVector;
+			uimax Index;
+
+			inline static Element_ShadowVector build(VectorOfVector<ElementType>& p_vector_of_vector, const uimax p_index)
+			{
+				return Element_ShadowVector{
+					p_vector_of_vector, p_index
+				};
+			};
+
+			inline uimax sv_get_size()
+			{
+				return this->vectorOfVector.get_vectorheader(this->Index)->Size;
+			};
+
+			inline ElementType& sv_get(const uimax p_index)
+			{
+				return this->vectorOfVector.get(this->Index).get(p_index);
+			};
+
+			inline void sv_erase_element_at(const uimax p_index)
+			{
+				this->vectorOfVector.element_erase_element_at(this->Index, p_index);
+			};
+
+			inline void sv_push_back_element(const ElementType& p_index)
+			{
+				this->vectorOfVector.element_push_back_element(this->Index, p_index);
+			};
+
+			inline Slice<ElementType> sv_to_slice()
+			{
+				return this->vectorOfVector.get(this->Index);
+			};
+		};
+
+		inline Element_ShadowVector element_as_shadow_vector(const uimax p_nested_vector_index)
+		{
+			return Element_ShadowVector::build(*this, p_nested_vector_index);
+		};
 
 	private:
 		inline void element_movememory_up(const uimax p_nested_vector_index, const VectorOfVector_VectorHeader& p_nested_vector_header,
@@ -330,6 +378,10 @@ namespace v2
 		{
 			p_vector_header->Size -= 1;
 		};
+
+
+
+
 	};
 
 }

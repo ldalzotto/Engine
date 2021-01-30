@@ -237,21 +237,21 @@ namespace v2
 	{
 		HeapPaged::AllocatedElementReturn l_allocated_chunk;
 		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignmenent_constaint, &l_allocated_chunk);
-		if ((HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::PAGE_CREATED)
+		if ((HeapPaged::AllocationState_t)l_allocation_state & (HeapPaged::AllocationState_t)HeapPaged::AllocationState::PAGE_CREATED)
 		{
 			this->gpu_memories.push_back_element(MemoryGPU::allocate(p_transfer_device, this->memory_type, this->heap.PageSize));
 		}
 
 		*out_chunk = l_allocated_chunk.token;
 
-		return (HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::ALLOCATED;
+		return (HeapPaged::AllocationState_t)l_allocation_state & (HeapPaged::AllocationState_t)HeapPaged::AllocationState::ALLOCATED;
 	};
 
 	inline int8 HeapPagedGPU::allocate_element_and_map_page_if_created(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, HeapPagedToken* out_chunk)
 	{
 		HeapPaged::AllocatedElementReturn l_allocated_chunk;
 		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignmenent_constaint, &l_allocated_chunk);
-		if ((HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::PAGE_CREATED)
+		if ((HeapPaged::AllocationState_t)l_allocation_state & (HeapPaged::AllocationState_t)HeapPaged::AllocationState::PAGE_CREATED)
 		{
 			this->gpu_memories.push_back_element(MemoryGPU::allocate(p_transfer_device, this->memory_type, this->heap.PageSize));
 			this->gpu_memories.get(l_allocated_chunk.token.PageIndex).map(p_transfer_device, this->heap.PageSize);
@@ -259,7 +259,7 @@ namespace v2
 
 		*out_chunk = l_allocated_chunk.token;
 
-		return (HeapPaged::AllocationStateFlags)l_allocation_state & (HeapPaged::AllocationStateFlags)HeapPaged::AllocationState::ALLOCATED;
+		return (HeapPaged::AllocationState_t)l_allocation_state & (HeapPaged::AllocationState_t)HeapPaged::AllocationState::ALLOCATED;
 	};
 
 	inline void HeapPagedGPU::release_element(const HeapPagedToken& p_token)

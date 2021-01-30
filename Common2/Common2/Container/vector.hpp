@@ -57,6 +57,11 @@ namespace v2
 			return this->Memory.Memory;
 		};
 
+		inline uimax get_size()
+		{
+			return this->Size;
+		};
+
 		inline uimax get_capacity()
 		{
 			return this->Memory.Capacity;
@@ -267,7 +272,17 @@ namespace v2
 			return 1;
 		};
 
+
+
+#define ShadowVector(ElementType) ElementType##_##ShadowVector
+#define ShadowVector_t(ElementType, Prefix) ElementType##_##ShadowVector##_##Prefix
+
+#define sv_get_size() get_size()
+#define sv_get(p_index) get(p_index)
+#define sv_erase_element_at(p_index) erase_element_at(p_index)
+#define sv_push_back_element(p_element) push_back_element(p_element)
+#define sv_to_slice() to_slice()
+
 	};
 
 }
-

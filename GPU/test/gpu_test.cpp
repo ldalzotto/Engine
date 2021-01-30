@@ -11,7 +11,7 @@ namespace v2
 
 		const uimax l_tested_uimax_array[3] = { 10,20,30 };
 		Slice<uimax> l_tested_uimax_slice = Slice<uimax>::build_memory_elementnb((uimax*)l_tested_uimax_array, 3);
-
+        
 		// allocating and releasing a BufferHost
 		{
 			uimax l_value = 20;

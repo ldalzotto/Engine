@@ -256,14 +256,14 @@
       ]
     },
     {
-      "base_name": "CollisionTest",
+      "base_name": "Common2Test",
       "module_type": "EXECUTABLE",
       "build_type": "DEBUG",
-      "root_folder": "Collision",
-      "main_file": "test/collision2_test.cpp",
+      "root_folder": "Common2",
+      "main_file": "test/common2_test.cpp",
       "include_directories": [],
       "dependencies": [
-        "Collision"
+        "Common2"
       ]
     },
     {
@@ -278,14 +278,14 @@
       ]
     },
     {
-      "base_name": "Common2Test",
+      "base_name": "CollisionTest",
       "module_type": "EXECUTABLE",
       "build_type": "DEBUG",
-      "root_folder": "Common2",
-      "main_file": "test/common2_test.cpp",
+      "root_folder": "Collision",
+      "main_file": "test/collision2_test.cpp",
       "include_directories": [],
       "dependencies": [
-        "Common2"
+        "Collision"
       ]
     },
     {

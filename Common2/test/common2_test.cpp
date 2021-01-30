@@ -543,8 +543,31 @@ namespace v2
 
 		{
 			l_vectorofvector_uimax.free();
+			l_vectorofvector_uimax.allocate_default();
+
+			uimax l_initial_elements_0[3] = { 1,2,3 };
+			uimax l_initial_elements_1[3] = { 4,5,6 };
+			{
+				Slice<uimax> l_initial_elements_0_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_0, 3);
+				l_vectorofvector_uimax.push_back_element(l_initial_elements_0_slice);
+				Slice<uimax> l_initial_elements_1_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_1, 3);
+				l_vectorofvector_uimax.push_back_element(l_initial_elements_1_slice);
+			}
+
+			{
+				VectorOfVector<uimax>::Element_ShadowVector l_shadow = l_vectorofvector_uimax.element_as_shadow_vector(0);
+				l_shadow.push_back_element(9);
+				assert_true(l_shadow.get_size() == 4);
+				assert_true(l_shadow.get(3) == 9);
+				assert_true(l_shadow.get(2) == l_initial_elements_0[2]);
+
+				assert_true(l_vectorofvector_uimax.get(1).get(0) == l_initial_elements_1[0]);
+				assert_true(l_vectorofvector_uimax.get(1).get(1) == l_initial_elements_1[1]);
+			}
+
 		}
 
+		l_vectorofvector_uimax.free();
 	};
 
 	inline void poolofvector_test()
@@ -743,21 +766,21 @@ namespace v2
 
 		{
 
-			Heap::AllocatedElementReturn l_chunk_1;
-			assert_true((Heap::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (Heap::AllocationState_t)Heap::AllocationState::ALLOCATED);
+			HeapA::AllocatedElementReturn l_chunk_1;
+			assert_true((HeapA::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED);
 			assert_true(l_heap.get(l_chunk_1.token)->Begin == 0);
 			assert_true(l_heap.get(l_chunk_1.token)->Size == 10);
 			assert_heap_integrity(&l_heap);
 
 
-			Heap::AllocatedElementReturn l_chunk_0;
-			assert_true((Heap::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (Heap::AllocationState_t)Heap::AllocationState::ALLOCATED);
+			HeapA::AllocatedElementReturn l_chunk_0;
+			assert_true((HeapA::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED);
 			assert_true(l_heap.get(l_chunk_0.token)->Begin == 10);
 			assert_true(l_heap.get(l_chunk_0.token)->Size == 5);
 			assert_heap_integrity(&l_heap);
 
 
-			Heap::AllocatedElementReturn l_chunk_2;
+			HeapA::AllocatedElementReturn l_chunk_2;
 			l_heap.allocate_element(5, &l_chunk_2);
 			assert_heap_integrity(&l_heap);
 
@@ -767,13 +790,13 @@ namespace v2
 			assert_heap_integrity(&l_heap);
 
 			// We try to allocate 10 but there is two chunks size 5 free next to each other
-			assert_true(l_heap.allocate_element(10, &l_chunk_0) == Heap::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element(10, &l_chunk_0) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
 
 
 			// The heap is resized
-			Heap::AllocatedElementReturn l_chunk_3;
-			assert_true((Heap::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (Heap::AllocationState_t)Heap::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
+			HeapA::AllocatedElementReturn l_chunk_3;
+			assert_true((HeapA::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
 			assert_true(l_chunk_3.Offset == 20);
 			assert_true(l_heap.get(l_chunk_3.token)->Size == 50);
 			assert_true(l_heap.Size > l_initial_heap_size);
@@ -787,13 +810,13 @@ namespace v2
 		assert_heap_integrity(&l_heap);
 		{
 
-			Heap::AllocatedElementReturn l_allocated_chunk;
-			assert_true(l_heap.allocate_element_with_alignment(1, 5, &l_allocated_chunk) == Heap::AllocationState::ALLOCATED);
+			HeapA::AllocatedElementReturn l_allocated_chunk;
+			assert_true(l_heap.allocate_element_with_alignment(1, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
-			assert_true(l_heap.allocate_element_with_alignment(7, 5, &l_allocated_chunk) == Heap::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element_with_alignment(7, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
 			assert_true(l_allocated_chunk.Offset == 5);
-			assert_true(l_heap.allocate_element_with_alignment(3, 7, &l_allocated_chunk) == Heap::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element_with_alignment(3, 7, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
 			assert_true(l_allocated_chunk.Offset == 14);
 
@@ -805,10 +828,10 @@ namespace v2
 		l_heap = Heap::allocate(l_initial_heap_size);
 		assert_heap_integrity(&l_heap);
 		{
-			Heap::AllocatedElementReturn l_allocated_chunk;
+			HeapA::AllocatedElementReturn l_allocated_chunk;
 
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
-			assert_true(l_heap.allocate_element_norealloc_with_alignment(l_initial_heap_size + 10, 0, &l_allocated_chunk) == Heap::AllocationState::NOT_ALLOCATED);
+			assert_true(l_heap.allocate_element_norealloc_with_alignment(l_initial_heap_size + 10, 0, &l_allocated_chunk) == HeapA::AllocationState::NOT_ALLOCATED);
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
 		}
 
@@ -825,19 +848,19 @@ namespace v2
 
 		{
 			assert_true(l_heap_paged.PageSize == l_heappaged_chunk_size);
-			assert_true(l_heap_paged.Heaps.Size == 0);
+			assert_true(l_heap_paged.get_page_count() == 0);
 
 			HeapPaged::AllocatedElementReturn l_allocated_element;
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
-			assert_true(l_heap_paged.Heaps.Size == 1);
+			assert_true(l_heap_paged.get_page_count() == 1);
 			assert_true(l_allocated_element.Offset == 0);
 
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
-			assert_true(l_heap_paged.Heaps.Size == 2);
+			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 0);
 
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(3, 3, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED);
-			assert_true(l_heap_paged.Heaps.Size == 2);
+			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 6);
 		}
 
