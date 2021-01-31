@@ -115,6 +115,9 @@ struct alignas(sizeof(uint32)) v3ui
 			uint32 x, y, z;
 		};
 	};
+
+	int8 operator==(const v3ui& p_other) const;
+	int8 operator!=(const v3ui& p_other) const;
 };
 
 struct alignas(sizeof(float32)) v4f

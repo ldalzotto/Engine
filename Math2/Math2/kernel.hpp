@@ -276,6 +276,16 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 	};
 };
 
+inline int8 v3ui::operator==(const v3ui& p_other) const
+{
+	return Slice<v3ui>::build_asint8_memory_singleelement(this).compare(Slice<v3ui>::build_asint8_memory_singleelement(&p_other));
+};
+
+inline int8 v3ui::operator!=(const v3ui& p_other) const
+{
+	return !Slice<v3ui>::build_asint8_memory_singleelement(this).compare(Slice<v3ui>::build_asint8_memory_singleelement(&p_other));
+};
+
 inline int8 v4f::operator==(const v4f& p_other) const
 {
 	return v2::Math::equals(this->Points[0], p_other.Points[0]) &&

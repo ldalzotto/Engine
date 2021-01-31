@@ -3,7 +3,7 @@
 
 namespace v2
 {
-	inline void gpu_memory_allocation()
+	inline void gpu_buffer_allocation()
 	{
 		const int8* l_extensions[1] = { VK_KHR_SURFACE_EXTENSION_NAME };
 		GPUInstance l_gpu_instance = GPUInstance::allocate(Slice<int8*>::build_memory_elementnb((int8**)l_extensions, 1));
@@ -71,6 +71,16 @@ namespace v2
 			l_buffer_allocator.force_command_buffer_execution_sync();
 		}
 
+		l_buffer_allocator.free();
+		l_gpu_instance.free();
+	};
+
+	inline void gpu_image_allocation()
+	{
+		const int8* l_extensions[1] = { VK_KHR_SURFACE_EXTENSION_NAME };
+		GPUInstance l_gpu_instance = GPUInstance::allocate(Slice<int8*>::build_memory_elementnb((int8**)l_extensions, 1));
+		BufferAllocator l_buffer_allocator = BufferAllocator::allocate_default(l_gpu_instance);
+
 		struct color
 		{
 			int8 r, g, b, a;
@@ -95,17 +105,17 @@ namespace v2
 
 		// allocating and releasing a ImageHost
 		{
-			Token(ImageHost) l_image_host_token = l_buffer_allocator.allocate_imagehost(l_pixels_slize.build_asint8(), l_imageformat, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+			Token(ImageHost) l_image_host_token = l_buffer_allocator.allocate_imagehost(l_pixels_slize.build_asint8(), l_imageformat, (ImageUsageFlags)ImageUsageFlag::READ);
 			ImageHost& l_image_host = l_buffer_allocator.host_images.get(l_image_host_token);
 
-			 assert_true(l_image_host.get_mapped_memory().compare(l_pixels_slize.build_asint8()));
+			assert_true(l_image_host.get_mapped_memory().compare(l_pixels_slize.build_asint8()));
 
-			 l_buffer_allocator.free_imagehost(l_image_host_token);
+			l_buffer_allocator.free_imagehost(l_image_host_token);
 		}
 
 		// allocating and releasing a ImageGPU
 		{
-			Token(ImageGPU) l_image_gpu = l_buffer_allocator.allocate_imagegpu(l_imageformat, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+			Token(ImageGPU) l_image_gpu = l_buffer_allocator.allocate_imagegpu(l_imageformat, (ImageUsageFlags)ImageUsageFlag::READ | (ImageUsageFlags)ImageUsageFlag::WRITE);
 
 			l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_pixels_slize.build_asint8());
 
@@ -128,18 +138,36 @@ namespace v2
 
 			assert_true(l_buffer_allocator.get_imagehost_mapped_memory(l_read_buffer).compare(l_pixels_slize.build_asint8()));
 
-			// l_buffer_allocator.free_imagehost(l_read_buffer);
 			l_buffer_allocator.free_imagehost(l_read_buffer);
 			l_buffer_allocator.free_imagegpu(l_image_gpu);
+		}
+
+		// creation of a BufferGPU deletion the same step
+		// nothing should happen
+		{
+			assert_true(l_buffer_allocator.image_host_to_gpu_copy_events.Size == 0);
+
+			Token(ImageGPU) l_image_gpu = l_buffer_allocator.allocate_imagegpu(l_imageformat, (VkFlags)ImageUsageFlag::WRITE);
+			l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_pixels_slize.build_asint8());
+
+			// it creates an gpu write event that will be consumed the next 
+			assert_true(l_buffer_allocator.image_host_to_gpu_copy_events.Size == 1);
+
+			l_buffer_allocator.free_imagegpu(l_image_gpu);
+
+			assert_true(l_buffer_allocator.image_host_to_gpu_copy_events.Size == 0);
+
+			l_buffer_allocator.step();
+			l_buffer_allocator.force_command_buffer_execution_sync();
 		}
 
 		l_buffer_allocator.free();
 		l_gpu_instance.free();
 	};
-
 }
 
 int main()
 {
-	v2::gpu_memory_allocation();
+	v2::gpu_buffer_allocation();
+	v2::gpu_image_allocation();
 };

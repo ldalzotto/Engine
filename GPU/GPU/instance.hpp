@@ -67,8 +67,8 @@ namespace v2
             return l_array;
         };
     };
-     
-    /*
+
+
     inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const
     {
         uint32 l_type_bits = p_memory_requirements.memoryTypeBits;
@@ -87,27 +87,7 @@ namespace v2
         }
         return -1;
     };
-    */
 
-    inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const
-    {
-        const uint32_t memoryCount = this->device_memory_properties.memoryTypeCount;
-        for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
-            const uint32_t memoryTypeBits = (1 << memoryIndex);
-            const bool isRequiredMemoryType = p_memory_requirements.memoryTypeBits & memoryTypeBits;
-
-            const VkMemoryPropertyFlags properties =
-                this->device_memory_properties.memoryTypes[memoryIndex].propertyFlags;
-            const bool hasRequiredProperties =
-                (properties & p_properties) == p_properties;
-
-            if (isRequiredMemoryType && hasRequiredProperties)
-                return static_cast<int32_t>(memoryIndex);
-        }
-
-        // failed to find memory type
-        return -1;
-    };
 
     inline GPUInstance GPUInstance::allocate(const Slice<int8*>& p_required_instance_extensions)
     {

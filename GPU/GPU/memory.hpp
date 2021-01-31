@@ -174,6 +174,35 @@ namespace v2
 
 	typedef VkFlags BufferUsageFlags;
 
+	enum class ImageUsageFlag
+	{
+		READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT
+	};
+
+	typedef VkFlags ImageUsageFlags;
+
+	struct ImageLayoutTransitionBarrierConfiguration {
+		VkAccessFlags src_access_mask;
+		VkPipelineStageFlags src_stage;
+
+		VkAccessFlags dst_access_mask;
+		VkPipelineStageFlags dst_stage;
+	};
+
+	namespace ImageLayoutTransitionBarrierConfiguration_Const
+	{
+		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_dst = ImageLayoutTransitionBarrierConfiguration
+		{
+				VkAccessFlags(0),VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+		};
+	};
+
 	/*
 		The BufferAllocator is the front layer that register and execute all allocation, copy of buffers.
 	*/
@@ -248,6 +277,10 @@ namespace v2
 		void force_command_buffer_execution_sync();
 
 	private:
+		void cmd_copy_buffer(const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size);
+		void cmd_image_layout_transition(const VkImage p_image, const ImageFormat& p_image_format,
+			const VkImageLayout p_source_image_layout, const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration);
+		void cmd_copy_image(const VkImage p_src_image, const ImageFormat& p_src_format, const VkImage p_target_image, const ImageFormat& p_target_format);
 		void clean_garbage_buffers();
 	};
 
@@ -873,68 +906,20 @@ namespace v2
 		this->gpu_images.release_element(p_image_gpu);
 	};
 
-	inline void BufferAllocator::write_to_imagegpu(const Token(ImageGPU) p_image_gpu, const Slice<int8>& p_value /*, const VkImageLayout p_before_layout, const VkImageLayout p_after_layout*/)
+	inline void BufferAllocator::write_to_imagegpu(const Token(ImageGPU) p_image_gpu, const Slice<int8>& p_value)
 	{
 		ImageGPU& l_image_gpu = this->gpu_images.get(p_image_gpu);
-		Token(ImageHost) l_stagin_image = this->allocate_imagehost(p_value, l_image_gpu.format, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+		Token(ImageHost) l_stagin_image = this->allocate_imagehost(p_value, l_image_gpu.format, (ImageUsageFlags)ImageUsageFlag::READ);
 		this->image_host_to_gpu_copy_events.push_back_element(Image_HosttoGPU_CopyEvent{ l_stagin_image, p_image_gpu });
 	};
 
 	inline Token(ImageHost) BufferAllocator::read_from_imagegpu(const Token(ImageGPU) p_image_gpu)
 	{
 		ImageGPU& l_buffer_gpu = this->gpu_images.get(p_image_gpu);
-		Token(ImageHost) l_staging_buffer = this->allocate_imagehost_empty(l_buffer_gpu.format, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+		Token(ImageHost) l_staging_buffer = this->allocate_imagehost_empty(l_buffer_gpu.format, (ImageUsageFlags)ImageUsageFlag::WRITE);
 		this->image_gpu_to_host_copy_events.push_back_element(ImageGPUtoHost_CopyEvent{ p_image_gpu, l_staging_buffer });
 		return l_staging_buffer;
 	};
-
-
-	struct TextureLayoutTransitionBarrierConfiguration {
-		VkAccessFlags src_access_mask;
-		VkAccessFlags dst_access_mask;
-
-		VkPipelineStageFlags src_stage;
-		VkPipelineStageFlags dst_stage;
-
-		inline TextureLayoutTransitionBarrierConfiguration() {};
-		inline TextureLayoutTransitionBarrierConfiguration(const VkAccessFlags p_src_access_mask, const VkAccessFlags p_dst_access_mask,
-			const VkPipelineStageFlags p_src_stage, const VkPipelineStageFlags p_dst_stage)
-		{
-			this->src_access_mask = p_src_access_mask;
-			this->dst_access_mask = p_dst_access_mask;
-			this->src_stage = p_src_stage;
-			this->dst_stage = p_dst_stage;
-		};
-	};
-
-	template<VkImageLayout SourceLayout, VkImageLayout TargetLayout>
-	struct TransitionBarrierConfigurationBuilder
-	{
-		inline static TextureLayoutTransitionBarrierConfiguration build();
-	};
-
-	template<>
-	struct TransitionBarrierConfigurationBuilder<VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL> {
-
-		inline static TextureLayoutTransitionBarrierConfiguration build()
-		{
-			return TextureLayoutTransitionBarrierConfiguration(
-				VkAccessFlags(0), VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT,
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
-		};
-	};
-
-	template<>
-	struct TransitionBarrierConfigurationBuilder<VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL> {
-
-		inline static TextureLayoutTransitionBarrierConfiguration build()
-		{
-			return TextureLayoutTransitionBarrierConfiguration(
-				VkAccessFlags(0), VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT,
-				VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
-		};
-	};
-
 
 	inline void BufferAllocator::step()
 	{
@@ -949,20 +934,7 @@ namespace v2
 				Buffer_HosttoGPU_CopyEvent& l_event = this->buffer_host_to_gpu_copy_events.get(i);
 				BufferHost& l_source_buffer = this->host_buffers.get(l_event.staging_buffer);
 				BufferGPU& l_target_buffer = this->gpu_buffers.get(l_event.target_buffer);
-
-#if CONTAINER_MEMORY_TEST
-				assert_true(l_source_buffer.size <= l_target_buffer.size);
-#endif
-
-				VkBufferCopy l_buffer_copy{};
-				l_buffer_copy.size = l_source_buffer.size;
-				vkCmdCopyBuffer(this->device.command_buffer.command_buffer,
-					l_source_buffer.buffer,
-					l_target_buffer.buffer,
-					1,
-					&l_buffer_copy
-				);
-
+				this->cmd_copy_buffer(l_source_buffer.buffer, l_source_buffer.size, l_target_buffer.buffer, l_target_buffer.size);
 				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
 			}
 
@@ -977,20 +949,7 @@ namespace v2
 				Buffer_GPUtoHost_CopyEvent& l_event = this->buffer_gpu_to_host_copy_events.get(i);
 				BufferGPU& l_source_buffer = this->gpu_buffers.get(l_event.source_buffer);
 				BufferHost& l_target_buffer = this->host_buffers.get(l_event.target_buffer);
-
-#if CONTAINER_MEMORY_TEST
-				assert_true(l_source_buffer.size <= l_target_buffer.size);
-#endif
-
-				VkBufferCopy l_buffer_copy{};
-				l_buffer_copy.size = l_source_buffer.size;
-				vkCmdCopyBuffer(this->device.command_buffer.command_buffer,
-					l_source_buffer.buffer,
-					l_target_buffer.buffer,
-					1,
-					&l_buffer_copy
-				);
-
+				this->cmd_copy_buffer(l_source_buffer.buffer, l_source_buffer.size, l_target_buffer.buffer, l_target_buffer.size);
 			}
 
 			this->buffer_gpu_to_host_copy_events.clear();
@@ -1003,58 +962,7 @@ namespace v2
 				Image_HosttoGPU_CopyEvent& l_event = this->image_host_to_gpu_copy_events.get(i);
 				ImageHost& l_source = this->host_images.get(l_event.staging_image);
 				ImageGPU& l_target = this->gpu_images.get(l_event.target_image);
-
-				VkImageCopy l_region = {
-					VkImageSubresourceLayers{l_source.format.imageAspect, 0,0,l_source.format.arrayLayers},
-					VkOffset3D{0,0,0},
-					VkImageSubresourceLayers{l_target.format.imageAspect, 0,0,l_target.format.arrayLayers},
-					VkOffset3D{0,0,0},
-					VkExtent3D{l_target.format.extent.x, l_target.format.extent.y, l_target.format.extent.z}
-				};
-
-
-				{
-					VkImageMemoryBarrier l_image_memory_barrier{};
-					l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-					l_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-					l_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-					l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.image = l_source.image;
-					l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ l_source.format.imageAspect, 0, l_source.format.arrayLayers, 0, l_source.format.arrayLayers };
-
-					TextureLayoutTransitionBarrierConfiguration l_transition_configuration = TransitionBarrierConfigurationBuilder<VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL>::build();
-
-					l_image_memory_barrier.srcAccessMask = l_transition_configuration.src_access_mask;
-					l_image_memory_barrier.dstAccessMask = l_transition_configuration.dst_access_mask;
-
-					vkCmdPipelineBarrier(this->device.command_buffer.command_buffer, l_transition_configuration.src_stage, l_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL,
-						1, &l_image_memory_barrier);
-				}
-				
-
-				{
-					VkImageMemoryBarrier l_image_memory_barrier{};
-					l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-					l_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-					l_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-					l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.image = l_target.image;
-					l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ l_target.format.imageAspect, 0, l_target.format.arrayLayers, 0, l_target.format.arrayLayers };
-
-					TextureLayoutTransitionBarrierConfiguration l_transition_configuration = TransitionBarrierConfigurationBuilder<VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL>::build();
-
-					l_image_memory_barrier.srcAccessMask = l_transition_configuration.src_access_mask;
-					l_image_memory_barrier.dstAccessMask = l_transition_configuration.dst_access_mask;
-
-					vkCmdPipelineBarrier(this->device.command_buffer.command_buffer, l_transition_configuration.src_stage, l_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL,
-						1, &l_image_memory_barrier);
-				}
-
-				vkCmdCopyImage(this->device.command_buffer.command_buffer, l_source.image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					l_target.image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
-
+				this->cmd_copy_image(l_source.image, l_source.format, l_target.image, l_target.format);
 				this->garbage_host_images.push_back_element(l_event.staging_image);
 			}
 
@@ -1068,56 +976,7 @@ namespace v2
 				ImageGPUtoHost_CopyEvent& l_event = this->image_gpu_to_host_copy_events.get(i);
 				ImageGPU& l_source = this->gpu_images.get(l_event.source_image);
 				ImageHost& l_target = this->host_images.get(l_event.target_image);
-
-				VkImageCopy l_region = {
-					VkImageSubresourceLayers{l_source.format.imageAspect, 0,0,l_source.format.arrayLayers},
-					VkOffset3D{0,0,0},
-					VkImageSubresourceLayers{l_target.format.imageAspect, 0,0,l_target.format.arrayLayers},
-					VkOffset3D{0,0,0}, 
-					VkExtent3D{l_target.format.extent.x, l_target.format.extent.y, l_target.format.extent.z}
-				};
-
-				{
-					VkImageMemoryBarrier l_image_memory_barrier{};
-					l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-					l_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-					l_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-					l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.image = l_source.image;
-					l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ l_source.format.imageAspect, 0, l_source.format.arrayLayers, 0, l_source.format.arrayLayers };
-
-					TextureLayoutTransitionBarrierConfiguration l_transition_configuration = TransitionBarrierConfigurationBuilder<VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL>::build();
-
-					l_image_memory_barrier.srcAccessMask = l_transition_configuration.src_access_mask;
-					l_image_memory_barrier.dstAccessMask = l_transition_configuration.dst_access_mask;
-
-					vkCmdPipelineBarrier(this->device.command_buffer.command_buffer, l_transition_configuration.src_stage, l_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL,
-						1, &l_image_memory_barrier);
-				}
-
-
-				{
-					VkImageMemoryBarrier l_image_memory_barrier{};
-					l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-					l_image_memory_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-					l_image_memory_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-					l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-					l_image_memory_barrier.image = l_target.image;
-					l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ l_target.format.imageAspect, 0, l_target.format.arrayLayers, 0, l_target.format.arrayLayers };
-
-					TextureLayoutTransitionBarrierConfiguration l_transition_configuration = TransitionBarrierConfigurationBuilder<VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL>::build();
-
-					l_image_memory_barrier.srcAccessMask = l_transition_configuration.src_access_mask;
-					l_image_memory_barrier.dstAccessMask = l_transition_configuration.dst_access_mask;
-
-					vkCmdPipelineBarrier(this->device.command_buffer.command_buffer, l_transition_configuration.src_stage, l_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL,
-						1, &l_image_memory_barrier);
-				}
-
-				vkCmdCopyImage(this->device.command_buffer.command_buffer, l_source.image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					l_target.image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
+				this->cmd_copy_image(l_source.image, l_source.format, l_target.image, l_target.format);
 			}
 
 			this->image_gpu_to_host_copy_events.clear();
@@ -1131,6 +990,67 @@ namespace v2
 		this->device.command_buffer.submit();
 		this->device.command_buffer.wait_for_completion();
 	};
+
+	inline void BufferAllocator::cmd_copy_buffer(const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size)
+	{
+#if CONTAINER_MEMORY_TEST
+		assert_true(p_source_size <= p_target_size);
+#endif
+
+		VkBufferCopy l_buffer_copy{};
+		l_buffer_copy.size = p_source_size;
+		vkCmdCopyBuffer(this->device.command_buffer.command_buffer,
+			p_source_buffer,
+			p_target_buffer,
+			1,
+			&l_buffer_copy
+		);
+	};
+
+	inline void BufferAllocator::cmd_image_layout_transition(const VkImage p_image, const ImageFormat& p_image_format,
+		const VkImageLayout p_source_image_layout, const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration)
+	{
+		VkImageMemoryBarrier l_image_memory_barrier{};
+		l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		l_image_memory_barrier.oldLayout = p_source_image_layout;
+		l_image_memory_barrier.newLayout = p_target_image_layout;
+		l_image_memory_barrier.srcQueueFamilyIndex = this->device.graphics_card.transfer_queue_family;
+		l_image_memory_barrier.dstQueueFamilyIndex = this->device.graphics_card.transfer_queue_family;
+		l_image_memory_barrier.image = p_image;
+		l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ p_image_format.imageAspect, 0, p_image_format.arrayLayers, 0, p_image_format.arrayLayers };
+
+		l_image_memory_barrier.srcAccessMask = p_lyaout_transition_configuration.src_access_mask;
+		l_image_memory_barrier.dstAccessMask = p_lyaout_transition_configuration.dst_access_mask;
+
+		vkCmdPipelineBarrier(this->device.command_buffer.command_buffer, p_lyaout_transition_configuration.src_stage, p_lyaout_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL,
+			1, &l_image_memory_barrier);
+	};
+
+	inline void BufferAllocator::cmd_copy_image(const VkImage p_src_image, const ImageFormat& p_src_format, const VkImage p_target_image, const ImageFormat& p_target_format)
+	{
+
+#if CONTAINER_MEMORY_TEST
+		assert_true(p_src_format.extent == p_target_format.extent);
+#endif
+		{
+			this->cmd_image_layout_transition(p_src_image, p_src_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_src);
+			this->cmd_image_layout_transition(p_target_image, p_target_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_dst);
+		}
+
+		VkImageCopy l_region = {
+			VkImageSubresourceLayers{p_src_format.imageAspect, 0,0,p_src_format.arrayLayers},
+			VkOffset3D{0,0,0},
+			VkImageSubresourceLayers{p_target_format.imageAspect, 0,0,p_target_format.arrayLayers},
+			VkOffset3D{0,0,0},
+			VkExtent3D{p_src_format.extent.x, p_src_format.extent.y, p_src_format.extent.z}
+		};
+
+		vkCmdCopyImage(this->device.command_buffer.command_buffer, p_src_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			p_target_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
+	};
+
 
 	inline void BufferAllocator::clean_garbage_buffers()
 	{
