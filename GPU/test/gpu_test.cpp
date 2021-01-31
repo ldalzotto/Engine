@@ -11,7 +11,7 @@ namespace v2
 
 		const uimax l_tested_uimax_array[3] = { 10,20,30 };
 		Slice<uimax> l_tested_uimax_slice = Slice<uimax>::build_memory_elementnb((uimax*)l_tested_uimax_array, 3);
-        
+
 		// allocating and releasing a BufferHost
 		{
 			uimax l_value = 20;
@@ -33,18 +33,18 @@ namespace v2
 			// We force command buffer submit just for the test
 			l_buffer_allocator.force_command_buffer_execution_sync();
 
-			assert_true(l_buffer_allocator.gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 0);
 
 			Token(BufferHost) l_read_buffer = l_buffer_allocator.read_from_buffergpu(l_buffer_gpu);
 
 			// it creates an gpu read event that will be consumed the next step
-			assert_true(l_buffer_allocator.gpu_to_host_copy_events.Size == 1);
+			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 1);
 
 			l_buffer_allocator.step();
 			// We force command buffer submit just for the test
 			l_buffer_allocator.force_command_buffer_execution_sync();
 
-			assert_true(l_buffer_allocator.gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 0);
 
 			assert_true(l_buffer_allocator.get_bufferhost_mapped_memory(l_read_buffer).compare(l_tested_uimax_slice.build_asint8()));
 
@@ -55,20 +55,82 @@ namespace v2
 		// creation of a BufferGPU deletion the same step
 		// nothing should happen
 		{
-			assert_true(l_buffer_allocator.host_to_gpu_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 0);
 
 			Token(BufferGPU) l_buffer_gpu = l_buffer_allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size, (VkFlags)BufferUsageFlag::WRITE | VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 			l_buffer_allocator.write_to_buffergpu(l_buffer_gpu, l_tested_uimax_slice.build_asint8());
 
 			// it creates an gpu write event that will be consumed the next step
-			assert_true(l_buffer_allocator.host_to_gpu_copy_events.Size == 1);
+			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 1);
 
 			l_buffer_allocator.free_buffergpu(l_buffer_gpu);
 
-			assert_true(l_buffer_allocator.host_to_gpu_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 0);
 
 			l_buffer_allocator.step();
 			l_buffer_allocator.force_command_buffer_execution_sync();
+		}
+
+		struct color
+		{
+			int8 r, g, b, a;
+		};
+
+		const uimax l_pixels_count = 16 * 16;
+		color l_pixels[l_pixels_count];
+		Slice<color> l_pixels_slize = Slice<color>::build_memory_elementnb(l_pixels, l_pixels_count);
+		for (loop(i, 0, l_pixels_slize.Size))
+		{
+			l_pixels_slize.get(i) = color{ (int8)i,(int8)i,(int8)i,(int8)i };
+		}
+
+		ImageFormat l_imageformat;
+		l_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+		l_imageformat.arrayLayers = 1;
+		l_imageformat.format = VkFormat::VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+		l_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+		l_imageformat.mipLevels = 1;
+		l_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		l_imageformat.extent = v3ui{ 16,16,1 };
+
+		// allocating and releasing a ImageHost
+		{
+			Token(ImageHost) l_image_host_token = l_buffer_allocator.allocate_imagehost(l_pixels_slize.build_asint8(), l_imageformat, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+			ImageHost& l_image_host = l_buffer_allocator.host_images.get(l_image_host_token);
+
+			 assert_true(l_image_host.get_mapped_memory().compare(l_pixels_slize.build_asint8()));
+
+			 l_buffer_allocator.free_imagehost(l_image_host_token);
+		}
+
+		// allocating and releasing a ImageGPU
+		{
+			Token(ImageGPU) l_image_gpu = l_buffer_allocator.allocate_imagegpu(l_imageformat, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+			l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_pixels_slize.build_asint8());
+
+			l_buffer_allocator.step();
+			// We force command buffer submit just for the test
+			l_buffer_allocator.force_command_buffer_execution_sync();
+
+			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 0);
+
+			Token(ImageHost) l_read_buffer = l_buffer_allocator.read_from_imagegpu(l_image_gpu);
+
+			// it creates an gpu read event that will be consumed the next step
+			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 1);
+
+			l_buffer_allocator.step();
+			// We force command buffer submit just for the test
+			l_buffer_allocator.force_command_buffer_execution_sync();
+
+			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 0);
+
+			assert_true(l_buffer_allocator.get_imagehost_mapped_memory(l_read_buffer).compare(l_pixels_slize.build_asint8()));
+
+			// l_buffer_allocator.free_imagehost(l_read_buffer);
+			l_buffer_allocator.free_imagehost(l_read_buffer);
+			l_buffer_allocator.free_imagegpu(l_image_gpu);
 		}
 
 		l_buffer_allocator.free();

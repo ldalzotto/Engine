@@ -27,6 +27,8 @@ namespace v2
 
 struct v2f;
 struct v3f;
+struct v3i;
+struct v3ui;
 struct v4f;
 struct quat;
 struct m44f;
@@ -89,6 +91,30 @@ namespace v3f_const
 	const v3f RIGHT = { 1.0f, 0.0f, 0.0f };
 	const v3f UP = { 0.0f, 1.0f, 0.0f };
 	const v3f FORWARD = { 0.0f, 0.0f, 1.0f };
+};
+
+struct alignas(sizeof(int32)) v3i
+{
+	union
+	{
+		int32 Points[3];
+		struct
+		{
+			int32 x, y, z;
+		};
+	};
+};
+
+struct alignas(sizeof(uint32)) v3ui
+{
+	union
+	{
+		uint32 Points[3];
+		struct
+		{
+			uint32 x, y, z;
+		};
+	};
 };
 
 struct alignas(sizeof(float32)) v4f
