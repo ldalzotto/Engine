@@ -1,5 +1,5 @@
 {
-  "compiler": "MSVC",
+  "compiler": "GCC",
   "environment": {
     "DEBUG": [
       {
@@ -27,11 +27,11 @@
         "value": "1"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "1"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "1"
       },
       {
@@ -73,11 +73,11 @@
         "value": "0"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "0"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "0"
       },
       {
@@ -119,11 +119,11 @@
         "value": "0"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "0"
       },
       {
-        "name": "RENDER_DEBUG",
+        "name": "GPU_DEBUG",
         "value": "0"
       },
       {
@@ -228,7 +228,7 @@
       ],
       "dependencies": [
         "VULKAN",
-        "Common2"
+        "Math2"
       ]
     },
     {

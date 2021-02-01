@@ -18,7 +18,7 @@ namespace v2
 {
 	inline void _vk_handle_result(const VkResult p_result)
 	{
-#if RENDER_BOUND_TEST
+#if GPU_BOUND_TEST
 		if (p_result != VK_SUCCESS)
 		{
 			abort();
@@ -26,7 +26,7 @@ namespace v2
 #endif
 	};
 
-#if RENDER_BOUND_TEST
+#if GPU_BOUND_TEST
 #define vk_handle_result(Code) _vk_handle_result(Code)
 #else
 #define vk_handle_result(Code) Code

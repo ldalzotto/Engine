@@ -23,7 +23,7 @@ namespace v2
     struct GPUInstance
     {
         gpuinstance_t instance;
-#if RENDER_DEBUG
+#if GPU_DEBUG
         gpuinstance_debugger_t debugger;
 #endif
         GraphicsCard graphics_card;
@@ -103,7 +103,7 @@ namespace v2
 
 
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
 
         const int8* l_validation_layers_str[1] = { "VK_LAYER_KHRONOS_validation" };
         // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
@@ -139,7 +139,7 @@ namespace v2
 
         Span<int8*>l_extensions;
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
         l_extensions = Span<int8*>::allocate(p_required_instance_extensions.Size + 1);
 #else
         l_extensions = Span<int8*>::allocate(p_required_instance_extensions.Size);
@@ -147,7 +147,7 @@ namespace v2
 
         l_extensions.copy_memory(0, p_required_instance_extensions);
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
         l_extensions.get(l_extensions.Capacity - 1) = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 #endif
 
@@ -158,11 +158,11 @@ namespace v2
 
         l_extensions.free();
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
         l_available_layers.free();
 #endif
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
         VkDebugUtilsMessengerCreateInfoEXT l_createinfo = {};
         l_createinfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         l_createinfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -214,7 +214,7 @@ namespace v2
 
     inline void GPUInstance::free()
     {
-#if RENDER_DEBUG
+#if GPU_DEBUG
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr((VkInstance)instance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != NULL)
         {

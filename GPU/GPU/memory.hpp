@@ -70,6 +70,15 @@ namespace v2
 
 	};
 
+
+	enum class BufferUsageFlag
+	{
+		TRANSFER_READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		TRANSFER_WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT
+	};
+
+	typedef VkFlags BufferUsageFlags;
+
 	struct MappedHostMemory
 	{
 		Slice<int8> memory;
@@ -92,7 +101,7 @@ namespace v2
 		VkBuffer buffer;
 		uimax size;
 
-		static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const VkBufferUsageFlags p_usage_flags);
+		static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const BufferUsageFlag p_usage_flags);
 		void free(TransferDevice& p_transfer_device);
 
 		void push(const Slice<int8>& p_from);
@@ -114,17 +123,27 @@ namespace v2
 		VkBuffer buffer;
 		uimax size;
 
-		static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const VkBufferUsageFlags p_usage_flags);
+		static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const BufferUsageFlag p_usage_flags);
 		void free(TransferDevice& p_transfer_device);
 
 	private:
 		void bind(TransferDevice& p_transfer_device);
 	};
 
+	enum class ImageUsageFlag
+	{
+		TRANSFER_READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		TRANSFER_WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		SHADER_COLOR = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT
+	};
+
+	typedef uint8 ImageUsageFlags;
+
 	struct ImageFormat
 	{
 		VkImageAspectFlags imageAspect;
 		VkImageType imageType;
+		ImageUsageFlag imageUsage;
 		VkFormat format;
 		v3ui extent;
 		uint32 mipLevels;
@@ -139,8 +158,7 @@ namespace v2
 		VkImage image;
 		ImageFormat format;
 
-		static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format,
-			const VkImageUsageFlags p_image_usage, const VkImageLayout p_initial_layout);
+		static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
 		void free(TransferDevice& p_transfer_device);
 
 		void push(const Slice<int8>& p_from);
@@ -158,29 +176,12 @@ namespace v2
 		VkImage image;
 		ImageFormat format;
 
-		static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format,
-			const VkImageUsageFlags p_image_usage, const VkImageLayout p_initial_layout);
+		static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
 		void free(TransferDevice& p_transfer_device);
 
 	private:
 		void bind(TransferDevice& p_transfer_device);
 	};
-
-	enum class BufferUsageFlag
-	{
-		READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT
-	};
-
-	typedef VkFlags BufferUsageFlags;
-
-	enum class ImageUsageFlag
-	{
-		READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT
-	};
-
-	typedef VkFlags ImageUsageFlags;
 
 	struct ImageLayoutTransitionBarrierConfiguration {
 		VkAccessFlags src_access_mask;
@@ -200,6 +201,14 @@ namespace v2
 		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src = ImageLayoutTransitionBarrierConfiguration{
 				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration transfer_src_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration transfer_dst_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
 		};
 	};
 
@@ -253,22 +262,22 @@ namespace v2
 		static BufferAllocator allocate_default(const GPUInstance& p_instance);
 		void free();
 
-		Token(BufferHost) allocate_bufferhost(const Slice<int8>& p_value, const VkBufferUsageFlags p_usage_flags);
-		Token(BufferHost) allocate_bufferhost_empty(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
+		Token(BufferHost) allocate_bufferhost(const Slice<int8>& p_value, const BufferUsageFlag p_usage_flags);
+		Token(BufferHost) allocate_bufferhost_empty(const uimax p_size, const BufferUsageFlag p_usage_flags);
 		void free_bufferhost(const Token(BufferHost) p_buffer_host);
 		Slice<int8>& get_bufferhost_mapped_memory(const Token(BufferHost) p_buffer_host);
 
-		Token(BufferGPU) allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags);
+		Token(BufferGPU) allocate_buffergpu(const uimax p_size, const BufferUsageFlag p_usage_flags);
 		void free_buffergpu(const Token(BufferGPU) p_buffer_gpu);
 		void write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value);
 		Token(BufferHost) read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu);
 
-		Token(ImageHost) allocate_imagehost(const Slice<int8>& p_value, const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags);
-		Token(ImageHost) allocate_imagehost_empty(const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags);
+		Token(ImageHost) allocate_imagehost(const Slice<int8>& p_value, const ImageFormat& p_image_format);
+		Token(ImageHost) allocate_imagehost_empty(const ImageFormat& p_image_format);
 		void free_imagehost(const Token(ImageHost) p_image_host);
 		Slice<int8>& get_imagehost_mapped_memory(const Token(ImageHost) p_image_host);
 
-		Token(ImageGPU) allocate_imagegpu(const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags);
+		Token(ImageGPU) allocate_imagegpu(const ImageFormat& p_image_format);
 		void free_imagegpu(const Token(ImageGPU) p_image_gpu);
 		void write_to_imagegpu(const Token(ImageGPU) p_image_gpu, const Slice<int8>& p_value /*, const VkImageLayout p_before_layout, const VkImageLayout p_after_layout*/);
 		Token(ImageHost) read_from_imagegpu(const Token(ImageGPU) p_image_gpu);
@@ -280,6 +289,7 @@ namespace v2
 		void cmd_copy_buffer(const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size);
 		void cmd_image_layout_transition(const VkImage p_image, const ImageFormat& p_image_format,
 			const VkImageLayout p_source_image_layout, const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration);
+		// void cmd_image_layout_transition_to_ImageFormatusage(const VkImage p_image, const ImageFormat& p_image_format, );
 		void cmd_copy_image(const VkImage p_src_image, const ImageFormat& p_src_format, const VkImage p_target_image, const ImageFormat& p_target_format);
 		void clean_garbage_buffers();
 	};
@@ -448,7 +458,7 @@ namespace v2
 		l_device_create_info.queueCreateInfoCount = 1;
 
 
-#if RENDER_DEBUG
+#if GPU_DEBUG
 
 		int8* l_validation_layers_str[1];
 		l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
@@ -515,7 +525,7 @@ namespace v2
 	};
 
 
-	inline BufferHost BufferHost::allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const VkBufferUsageFlags p_usage_flags)
+	inline BufferHost BufferHost::allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const BufferUsageFlag p_usage_flags)
 	{
 		BufferHost l_buffer_host;
 
@@ -524,7 +534,7 @@ namespace v2
 
 		VkBufferCreateInfo l_buffercreate_info{};
 		l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		l_buffercreate_info.usage = p_usage_flags;
+		l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flags;
 		l_buffercreate_info.size = p_buffer_size;
 
 		vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_host.buffer));
@@ -565,7 +575,7 @@ namespace v2
 
 	inline void BufferHost::bind(TransferDevice& p_transfer_device)
 	{
-#if RENDER_BOUND_TEST
+#if GPU_BOUND_TEST
 		assert_true(this->memory.is_mapped());
 #endif
 		SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
@@ -584,7 +594,7 @@ namespace v2
 	};
 
 
-	inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const uimax p_size, const VkBufferUsageFlags p_usage_flags)
+	inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const uimax p_size, const BufferUsageFlag p_usage_flags)
 	{
 		BufferGPU l_buffer_gpu;
 
@@ -592,7 +602,7 @@ namespace v2
 
 		VkBufferCreateInfo l_buffercreate_info{};
 		l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		l_buffercreate_info.usage = p_usage_flags;
+		l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flags;
 		l_buffercreate_info.size = p_size;
 
 		vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_gpu.buffer));
@@ -622,8 +632,7 @@ namespace v2
 		vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
 	};
 
-	inline ImageHost ImageHost::allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format,
-		const VkImageUsageFlags p_image_usage, const VkImageLayout p_initial_layout)
+	inline ImageHost ImageHost::allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout)
 	{
 		ImageHost l_image_host;
 		l_image_host.memory = MappedHostMemory::build_default();
@@ -638,7 +647,7 @@ namespace v2
 		l_image_create_info.arrayLayers = p_image_format.arrayLayers;
 		l_image_create_info.samples = p_image_format.samples;
 		l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR; //This is mandatory for host readable image
-		l_image_create_info.usage = p_image_usage;
+		l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
 		l_image_create_info.initialLayout = p_initial_layout;
 
 		vk_handle_result(vkCreateImage(p_transfer_device.device, &l_image_create_info, NULL, &l_image_host.image));
@@ -692,7 +701,7 @@ namespace v2
 
 	inline void ImageHost::bind(TransferDevice& p_transfer_device)
 	{
-#if RENDER_BOUND_TEST
+#if GPU_BOUND_TEST
 		assert_true(this->memory.is_mapped());
 #endif
 		SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
@@ -700,8 +709,7 @@ namespace v2
 		vkBindImageMemory(p_transfer_device.device, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
 	};
 
-	inline ImageGPU ImageGPU::allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format,
-		const VkImageUsageFlags p_image_usage, const VkImageLayout p_initial_layout)
+	inline ImageGPU ImageGPU::allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout)
 	{
 		ImageGPU l_image_gpu;
 		l_image_gpu.format = p_image_format;
@@ -715,7 +723,7 @@ namespace v2
 		l_image_create_info.arrayLayers = p_image_format.arrayLayers;
 		l_image_create_info.samples = p_image_format.samples;
 		l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL;
-		l_image_create_info.usage = p_image_usage;
+		l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
 		l_image_create_info.initialLayout = p_initial_layout;
 
 		vk_handle_result(vkCreateImage(p_transfer_device.device, &l_image_create_info, NULL, &l_image_gpu.image));
@@ -769,6 +777,17 @@ namespace v2
 
 		this->clean_garbage_buffers();
 
+#if GPU_BOUND_TEST
+		assert_true(!this->host_buffers.has_allocated_elements());
+		assert_true(!this->gpu_buffers.has_allocated_elements());
+		assert_true(!this->host_images.has_allocated_elements());
+		assert_true(!this->gpu_images.has_allocated_elements());
+		assert_true(this->garbage_host_buffers.empty());
+		assert_true(this->garbage_host_images.empty());
+		assert_true(this->buffer_gpu_to_host_copy_events.empty());
+		assert_true(this->buffer_host_to_gpu_copy_events.empty());
+#endif
+
 		this->host_buffers.free();
 		this->gpu_buffers.free();
 		this->host_images.free();
@@ -780,14 +799,14 @@ namespace v2
 		this->device.free();
 	};
 
-	inline Token(BufferHost) BufferAllocator::allocate_bufferhost(const Slice<int8>& p_value, const VkBufferUsageFlags p_usage_flags)
+	inline Token(BufferHost) BufferAllocator::allocate_bufferhost(const Slice<int8>& p_value, const BufferUsageFlag p_usage_flags)
 	{
 		BufferHost l_buffer = BufferHost::allocate(this->device, p_value.Size, p_usage_flags);
 		l_buffer.push(p_value);
 		return this->host_buffers.alloc_element(l_buffer);
 	};
 
-	inline Token(BufferHost) BufferAllocator::allocate_bufferhost_empty(const uimax p_size, const VkBufferUsageFlags p_usage_flags)
+	inline Token(BufferHost) BufferAllocator::allocate_bufferhost_empty(const uimax p_size, const BufferUsageFlag p_usage_flags)
 	{
 		return this->host_buffers.alloc_element(BufferHost::allocate(this->device, p_size, p_usage_flags));
 	};
@@ -804,7 +823,7 @@ namespace v2
 		return this->host_buffers.get(p_buffer_host).get_mapped_memory();
 	};
 
-	inline Token(BufferGPU) BufferAllocator::allocate_buffergpu(const uimax p_size, const VkBufferUsageFlags p_usage_flags)
+	inline Token(BufferGPU) BufferAllocator::allocate_buffergpu(const uimax p_size, const BufferUsageFlag p_usage_flags)
 	{
 		return this->gpu_buffers.alloc_element(BufferGPU::allocate(this->device, p_size, p_usage_flags));
 	};
@@ -838,28 +857,28 @@ namespace v2
 
 	inline void BufferAllocator::write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value)
 	{
-		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost(p_value, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
 		this->buffer_host_to_gpu_copy_events.push_back_element(Buffer_HosttoGPU_CopyEvent{ l_staging_buffer, p_buffer_gpu });
 	};
 
 	inline Token(BufferHost) BufferAllocator::read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu)
 	{
 		BufferGPU& l_buffer_gpu = this->gpu_buffers.get(p_buffer_gpu);
-		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost_empty(l_buffer_gpu.size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost_empty(l_buffer_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
 		this->buffer_gpu_to_host_copy_events.push_back_element(Buffer_GPUtoHost_CopyEvent{ p_buffer_gpu, l_staging_buffer });
 		return l_staging_buffer;
 	};
 
-	inline Token(ImageHost) BufferAllocator::allocate_imagehost(const Slice<int8>& p_value, const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags)
+	inline Token(ImageHost) BufferAllocator::allocate_imagehost(const Slice<int8>& p_value, const ImageFormat& p_image_format)
 	{
-		ImageHost l_image_host = ImageHost::allocate(this->device, p_image_format, p_usage_flags, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED);
+		ImageHost l_image_host = ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED);
 		l_image_host.push(p_value);
 		return this->host_images.alloc_element(l_image_host);
 	};
 
-	inline Token(ImageHost) BufferAllocator::allocate_imagehost_empty(const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags)
+	inline Token(ImageHost) BufferAllocator::allocate_imagehost_empty(const ImageFormat& p_image_format)
 	{
-		return this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, p_usage_flags, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		return this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
 	};
 
 	inline void BufferAllocator::free_imagehost(const Token(ImageHost) p_image_host)
@@ -874,9 +893,9 @@ namespace v2
 		return this->host_images.get(p_image_host).get_mapped_memory();
 	};
 
-	inline Token(ImageGPU) BufferAllocator::allocate_imagegpu(const ImageFormat& p_image_format, const VkImageUsageFlags p_usage_flags)
+	inline Token(ImageGPU) BufferAllocator::allocate_imagegpu(const ImageFormat& p_image_format)
 	{
-		return this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, p_usage_flags, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		return this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
 	};
 
 	inline void BufferAllocator::free_imagegpu(const Token(ImageGPU) p_image_gpu)
@@ -909,14 +928,18 @@ namespace v2
 	inline void BufferAllocator::write_to_imagegpu(const Token(ImageGPU) p_image_gpu, const Slice<int8>& p_value)
 	{
 		ImageGPU& l_image_gpu = this->gpu_images.get(p_image_gpu);
-		Token(ImageHost) l_stagin_image = this->allocate_imagehost(p_value, l_image_gpu.format, (ImageUsageFlags)ImageUsageFlag::READ);
+		ImageFormat l_stagin_image_format = l_image_gpu.format;
+		l_stagin_image_format.imageUsage = ImageUsageFlag::TRANSFER_READ;
+		Token(ImageHost) l_stagin_image = this->allocate_imagehost(p_value, l_stagin_image_format);
 		this->image_host_to_gpu_copy_events.push_back_element(Image_HosttoGPU_CopyEvent{ l_stagin_image, p_image_gpu });
 	};
 
 	inline Token(ImageHost) BufferAllocator::read_from_imagegpu(const Token(ImageGPU) p_image_gpu)
 	{
-		ImageGPU& l_buffer_gpu = this->gpu_images.get(p_image_gpu);
-		Token(ImageHost) l_staging_buffer = this->allocate_imagehost_empty(l_buffer_gpu.format, (ImageUsageFlags)ImageUsageFlag::WRITE);
+		ImageGPU& l_image_gpu = this->gpu_images.get(p_image_gpu);
+		ImageFormat l_stagin_image_format = l_image_gpu.format;
+		l_stagin_image_format.imageUsage = ImageUsageFlag::TRANSFER_WRITE;
+		Token(ImageHost) l_staging_buffer = this->allocate_imagehost_empty(l_stagin_image_format);
 		this->image_gpu_to_host_copy_events.push_back_element(ImageGPUtoHost_CopyEvent{ p_image_gpu, l_staging_buffer });
 		return l_staging_buffer;
 	};
@@ -1049,6 +1072,21 @@ namespace v2
 
 		vkCmdCopyImage(this->device.command_buffer.command_buffer, p_src_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 			p_target_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
+
+
+		{
+			if ((ImageUsageFlags)p_src_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR)
+			{
+				this->cmd_image_layout_transition(p_src_image, p_src_format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					ImageLayoutTransitionBarrierConfiguration_Const::transfer_src_to_shader_readonly);
+			}
+			if ((ImageUsageFlags)p_target_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR)
+			{
+				this->cmd_image_layout_transition(p_target_image, p_target_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
+			}
+		}
+
 	};
 
 
