@@ -115,3 +115,15 @@ target_link_libraries(WindowTest PUBLIC Window)
 
 add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)
+
+add_custom_target(
+	Test_ALL
+	COMMAND Common2Test
+	COMMAND Math2Test
+	COMMAND WindowTest
+	COMMAND CollisionTest
+	COMMAND Scene2Test
+	COMMAND GPUTest
+	COMMAND Scene2MiddlewareTest
+	COMMAND Sandbox
+)
