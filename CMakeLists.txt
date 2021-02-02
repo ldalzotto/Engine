@@ -6,6 +6,12 @@ project(EngineCPP VERSION 0.0.1)
 
 enable_language(CXX)
 
+# get_cmake_property(_variableNames VARIABLES)
+# list (SORT _variableNames)
+# foreach (_variableName ${_variableNames})
+# 	message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-Wno-missing-braces)
@@ -13,7 +19,7 @@ endif()
 
 add_compile_definitions(ASSETPATH_DEV=1)
 
-if("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug")
+if(("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug"))
 	add_compile_definitions(TOKEN_TYPE_SAFETY=1)
 	add_compile_definitions(CONTAINER_BOUND_TEST=1)
 	add_compile_definitions(CONTAINER_MEMORY_TEST=1)
@@ -64,6 +70,7 @@ target_link_libraries(Math2 INTERFACE Common2)
 
 add_library(GPU INTERFACE)
 target_include_directories(GPU INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/GPU)
+target_link_libraries(GPU INTERFACE Common2)
 target_link_libraries(GPU INTERFACE Math2)
 target_link_libraries(GPU INTERFACE VULKAN)
 

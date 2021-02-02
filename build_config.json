@@ -31,10 +31,6 @@
         "value": "1"
       },
       {
-        "name": "GPU_DEBUG",
-        "value": "1"
-      },
-      {
         "name": "COLLIDER_BOUND_TEST",
         "value": "1"
       },
@@ -70,10 +66,6 @@
       },
       {
         "name": "RENDER_BOUND_TEST",
-        "value": "0"
-      },
-      {
-        "name": "GPU_DEBUG",
         "value": "0"
       },
       {
