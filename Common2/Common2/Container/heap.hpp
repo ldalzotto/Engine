@@ -129,17 +129,17 @@ namespace v2
 		*/
 		struct SingleShadowHeap
 		{
-			HeapPaged& heapPaged;
+			HeapPaged* heapPaged;
 			uimax index;
 
 			inline VectorOfVector<SliceIndex>::Element_ShadowVector sh_get_freechunks()
 			{
-				return this->heapPaged.FreeChunks.element_as_shadow_vector(this->index);
+				return this->heapPaged->FreeChunks.element_as_shadow_vector(this->index);
 			};
 
 			inline Pool<SliceIndex>& sh_get_allocated_chunks()
 			{
-				return this->heapPaged.AllocatedChunks;
+				return this->heapPaged->AllocatedChunks;
 			};
 		};
 
@@ -266,7 +266,7 @@ namespace v2
 
 		for (loop(i, 0, this->FreeChunks.varying_vector.get_size()))
 		{
-			SingleShadowHeap l_single_shadow_heap = SingleShadowHeap{ *this, i };
+			SingleShadowHeap l_single_shadow_heap = SingleShadowHeap{ this, i };
 			if ((HeapA::AllocationState_t)HeapA::allocate_element_norealloc_with_alignment(l_single_shadow_heap, p_size, p_alignement_modulo, &l_heap_allocated_element_return)
 				& (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED)
 			{
@@ -277,7 +277,7 @@ namespace v2
 
 		this->create_new_page();
 
-		SingleShadowHeap l_single_shadow_heap = SingleShadowHeap{ *this, this->FreeChunks.varying_vector.get_size() - 1 };
+		SingleShadowHeap l_single_shadow_heap = SingleShadowHeap{ this, this->FreeChunks.varying_vector.get_size() - 1 };
 		if ((HeapA::AllocationState_t)HeapA::allocate_element_norealloc_with_alignment(l_single_shadow_heap, p_size, p_alignement_modulo, &l_heap_allocated_element_return)
 			& (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED)
 		{
@@ -391,7 +391,7 @@ namespace v2
 		assert_true(p_size != 0);
 #endif
 
-		auto& l_free_chunks = p_heap.sh_get_freechunks();
+		auto l_free_chunks = p_heap.sh_get_freechunks();
 		for (uimax i = 0; i < l_free_chunks.sv_get_size(); i++)
 		{
 			SliceIndex& l_free_chunk = l_free_chunks.sv_get(i);
@@ -419,7 +419,7 @@ namespace v2
 #if CONTAINER_BOUND_TEST
 		assert_true(p_size != 0);
 #endif
-		auto& l_free_chunks = p_heap.sh_get_freechunks();
+		auto l_free_chunks = p_heap.sh_get_freechunks();
 		for (uimax i = 0; i < l_free_chunks.sv_get_size(); i++)
 		{
 			SliceIndex& l_free_chunk = l_free_chunks.sv_get(i);
@@ -491,7 +491,7 @@ namespace v2
 	template<class ShadowHeap_t(s)>
 	inline void HeapA::_defragment(ShadowHeap_t(s)& p_heap)
 	{
-		auto& l_free_chunks = p_heap.sh_get_freechunks();
+		auto l_free_chunks = p_heap.sh_get_freechunks();
 		if (l_free_chunks.sv_get_size() > 0)
 		{
 			sort_linear2_begin(SliceIndex, defragment_sort);

@@ -81,6 +81,7 @@ namespace v2
 
 }
 
-#include "./instance.hpp"
 #include "./command_buffer.hpp"
+#include "./instance.hpp"
 #include "./memory.hpp"
+#include "./graphics.hpp"

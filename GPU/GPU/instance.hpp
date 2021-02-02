@@ -11,6 +11,7 @@ namespace v2
         VkPhysicalDevice device;
         VkPhysicalDeviceMemoryProperties device_memory_properties;
         uint32 transfer_queue_family;
+        uint32 graphics_queue_family;
 
 
         uint32 get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const;
@@ -27,6 +28,7 @@ namespace v2
         gpuinstance_debugger_t debugger;
 #endif
         GraphicsCard graphics_card;
+        gc_t logical_device;
 
         static GPUInstance allocate(const Slice<int8*>& p_required_extensions);
         void free();
@@ -188,13 +190,22 @@ namespace v2
             if (l_physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
             {
                 Span<VkQueueFamilyProperties> l_queueFamilies = vk::getPhysicalDeviceQueueFamilyProperties(l_physical_device);
+                uint8 l_queueus_found = 0;
 
                 for (loop(j, 0, l_queueFamilies.Capacity))
                 {
                     if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
                     {
                         l_gpu.graphics_card.transfer_queue_family = (uint32)j;
-                        break;
+                        l_queueus_found += 1;
+                        if (l_queueus_found == 2) { break; }
+                    }
+                    
+                    if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+                    {
+                        l_gpu.graphics_card.graphics_queue_family = (uint32)j;
+                        l_queueus_found += 1;
+                        if (l_queueus_found == 2) { break; }
                     }
                 }
 
@@ -209,6 +220,30 @@ namespace v2
         l_physical_devices.free();
 
 
+
+        VkDeviceQueueCreateInfo l_devicequeue_create_info{};
+        l_devicequeue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        l_devicequeue_create_info.queueFamilyIndex = l_gpu.graphics_card.transfer_queue_family;
+        l_devicequeue_create_info.queueCount = 1;
+        const float32 l_priority = 1.0f;
+        l_devicequeue_create_info.pQueuePriorities = &l_priority;
+
+        VkDeviceCreateInfo l_device_create_info{};
+        l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
+        l_device_create_info.queueCreateInfoCount = 1;
+
+
+#if GPU_DEBUG
+
+        l_device_create_info.enabledLayerCount = (uint32)l_validation_layers.Size;
+        l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
+#endif
+
+        l_device_create_info.enabledExtensionCount = 0;
+
+        vk_handle_result(vkCreateDevice(l_gpu.graphics_card.device, &l_device_create_info, NULL, &l_gpu.logical_device));
+
         return l_gpu;
     };
 
@@ -222,6 +257,7 @@ namespace v2
         }
 #endif
 
+        vkDestroyDevice(this->logical_device, NULL);
         vkDestroyInstance(this->instance, NULL);
     };
 

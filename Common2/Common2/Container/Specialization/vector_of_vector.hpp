@@ -168,7 +168,7 @@ namespace v2
 
 				this->varying_vector.element_expand_with_value(
 					p_nested_vector_index,
-					Slice<uimax>::build_asint8_memory_elementnb(p_elements.Begin + l_write_element_nb, l_expand_element_nb)
+					Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin + l_write_element_nb, l_expand_element_nb)
 				);
 
 				l_vector_header = this->get_vectorheader(p_nested_vector_index);

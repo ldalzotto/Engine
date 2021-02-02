@@ -134,7 +134,8 @@ namespace v2
 	{
 		TRANSFER_READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		TRANSFER_WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-		SHADER_COLOR = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT
+		SHADER_COLOR = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT,
+		SHADER_DEPTH = VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 	};
 
 	typedef uint8 ImageUsageFlags;
@@ -283,7 +284,6 @@ namespace v2
 		Token(ImageHost) read_from_imagegpu(const Token(ImageGPU) p_image_gpu);
 
 		void step();
-		void force_command_buffer_execution_sync();
 
 	private:
 		void cmd_copy_buffer(const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size);
@@ -444,34 +444,7 @@ namespace v2
 	{
 		TransferDevice l_transfer_device;
 		l_transfer_device.graphics_card = p_instance.graphics_card;
-
-		VkDeviceQueueCreateInfo l_devicequeue_create_info{};
-		l_devicequeue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		l_devicequeue_create_info.queueFamilyIndex = p_instance.graphics_card.transfer_queue_family;
-		l_devicequeue_create_info.queueCount = 1;
-		const float32 l_priority = 1.0f;
-		l_devicequeue_create_info.pQueuePriorities = &l_priority;
-
-		VkDeviceCreateInfo l_device_create_info{};
-		l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
-		l_device_create_info.queueCreateInfoCount = 1;
-
-
-#if GPU_DEBUG
-
-		int8* l_validation_layers_str[1];
-		l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
-		Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb((const int8**)l_validation_layers_str, 1);
-
-
-		l_device_create_info.enabledLayerCount = (uint32)l_validation_layers.Size;
-		l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
-#endif
-
-		l_device_create_info.enabledExtensionCount = 0;
-
-		vk_handle_result(vkCreateDevice(p_instance.graphics_card.device, &l_device_create_info, NULL, &l_transfer_device.device));
+		l_transfer_device.device = p_instance.logical_device;
 
 		vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family, 0, &l_transfer_device.transfer_queue);
 
@@ -487,8 +460,8 @@ namespace v2
 	{
 		this->heap.free(this->device);
 		this->command_buffer.flush();
+		this->command_pool.free_command_buffer(this->device, this->command_buffer);
 		this->command_pool.free(this->device);
-		vkDestroyDevice(this->device, NULL);
 	};
 
 	inline MappedHostMemory MappedHostMemory::build_default()
@@ -773,7 +746,7 @@ namespace v2
 	inline void BufferAllocator::free()
 	{
 		this->step();
-		this->force_command_buffer_execution_sync();
+		this->device.command_buffer.force_sync_execution();
 
 		this->clean_garbage_buffers();
 
@@ -1008,12 +981,6 @@ namespace v2
 		this->device.command_buffer.end();
 	};
 
-	inline void BufferAllocator::force_command_buffer_execution_sync()
-	{
-		this->device.command_buffer.submit();
-		this->device.command_buffer.wait_for_completion();
-	};
-
 	inline void BufferAllocator::cmd_copy_buffer(const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size)
 	{
 #if CONTAINER_MEMORY_TEST
@@ -1077,12 +1044,12 @@ namespace v2
 		{
 			if ((ImageUsageFlags)p_src_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR)
 			{
-				this->cmd_image_layout_transition(p_src_image, p_src_format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				this->cmd_image_layout_transition(p_src_image, p_src_format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 					ImageLayoutTransitionBarrierConfiguration_Const::transfer_src_to_shader_readonly);
 			}
 			if ((ImageUsageFlags)p_target_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR)
 			{
-				this->cmd_image_layout_transition(p_target_image, p_target_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				this->cmd_image_layout_transition(p_target_image, p_target_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 					ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
 			}
 		}
