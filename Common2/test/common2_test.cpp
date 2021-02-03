@@ -884,7 +884,7 @@ namespace v2
 
 		// resize
 		{
-			uimax l_initial_heap_size = l_heap_memory.Memory.Capacity;
+			l_initial_heap_size = l_heap_memory.Memory.Capacity;
 			l_heap_memory.allocate_empty_element(30 * sizeof(uimax));
 			assert_true(l_heap_memory.Memory.Capacity != l_initial_heap_size);
 			assert_true(l_heap_memory._Heap.Size != l_initial_heap_size);

@@ -7,10 +7,10 @@ project(EngineCPP VERSION 0.0.1)
 enable_language(CXX)
 
 # get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
+ #list (SORT _variableNames)
 # foreach (_variableName ${_variableNames})
-# 	message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
+ #	message(STATUS "${_variableName}=${${_variableName}}")
+#endforeach()
 
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -19,7 +19,7 @@ endif()
 
 add_compile_definitions(ASSETPATH_DEV=1)
 
-if(("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug"))
+if(("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
 	add_compile_definitions(TOKEN_TYPE_SAFETY=1)
 	add_compile_definitions(CONTAINER_BOUND_TEST=1)
 	add_compile_definitions(CONTAINER_MEMORY_TEST=1)

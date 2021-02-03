@@ -266,7 +266,7 @@ namespace v2
 		Token(BufferHost) allocate_bufferhost(const Slice<int8>& p_value, const BufferUsageFlag p_usage_flags);
 		Token(BufferHost) allocate_bufferhost_empty(const uimax p_size, const BufferUsageFlag p_usage_flags);
 		void free_bufferhost(const Token(BufferHost) p_buffer_host);
-		BufferHost& BufferAllocator::get_bufferhost(const Token(BufferHost) p_buffer_host);
+		BufferHost& get_bufferhost(const Token(BufferHost) p_buffer_host);
 
 		Token(BufferGPU) allocate_buffergpu(const uimax p_size, const BufferUsageFlag p_usage_flags);
 		void free_buffergpu(const Token(BufferGPU) p_buffer_gpu);
@@ -617,7 +617,7 @@ namespace v2
 		l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		l_image_create_info.imageType = p_image_format.imageType;
 		l_image_create_info.format = p_image_format.format;
-		l_image_create_info.extent = VkExtent3D{ p_image_format.extent.x, p_image_format.extent.y, p_image_format.extent.z };
+		l_image_create_info.extent = VkExtent3D{ (uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z };
 		l_image_create_info.mipLevels = p_image_format.mipLevels;
 		l_image_create_info.arrayLayers = p_image_format.arrayLayers;
 		l_image_create_info.samples = p_image_format.samples;
@@ -693,7 +693,7 @@ namespace v2
 		l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		l_image_create_info.imageType = p_image_format.imageType;
 		l_image_create_info.format = p_image_format.format;
-		l_image_create_info.extent = VkExtent3D{ p_image_format.extent.x, p_image_format.extent.y, p_image_format.extent.z };
+		l_image_create_info.extent = VkExtent3D{ (uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z };
 		l_image_create_info.mipLevels = p_image_format.mipLevels;
 		l_image_create_info.arrayLayers = p_image_format.arrayLayers;
 		l_image_create_info.samples = p_image_format.samples;
@@ -1016,7 +1016,12 @@ namespace v2
 		l_image_memory_barrier.srcQueueFamilyIndex = this->device.graphics_card.transfer_queue_family;
 		l_image_memory_barrier.dstQueueFamilyIndex = this->device.graphics_card.transfer_queue_family;
 		l_image_memory_barrier.image = p_image;
-		l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ p_image_format.imageAspect, 0, p_image_format.arrayLayers, 0, p_image_format.arrayLayers };
+		l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{
+		    p_image_format.imageAspect,
+		    0,
+		    (uint32_t)p_image_format.arrayLayers,
+		    0,
+		    (uint32_t)p_image_format.arrayLayers };
 
 		l_image_memory_barrier.srcAccessMask = p_lyaout_transition_configuration.src_access_mask;
 		l_image_memory_barrier.dstAccessMask = p_lyaout_transition_configuration.dst_access_mask;
@@ -1039,11 +1044,11 @@ namespace v2
 		}
 
 		VkImageCopy l_region = {
-			VkImageSubresourceLayers{p_src_format.imageAspect, 0,0,p_src_format.arrayLayers},
+			VkImageSubresourceLayers{p_src_format.imageAspect, 0,0, (uint32_t)p_src_format.arrayLayers},
 			VkOffset3D{0,0,0},
-			VkImageSubresourceLayers{p_target_format.imageAspect, 0,0,p_target_format.arrayLayers},
+			VkImageSubresourceLayers{p_target_format.imageAspect, 0,0, (uint32_t)p_target_format.arrayLayers},
 			VkOffset3D{0,0,0},
-			VkExtent3D{p_src_format.extent.x, p_src_format.extent.y, p_src_format.extent.z}
+			VkExtent3D{(uint32_t)p_src_format.extent.x, (uint32_t)p_src_format.extent.y, (uint32_t)p_src_format.extent.z}
 		};
 
 		vkCmdCopyImage(this->device.command_buffer.command_buffer, p_src_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
