@@ -85,3 +85,4 @@ namespace v2
 #include "./instance.hpp"
 #include "./memory.hpp"
 #include "./graphics.hpp"
+#include "./shader_compiler.hpp"

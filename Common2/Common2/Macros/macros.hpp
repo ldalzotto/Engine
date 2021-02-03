@@ -5,6 +5,9 @@
 #define STR(V1) #V1
 #define CONCAT_2(V1, V2) V1 ## V2
 
+#define LINE_RETURN \n
+#define MULTILINE(...) #__VA_ARGS__
+
 #define cast(Type, Value) ((Type)(Value))
 #define castv(Type, Value) *(Type*)(&Value)
 

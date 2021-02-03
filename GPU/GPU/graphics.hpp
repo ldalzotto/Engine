@@ -110,6 +110,13 @@ namespace v2
 		void free(const GraphicsDevice& p_device);
 	};
 
+	enum class ShaderModuleStage
+	{
+		UNDEFINED = 0,
+		VERTEX = 1,
+		FRAGMENT = 2
+	};
+
 	typedef VkShaderModule ShaderModule_t;
 
 	struct ShaderModule
@@ -142,11 +149,13 @@ namespace v2
 
 	struct ShaderAllocateInfo
 	{
-		GraphicsPass& p_graphics_pass;
-		ShaderConfiguration& shader_configuration;
-		ShaderLayout& shader_layout;
+		const GraphicsPass& p_graphics_pass;
+		const ShaderConfiguration& shader_configuration;
+		const ShaderLayout& shader_layout;
 		ShaderModule vertex_shader;
 		ShaderModule fragment_shader;
+
+		// static ShaderAllocateInfo build(const GraphicsPass& );
 	};
 
 	struct Shader
@@ -171,6 +180,7 @@ namespace v2
 		Pool <GraphicsPass> graphics_pass;
 		Pool <ShaderLayout> shader_layouts;
 		Pool <ShaderModule> shader_modules;
+		Pool <Shader> shaders;
 
 		static GraphicsAllocator allocate_default(GPUInstance& p_instance);
 
@@ -196,6 +206,10 @@ namespace v2
 		Token(ShaderModule) allocate_shader_module(const Slice<int8>& p_shader_compiled_str);
 
 		void free_shader_module(const Token(ShaderModule) p_shader_module);
+
+		Token(Shader) allocate_shader(const ShaderAllocateInfo& p_shader_allocate_info);
+
+		void free_shader(const Token(Shader) p_shader);
 
 	private:
 
@@ -521,7 +535,7 @@ namespace v2
 		l_inputassembly_state.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		l_inputassembly_state.primitiveRestartEnable = 0;
 
-		VkPipelineRasterizationStateCreateInfo l_rasterization_state;
+		VkPipelineRasterizationStateCreateInfo l_rasterization_state{};
 		l_rasterization_state.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		l_rasterization_state.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 		l_rasterization_state.cullMode = VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
@@ -532,7 +546,7 @@ namespace v2
 		l_rasterization_state.depthClampEnable = 0;
 
 
-		VkPipelineColorBlendAttachmentState l_blendattachment_state;
+		VkPipelineColorBlendAttachmentState l_blendattachment_state{};
 		l_blendattachment_state.colorWriteMask = 0xf;
 		l_blendattachment_state.blendEnable = 0;
 		VkPipelineColorBlendStateCreateInfo l_blendattachment_state_create{};
@@ -570,78 +584,78 @@ namespace v2
 			l_depthstencil_state.back = l_back;
 			l_depthstencil_state.front = l_back;
 			l_depthstencil_state.stencilTestEnable = 0;
-
-			VkPipelineMultisampleStateCreateInfo l_multisample_state{};
-			l_multisample_state.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-			l_multisample_state.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-
-
-			uimax l_vertex_input_total_size = 0;
-			for (loop(i, 0, l_vertex_input_attributes.Capacity))
-			{
-				l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{
-						0, (uint32_t)i, get_primitivetype_format(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i)), (uint32_t)l_vertex_input_total_size
-				};
-
-				l_vertex_input_total_size += PrimitiveSerializedTypes::get_size(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i));
-
-
-			}
-
-			VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)l_vertex_input_total_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX };
-
-			VkPipelineVertexInputStateCreateInfo l_vertex_input_create{};
-			l_vertex_input_create.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-			l_vertex_input_create.vertexBindingDescriptionCount = 1;
-			l_vertex_input_create.pVertexBindingDescriptions = &l_vertex_input_binding;
-			l_vertex_input_create.pVertexAttributeDescriptions = l_vertex_input_attributes.Memory;
-			l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
-
-
-			VkPipelineShaderStageCreateInfo l_shader_stages[2];
-
-			VkPipelineShaderStageCreateInfo l_vertex_stage{};
-			l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-			l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
-			l_vertex_stage.pName = "main";
-
-
-			VkPipelineShaderStageCreateInfo l_fragment_stage{};
-			l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-			l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
-			l_fragment_stage.pName = "main";
-
-			l_shader_stages[0] = l_vertex_stage;
-			l_shader_stages[1] = l_fragment_stage;
-
-			l_pipeline_graphcis_create_info.stageCount = 2;
-			l_pipeline_graphcis_create_info.pStages = l_shader_stages;
-
-
-			l_pipeline_graphcis_create_info.pVertexInputState = &l_vertex_input_create;
-			l_pipeline_graphcis_create_info.pInputAssemblyState = &l_inputassembly_state;
-			l_pipeline_graphcis_create_info.pRasterizationState = &l_rasterization_state;
-			l_pipeline_graphcis_create_info.pColorBlendState = &l_blendattachment_state_create;
-			l_pipeline_graphcis_create_info.pMultisampleState = &l_multisample_state;
-			l_pipeline_graphcis_create_info.pViewportState = &l_viewport_state;
-
-			if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
-			{
-				l_pipeline_graphcis_create_info.pDepthStencilState = &l_depthstencil_state;
-			}
-			l_pipeline_graphcis_create_info.pDynamicState = &l_dynamicstates;
-
-			vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphcis_create_info, NULL, &l_shader.shader));
 		}
+
+		VkPipelineMultisampleStateCreateInfo l_multisample_state{};
+		l_multisample_state.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		l_multisample_state.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
+
+		uimax l_vertex_input_total_size = 0;
+		for (loop(i, 0, l_vertex_input_attributes.Capacity))
+		{
+			l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{
+					(uint32_t)i, 0, get_primitivetype_format(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i)), (uint32_t)l_vertex_input_total_size
+			};
+
+			l_vertex_input_total_size += PrimitiveSerializedTypes::get_size(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i));
+
+
+		}
+
+		VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)l_vertex_input_total_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX };
+
+		VkPipelineVertexInputStateCreateInfo l_vertex_input_create{};
+		l_vertex_input_create.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		l_vertex_input_create.vertexBindingDescriptionCount = 1;
+		l_vertex_input_create.pVertexBindingDescriptions = &l_vertex_input_binding;
+		l_vertex_input_create.pVertexAttributeDescriptions = l_vertex_input_attributes.Memory;
+		l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
+
+
+		VkPipelineShaderStageCreateInfo l_shader_stages[2];
+
+		VkPipelineShaderStageCreateInfo l_vertex_stage{};
+		l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+		l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
+		l_vertex_stage.pName = "main";
+
+
+		VkPipelineShaderStageCreateInfo l_fragment_stage{};
+		l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+		l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
+		l_fragment_stage.pName = "main";
+
+		l_shader_stages[0] = l_vertex_stage;
+		l_shader_stages[1] = l_fragment_stage;
+
+		l_pipeline_graphcis_create_info.stageCount = 2;
+		l_pipeline_graphcis_create_info.pStages = l_shader_stages;
+
+
+		l_pipeline_graphcis_create_info.pVertexInputState = &l_vertex_input_create;
+		l_pipeline_graphcis_create_info.pInputAssemblyState = &l_inputassembly_state;
+		l_pipeline_graphcis_create_info.pRasterizationState = &l_rasterization_state;
+		l_pipeline_graphcis_create_info.pColorBlendState = &l_blendattachment_state_create;
+		l_pipeline_graphcis_create_info.pMultisampleState = &l_multisample_state;
+		l_pipeline_graphcis_create_info.pViewportState = &l_viewport_state;
+
+		if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
+		{
+			l_pipeline_graphcis_create_info.pDepthStencilState = &l_depthstencil_state;
+		}
+		l_pipeline_graphcis_create_info.pDynamicState = &l_dynamicstates;
+
+		vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphcis_create_info, NULL, &l_shader.shader));
+
 
 		return l_shader;
 	};
 
 	inline void Shader::free(const GraphicsDevice& p_device)
 	{
-		this->layout.free(p_device);
 		vkDestroyPipeline(p_device.device, this->shader, NULL);
 	};
 
@@ -671,7 +685,8 @@ namespace v2
 				PoolOfVector<Token(TextureGPU) >::allocate_default(),
 				Pool<GraphicsPass>::allocate(0),
 				Pool<ShaderLayout>::allocate(0),
-				Pool<ShaderModule>::allocate(0)
+				Pool<ShaderModule>::allocate(0),
+				Pool<Shader>::allocate(0)
 		};
 	};
 
@@ -683,6 +698,7 @@ namespace v2
 		assert_true(!this->graphics_pass.has_allocated_elements());
 		assert_true(!this->shader_layouts.has_allocated_elements());
 		assert_true(!this->shader_modules.has_allocated_elements());
+		assert_true(!this->shaders.has_allocated_elements());
 #endif
 
 		this->textures_gpu.free();
@@ -691,6 +707,7 @@ namespace v2
 		this->graphics_pass.free();
 		this->shader_layouts.free();
 		this->shader_modules.free();
+		this->shaders.free();
 	};
 
 	inline Token(TextureGPU) GraphicsAllocator::allocate_texturegpu(BufferAllocator& p_buffer_allocator, const ImageFormat& p_image_format)
@@ -775,6 +792,18 @@ namespace v2
 		ShaderModule& l_shader_module = this->shader_modules.get(p_shader_module);
 		l_shader_module.free(this->graphicsDevice);
 		this->shader_modules.release_element(p_shader_module);
+	};
+
+	inline Token(Shader) GraphicsAllocator::allocate_shader(const ShaderAllocateInfo& p_shader_allocate_info)
+	{
+		return this->shaders.alloc_element(Shader::allocate(this->graphicsDevice, p_shader_allocate_info));
+	};
+
+	inline void GraphicsAllocator::free_shader(const Token(Shader) p_shader)
+	{
+		Shader& l_shader = this->shaders.get(p_shader);
+		l_shader.free(this->graphicsDevice);
+		this->shaders.release_element(p_shader);
 	};
 
 	template<uint8 AttachmentCount>

@@ -252,7 +252,7 @@ namespace v2
 			l_graphics_allocator.cmd_endRenderPass(l_graphics_allocator.graphics_pass.get(l_graphics_pass));
 
 			l_graphics_allocator.graphicsDevice.command_buffer.end();
-			l_graphics_allocator.graphicsDevice.command_buffer.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_HOST_BIT);
+			l_graphics_allocator.graphicsDevice.command_buffer.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
 		}
@@ -332,19 +332,70 @@ namespace v2
 			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachment_types, l_image_formats);
 
 			Span<ShaderLayoutParameterType> l_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-			l_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
+			l_shader_layout_parameters.get(0) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
 
 			Span<PrimitiveSerializedTypes::Type> l_shader_vertex_input_primitives = Span<PrimitiveSerializedTypes::Type>::allocate(2);
-			l_shader_vertex_input_primitives.get(0) = PrimitiveSerializedTypes::Type::FLOAT32_4;
+			l_shader_vertex_input_primitives.get(0) = PrimitiveSerializedTypes::Type::FLOAT32_3;
 			l_shader_vertex_input_primitives.get(1) = PrimitiveSerializedTypes::Type::FLOAT32_2;
 
 			Token(ShaderLayout) l_shader_layout_token = l_graphics_allocator.allocate_shader_layout(l_shader_layout_parameters, l_shader_vertex_input_primitives);
 
-			// Token(ShaderModule) l_shader_module = l_graphics_allocator.allocate_shader_module(slice_int8_build_rawstr("test"));
+
+			const int8* p_vertex_litteral =
+					MULTILINE(\
+                    #version 450 \n
+							layout(location = 0) in vec3 pos; \n
+							layout(location = 1) in vec2 uv; \n
+
+							layout(location = 0) out vec2 out_uv; \n
+
+							void main()\n
+					{ \n
+							gl_Position = vec4(pos.x, pos.y, 0.0f, 1.0f);\n
+							out_uv = uv;\n
+					}\n
+					);
+			const int8* p_fragment_litteral =
+					MULTILINE(\
+                    #version 450\n
+							layout(location = 0) in vec2 uv;\n
+
+							layout(set = 0, binding = 0) uniform sampler2D texSampler;\n
+
+							layout(location = 0) out vec4 outColor;\n
+
+							void main()\n
+					{ \n
+							outColor = texture(texSampler, uv);\n
+					}\n
+					);
+
+			ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+			ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+
+
+			Token(ShaderModule) l_vertex_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
+			Token(ShaderModule) l_fragment_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
+
+
+			ShaderAllocateInfo l_shader_allocate_info{
+					l_graphics_allocator.graphics_pass.get(l_graphics_pass),
+					ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
+					l_graphics_allocator.shader_layouts.get(l_shader_layout_token),
+					l_graphics_allocator.shader_modules.get(l_vertex_shader_module),
+					l_graphics_allocator.shader_modules.get(l_fragment_shader_module)
+			};
+
+			Token(Shader) l_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
+
+			l_graphics_allocator.free_shader(l_shader);
 
 			l_graphics_allocator.free_shader_layout(l_shader_layout_token);
 
 			l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
+
+			l_graphics_allocator.free_shader_module(l_vertex_shader_module);
+			l_graphics_allocator.free_shader_module(l_fragment_shader_module);
 		}
 
 
