@@ -2,12 +2,8 @@
 
 //TODO todo list of the graphics layer
 /*
-	1/ Not using primitive types for vertex input layout. But array of (size and offset).
- 	2/ Implementing vertex buffer allocation.
- 	3/ Adding draw methods.
+ 	2/ Abstracting the vertex buffer object
 */
-
-
 namespace v2
 {
 	enum class ShaderLayoutParameterType
@@ -131,13 +127,20 @@ namespace v2
 
 	struct ShaderLayout
 	{
+		struct VertexInputParameter
+		{
+			PrimitiveSerializedTypes::Type type;
+			uimax offset;
+		};
+
 		ShaderLayout_t layout;
 
 		Span<ShaderLayoutParameterType> shader_layout_parameter_types;
-		//TODO -> do we really have to use primitives ? can't we just pass an array of (size and offset) ?
-		Span<PrimitiveSerializedTypes::Type> vertex_input_layout;
+		Span<VertexInputParameter> vertex_input_layout;
+		uimax vertex_element_size;
 
-		static ShaderLayout allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<PrimitiveSerializedTypes::Type>& in_vertex_input_layout);
+		static ShaderLayout allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types,
+				const Span<VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size);
 
 		void free(const GraphicsDevice& p_device);
 	};
@@ -216,7 +219,8 @@ namespace v2
 		VkDescriptorSet descriptor_set;
 		Token(BufferHost) memory;
 
-		static ShaderUniformBufferParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory);
+		static ShaderUniformBufferParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
+				const Token(BufferHost) p_buffer_memory_token, const BufferHost& p_buffer_memory);
 
 		void free(const GraphicsDevice& p_graphics_device);
 	};
@@ -257,7 +261,8 @@ namespace v2
 
 		void cmd_endRenderPass(const GraphicsPass& p_graphics_pass);
 
-		Token(ShaderLayout) allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<PrimitiveSerializedTypes::Type>& in_vertex_input_layout);
+		Token(ShaderLayout) allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout,
+				const uimax in_vertex_element_size);
 
 		void free_shader_layout(const Token(ShaderLayout) p_shader_layout);
 
@@ -275,7 +280,7 @@ namespace v2
 
 		Material allocate_material_empty();
 
-		void material_add_buffer_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory);
+		void material_add_buffer_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory_token, const BufferHost& p_memory);
 
 		void free_material(BufferAllocator& p_buffer_allocator, const Material p_material);
 
@@ -580,7 +585,8 @@ namespace v2
 		vkDestroyRenderPass(p_device.device, this->render_pass, NULL);
 	};
 
-	inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<PrimitiveSerializedTypes::Type>& in_vertex_input_layout)
+	inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<VertexInputParameter>& in_vertex_input_layout,
+			const uimax in_vertex_element_size)
 	{
 		VkPipelineLayoutCreateInfo l_pipeline_create_info{};
 		l_pipeline_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -598,6 +604,7 @@ namespace v2
 		ShaderLayout l_shader_layout;
 		l_shader_layout.shader_layout_parameter_types = in_shaderlayout_parameter_types;
 		l_shader_layout.vertex_input_layout = in_vertex_input_layout;
+		l_shader_layout.vertex_element_size = in_vertex_element_size;
 		vk_handle_result(vkCreatePipelineLayout(p_device.device, &l_pipeline_create_info, NULL, &l_shader_layout.layout));
 
 		l_descriptor_set_layouts.free();
@@ -705,14 +712,16 @@ namespace v2
 		uimax l_vertex_input_total_size = 0;
 		for (loop(i, 0, l_vertex_input_attributes.Capacity))
 		{
+			const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = p_shader_allocate_info.shader_layout.vertex_input_layout.get(i);
 			l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{
-					(uint32_t)i, 0, get_primitivetype_format(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i)), (uint32_t)l_vertex_input_total_size
+					(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_total_size
 			};
 
-			l_vertex_input_total_size += PrimitiveSerializedTypes::get_size(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i));
+			l_vertex_input_total_size += l_vertex_input_parameter.offset;
 		}
 
-		VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)l_vertex_input_total_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX };
+		VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size,
+														  VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX };
 
 		VkPipelineVertexInputStateCreateInfo l_vertex_input_create{};
 		l_vertex_input_create.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -785,7 +794,8 @@ namespace v2
 		}
 	};
 
-	inline ShaderUniformBufferParameter ShaderUniformBufferParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory)
+	inline ShaderUniformBufferParameter
+	ShaderUniformBufferParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory_token, const BufferHost& p_buffer_memory)
 	{
 		ShaderUniformBufferParameter l_shader_unifor_buffer_parameter;
 		VkDescriptorSetAllocateInfo l_allocate_info{};
@@ -794,8 +804,23 @@ namespace v2
 		l_allocate_info.descriptorSetCount = 1;
 		l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
 
-		l_shader_unifor_buffer_parameter.memory = p_buffer_memory;
+		l_shader_unifor_buffer_parameter.memory = p_buffer_memory_token;
 		vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_unifor_buffer_parameter.descriptor_set));
+
+		VkDescriptorBufferInfo l_descriptor_buffer_info;
+		l_descriptor_buffer_info.buffer = p_buffer_memory.buffer;
+		l_descriptor_buffer_info.offset = 0;
+		l_descriptor_buffer_info.range = p_buffer_memory.size;
+
+		VkWriteDescriptorSet l_write_descriptor_set{};
+		l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		l_write_descriptor_set.dstSet = l_shader_unifor_buffer_parameter.descriptor_set;
+		l_write_descriptor_set.descriptorCount = 1;
+		l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		l_write_descriptor_set.pBufferInfo = &l_descriptor_buffer_info;
+
+		vkUpdateDescriptorSets(p_graphics_device.device, 1, &l_write_descriptor_set, 0, NULL);
+
 		return l_shader_unifor_buffer_parameter;
 	};
 
@@ -903,9 +928,10 @@ namespace v2
 		vkCmdEndRenderPass(this->graphicsDevice.command_buffer.command_buffer);
 	};
 
-	inline Token(ShaderLayout) GraphicsAllocator::allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<PrimitiveSerializedTypes::Type>& in_vertex_input_layout)
+	inline Token(ShaderLayout) GraphicsAllocator::allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout,
+			const uimax in_vertex_element_size)
 	{
-		return this->shader_layouts.alloc_element(ShaderLayout::allocate(this->graphicsDevice, in_shaderlayout_parameter_types.move_to_value(), in_vertex_input_layout.move_to_value()));
+		return this->shader_layouts.alloc_element(ShaderLayout::allocate(this->graphicsDevice, in_shaderlayout_parameter_types.move_to_value(), in_vertex_input_layout.move_to_value(), in_vertex_element_size));
 	};
 
 	inline void GraphicsAllocator::free_shader_layout(const Token(ShaderLayout) p_shader_layout)
@@ -966,7 +992,7 @@ namespace v2
 		};
 	};
 
-	inline void GraphicsAllocator::material_add_buffer_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory)
+	inline void GraphicsAllocator::material_add_buffer_parameter(const Shader& p_shader, const Material p_material,  const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
 	{
 		uimax l_inserted_index = this->material_parameters.get_vector(p_material.parameters).Size;
 
@@ -977,7 +1003,7 @@ namespace v2
 #endif
 		ShaderUniformBufferParameter l_shader_iniform_buffer_parameter =
 				ShaderUniformBufferParameter::allocate(this->graphicsDevice, this->graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index), 0),
-						p_memory);
+						p_memory_token, p_memory);
 
 		this->material_parameters.element_push_back_element(
 				p_material.parameters,
@@ -1162,6 +1188,23 @@ namespace v2
 				this->graphics_allocator.cmd_bind_shader_parameter(*this->binded_shader, l_material_parameters.get(i), this->global_set_count + this->material_set_count);
 				this->material_set_count += 1;
 			}
+		};
+
+		inline void bind_vertex_buffer_gpu(const BufferGPU& p_vertex_buffer_gpu)
+		{
+			VkDeviceSize l_offset = 0;
+			vkCmdBindVertexBuffers(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer, 0, 1, &p_vertex_buffer_gpu.buffer, &l_offset);
+		};
+
+		inline void bind_vertex_buffer_host(const BufferHost& p_vertex_buffer_host)
+		{
+			VkDeviceSize l_offset = 0;
+			vkCmdBindVertexBuffers(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer, 0, 1, &p_vertex_buffer_host.buffer, &l_offset);
+		};
+
+		inline void draw(const uimax p_vertex_number)
+		{
+			vkCmdDraw(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer, (uint32_t)p_vertex_number, 1, 0, 1);
 		};
 	};
 
