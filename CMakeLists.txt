@@ -18,9 +18,14 @@ endif ()
 
 add_compile_definitions(ASSETPATH_DEV=1)
 
-if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+
+if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set(IS_DEBUG true)
+   else()
+    set(IS_DEBUG false)
 endif ()
+
+# message("${IS_DEBUG}")
 
 if (IS_DEBUG)
     add_compile_definitions(TOKEN_TYPE_SAFETY=1)
@@ -60,6 +65,8 @@ target_link_libraries(VULKAN INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/v
 
 add_library(GLSLANG INTERFACE)
 target_include_directories(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang")
+
+if (IS_DEBUG)
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/GenericCodeGend.lib")
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/glslangd.lib")
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/HLSLd.lib")
@@ -68,12 +75,18 @@ target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/OSDependentd.lib")
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRVd.lib")
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Toolsd.lib")
-target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Tools-linkd.lib")
 target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Tools-optd.lib")
-target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Tools-reduced.lib")
-target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Tools-sharedd.lib")
-target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPVRemapperd.lib")
-
+else()
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/GenericCodeGen.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/glslang.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/HLSL.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/MachineIndependent.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/OGLCompiler.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/OSDependent.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV-Tools.lib")
+target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV-Tools-opt.lib")
+endif()
 
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)

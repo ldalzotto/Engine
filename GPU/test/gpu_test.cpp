@@ -5,6 +5,7 @@
 // #define RENDER_DOC_DEBUG
 
 #ifdef RENDER_DOC_DEBUG
+
 #include "./renderdoc_app.h"
 
 RENDERDOC_API_1_1_0* rdoc_api = NULL;
@@ -233,34 +234,36 @@ namespace v2
 
 		// TextureGPU allocation
 
-
-		AttachmentType l_attachment_types[2] = { AttachmentType::COLOR, AttachmentType::DEPTH };
-		ImageFormat l_image_formats[2] = { l_color_imageformat, l_depth_imageformat };
-		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachment_types, l_image_formats);
+		RenderPassAttachment l_attachments[2] =
+				{
+						RenderPassAttachment{ AttachmentType::COLOR, l_color_imageformat },
+						RenderPassAttachment{ AttachmentType::DEPTH, l_depth_imageformat }
+				};
+		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
 
 		{
 			l_buffer_allocator.step();
 			l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
-			l_graphics_allocator.graphicsDevice.command_buffer.begin();
 
 			v4f l_clear_values[2];
 			l_clear_values[0] = v4f{ 0.0f, 1.0f, 0.2f, 1.0f };
 			l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
-			l_graphics_allocator.cmd_beginRenderPass2(l_buffer_allocator, l_graphics_allocator.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
-			l_graphics_allocator.cmd_endRenderPass(l_graphics_allocator.graphics_pass.get(l_graphics_pass));
-
-			l_graphics_allocator.graphicsDevice.command_buffer.end();
-			l_graphics_allocator.graphicsDevice.command_buffer.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
+			GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
+			l_graphics_binder.start();
+			l_graphics_binder.begin_render_pass(l_graphics_allocator.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+			l_graphics_binder.end_render_pass();
+			l_graphics_binder.end();
+			l_graphics_binder.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
 			l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
 		}
 
 
 		GraphicsPass& l_graphics_pass_value = l_graphics_allocator.graphics_pass.get(l_graphics_pass);
-		Slice<Token(TextureGPU) > l_attachments = l_graphics_allocator.renderpass_attachment_textures.get_vector(l_graphics_pass_value.attachment_textures);
-		Token(ImageGPU) l_color_attachment_image = l_graphics_allocator.textures_gpu.get(l_attachments.get(0)).Image;
+		Slice<Token(TextureGPU) > l_attachment_textures = l_graphics_allocator.renderpass_attachment_textures.get_vector(l_graphics_pass_value.attachment_textures);
+		Token(ImageGPU) l_color_attachment_image = l_graphics_allocator.textures_gpu.get(l_attachment_textures.get(0)).Image;
 		Token(ImageHost) l_color_attachment_value = l_buffer_allocator.read_from_imagegpu(l_color_attachment_image, l_buffer_allocator.get_imagegpu(l_color_attachment_image));
 
 		l_buffer_allocator.step();
@@ -302,6 +305,10 @@ namespace v2
 		BufferAllocator l_buffer_allocator = BufferAllocator::allocate_default(l_gpu_instance);
 		GraphicsAllocator l_graphics_allocator = GraphicsAllocator::allocate_default(l_gpu_instance);
 
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
+
 		{
 
 			ImageFormat l_color_imageformat;
@@ -327,46 +334,51 @@ namespace v2
 			// TextureGPU allocation
 
 
-			AttachmentType l_attachment_types[2] = { AttachmentType::COLOR, AttachmentType::DEPTH };
-			ImageFormat l_image_formats[2] = { l_color_imageformat, l_depth_imageformat };
-			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachment_types, l_image_formats);
+			RenderPassAttachment l_attachments[2] =
+					{
+							RenderPassAttachment{ AttachmentType::COLOR, l_color_imageformat },
+							RenderPassAttachment{ AttachmentType::DEPTH, l_depth_imageformat }
+					};
+			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
-			Span<ShaderLayoutParameterType> l_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-			l_shader_layout_parameters.get(0) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
+			Span<ShaderLayoutParameterType> l_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(2);
+			l_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+			l_shader_layout_parameters.get(1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
 
-			Span<PrimitiveSerializedTypes::Type> l_shader_vertex_input_primitives = Span<PrimitiveSerializedTypes::Type>::allocate(2);
+			Span<PrimitiveSerializedTypes::Type> l_shader_vertex_input_primitives = Span<PrimitiveSerializedTypes::Type>::allocate(1);
 			l_shader_vertex_input_primitives.get(0) = PrimitiveSerializedTypes::Type::FLOAT32_3;
-			l_shader_vertex_input_primitives.get(1) = PrimitiveSerializedTypes::Type::FLOAT32_2;
+//			l_shader_vertex_input_primitives.get(1) = PrimitiveSerializedTypes::Type::FLOAT32_2;
+
 
 			Token(ShaderLayout) l_shader_layout_token = l_graphics_allocator.allocate_shader_layout(l_shader_layout_parameters, l_shader_vertex_input_primitives);
 
 
 			const int8* p_vertex_litteral =
 					MULTILINE(\
-                    #version 450 \n
-							layout(location = 0) in vec3 pos; \n
-							layout(location = 1) in vec2 uv; \n
+                            #version 450 \n
 
-							layout(location = 0) out vec2 out_uv; \n
+							layout(location = 0) in vec3 pos; \n
 
 							void main()\n
 					{ \n
-							gl_Position = vec4(pos.x, pos.y, 0.0f, 1.0f);\n
-							out_uv = uv;\n
+							gl_Position = vec4(pos.xyz, 0.5f);\n
 					}\n
 					);
+
 			const int8* p_fragment_litteral =
 					MULTILINE(\
-                    #version 450\n
-							layout(location = 0) in vec2 uv;\n
+                            #version 450\n
 
-							layout(set = 0, binding = 0) uniform sampler2D texSampler;\n
+							struct Color { vec4 _val; }; \n
+
+							layout(set = 0, binding = 0) uniform color { Color _v; }; \n
+							layout(set = 1, binding = 0) uniform color2 { Color _v2; }; \n
 
 							layout(location = 0) out vec4 outColor;\n
 
 							void main()\n
 					{ \n
-							outColor = texture(texSampler, uv);\n
+							outColor = _v._val + _v2._val;\n
 					}\n
 					);
 
@@ -387,17 +399,62 @@ namespace v2
 			};
 
 			Token(Shader) l_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
+			Shader& l_shader_value = l_graphics_allocator.shaders.get(l_shader);
 
+			struct color
+			{
+				uint8 r, g, b, a;
+			};
+
+			color l_base_color = color{};
+			Token(BufferHost) l_base_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color>::build_asint8_memory_singleelement(&l_base_color), BufferUsageFlag::TRANSFER_WRITE);
+			color l_added_color = color{};
+			Token(BufferHost) l_added_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color>::build_asint8_memory_singleelement(&l_added_color), BufferUsageFlag::TRANSFER_WRITE);
+
+			Material l_material = l_graphics_allocator.allocate_material_empty();
+			l_graphics_allocator.material_add_buffer_parameter(l_shader_value, l_material, l_base_color_buffer);
+			l_graphics_allocator.material_add_buffer_parameter(l_shader_value, l_material, l_added_color_buffer);
+
+
+			{
+				v4f l_clear_values[2];
+				l_clear_values[0] = v4f{ 0.0f, 1.0f, 0.2f, 1.0f };
+				l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+				Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_instance.logical_device);
+
+				l_buffer_allocator.step();
+				l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
+
+				GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
+				l_graphics_binder.start();
+				l_graphics_binder.begin_render_pass(l_graphics_allocator.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+				l_graphics_binder.bind_shader(l_graphics_allocator.shaders.get(l_shader));
+				l_graphics_binder.bind_material(l_material);
+				//TODO bind vertex buffer
+				//TODO draw
+				l_graphics_binder.end_render_pass();
+				l_graphics_binder.end();
+				l_graphics_binder.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+				l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
+
+				l_buffer_allocator_semaphore.free(l_gpu_instance.logical_device);
+			}
+
+
+			l_graphics_allocator.free_material(l_buffer_allocator, l_material);
 			l_graphics_allocator.free_shader(l_shader);
-
 			l_graphics_allocator.free_shader_layout(l_shader_layout_token);
-
 			l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
 
 			l_graphics_allocator.free_shader_module(l_vertex_shader_module);
 			l_graphics_allocator.free_shader_module(l_fragment_shader_module);
 		}
 
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
 
 		l_graphics_allocator.free();
 		l_buffer_allocator.free();
@@ -413,7 +470,7 @@ int main()
 	HMODULE mod = GetModuleHandleA("renderdoc.dll");
 
 	pRENDERDOC_GetAPI RENDERDOC_GetAPI =
-		(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
 	int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_0, (void**)&rdoc_api);
 	assert_true(ret == 1);
 #endif

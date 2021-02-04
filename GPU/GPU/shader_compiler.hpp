@@ -2,9 +2,9 @@
 #include "glslang/Include/glslang_c_interface.h"
 
 #ifdef GPU_DEBUG
-#define sc_handle_error(ShaderCompiledPtr, Code) (ShaderCompiledPtr)->handle_error(Code)
+#define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) (ShaderCompiledPtr)->handle_error((ShaderPtr), Code)
 #else
-#define sc_handle_error(ShaderCompiledPtr, Code) Code
+#define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) Code
 #endif
 
 #include "glslang/Include/ResourceLimits.h"
@@ -136,14 +136,14 @@ namespace v2
 		Slice<int8> get_compiled_binary();
 
 	private:
-		void handle_error(const int32 p_return_code);
+		void handle_error(glslang_shader_s* p_shader, const int32 p_return_code);
 	};
 
 	inline ShaderCompiled ShaderCompiled::compile(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
 	{
 		ShaderCompiled l_shader_compiled;
-
-		sc_handle_error(&l_shader_compiled, glslang_initialize_process());
+		l_shader_compiled.program = NULL;
+		sc_handle_error(&l_shader_compiled, NULL, glslang_initialize_process());
 
 
 		TBuiltInResource l_resource = InitResources();
@@ -175,12 +175,12 @@ namespace v2
 		}
 
 		glslang_shader_s* l_shader = glslang_shader_create(&input);
-		sc_handle_error(&l_shader_compiled, glslang_shader_preprocess(l_shader, &input));
-		sc_handle_error(&l_shader_compiled, glslang_shader_parse(l_shader, &input));
+		sc_handle_error(&l_shader_compiled, NULL, glslang_shader_preprocess(l_shader, &input));
+		sc_handle_error(&l_shader_compiled, l_shader, glslang_shader_parse(l_shader, &input));
 
 		glslang_program_t* l_program = glslang_program_create();
 		glslang_program_add_shader(l_program, l_shader);
-		sc_handle_error(&l_shader_compiled, glslang_program_link(l_program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT));
+		sc_handle_error(&l_shader_compiled, l_shader, glslang_program_link(l_program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT));
 		glslang_program_SPIRV_generate(l_program, input.stage);
 		if (glslang_program_SPIRV_get_messages(l_program))
 		{
@@ -209,12 +209,18 @@ namespace v2
 		);
 	};
 
-	inline void ShaderCompiled::handle_error(const int32 p_return_code)
+	inline void ShaderCompiled::handle_error(glslang_shader_s* p_shader, const int32 p_return_code)
 	{
 		if (!p_return_code)
 		{
+			if (p_shader)
+			{
+				printf(glslang_shader_get_info_log(p_shader));
+				printf(glslang_shader_get_info_debug_log(p_shader));
+			}
 			if (this->program)
 			{
+				// glslang_shader_get_info_log()
 				printf(glslang_program_get_info_log(this->program));
 				printf(glslang_program_get_info_debug_log(this->program));
 			}

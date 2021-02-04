@@ -1,9 +1,15 @@
 #pragma once
 
+//TODO todo list of the graphics layer
+/*
+	1/ Not using primitive types for vertex input layout. But array of (size and offset).
+ 	2/ Implementing vertex buffer allocation.
+ 	3/ Adding draw methods.
+*/
+
+
 namespace v2
 {
-
-
 	enum class ShaderLayoutParameterType
 	{
 		UNDEFINED = 0,
@@ -14,20 +20,34 @@ namespace v2
 
 	struct ShaderLayoutParameters
 	{
-		VkDescriptorSetLayout uniformbuffer_vertex_layout;
-		VkDescriptorSetLayout uniformbuffer_fragment_vertex_layout;
-		VkDescriptorSetLayout texture_fragment_layout;
+		struct Set
+		{
+			VkDescriptorSetLayout uniformbuffer_vertex_layout;
+			VkDescriptorSetLayout uniformbuffer_fragment_vertex_layout;
+			VkDescriptorSetLayout texture_fragment_layout;
+		};
+
+		Vector <Set> parameter_sets;
 
 		static ShaderLayoutParameters allocate(gc_t const p_device);
 
 		void free(gc_t const p_device);
 
-		VkDescriptorSetLayout get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type) const;
+		VkDescriptorSetLayout get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding) const;
 
 	private:
-		VkDescriptorSetLayout create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type);
+		VkDescriptorSetLayout create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding);
 
-		VkDescriptorSetLayoutBinding create_binding(const uint32 p_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage);
+		VkDescriptorSetLayoutBinding create_binding(const uint32 p_shader_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage);
+	};
+
+	struct ShaderParameterPool
+	{
+		VkDescriptorPool descriptor_pool;
+
+		static ShaderParameterPool allocate(const gc_t p_device, const uimax p_max_sets);
+
+		void free(const gc_t p_device);
 	};
 
 
@@ -40,7 +60,9 @@ namespace v2
 		CommandPool command_pool;
 		CommandBuffer command_buffer;
 
+		ShaderParameterPool shaderparameter_pool;
 		ShaderLayoutParameters shaderlayout_parameters;
+
 
 		static GraphicsDevice allocate(GPUInstance& p_instance);
 
@@ -76,12 +98,18 @@ namespace v2
 		COLOR, DEPTH
 	};
 
+	struct RenderPassAttachment
+	{
+		AttachmentType type;
+		ImageFormat image_format;
+	};
+
 	struct RenderPass
 	{
 		RenderPass_t render_pass;
 
 		template<uint8 AttachmentCount>
-		static RenderPass allocate(const GraphicsDevice& p_device, const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount]);
+		static RenderPass allocate(const GraphicsDevice& p_device, const RenderPassAttachment p_attachments[AttachmentCount]);
 
 		void free(const GraphicsDevice& p_device);
 
@@ -91,6 +119,9 @@ namespace v2
 
 	struct GraphicsPass
 	{
+#if GPU_DEBUG
+		Span<RenderPassAttachment> attachement_layout;
+#endif
 		RenderPass render_pass;
 		Token(Slice<Token(TextureGPU)>) attachment_textures;
 		FrameBuffer_t frame_buffer;
@@ -101,8 +132,9 @@ namespace v2
 	struct ShaderLayout
 	{
 		ShaderLayout_t layout;
-		//TODO -> this Span will be used for validation
+
 		Span<ShaderLayoutParameterType> shader_layout_parameter_types;
+		//TODO -> do we really have to use primitives ? can't we just pass an array of (size and offset) ?
 		Span<PrimitiveSerializedTypes::Type> vertex_input_layout;
 
 		static ShaderLayout allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<PrimitiveSerializedTypes::Type>& in_vertex_input_layout);
@@ -154,8 +186,6 @@ namespace v2
 		const ShaderLayout& shader_layout;
 		ShaderModule vertex_shader;
 		ShaderModule fragment_shader;
-
-		// static ShaderAllocateInfo build(const GraphicsPass& );
 	};
 
 	struct Shader
@@ -171,6 +201,31 @@ namespace v2
 		static VkFormat get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type);
 	};
 
+	struct ShaderParameter
+	{
+		enum class Type
+		{
+			UNKNOWN = 0, UNIFORM = 1, TEXTURE = 2
+		} type;
+
+		token_t parameter;
+	};
+
+	struct ShaderUniformBufferParameter
+	{
+		VkDescriptorSet descriptor_set;
+		Token(BufferHost) memory;
+
+		static ShaderUniformBufferParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory);
+
+		void free(const GraphicsDevice& p_graphics_device);
+	};
+
+	struct Material
+	{
+		Token(Slice<ShaderParameter>) parameters;
+	};
+
 	struct GraphicsAllocator
 	{
 		GraphicsDevice graphicsDevice;
@@ -182,6 +237,9 @@ namespace v2
 		Pool <ShaderModule> shader_modules;
 		Pool <Shader> shaders;
 
+		Pool <ShaderUniformBufferParameter> shader_uniform_buffer_parameters;
+		PoolOfVector <ShaderParameter> material_parameters;
+
 		static GraphicsAllocator allocate_default(GPUInstance& p_instance);
 
 		void free();
@@ -191,7 +249,7 @@ namespace v2
 		void free_texturegpu(BufferAllocator& p_buffer_allocator, const Token(TextureGPU) p_texture_gpu);
 
 		template<uint8 AttachmentCount>
-		Token(GraphicsPass) allocate_graphicspass(BufferAllocator& p_buffer_allocator, const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount]);
+		Token(GraphicsPass) allocate_graphicspass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount]);
 
 		void free_graphicspass(BufferAllocator& p_buffer_allocator, const Token(GraphicsPass) p_graphics_pass);
 
@@ -211,47 +269,76 @@ namespace v2
 
 		void free_shader(const Token(Shader) p_shader);
 
+		void cmd_bind_shader(const Shader& p_shader);
+
+		void cmd_bind_shader_parameter(const Shader& p_shader, const ShaderParameter& p_shader_parameter, const uint32 p_set_number);
+
+		Material allocate_material_empty();
+
+		void material_add_buffer_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory);
+
+		void free_material(BufferAllocator& p_buffer_allocator, const Material p_material);
+
 	private:
 
 		template<uint8 AttachmentCount>
-		GraphicsPass _allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount]);
+		GraphicsPass _allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount]);
 
 		void _free_graphics_pass(BufferAllocator& p_buffer_allocator, GraphicsPass& p_graphics_pass);
+
+		void _free_shader_uniform_buffer_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferParameter& p_parameter);
+
+		void _cmd_bind_shader_uniform_buffer_parameter(const Shader& p_shader, const ShaderUniformBufferParameter& p_shader_parameter, const uint32 p_set_number);
+
 	};
 
 	inline ShaderLayoutParameters ShaderLayoutParameters::allocate(gc_t const p_device)
 	{
 		ShaderLayoutParameters l_shader_layout_parameters;
-		l_shader_layout_parameters.uniformbuffer_vertex_layout = l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
-		l_shader_layout_parameters.uniformbuffer_fragment_vertex_layout = l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
-		l_shader_layout_parameters.texture_fragment_layout = l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+		l_shader_layout_parameters.parameter_sets = Vector<Set>::allocate(10);
+		for (loop(i, 0, 10))
+		{
+			l_shader_layout_parameters.parameter_sets.push_back_element(
+					Set{
+							l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, (uint32)i),
+							l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, (uint32)i),
+							l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::TEXTURE_FRAGMENT, (uint32)i)
+					}
+			);
+		};
 		return l_shader_layout_parameters;
 	};
 
 	inline void ShaderLayoutParameters::free(gc_t const p_device)
 	{
-		vkDestroyDescriptorSetLayout(p_device, this->uniformbuffer_vertex_layout, NULL);
-		vkDestroyDescriptorSetLayout(p_device, this->uniformbuffer_fragment_vertex_layout, NULL);
-		vkDestroyDescriptorSetLayout(p_device, this->texture_fragment_layout, NULL);
+		for (loop(i, 0, this->parameter_sets.Size))
+		{
+			Set& l_set = this->parameter_sets.get(i);
+			vkDestroyDescriptorSetLayout(p_device, l_set.uniformbuffer_vertex_layout, NULL);
+			vkDestroyDescriptorSetLayout(p_device, l_set.uniformbuffer_fragment_vertex_layout, NULL);
+			vkDestroyDescriptorSetLayout(p_device, l_set.texture_fragment_layout, NULL);
+		}
+
 
 	};
 
-	inline VkDescriptorSetLayout ShaderLayoutParameters::get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type) const
+	inline VkDescriptorSetLayout ShaderLayoutParameters::get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding) const
 	{
+		const Set& l_set = this->parameter_sets.get(p_shader_binding);
 		switch (p_shader_layout_parameter_type)
 		{
 		case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX:
-			return this->uniformbuffer_vertex_layout;
+			return l_set.uniformbuffer_vertex_layout;
 		case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT:
-			return this->uniformbuffer_fragment_vertex_layout;
+			return l_set.uniformbuffer_fragment_vertex_layout;
 		case ShaderLayoutParameterType::TEXTURE_FRAGMENT:
-			return this->texture_fragment_layout;
+			return l_set.texture_fragment_layout;
 		default:
 			abort();
 		}
 	};
 
-	inline VkDescriptorSetLayout ShaderLayoutParameters::create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type)
+	inline VkDescriptorSetLayout ShaderLayoutParameters::create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding)
 	{
 		VkDescriptorType l_descriptor_type;
 		VkShaderStageFlags l_shader_stage;
@@ -273,7 +360,7 @@ namespace v2
 			abort();
 		}
 
-		VkDescriptorSetLayoutBinding l_binding = this->create_binding(0, l_descriptor_type, l_shader_stage);
+		VkDescriptorSetLayoutBinding l_binding = this->create_binding(p_shader_binding, l_descriptor_type, l_shader_stage);
 
 		VkDescriptorSetLayoutCreateInfo l_descriptorset_layot_create{};
 		l_descriptorset_layot_create.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -285,15 +372,37 @@ namespace v2
 		return l_layout;
 	};
 
-	inline VkDescriptorSetLayoutBinding ShaderLayoutParameters::create_binding(const uint32 p_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage)
+	inline VkDescriptorSetLayoutBinding ShaderLayoutParameters::create_binding(const uint32 p_shader_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage)
 	{
-		VkDescriptorSetLayoutBinding l_camera_matrices_layout_binding;
-		l_camera_matrices_layout_binding.binding = p_binding;
+		VkDescriptorSetLayoutBinding l_camera_matrices_layout_binding{};
+		l_camera_matrices_layout_binding.binding = p_shader_binding;
 		l_camera_matrices_layout_binding.descriptorCount = 1;
 		l_camera_matrices_layout_binding.descriptorType = p_descriptor_type;
 		l_camera_matrices_layout_binding.stageFlags = p_shader_stage;
 		l_camera_matrices_layout_binding.pImmutableSamplers = nullptr;
 		return l_camera_matrices_layout_binding;
+	};
+
+	inline ShaderParameterPool ShaderParameterPool::allocate(const gc_t p_device, const uimax p_max_sets)
+	{
+		VkDescriptorPoolSize l_types{};
+		l_types.descriptorCount = 4;
+
+		VkDescriptorPoolCreateInfo l_descriptor_pool_create_info{};
+		l_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		l_descriptor_pool_create_info.poolSizeCount = 1;
+		l_descriptor_pool_create_info.pPoolSizes = &l_types;
+		l_descriptor_pool_create_info.flags = VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		l_descriptor_pool_create_info.maxSets = (uint32_t)p_max_sets;
+
+		ShaderParameterPool l_shader_parameter_pool;
+		vk_handle_result(vkCreateDescriptorPool(p_device, &l_descriptor_pool_create_info, NULL, &l_shader_parameter_pool.descriptor_pool));
+		return l_shader_parameter_pool;
+	};
+
+	inline void ShaderParameterPool::free(const gc_t p_device)
+	{
+		vkDestroyDescriptorPool(p_device, this->descriptor_pool, NULL);
 	};
 
 	inline GraphicsDevice GraphicsDevice::allocate(GPUInstance& p_instance)
@@ -307,6 +416,7 @@ namespace v2
 		l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family);
 		l_graphics_device.command_buffer = l_graphics_device.command_pool.allocate_command_buffer(l_graphics_device.device, l_graphics_device.graphics_queue);
 
+		l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000); //TODO -> adjust pool size
 		l_graphics_device.shaderlayout_parameters = ShaderLayoutParameters::allocate(l_graphics_device.device);
 
 		return l_graphics_device;
@@ -317,6 +427,7 @@ namespace v2
 		this->command_pool.free_command_buffer(this->device, this->command_buffer);
 		this->command_pool.free(this->device);
 
+		this->shaderparameter_pool.free(this->device);
 		this->shaderlayout_parameters.free(this->device);
 	};
 
@@ -382,7 +493,7 @@ namespace v2
 	};
 
 	template<uint8 AttachmentCount>
-	inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount])
+	inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const RenderPassAttachment p_attachments[AttachmentCount])
 	{
 
 #if GPU_DEBUG
@@ -402,14 +513,14 @@ namespace v2
 
 		for (loop(i, 0, AttachmentCount))
 		{
-			switch (p_attachment_types[i])
+			switch (p_attachments[i].type)
 			{
 			case AttachmentType::COLOR:
 			{
 				VkAttachmentDescription& l_color_attachment = l_attachments.get(i);
 				l_color_attachment = VkAttachmentDescription{};
-				l_color_attachment.format = p_attachment_formats[i].format;
-				l_color_attachment.samples = p_attachment_formats[i].samples;
+				l_color_attachment.format = p_attachments[i].image_format.format;
+				l_color_attachment.samples = p_attachments[i].image_format.samples;
 				l_color_attachment.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
 				l_color_attachment.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
 				l_color_attachment.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -427,8 +538,8 @@ namespace v2
 			{
 				VkAttachmentDescription& l_color_attachment = l_attachments.get(i);
 				l_color_attachment = VkAttachmentDescription{};
-				l_color_attachment.format = p_attachment_formats[i].format;
-				l_color_attachment.samples = p_attachment_formats[i].samples;
+				l_color_attachment.format = p_attachments[i].image_format.format;
+				l_color_attachment.samples = p_attachments[i].image_format.samples;
 				l_color_attachment.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
 				l_color_attachment.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
 				l_color_attachment.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -478,7 +589,7 @@ namespace v2
 
 		for (loop(i, 0, in_shaderlayout_parameter_types.Capacity))
 		{
-			l_descriptor_set_layouts.get(i) = p_device.shaderlayout_parameters.get_descriptorset_layout(in_shaderlayout_parameter_types.get(i));
+			l_descriptor_set_layouts.get(i) = p_device.shaderlayout_parameters.get_descriptorset_layout(in_shaderlayout_parameter_types.get(i), (uint32)0);
 		}
 
 		l_pipeline_create_info.setLayoutCount = (uint32_t)l_descriptor_set_layouts.Capacity;
@@ -599,8 +710,6 @@ namespace v2
 			};
 
 			l_vertex_input_total_size += PrimitiveSerializedTypes::get_size(p_shader_allocate_info.shader_layout.vertex_input_layout.get(i));
-
-
 		}
 
 		VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)l_vertex_input_total_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX };
@@ -674,7 +783,25 @@ namespace v2
 		default:
 			abort();
 		}
+	};
 
+	inline ShaderUniformBufferParameter ShaderUniformBufferParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory)
+	{
+		ShaderUniformBufferParameter l_shader_unifor_buffer_parameter;
+		VkDescriptorSetAllocateInfo l_allocate_info{};
+		l_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		l_allocate_info.descriptorPool = p_graphics_device.shaderparameter_pool.descriptor_pool;
+		l_allocate_info.descriptorSetCount = 1;
+		l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
+
+		l_shader_unifor_buffer_parameter.memory = p_buffer_memory;
+		vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_unifor_buffer_parameter.descriptor_set));
+		return l_shader_unifor_buffer_parameter;
+	};
+
+	inline void ShaderUniformBufferParameter::free(const GraphicsDevice& p_graphics_device)
+	{
+		vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
 	};
 
 	inline GraphicsAllocator GraphicsAllocator::allocate_default(GPUInstance& p_instance)
@@ -686,7 +813,9 @@ namespace v2
 				Pool<GraphicsPass>::allocate(0),
 				Pool<ShaderLayout>::allocate(0),
 				Pool<ShaderModule>::allocate(0),
-				Pool<Shader>::allocate(0)
+				Pool<Shader>::allocate(0),
+				Pool<ShaderUniformBufferParameter>::allocate(0),
+				PoolOfVector<ShaderParameter>::allocate_default()
 		};
 	};
 
@@ -699,6 +828,8 @@ namespace v2
 		assert_true(!this->shader_layouts.has_allocated_elements());
 		assert_true(!this->shader_modules.has_allocated_elements());
 		assert_true(!this->shaders.has_allocated_elements());
+		assert_true(!this->shader_uniform_buffer_parameters.has_allocated_elements());
+		assert_true(!this->material_parameters.has_allocated_elements());
 #endif
 
 		this->textures_gpu.free();
@@ -708,6 +839,8 @@ namespace v2
 		this->shader_layouts.free();
 		this->shader_modules.free();
 		this->shaders.free();
+		this->shader_uniform_buffer_parameters.free();
+		this->material_parameters.free();
 	};
 
 	inline Token(TextureGPU) GraphicsAllocator::allocate_texturegpu(BufferAllocator& p_buffer_allocator, const ImageFormat& p_image_format)
@@ -723,10 +856,10 @@ namespace v2
 	};
 
 	template<uint8 AttachmentCount>
-	inline Token(GraphicsPass) GraphicsAllocator::allocate_graphicspass(BufferAllocator& p_buffer_allocator, const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount])
+	inline Token(GraphicsPass) GraphicsAllocator::allocate_graphicspass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount])
 	{
 		return this->graphics_pass.alloc_element(
-				_allocate_graphics_pass<AttachmentCount>(p_buffer_allocator, p_attachment_types, p_attachment_formats)
+				_allocate_graphics_pass<AttachmentCount>(p_buffer_allocator, p_attachments)
 		);
 	};
 
@@ -806,27 +939,98 @@ namespace v2
 		this->shaders.release_element(p_shader);
 	};
 
+	inline void GraphicsAllocator::cmd_bind_shader(const Shader& p_shader)
+	{
+		vkCmdBindPipeline(this->graphicsDevice.command_buffer.command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader.shader);
+	};
+
+	inline void GraphicsAllocator::cmd_bind_shader_parameter(const Shader& p_shader, const ShaderParameter& p_shader_parameter, const uint32 p_set_number)
+	{
+		switch (p_shader_parameter.type)
+		{
+		case ShaderParameter::Type::UNIFORM:
+		{
+			_cmd_bind_shader_uniform_buffer_parameter(p_shader, this->shader_uniform_buffer_parameters.get(tk_b(ShaderUniformBufferParameter, p_shader_parameter.parameter)), p_set_number);
+		}
+			break;
+		default:
+			abort();
+		}
+
+	};
+
+	inline Material GraphicsAllocator::allocate_material_empty()
+	{
+		return Material{
+				this->material_parameters.alloc_vector()
+		};
+	};
+
+	inline void GraphicsAllocator::material_add_buffer_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory)
+	{
+		uimax l_inserted_index = this->material_parameters.get_vector(p_material.parameters).Size;
+
+#if GPU_DEBUG
+		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
+		assert_true(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
+					|| p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+#endif
+		ShaderUniformBufferParameter l_shader_iniform_buffer_parameter =
+				ShaderUniformBufferParameter::allocate(this->graphicsDevice, this->graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index), 0),
+						p_memory);
+
+		this->material_parameters.element_push_back_element(
+				p_material.parameters,
+				ShaderParameter{
+						ShaderParameter::Type::UNIFORM,
+						tk_v(this->shader_uniform_buffer_parameters.alloc_element(l_shader_iniform_buffer_parameter))
+				}
+		);
+	};
+
+	inline void GraphicsAllocator::free_material(BufferAllocator& p_buffer_allocator, const Material p_material)
+	{
+		Slice<ShaderParameter> l_shader_parameters = this->material_parameters.get_vector(p_material.parameters);
+		for (loop(i, 0, l_shader_parameters.Size))
+		{
+			ShaderParameter& l_shader_paramter = l_shader_parameters.get(i);
+			switch (l_shader_paramter.type)
+			{
+			case ShaderParameter::Type::UNIFORM:
+			{
+				Token(ShaderUniformBufferParameter) l_shader_uniform_parameter_token = tk_b(ShaderUniformBufferParameter, l_shader_paramter.parameter);
+				_free_shader_uniform_buffer_parameter(p_buffer_allocator, this->shader_uniform_buffer_parameters.get(l_shader_uniform_parameter_token));
+				this->shader_uniform_buffer_parameters.release_element(l_shader_uniform_parameter_token);
+			}
+				break;
+			default:
+				abort();
+			}
+		}
+
+		this->material_parameters.release_vector(p_material.parameters);
+	};
+
 	template<uint8 AttachmentCount>
-	inline GraphicsPass GraphicsAllocator::_allocate_graphics_pass(BufferAllocator& p_buffer_allocator,
-			const AttachmentType p_attachment_types[AttachmentCount], const ImageFormat p_attachment_formats[AttachmentCount])
+	inline GraphicsPass GraphicsAllocator::_allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount])
 	{
 
 #if GPU_DEBUG
-		v3ui l_extend = p_attachment_formats[0].extent;
+		v3ui l_extend = p_attachments[0].image_format.extent;
 		for (loop(i, 1, AttachmentCount))
 		{
-			assert_true(p_attachment_formats[i].extent == l_extend);
+			assert_true(p_attachments[i].image_format.extent == l_extend);
 		}
 #endif
 
-		RenderPass l_render_pass = RenderPass::allocate<2>(this->graphicsDevice, p_attachment_types, p_attachment_formats);
+		RenderPass l_render_pass = RenderPass::allocate<2>(this->graphicsDevice, p_attachments);
 		TextureGPU l_attachment_textures[AttachmentCount];
 		ImageView_t l_attachment_image_views[AttachmentCount];
 		Token(TextureGPU) l_tokenized_textures[AttachmentCount];
 
 		for (loop(i, 0, AttachmentCount))
 		{
-			l_attachment_textures[i] = TextureGPU::allocate(p_buffer_allocator, p_attachment_formats[i]);
+			l_attachment_textures[i] = TextureGPU::allocate(p_buffer_allocator, p_attachments[i].image_format);
 			l_attachment_image_views[i] = l_attachment_textures[i].ImageView;
 			l_tokenized_textures[i] = this->textures_gpu.alloc_element(l_attachment_textures[i]);
 		};
@@ -836,11 +1040,15 @@ namespace v2
 		l_framebuffer_create.attachmentCount = AttachmentCount;
 		l_framebuffer_create.pAttachments = l_attachment_image_views;
 		l_framebuffer_create.layers = 1;
-		l_framebuffer_create.height = p_attachment_formats[0].extent.x;
-		l_framebuffer_create.width = p_attachment_formats[0].extent.y;
+		l_framebuffer_create.height = p_attachments[0].image_format.extent.x;
+		l_framebuffer_create.width = p_attachments[0].image_format.extent.y;
 		l_framebuffer_create.renderPass = l_render_pass.render_pass;
 
 		GraphicsPass l_graphics_pass;
+#if GPU_DEBUG
+		l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
+		l_graphics_pass.attachement_layout.copy_memory(0, Slice<RenderPassAttachment>::build_memory_elementnb((RenderPassAttachment*)p_attachments, AttachmentCount));
+#endif
 		vk_handle_result(vkCreateFramebuffer(p_buffer_allocator.device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 
 		l_graphics_pass.attachment_textures = this->renderpass_attachment_textures.alloc_vector_with_values(
@@ -863,7 +1071,98 @@ namespace v2
 		this->renderpass_attachment_textures.release_vector(p_graphics_pass.attachment_textures);
 
 		vkDestroyFramebuffer(this->graphicsDevice.device, p_graphics_pass.frame_buffer, NULL);
+
+#if GPU_DEBUG
+		p_graphics_pass.attachement_layout.free();
+#endif
 	};
 
+	inline void GraphicsAllocator::_free_shader_uniform_buffer_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferParameter& p_parameter)
+	{
+		p_buffer_allocator.free_bufferhost(p_parameter.memory);
+		p_parameter.free(this->graphicsDevice);
+	};
+
+	inline void GraphicsAllocator::_cmd_bind_shader_uniform_buffer_parameter(const Shader& p_shader, const ShaderUniformBufferParameter& p_shader_parameter, const uint32 p_set_number)
+	{
+
+#if GPU_DEBUG
+		assert_true(p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
+					|| p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+#endif
+
+		vkCmdBindDescriptorSets(this->graphicsDevice.command_buffer.command_buffer,
+				VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader.layout.layout, p_set_number, 1, &p_shader_parameter.descriptor_set, 0, NULL);
+	};
+
+	struct GraphicsBinder
+	{
+		BufferAllocator& buffer_allocator;
+		GraphicsAllocator& graphics_allocator;
+		GraphicsPass* binded_graphics_pass;
+		Shader* binded_shader;
+		uint32 global_set_count;
+		uint32 material_set_count;
+
+		inline static GraphicsBinder build(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator)
+		{
+			return GraphicsBinder{ p_buffer_allocator, p_graphics_allocator, NULL, 0, 0 };
+		};
+
+		inline void start()
+		{
+			this->graphics_allocator.graphicsDevice.command_buffer.begin();
+		};
+
+		inline void end()
+		{
+			this->graphics_allocator.graphicsDevice.command_buffer.end();
+		};
+
+		inline void submit_after(const Semafore p_wait_for, const VkPipelineStageFlags p_wait_stage)
+		{
+			this->graphics_allocator.graphicsDevice.command_buffer.submit_after(p_wait_for, p_wait_stage);
+		};
+
+		inline void begin_render_pass(GraphicsPass& p_graphics_pass, const Slice<v4f>& p_clear_values)
+		{
+#if GPU_DEBUG
+			assert_true(p_graphics_pass.attachement_layout.Capacity == p_clear_values.Size);
+#endif
+			this->binded_graphics_pass = &p_graphics_pass;
+			this->graphics_allocator.cmd_beginRenderPass2(this->buffer_allocator, *this->binded_graphics_pass, p_clear_values);
+		};
+
+		inline void end_render_pass()
+		{
+#if GPU_DEBUG
+			if (this->binded_graphics_pass == NULL)
+			{ abort(); }
+#endif
+			this->graphics_allocator.cmd_endRenderPass(*this->binded_graphics_pass);
+			this->binded_graphics_pass = NULL;
+		};
+
+		inline void bind_shader(Shader& p_shader)
+		{
+#if GPU_DEBUG
+			if (this->binded_graphics_pass == NULL)
+			{ abort(); }
+#endif
+			this->graphics_allocator.cmd_bind_shader(p_shader);
+			this->binded_shader = &p_shader;
+		};
+
+		inline void bind_material(const Material p_material)
+		{
+			this->material_set_count = 0;
+			Slice<ShaderParameter> l_material_parameters = this->graphics_allocator.material_parameters.get_vector(p_material.parameters);
+			for (loop(i, 0, l_material_parameters.Size))
+			{
+				this->graphics_allocator.cmd_bind_shader_parameter(*this->binded_shader, l_material_parameters.get(i), this->global_set_count + this->material_set_count);
+				this->material_set_count += 1;
+			}
+		};
+	};
 
 };

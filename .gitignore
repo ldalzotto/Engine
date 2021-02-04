@@ -6,7 +6,9 @@
 out
 build
 
+.idea
 .vscode
+cmake-build-debug
 
 Assets/**/*.db
 Assets/**/*.json

@@ -81,6 +81,10 @@ namespace v2
 			return this->Memory.Memory[p_index];
 		};
 
+		inline const ElementType& get(const uimax p_index) const
+		{
+			return ((Vector<ElementType>*)this)->get(p_index);
+		};
 
 		inline void clear()
 		{
