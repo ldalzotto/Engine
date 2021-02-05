@@ -86,3 +86,14 @@ namespace v2
 #include "./memory.hpp"
 #include "./graphics.hpp"
 #include "./shader_compiler.hpp"
+
+
+#undef ShadowBuffer_t
+#undef ShadowBuffer_member_buffer
+#undef ShadowBuffer_member_size
+
+#undef ShadowShaderUniformBufferParameter_t
+#undef ShadowShaderUniformBufferParameter_member_descriptor_set
+#undef ShadowShaderUniformBufferParameter_member_memory
+#undef ShadowShaderUniformBufferParameter_method_free
+#undef ShadowShaderUniformBufferParameter_methodcall_free
