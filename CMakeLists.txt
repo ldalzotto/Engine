@@ -7,10 +7,10 @@ project(EngineCPP VERSION 0.0.1)
 enable_language(CXX)
 
 # get_cmake_property(_variableNames VARIABLES)
-#list (SORT _variableNames)
+# list (SORT _variableNames)
 # foreach (_variableName ${_variableNames})
 #	message(STATUS "${_variableName}=${${_variableName}}")
-#endforeach()
+# endforeach()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
@@ -18,7 +18,7 @@ endif ()
 
 add_compile_definitions(ASSETPATH_DEV=1)
 
-
+# OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug")
 if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set(IS_DEBUG true)
    else()
