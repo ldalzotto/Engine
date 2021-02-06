@@ -743,6 +743,28 @@ namespace v2
 		assert_true(l_calculated_size == p_heap->Size);
 	};
 
+	inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
+	{
+		uimax l_calculated_size = 0;
+		for (loop(i, 0, p_heap_paged->AllocatedChunks.get_size()))
+		{
+			if (!p_heap_paged->AllocatedChunks.is_element_free(Token(SliceIndex) { i }))
+			{
+				l_calculated_size += p_heap_paged->AllocatedChunks.get(Token(SliceIndex) { i }).Size;
+			};
+		}
+
+		for (loop(i, 0, p_heap_paged->FreeChunks.varying_vector.get_size()))
+		{
+			for (loop(j, 0, p_heap_paged->FreeChunks.get(i).Size))
+			{
+				l_calculated_size += p_heap_paged->FreeChunks.get(i).get(j).Size;
+			}
+		}
+		
+		assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
+	};
+
 	inline void sort_test()
 	{
 		{
@@ -849,19 +871,23 @@ namespace v2
 		{
 			assert_true(l_heap_paged.PageSize == l_heappaged_chunk_size);
 			assert_true(l_heap_paged.get_page_count() == 0);
+			asset_heappaged_integrity(&l_heap_paged);
 
 			HeapPaged::AllocatedElementReturn l_allocated_element;
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
 			assert_true(l_heap_paged.get_page_count() == 1);
 			assert_true(l_allocated_element.Offset == 0);
+			asset_heappaged_integrity(&l_heap_paged);
 
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
 			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 0);
+			asset_heappaged_integrity(&l_heap_paged);
 
 			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(3, 3, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED);
 			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 6);
+			asset_heappaged_integrity(&l_heap_paged);
 		}
 
 		l_heap_paged.free();

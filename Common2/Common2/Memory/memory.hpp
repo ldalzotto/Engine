@@ -5,6 +5,11 @@ inline int8* heap_malloc(const uimax p_size)
 	return (int8*)::malloc(p_size);
 };
 
+inline int8* heap_calloc(const uimax p_size)
+{
+	return (int8*)::calloc(1, p_size);
+};
+
 
 inline int8* heap_realloc(int8* p_memory, const uimax p_new_size)
 {
@@ -22,7 +27,7 @@ inline int8* memory_cpy(int8* p_dst, const int8* p_src, const uimax p_size)
 	return (int8*)::memcpy(p_dst, p_src, p_size);
 };
 
-inline static int8* memory_cpy_safe(int8* p_dst, const uimax p_dst_size, const int8* p_src, const  uimax p_size)
+inline static int8* memory_cpy_safe(int8* p_dst, const uimax p_dst_size, const int8* p_src, const uimax p_size)
 {
 #if STANDARD_ALLOCATION_BOUND_TEST
 	if (p_size > p_dst_size)
@@ -66,7 +71,8 @@ inline uimax memory_offset_bytes(const uimax p_size)
 };
 
 
-inline constexpr uimax strlen_constexpr(const char* start) {
+inline constexpr uimax strlen_constexpr(const char* start)
+{
 	const char* end = start;
 	while (*end++ != 0);
 	return end - start - 1;

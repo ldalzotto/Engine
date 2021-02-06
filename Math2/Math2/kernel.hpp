@@ -57,6 +57,20 @@ namespace v2
 		return p_value;
 	};
 
+
+	inline uint8 Math::sRGB_to_linear_uint8(const uint8 p_sRGB)
+	{
+		float l_s = (float)p_sRGB / (float)uint8_max;
+		if (l_s <= 0.04045f)
+		{
+			return (uint8)nearbyintf((l_s / 12.92f) * uint8_max);
+		}
+		else
+		{
+			return (uint8)nearbyintf(powf((l_s + 0.055f) / 1.055f, 2.4f) * uint8_max);
+		}
+	};
+
 }
 
 
@@ -322,6 +336,25 @@ inline float32 v4f::length() const
 {
 	v4f l_squared = math_v4f_foreach(this, math_square_op);
 	return sqrtf(math_v4f_reduce(&l_squared, math_add_op));
+};
+
+inline int8 v4ui8::operator==(const v4ui8& p_other) const
+{
+	return (this->Points[0] == p_other.Points[0]) &&
+		(this->Points[1] == p_other.Points[1]) &&
+		(this->Points[2] == p_other.Points[2]) &&
+		(this->Points[3] == p_other.Points[3]);
+};
+
+inline v4ui8 v4ui8::sRGB_to_linear() const
+{
+	return v4ui8
+	{
+		v2::Math::sRGB_to_linear_uint8(this->x),
+		v2::Math::sRGB_to_linear_uint8(this->y),
+		v2::Math::sRGB_to_linear_uint8(this->z),
+		v2::Math::sRGB_to_linear_uint8(this->w),
+	};
 };
 
 inline quat quat::rotate_around(const v3f& p_axis, const float32 p_angle)

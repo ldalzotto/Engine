@@ -153,6 +153,7 @@ namespace v2
 
 	enum class ImageUsageFlag
 	{
+		UNDEFINED = 0,
 		TRANSFER_READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		TRANSFER_WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		SHADER_COLOR_ATTACHMENT = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -174,12 +175,16 @@ namespace v2
 		VkSampleCountFlagBits samples;
 	};
 
+#define ShadowImage(Prefix) ShadowImage_##Prefix
+#define ShadowImage_member_image image
+#define ShadowImage_member_format format
+
 	struct ImageHost
 	{
 		MappedHostMemory memory;
 		TransferDeviceHeapToken heap_token;
-		VkImage image;
-		ImageFormat format;
+		VkImage ShadowImage_member_image;
+		ImageFormat ShadowImage_member_format;
 
 		static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
 
@@ -200,8 +205,8 @@ namespace v2
 	struct ImageGPU
 	{
 		TransferDeviceHeapToken heap_token;
-		VkImage image;
-		ImageFormat format;
+		VkImage ShadowImage_member_image;
+		ImageFormat ShadowImage_member_format;
 		uimax size;
 
 		static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
@@ -221,29 +226,27 @@ namespace v2
 		VkPipelineStageFlags dst_stage;
 	};
 
-	namespace ImageLayoutTransitionBarrierConfiguration_Const
+	namespace ImageLayoutTransitionBarriers_const
 	{
-		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_dst = ImageLayoutTransitionBarrierConfiguration
-				{
-						VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-						VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
-				};
-		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src = ImageLayoutTransitionBarrierConfiguration{
-				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
-		};
-		const ImageLayoutTransitionBarrierConfiguration transfer_src_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
-				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-		};
-		const ImageLayoutTransitionBarrierConfiguration transfer_dst_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
-				VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
-				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-		};
-		const ImageLayoutTransitionBarrierConfiguration undefined_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
-				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-		};
+		static uint8 ImageUsageCount = 6;
+
+	};
+
+	struct ImageLayoutTransitionBarriers
+	{
+		Span<ImageLayoutTransitionBarrierConfiguration> barriers;
+
+		inline static ImageLayoutTransitionBarriers allocate();
+
+		inline ImageLayoutTransitionBarrierConfiguration get_barrier(const ImageUsageFlag p_left, const ImageUsageFlag p_right) const;
+
+		inline static VkImageLayout get_imagelayout_from_imageusage(const ImageUsageFlag p_flag);
+
+		inline void free();
+
+	private:
+
+		inline uint8 get_index_from_imageusage(const ImageUsageFlag p_flag) const;
 	};
 
 	/*
@@ -252,6 +255,7 @@ namespace v2
 	struct BufferAllocator
 	{
 		TransferDevice device;
+		ImageLayoutTransitionBarriers image_layout_barriers;
 
 		Pool <BufferHost> host_buffers;
 		Pool <BufferGPU> gpu_buffers;
@@ -276,6 +280,20 @@ namespace v2
 		};
 
 		Vector <Buffer_GPUtoHost_CopyEvent> buffer_gpu_to_host_copy_events;
+
+		struct ImageHost_AllocatedEvent
+		{
+			Token(ImageHost) image;
+		};
+
+		Vector <ImageHost_AllocatedEvent> image_host_allocate_events;
+
+		struct ImageGPU_AllocatedEvent
+		{
+			Token(ImageGPU) image;
+		};
+
+		Vector <ImageGPU_AllocatedEvent> image_gpu_allocate_events;
 
 		struct Image_HosttoGPU_CopyEvent
 		{
@@ -307,21 +325,7 @@ namespace v2
 			Token(BufferHost) target_buffer;
 		};
 
-		Vector<ImageGPU_to_BufferHost_CopyEvent> image_gpu_to_buffer_host_copy_events;
-
-		/*
-		//TODO -> to delete.
-		//The layout must be identified with the format.........
-		struct ImageGPULayout_TransitionEvent
-		{
-			Token(ImageGPU) image;
-			VkImageLayout initial_layout;
-			VkImageLayout target_layout;
-			ImageLayoutTransitionBarrierConfiguration configuration;
-		};
-
-		Vector <ImageGPULayout_TransitionEvent> image_gpu_layouttransition_events;
-*/
+		Vector <ImageGPU_to_BufferHost_CopyEvent> image_gpu_to_buffer_host_copy_events;
 
 		static BufferAllocator allocate_default(const GPUInstance& p_instance);
 
@@ -377,26 +381,26 @@ namespace v2
 
 		static void cmd_copy_buffer_gpu_to_host(const CommandBuffer& p_command_buffer, const BufferGPU& p_gpu, const BufferHost& p_host);
 
-		static void cmd_copy_image_host_to_gpu(const CommandBuffer& p_command_buffer, const ImageHost& p_host, const ImageGPU& p_gpu);
+		template<class ShadowImage(Source), class ShadowImage(Target)>
+		static void cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(Source)& p_source, const ShadowImage(Target)& p_target);
 
-		static void cmd_copy_image_gpu_to_host(const CommandBuffer& p_command_buffer, const ImageGPU& p_gpu, const ImageHost& p_host);
+		static void cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const BufferHost& p_host, const ImageGPU& p_gpu);
 
-		static void cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const BufferHost& p_host, const ImageGPU& p_gpu);
-
-		static void cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageGPU& p_gpu, const BufferHost& p_host);
+		static void cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ImageGPU& p_gpu, const BufferHost& p_host);
 
 		static void cmd_image_layout_transition(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_image_format,
 				const VkImageLayout p_source_image_layout, const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration);
 
+		template<class ShadowImage(_)>
+		static void cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(_)& p_image,
+				const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage);
+
 	private:
 		static void cmd_copy_buffer(const CommandBuffer& p_command_buffer, const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size);
-
-		static void cmd_copy_image(const CommandBuffer& p_command_buffer, const VkImage p_src_image, const ImageFormat& p_src_format, const VkImage p_target_image, const ImageFormat& p_target_format);
 
 		static void cmd_revert_image_layout_from_transfer_dst(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format);
 
 		static void cmd_revert_image_layout_from_transfer_src(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format);
-		
 	};
 
 };
@@ -715,6 +719,7 @@ namespace v2
 		ImageHost l_image_host;
 		l_image_host.memory = MappedHostMemory::build_default();
 		l_image_host.format = p_image_format;
+		// l_image_host.target_image_layout = ImageUsageUtils::get_target_imagelayout_from_usage(l_image_host.format.imageUsage);
 
 		VkImageCreateInfo l_image_create_info{};
 		l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -791,6 +796,7 @@ namespace v2
 	{
 		ImageGPU l_image_gpu;
 		l_image_gpu.format = p_image_format;
+		// l_image_gpu.target_image_layout = ImageUsageUtils::get_target_imagelayout_from_usage(l_image_gpu.format.imageUsage);
 
 		VkImageCreateInfo l_image_create_info{};
 		l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -832,11 +838,136 @@ namespace v2
 	};
 
 
+	inline ImageLayoutTransitionBarriers ImageLayoutTransitionBarriers::allocate()
+	{
+		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_dst = ImageLayoutTransitionBarrierConfiguration
+				{
+						VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+						VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+				};
+		const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration transfer_src_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration transfer_dst_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		};
+		const ImageLayoutTransitionBarrierConfiguration undefined_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+				VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+				VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+		};
+
+		ImageLayoutTransitionBarriers l_barriers = ImageLayoutTransitionBarriers{
+				Span<ImageLayoutTransitionBarrierConfiguration>::callocate(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount) };
+		l_barriers.barriers.get(1) = undefined_to_transfert_src;
+		l_barriers.barriers.get(2) = undefined_to_transfert_dst;
+		l_barriers.barriers.get(3) = undefined_to_shader_readonly;
+		l_barriers.barriers.get(4) = undefined_to_shader_readonly;
+		l_barriers.barriers.get(5) = undefined_to_shader_readonly;
+
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 1) = undefined_to_transfert_src;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 2) = undefined_to_transfert_dst;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 3) = transfer_src_to_shader_readonly;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 4) = transfer_src_to_shader_readonly;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 5) = transfer_src_to_shader_readonly;
+
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 1) = undefined_to_transfert_dst;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 2) = undefined_to_transfert_src;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 3) = transfer_dst_to_shader_readonly;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 4) = transfer_dst_to_shader_readonly;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 5) = transfer_dst_to_shader_readonly;
+
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 1) = undefined_to_transfert_src;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 2) = undefined_to_transfert_dst;
+
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 1) = undefined_to_transfert_src;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 2) = undefined_to_transfert_dst;
+
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 1) = undefined_to_transfert_src;
+		l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 2) = undefined_to_transfert_dst;
+
+		return l_barriers;
+	};
+
+	inline ImageLayoutTransitionBarrierConfiguration ImageLayoutTransitionBarriers::get_barrier(const ImageUsageFlag p_left, const ImageUsageFlag p_right) const
+	{
+		return this->barriers.get(
+				((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * this->get_index_from_imageusage(p_left))
+				+
+				this->get_index_from_imageusage(p_right)
+		);
+	};
+
+	inline VkImageLayout ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(const ImageUsageFlag p_flag)
+	{
+		if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
+		{
+			return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
+		{
+			return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
+		{
+			return VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ)
+		{
+			return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)
+		{
+			return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		}
+
+		return VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+	};
+
+	inline void ImageLayoutTransitionBarriers::free()
+	{
+		this->barriers.free();
+	};
+
+	inline uint8 ImageLayoutTransitionBarriers::get_index_from_imageusage(const ImageUsageFlag p_flag) const
+	{
+		if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
+		{
+			return 3;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
+		{
+			return 4;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
+		{
+			return 5;
+		}
+
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ)
+		{
+			return 1;
+		}
+		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)
+		{
+			return 2;
+		}
+
+		return 0;
+	};
+
 	inline BufferAllocator BufferAllocator::allocate_default(const GPUInstance& p_instance)
 	{
 
 		return BufferAllocator{
 				TransferDevice::allocate(p_instance),
+				ImageLayoutTransitionBarriers::allocate(),
 				Pool<BufferHost>::allocate(0),
 				Pool<BufferGPU>::allocate(0),
 				Pool<ImageHost>::allocate(0),
@@ -845,10 +976,12 @@ namespace v2
 				Vector<Token(ImageHost) >::allocate(0),
 				Vector<Buffer_HosttoGPU_CopyEvent>::allocate(0),
 				Vector<Buffer_GPUtoHost_CopyEvent>::allocate(0),
+				Vector<ImageHost_AllocatedEvent>::allocate(0),
+				Vector<ImageGPU_AllocatedEvent>::allocate(0),
 				Vector<Image_HosttoGPU_CopyEvent>::allocate(0),
 				Vector<ImageGPUtoHost_CopyEvent>::allocate(0),
 				Vector<BufferHosttoImageGPU_CopyEvent>::allocate(0),
-				Vector< ImageGPU_to_BufferHost_CopyEvent>::allocate(0)
+				Vector<ImageGPU_to_BufferHost_CopyEvent>::allocate(0)
 		};
 	};
 
@@ -868,11 +1001,15 @@ namespace v2
 		assert_true(this->garbage_host_images.empty());
 		assert_true(this->buffer_gpu_to_host_copy_events.empty());
 		assert_true(this->buffer_host_to_gpu_copy_events.empty());
+		assert_true(this->image_host_allocate_events.empty());
+		assert_true(this->image_gpu_allocate_events.empty());
 		assert_true(this->image_gpu_to_host_copy_events.empty());
 		assert_true(this->image_host_to_gpu_copy_events.empty());
 		assert_true(this->buffer_host_to_image_gpu_cpy_event.empty());
 		assert_true(this->image_gpu_to_buffer_host_copy_events.empty());
 #endif
+
+		this->image_layout_barriers.free();
 
 		this->host_buffers.free();
 		this->gpu_buffers.free();
@@ -882,6 +1019,8 @@ namespace v2
 		this->garbage_host_images.free();
 		this->buffer_gpu_to_host_copy_events.free();
 		this->buffer_host_to_gpu_copy_events.free();
+		this->image_host_allocate_events.free();
+		this->image_gpu_allocate_events.free();
 		this->image_gpu_to_host_copy_events.free();
 		this->image_host_to_gpu_copy_events.free();
 		this->buffer_host_to_image_gpu_cpy_event.free();
@@ -972,11 +1111,23 @@ namespace v2
 
 	inline Token(ImageHost) BufferAllocator::allocate_imagehost_empty(const ImageFormat& p_image_format)
 	{
-		return this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		Token(ImageHost) l_allocated_image = this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		this->image_host_allocate_events.push_back_element(ImageHost_AllocatedEvent{ l_allocated_image });
+		return l_allocated_image;
 	};
 
 	inline void BufferAllocator::free_imagehost(const Token(ImageHost) p_image_host)
 	{
+		for (vector_loop_reverse(&this->image_host_allocate_events, i))
+		{
+			ImageHost_AllocatedEvent& l_event = this->image_host_allocate_events.get(i);
+			if (tk_eq(l_event.image, p_image_host))
+			{
+				this->image_host_allocate_events.erase_element_at(i);
+			}
+		}
+
+
 		ImageHost& l_image_host = this->host_images.get(p_image_host);
 		l_image_host.free(this->device);
 		this->host_images.release_element(p_image_host);
@@ -989,7 +1140,9 @@ namespace v2
 
 	inline Token(ImageGPU) BufferAllocator::allocate_imagegpu(const ImageFormat& p_image_format)
 	{
-		return this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		Token(ImageGPU) l_allocated_image = this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+		this->image_gpu_allocate_events.push_back_element(ImageGPU_AllocatedEvent{ l_allocated_image });
+		return l_allocated_image;
 	};
 
 	inline ImageGPU& BufferAllocator::get_imagegpu(const Token(ImageGPU) p_image_gpu)
@@ -1039,6 +1192,15 @@ namespace v2
 			}
 		}
 
+		for (vector_loop_reverse(&this->image_gpu_allocate_events, i))
+		{
+			ImageGPU_AllocatedEvent& l_event = this->image_gpu_allocate_events.get(i);
+			if (tk_eq(l_event.image, p_image_gpu))
+			{
+				this->image_gpu_allocate_events.erase_element_at(i);
+			}
+		}
+
 		ImageGPU& l_image = this->gpu_images.get(p_image_gpu);
 		l_image.free(this->device);
 		this->gpu_images.release_element(p_image_gpu);
@@ -1053,7 +1215,7 @@ namespace v2
 		this->image_host_to_gpu_copy_events.push_back_element(Image_HosttoGPU_CopyEvent{ l_stagin_image, p_image_gpu_token });
 		*/
 		Token(BufferHost) l_stagin_buffer = this->allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
-		this->buffer_host_to_image_gpu_cpy_event.push_back_element(BufferHosttoImageGPU_CopyEvent{l_stagin_buffer, p_image_gpu_token});
+		this->buffer_host_to_image_gpu_cpy_event.push_back_element(BufferHosttoImageGPU_CopyEvent{ l_stagin_buffer, p_image_gpu_token });
 	};
 
 	inline Token(ImageHost) BufferAllocator::read_from_imagegpu(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu)
@@ -1068,7 +1230,7 @@ namespace v2
 	inline Token(BufferHost) BufferAllocator::read_from_imagegpu_to_buffer(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu)
 	{
 		Token(BufferHost) l_stagin_buffer = this->allocate_bufferhost_empty(p_image_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
-		this->image_gpu_to_buffer_host_copy_events.push_back_element(ImageGPU_to_BufferHost_CopyEvent{ p_image_gpu_token, l_stagin_buffer});
+		this->image_gpu_to_buffer_host_copy_events.push_back_element(ImageGPU_to_BufferHost_CopyEvent{ p_image_gpu_token, l_stagin_buffer });
 		return l_stagin_buffer;
 	};
 
@@ -1078,15 +1240,43 @@ namespace v2
 
 		this->device.command_buffer.begin();
 
+		if (this->image_host_allocate_events.Size > 0)
+		{
+			for (loop(i, 0, this->image_host_allocate_events.Size))
+			{
+				Token(ImageHost) l_image_token = this->image_host_allocate_events.get(i).image;
+				ImageHost& l_image = this->host_images.get(l_image_token);
+				BufferCommandUtils::cmd_image_layout_transition_v2(this->device.command_buffer, this->image_layout_barriers,
+						l_image,
+						ImageUsageFlag::UNDEFINED,
+						l_image.format.imageUsage);
+			}
+			this->image_host_allocate_events.clear();
+		}
+
+		if (this->image_gpu_allocate_events.Size > 0)
+		{
+			for (loop(i, 0, this->image_gpu_allocate_events.Size))
+			{
+				Token(ImageGPU) l_image_token = this->image_gpu_allocate_events.get(i).image;
+				ImageGPU& l_image = this->gpu_images.get(l_image_token);
+				BufferCommandUtils::cmd_image_layout_transition_v2(this->device.command_buffer, this->image_layout_barriers,
+						l_image,
+						ImageUsageFlag::UNDEFINED,
+						l_image.format.imageUsage);
+			}
+			this->image_gpu_allocate_events.clear();
+		}
+
 		if (this->buffer_host_to_image_gpu_cpy_event.Size > 0)
 		{
 			for (loop(i, 0, this->buffer_host_to_image_gpu_cpy_event.Size))
 			{
 				BufferHosttoImageGPU_CopyEvent& l_event = this->buffer_host_to_image_gpu_cpy_event.get(i);
 				BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(
-					this->device.command_buffer,
-					this->host_buffers.get(l_event.source_buffer),
-					this->gpu_images.get(l_event.target_image)
+						this->device.command_buffer, this->image_layout_barriers,
+						this->host_buffers.get(l_event.source_buffer),
+						this->gpu_images.get(l_event.target_image)
 				);
 				this->garbage_host_buffers.push_back_element(l_event.source_buffer);
 			}
@@ -1099,9 +1289,9 @@ namespace v2
 			{
 				ImageGPU_to_BufferHost_CopyEvent& l_event = this->image_gpu_to_buffer_host_copy_events.get(i);
 				BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(
-					this->device.command_buffer,
-					this->gpu_images.get(l_event.source_image),
-					this->host_buffers.get(l_event.target_buffer)
+						this->device.command_buffer, this->image_layout_barriers,
+						this->gpu_images.get(l_event.source_image),
+						this->host_buffers.get(l_event.target_buffer)
 				);
 			}
 			this->image_gpu_to_buffer_host_copy_events.clear();
@@ -1140,7 +1330,7 @@ namespace v2
 			for (loop(i, 0, this->image_host_to_gpu_copy_events.Size))
 			{
 				Image_HosttoGPU_CopyEvent& l_event = this->image_host_to_gpu_copy_events.get(i);
-				BufferCommandUtils::cmd_copy_image_host_to_gpu(this->device.command_buffer,
+				BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(this->device.command_buffer, this->image_layout_barriers,
 						this->host_images.get(l_event.staging_image),
 						this->gpu_images.get(l_event.target_image));
 				this->garbage_host_images.push_back_element(l_event.staging_image);
@@ -1154,7 +1344,7 @@ namespace v2
 			for (loop(i, 0, this->image_gpu_to_host_copy_events.Size))
 			{
 				ImageGPUtoHost_CopyEvent& l_event = this->image_gpu_to_host_copy_events.get(i);
-				BufferCommandUtils::cmd_copy_image_gpu_to_host(this->device.command_buffer,
+				BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(this->device.command_buffer, this->image_layout_barriers,
 						this->gpu_images.get(l_event.source_image),
 						this->host_images.get(l_event.target_image));
 			}
@@ -1194,52 +1384,65 @@ namespace v2
 	};
 
 
-	inline void BufferCommandUtils::cmd_copy_image_host_to_gpu(const CommandBuffer& p_command_buffer, const ImageHost& p_host, const ImageGPU& p_gpu)
+	template<class ShadowImage(Source), class ShadowImage(Target)>
+	inline void BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(Source)& p_source, const ShadowImage(Target)& p_target)
 	{
-		BufferCommandUtils::cmd_copy_image(p_command_buffer, p_host.image, p_host.format, p_gpu.image, p_gpu.format);
+
+#if CONTAINER_MEMORY_TEST
+		assert_true(p_source.ShadowImage_member_format.extent == p_target.ShadowImage_member_format.extent);
+#endif
+
+		{
+			BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, p_source.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_READ);
+			BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, p_target.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
+		}
+
+		VkImageCopy l_region = {
+				VkImageSubresourceLayers{ p_source.ShadowImage_member_format.imageAspect, 0, 0, (uint32_t)p_source.ShadowImage_member_format.arrayLayers },
+				VkOffset3D{ 0, 0, 0 },
+				VkImageSubresourceLayers{ p_target.ShadowImage_member_format.imageAspect, 0, 0, (uint32_t)p_target.ShadowImage_member_format.arrayLayers },
+				VkOffset3D{ 0, 0, 0 },
+				VkExtent3D{ (uint32_t)p_source.ShadowImage_member_format.extent.x, (uint32_t)p_source.ShadowImage_member_format.extent.y, (uint32_t)p_source.ShadowImage_member_format.extent.z }
+		};
+
+		vkCmdCopyImage(p_command_buffer.command_buffer, p_source.ShadowImage_member_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				p_target.ShadowImage_member_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
+
+		{
+			BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, ImageUsageFlag::TRANSFER_READ, p_source.ShadowImage_member_format.imageUsage);
+			BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, ImageUsageFlag::TRANSFER_WRITE, p_target.ShadowImage_member_format.imageUsage);
+		}
 	};
 
-	inline void BufferCommandUtils::cmd_copy_image_gpu_to_host(const CommandBuffer& p_command_buffer, const ImageGPU& p_gpu, const ImageHost& p_host)
-	{
-		BufferCommandUtils::cmd_copy_image(p_command_buffer, p_gpu.image, p_gpu.format, p_host.image, p_host.format);
-	};
-
-	inline void BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const BufferHost& p_host, const ImageGPU& p_gpu)
+	inline void BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const BufferHost& p_host, const ImageGPU& p_gpu)
 	{
 #if CONTAINER_MEMORY_TEST
 		assert_true(p_host.size <= p_gpu.size);
 #endif
-		
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_gpu.image, p_gpu.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_dst);
-		}
+
+		BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, p_gpu.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
 
 		VkBufferImageCopy l_buffer_image_copy{};
 		l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{
 				p_gpu.format.imageAspect,
 				0,
 				0,
-				(uint32_t)p_gpu.format.arrayLayers};
+				(uint32_t)p_gpu.format.arrayLayers };
 		l_buffer_image_copy.imageExtent = VkExtent3D{ (uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z };
 
 		vkCmdCopyBufferToImage(p_command_buffer.command_buffer, p_host.buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
-		
-		{
-			cmd_revert_image_layout_from_transfer_dst(p_command_buffer, p_gpu.image, p_gpu.format);
-		}
+
+		BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
 	};
 
-	inline void BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageGPU& p_gpu, const BufferHost& p_host)
+	inline void BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ImageGPU& p_gpu, const BufferHost& p_host)
 	{
+
 #if CONTAINER_MEMORY_TEST
 		assert_true(p_gpu.size <= p_host.size);
 #endif
-		
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_gpu.image, p_gpu.format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_src);
-		}
+
+		BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_READ);
 
 		VkBufferImageCopy l_buffer_image_copy{};
 		l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{
@@ -1251,9 +1454,7 @@ namespace v2
 
 		vkCmdCopyImageToBuffer(p_command_buffer.command_buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, p_host.buffer, 1, &l_buffer_image_copy);
 
-		{
-			cmd_revert_image_layout_from_transfer_src(p_command_buffer, p_gpu.image, p_gpu.format);
-		}
+		BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
 	};
 
 
@@ -1282,6 +1483,34 @@ namespace v2
 	};
 
 
+	template<class ShadowImage(_)>
+	inline void BufferCommandUtils::cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(_)& p_image,
+			const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage)
+	{
+		VkImageMemoryBarrier l_image_memory_barrier{};
+		l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		l_image_memory_barrier.oldLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_source_image_usage);
+		l_image_memory_barrier.newLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_target_image_usage);
+		l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		l_image_memory_barrier.image = p_image.ShadowImage_member_image;
+
+		l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{
+				p_image.ShadowImage_member_format.imageAspect,
+				0,
+				(uint32_t)p_image.ShadowImage_member_format.arrayLayers,
+				0,
+				(uint32_t)p_image.ShadowImage_member_format.arrayLayers };
+
+		ImageLayoutTransitionBarrierConfiguration l_layout_barrier = p_barriers.get_barrier(p_source_image_usage, p_target_image_usage);
+
+		l_image_memory_barrier.srcAccessMask = l_layout_barrier.src_access_mask;
+		l_image_memory_barrier.dstAccessMask = l_layout_barrier.dst_access_mask;
+
+		vkCmdPipelineBarrier(p_command_buffer.command_buffer, l_layout_barrier.src_stage, l_layout_barrier.dst_stage, 0, 0, NULL, 0, NULL,
+				1, &l_image_memory_barrier);
+	};
+
 	inline void BufferCommandUtils::cmd_copy_buffer(const CommandBuffer& p_command_buffer, const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer, const uimax p_target_size)
 	{
 #if CONTAINER_MEMORY_TEST
@@ -1299,62 +1528,4 @@ namespace v2
 	};
 
 
-	inline void BufferCommandUtils::cmd_copy_image(const CommandBuffer& p_command_buffer, const VkImage p_src_image, const ImageFormat& p_src_format, const VkImage p_target_image, const ImageFormat& p_target_format)
-	{
-
-#if CONTAINER_MEMORY_TEST
-		assert_true(p_src_format.extent == p_target_format.extent);
-#endif
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_src_image, p_src_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-					ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_src);
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_target_image, p_target_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-					ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_transfert_dst);
-		}
-
-		VkImageCopy l_region = {
-				VkImageSubresourceLayers{ p_src_format.imageAspect, 0, 0, (uint32_t)p_src_format.arrayLayers },
-				VkOffset3D{ 0, 0, 0 },
-				VkImageSubresourceLayers{ p_target_format.imageAspect, 0, 0, (uint32_t)p_target_format.arrayLayers },
-				VkOffset3D{ 0, 0, 0 },
-				VkExtent3D{ (uint32_t)p_src_format.extent.x, (uint32_t)p_src_format.extent.y, (uint32_t)p_src_format.extent.z }
-		};
-
-		vkCmdCopyImage(p_command_buffer.command_buffer, p_src_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-				p_target_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
-
-
-		{
-			cmd_revert_image_layout_from_transfer_src(p_command_buffer, p_src_image, p_src_format);
-			cmd_revert_image_layout_from_transfer_dst(p_command_buffer, p_target_image, p_target_format);
-		}
-	};
-
-	inline void BufferCommandUtils::cmd_revert_image_layout_from_transfer_dst(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format)
-	{
-		if ((ImageUsageFlags)p_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_image, p_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
-		}
-		else if ((ImageUsageFlags)p_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_image, p_format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
-		}
-	};
-
-	inline void BufferCommandUtils::cmd_revert_image_layout_from_transfer_src(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format)
-	{
-		if ((ImageUsageFlags)p_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_image, p_format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
-		}
-		else if ((ImageUsageFlags)p_format.imageUsage & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
-		{
-			BufferCommandUtils::cmd_image_layout_transition(p_command_buffer, p_image, p_format, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				ImageLayoutTransitionBarrierConfiguration_Const::transfer_dst_to_shader_readonly);
-		}
-	};
 }

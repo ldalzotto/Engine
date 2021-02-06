@@ -22,6 +22,7 @@ namespace v2
 		inline static int8 greater(const float32 p_left, const float32 p_right);
 		inline static int16 sign(const float32 p_value);
 		inline static float32 clamp(const float32 p_value, const float32 p_left, const float32 p_right);
+		inline static uint8 sRGB_to_linear_uint8(const uint8 p_sRGB);
 	};
 }
 
@@ -30,6 +31,7 @@ struct v3f;
 struct v3i;
 struct v3ui;
 struct v4f;
+struct v4ui8;
 struct quat;
 struct m44f;
 struct m33f;
@@ -148,6 +150,25 @@ struct alignas(sizeof(float32)) v4f
 	float32& operator[](const uint8 p_index);
 	float32 length() const;
 };
+
+struct alignas(sizeof(uint8)) v4ui8
+{
+	union
+	{
+		uint8 Points[4];
+		struct
+		{
+			uint8 x, y, z, w;
+		};
+	};
+
+	int8 operator==(const v4ui8& p_other) const;
+
+	v4ui8 sRGB_to_linear() const;
+};
+
+using color = v4ui8;
+
 
 struct quat
 {

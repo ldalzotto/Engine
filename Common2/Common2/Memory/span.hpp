@@ -27,6 +27,11 @@ struct Span
 		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType))) };
 	};
 
+	inline static Span<ElementType> callocate(const uimax p_capacity)
+	{
+		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_calloc(p_capacity * sizeof(ElementType))) };
+	};
+
 	inline ElementType& get(const uimax p_index)
 	{
 #if CONTAINER_BOUND_TEST
@@ -52,12 +57,12 @@ struct Span
 
 	inline const ElementType& get(const uimax p_index) const
 	{
-    	return ((Span<ElementType>*)(this))->get(p_index);
+		return ((Span<ElementType>*)(this))->get(p_index);
 	};
 
 	inline Span<ElementType> move_to_value()
 	{
-		Span<ElementType> l_return  = *this;
+		Span<ElementType> l_return = *this;
 		*this = Span<ElementType>::build(NULL, 0);
 		return l_return;
 	};

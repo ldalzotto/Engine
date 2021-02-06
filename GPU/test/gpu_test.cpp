@@ -1,7 +1,12 @@
 
 #include "GPU/gpu.hpp"
 
- #define RENDER_DOC_DEBUG
+//TODO
+/*
+	There is a bug that write to the first allocated GPU memory during the shader_creation test.
+*/
+
+// #define RENDER_DOC_DEBUG
 
 #ifdef RENDER_DOC_DEBUG
 
@@ -103,11 +108,6 @@ namespace v2
 		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
 
-		struct color
-		{
-			uint8 r, g, b, a;
-		};
-
 		const uimax l_pixels_count = 16 * 16;
 		color l_pixels[l_pixels_count];
 		Slice<color> l_pixels_slize = Slice<color>::build_memory_elementnb(l_pixels, l_pixels_count);
@@ -119,7 +119,7 @@ namespace v2
 		ImageFormat l_imageformat;
 		l_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 		l_imageformat.arrayLayers = 1;
-		l_imageformat.format = VkFormat::VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+		l_imageformat.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
 		l_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 		l_imageformat.mipLevels = 1;
 		l_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -214,7 +214,7 @@ namespace v2
 		ImageFormat l_color_imageformat;
 		l_color_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 		l_color_imageformat.arrayLayers = 1;
-		l_color_imageformat.format = VkFormat::VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+		l_color_imageformat.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
 		l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 		l_color_imageformat.mipLevels = 1;
 		l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -240,13 +240,14 @@ namespace v2
 				};
 		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
+		color l_clear_color = color{0,uint8_max, 51,uint8_max };
 
 		{
 			l_buffer_allocator.step();
 			l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
 
 			v4f l_clear_values[2];
-			l_clear_values[0] = v4f{ 0.0f, 1.0f, 0.2f, 1.0f };
+			l_clear_values[0] = v4f{ 0.0f, (float)l_clear_color.y / (float)uint8_max, (float)l_clear_color.z/(float)uint8_max, 1.0f };
 			l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 			GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
@@ -269,20 +270,15 @@ namespace v2
 		l_buffer_allocator.step();
 		l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-
-		struct color
-		{
-			uint8 r, g, b, a;
-		};
-
+		
 		Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_imagehost(l_color_attachment_value).get_mapped_memory());
 
+		
 		for (loop(i, 0, l_color_attachment_value_pixels.Size))
 		{
-			assert_true(l_color_attachment_value_pixels.get(i).r == 0);
-			assert_true(l_color_attachment_value_pixels.get(i).g == 0);
-			assert_true(l_color_attachment_value_pixels.get(i).b == 0);
+			assert_true(l_color_attachment_value_pixels.get(i).sRGB_to_linear() == l_clear_color);
 		}
+		
 
 		l_buffer_allocator.free_imagehost(l_color_attachment_value);
 
@@ -318,7 +314,7 @@ namespace v2
 			l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 			l_color_imageformat.mipLevels = 1;
 			l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_color_imageformat.extent = v3ui{ 32, 32, 1 };
+			l_color_imageformat.extent = v3ui{ 8, 8, 1 };
 			l_color_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
 
 			ImageFormat l_depth_imageformat;
@@ -328,7 +324,7 @@ namespace v2
 			l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 			l_depth_imageformat.mipLevels = 1;
 			l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_depth_imageformat.extent = v3ui{ 32, 32, 1 };
+			l_depth_imageformat.extent = v3ui{ 8, 8, 1 };
 			l_depth_imageformat.imageUsage = ImageUsageFlag::SHADER_DEPTH_ATTACHMENT;
 
 			// TextureGPU allocation
@@ -361,10 +357,11 @@ namespace v2
 			l_vertices[5] = vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }};
 			Slice<vertex_position> l_vertices_slice = Slice<vertex_position>::build_memory_elementnb(l_vertices, 6);
 
-			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
+			// Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+			// 	(BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			// l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
 
-			// Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(Slice<vertex>::build_asint8_memory_elementnb(l_vertices, 6), BufferUsageFlag::VERTEX);
+			Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
 			Token(Shader) l_first_shader;
 			Token(ShaderLayout) l_first_shader_layout;
@@ -434,11 +431,6 @@ namespace v2
 				float r, g, b, a;
 			};
 
-			struct color
-			{
-				uint8 r, g, b, a;
-			};
-
 			color_f l_base_color = color_f{ 1.0f, 0, 0, 1.0f };
 			// Token(BufferHost) l_base_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color_f>::build_asint8_memory_singleelement(&l_base_color), BufferUsageFlag::UNIFORM);
 			Token(BufferGPU) l_base_color_buffer = l_buffer_allocator.allocate_buffergpu(sizeof(color_f), (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::UNIFORM));
@@ -466,15 +458,13 @@ namespace v2
 			}
 			l_graphics_allocator.material_add_texture_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_copy_color_texture_token, l_graphics_allocator.get_texturegpu(l_copy_color_texture_token));
 
-			/*
-			l_buffer_allocator.image_gpu_layouttransition_events.push_back_element(BufferAllocator::ImageGPULayout_TransitionEvent{
-					l_graphics_allocator.get_texturegpu(l_copy_color_texture_token).Image,
-					VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-					ImageLayoutTransitionBarrierConfiguration_Const::undefined_to_shader_readonly
-			});
-			 */
+			//TODO -> debug
+			{
+			//	l_buffer_allocator.step();
 
-
+				// BufferHost& l_vertex_debug = l_buffer_allocator.get_bufferhost(l_vertex_buffer);
+			}
+			
 			Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_instance.logical_device);
 
 			{
@@ -492,7 +482,7 @@ namespace v2
 
 				l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_first_shader));
 				l_graphics_binder.bind_material(l_first_material);
-				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
+				l_graphics_binder.bind_vertex_buffer_host(l_buffer_allocator.get_bufferhost(l_vertex_buffer));
 				l_graphics_binder.draw(l_vertices_slice.Size);
 				l_graphics_binder.end_render_pass();
 
@@ -505,7 +495,21 @@ namespace v2
 				l_buffer_allocator_semaphore.free(l_gpu_instance.logical_device);
 			}
 
-			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
+			/*
+			{
+				Token(BufferHost) l_vertex_buffer_host = l_buffer_allocator.read_from_buffergpu(l_vertex_buffer, l_buffer_allocator.get_buffergpu(l_vertex_buffer));
+
+				l_buffer_allocator.step();
+				l_buffer_allocator.device.command_buffer.submit();
+				l_buffer_allocator.device.command_buffer.wait_for_completion();
+
+				BufferHost& l_bvvvvv = l_buffer_allocator.get_bufferhost(l_vertex_buffer_host);
+
+				int zd = 10;
+			}
+			*/
+
+			l_buffer_allocator.free_bufferhost(l_vertex_buffer);
 			l_graphics_allocator.free_material(l_buffer_allocator, l_first_material);
 			l_graphics_allocator.free_shader(l_first_shader);
 			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
@@ -539,10 +543,9 @@ int main()
 	assert_true(ret == 1);
 #endif
 
-	// v2::gpu_buffer_allocation();
-	// v2::gpu_image_allocation();
-	// v2::gpu_abstraction();
+	v2::gpu_buffer_allocation();
+	v2::gpu_image_allocation();
+	v2::gpu_abstraction();
 	v2::shader_creation();
-
 };
 
