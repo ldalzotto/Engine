@@ -1,0 +1,49 @@
+<?xml version = "1.0" encoding = "utf-8"?>
+<AutoVisualizer xmlns = "http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Span&lt;*&gt;">
+     <DisplayString>{{Capacity : {Capacity}; ptr : Memory}}</DisplayString>
+     <Expand>
+        <Item Name="Capacity">Capacity</Item>
+        <Synthetic Name="Values">
+        <DisplayString>{Memory}</DisplayString>
+            <Expand>
+               <ArrayItems>
+                  <Size>Capacity</Size>
+                  <ValuePointer>Memory</ValuePointer>
+               </ArrayItems>
+            </Expand>
+        </Synthetic>
+     </Expand>
+  </Type>
+  <Type Name="Slice&lt;*&gt;">
+     <DisplayString>{{Size : {Size}; ptr : {Begin}}}</DisplayString>
+     <Expand>
+        <Item Name="Size">Size</Item>
+        <Synthetic Name="Values">
+        <DisplayString>{Begin}</DisplayString>
+            <Expand>
+               <ArrayItems>
+                  <Size>Size</Size>
+                  <ValuePointer>Begin</ValuePointer>
+               </ArrayItems>
+            </Expand>
+        </Synthetic>
+     </Expand>
+  </Type>
+  <Type Name="v2::Vector&lt;*&gt;">
+    <DisplayString>{{Size : {Size}; Capacity : {Memory.Capacity}; ptr : {Memory.Memory}}}</DisplayString>
+    <Expand>
+    <Item Name="Size">Size</Item>
+    <Item Name="Capacity">Memory.Capacity</Item>
+    <Synthetic Name="Values">
+        <DisplayString>{Memory.Memory}</DisplayString>
+        <Expand>
+           <ArrayItems>
+              <Size>Size</Size>
+              <ValuePointer>Memory.Memory</ValuePointer>
+           </ArrayItems>
+        </Expand>
+    </Synthetic>
+    </Expand>
+  </Type>
+</AutoVisualizer>
