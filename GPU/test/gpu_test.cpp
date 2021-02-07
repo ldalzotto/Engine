@@ -420,31 +420,21 @@ namespace v2
 			};
 
 			color_f l_base_color = color_f{ 1.0f, 0, 0, 0.5f };
-			Token(BufferGPU) l_base_color_buffer = l_buffer_allocator.allocate_buffergpu(sizeof(color_f), (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::UNIFORM));
-			l_buffer_allocator.write_to_buffergpu(l_base_color_buffer, Slice<color_f>::build_asint8_memory_singleelement(&l_base_color));
 			color_f l_added_color = color_f{ 0, 0, 1.0f, 0.5f };
-			Token(BufferHost) l_added_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color_f>::build_asint8_memory_singleelement(&l_added_color), BufferUsageFlag::UNIFORM);
 
-			Material l_first_material = l_graphics_allocator.allocate_material_empty();
-			// l_graphics_allocator.material_add_buffer_host_parameter(l_shader_value, l_material, l_base_color_buffer, l_buffer_allocator.get_bufferhost(l_base_color_buffer));
-			l_graphics_allocator.material_add_buffer_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_base_color_buffer, l_buffer_allocator.get_buffergpu(l_base_color_buffer));
-			l_graphics_allocator.material_add_buffer_host_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_added_color_buffer, l_buffer_allocator.get_bufferhost(l_added_color_buffer));
+			Material l_first_material = Material::allocate_empty(l_graphics_allocator);
+			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_base_color);
+			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_added_color);
 
-			color l_multiplied_color_texture_color = color{ 100, 100, 100, 255 }; //sRGB
-			ImageFormat l_texture_parameter_format = l_color_imageformat;
-			l_texture_parameter_format.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
-			Token(TextureGPU) l_multiplied_color_texture = l_graphics_allocator.allocate_texturegpu(l_buffer_allocator, l_texture_parameter_format);
 			{
-				Token(ImageGPU) l_image_gpu = l_graphics_allocator.get_texturegpu(l_multiplied_color_texture).Image;
-
-				Span<color> l_colors = Span<color>::allocate(l_texture_parameter_format.extent.x * l_texture_parameter_format.extent.y);
+				color l_multiplied_color_texture_color = color{ 100, 100, 100, 255 }; //sRGB
+				Span<color> l_colors = Span<color>::allocate(l_color_imageformat.extent.x * l_color_imageformat.extent.y);
 				for (loop(i, 0, l_colors.Capacity))
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_buffer_allocator.get_imagegpu(l_image_gpu), l_colors.slice.build_asint8());
+				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_color_imageformat, l_colors.slice.build_asint8());
 			}
-			l_graphics_allocator.material_add_texture_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_multiplied_color_texture, l_graphics_allocator.get_texturegpu(l_multiplied_color_texture));
 
 
 			Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_instance.logical_device);
@@ -511,7 +501,7 @@ namespace v2
 			l_buffer_allocator.free_bufferhost(l_color_attachment_value);
 
 			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
-			l_graphics_allocator.free_material(l_buffer_allocator, l_first_material);
+			l_first_material.free(l_graphics_allocator, l_buffer_allocator);
 			l_graphics_allocator.free_shader(l_first_shader);
 			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 

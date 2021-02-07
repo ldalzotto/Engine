@@ -10,16 +10,20 @@ namespace v2
 		TEXTURE_FRAGMENT = 3,
 	};
 
+	/*
+		 ShaderLayoutParameters are vulkan internal types of shader parameters.
+		 It indicates the type of parameter (BUFFER, SAMPLER) and it's binding value (always 0 in this implementation).
+	*/
 	struct ShaderLayoutParameters
 	{
-		struct Set
+		struct Binding0
 		{
 			VkDescriptorSetLayout uniformbuffer_vertex_layout;
 			VkDescriptorSetLayout uniformbuffer_fragment_vertex_layout;
 			VkDescriptorSetLayout texture_fragment_layout;
 		};
 
-		Set parameter_set;
+		Binding0 parameter_set;
 
 		static ShaderLayoutParameters allocate(gc_t const p_device);
 
@@ -53,7 +57,10 @@ namespace v2
 		void free(const gc_t p_device);
 	};
 
-
+	/*
+		The GraphicsDevice handles all operations performed in the graphics queue.
+		It also store all constants related to graphics pipeline.
+	*/
 	struct GraphicsDevice
 	{
 		GraphicsCard graphics_card;
@@ -75,6 +82,11 @@ namespace v2
 
 	typedef VkImageView ImageView_t;
 
+	/*
+		A Texture is an image on which we indicate how it will be sampled in the shader.
+	 	This involves mip_level for example.
+	 	For now, mip_level is always 0 but in the future we want to manage multiple levels.
+	*/
 	struct TextureGPU
 	{
 		Token(ImageGPU) Image;
@@ -93,12 +105,19 @@ namespace v2
 		COLOR, DEPTH
 	};
 
+	/*
+		Attachments are render targets of Shader.
+	*/
 	struct RenderPassAttachment
 	{
 		AttachmentType type;
 		ImageFormat image_format;
 	};
 
+	/*
+		The RenderPass is the layout of the GraphicsPass.
+	 	It indicates what attachments the GraphicsPass will write to.
+	*/
 	struct RenderPass
 	{
 		RenderPass_t render_pass;
@@ -112,6 +131,9 @@ namespace v2
 
 	typedef VkFramebuffer FrameBuffer_t;
 
+	/*
+		 The GraphicsPass is the RenderPass with the allocated attachment textures
+	*/
 	struct GraphicsPass
 	{
 #if GPU_DEBUG
@@ -120,10 +142,21 @@ namespace v2
 		RenderPass render_pass;
 		Token(Slice<Token(TextureGPU)>) attachment_textures;
 		FrameBuffer_t frame_buffer;
+
+		template<uint32 AttachmentCount>
+		static GraphicsPass allocate(const BufferAllocator& p_buffer_allocator,
+				const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures, const RenderPassAttachment p_render_pass_attachments[AttachmentCount],
+				const VkImageView* p_attachment_image_views);
+
+		void free(const GraphicsDevice& p_graphics_device);
 	};
 
 	typedef VkPipelineLayout ShaderLayout_t;
 
+	/*
+		The ShaderLayout indicate the format of all parameters of the Shader.
+	 	It can be seen as the Reflection object of a Shader.
+	*/
 	struct ShaderLayout
 	{
 		struct VertexInputParameter
@@ -153,6 +186,9 @@ namespace v2
 
 	typedef VkShaderModule ShaderModule_t;
 
+	/*
+		A  ShaderModule is the compiled small unit of (vertex|fragment) shader pass.
+	*/
 	struct ShaderModule
 	{
 		ShaderModule_t module;
@@ -183,7 +219,7 @@ namespace v2
 
 	struct ShaderAllocateInfo
 	{
-		const GraphicsPass& p_graphics_pass;
+		const GraphicsPass& graphics_pass;
 		const ShaderConfiguration& shader_configuration;
 		const ShaderLayout& shader_layout;
 		ShaderModule vertex_shader;
@@ -266,11 +302,6 @@ namespace v2
 		};
 	};
 
-	struct Material
-	{
-		Token(Slice<ShaderParameter>) parameters;
-	};
-
 	struct GraphicsAllocator
 	{
 		GraphicsDevice graphicsDevice;
@@ -326,35 +357,19 @@ namespace v2
 
 		Shader& get_shader(const Token(Shader) p_shader);
 
-		Material allocate_material_empty();
-
-		void material_add_buffer_host_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory_token, const BufferHost& p_memory);
-
-		void material_add_buffer_gpu_parameter(const Shader& p_shader, const Material p_material, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory);
-
-		void material_add_texture_gpu_parameter(const Shader& p_shader, const Material p_material, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory);
-
-		void free_material(BufferAllocator& p_buffer_allocator, const Material p_material);
-
 	private:
 
 		template<uint8 AttachmentCount>
 		GraphicsPass _allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount]);
 
 		void _free_graphics_pass(BufferAllocator& p_buffer_allocator, GraphicsPass& p_graphics_pass);
-
-		void _free_shader_uniform_buffer_host_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter);
-
-		void _free_shader_uniform_buffer_gpu_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferGPUParameter& p_parameter);
-
-		void _free_shader_texture_gpu_parameter(BufferAllocator& p_buffer_allocator, ShaderTextureGPUParameter& p_parameter);
 	};
 
 	inline ShaderLayoutParameters ShaderLayoutParameters::allocate(gc_t const p_device)
 	{
 		ShaderLayoutParameters l_shader_layout_parameters;
 		l_shader_layout_parameters.parameter_set =
-				Set{
+				Binding0{
 						l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, (uint32)0),
 						l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, (uint32)0),
 						l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::TEXTURE_FRAGMENT, (uint32)0)
@@ -551,6 +566,7 @@ namespace v2
 		p_buffer_allocator.free_imagegpu(this->Image);
 	};
 
+
 	template<uint8 AttachmentCount>
 	inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const RenderPassAttachment p_attachments[AttachmentCount])
 	{
@@ -639,6 +655,56 @@ namespace v2
 		vkDestroyRenderPass(p_device.device, this->render_pass, NULL);
 	};
 
+	template<uint32 AttachmentCount>
+	inline GraphicsPass GraphicsPass::allocate(const BufferAllocator& p_buffer_allocator,
+			const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
+			const RenderPassAttachment p_render_pass_attachments[AttachmentCount], const VkImageView* p_attachment_image_views)
+	{
+
+#if GPU_DEBUG
+		v3ui l_extend = p_render_pass_attachments[0].image_format.extent;
+		for (loop(i, 1, AttachmentCount))
+		{
+			assert_true(p_render_pass_attachments[i].image_format.extent == l_extend);
+		}
+#endif
+
+		RenderPass l_render_pass = RenderPass::allocate<AttachmentCount>(p_graphics_device, p_render_pass_attachments);
+
+		VkFramebufferCreateInfo l_framebuffer_create{};
+		l_framebuffer_create.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		l_framebuffer_create.attachmentCount = AttachmentCount;
+		l_framebuffer_create.pAttachments = p_attachment_image_views;
+		l_framebuffer_create.layers = 1;
+		l_framebuffer_create.height = p_render_pass_attachments[0].image_format.extent.x;
+		l_framebuffer_create.width = p_render_pass_attachments[0].image_format.extent.y;
+		l_framebuffer_create.renderPass = l_render_pass.render_pass;
+
+		GraphicsPass l_graphics_pass;
+
+#if GPU_DEBUG
+		l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
+		l_graphics_pass.attachement_layout.copy_memory(0, Slice<RenderPassAttachment>::build_memory_elementnb((RenderPassAttachment*)p_render_pass_attachments, AttachmentCount));
+#endif
+		vk_handle_result(vkCreateFramebuffer(p_buffer_allocator.device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
+
+		l_graphics_pass.attachment_textures = p_allocated_attachment_textures;
+		l_graphics_pass.render_pass = l_render_pass;
+
+		return l_graphics_pass;
+	};
+
+	inline void GraphicsPass::free(const GraphicsDevice& p_graphics_device)
+	{
+		this->render_pass.free(p_graphics_device);
+
+		vkDestroyFramebuffer(p_graphics_device.device, this->frame_buffer, NULL);
+
+#if GPU_DEBUG
+		this->attachement_layout.free();
+#endif
+	};
+
 	inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<VertexInputParameter>& in_vertex_input_layout,
 			const uimax in_vertex_element_size)
 	{
@@ -697,10 +763,10 @@ namespace v2
 
 		Span<VkVertexInputAttributeDescription> l_vertex_input_attributes = Span<VkVertexInputAttributeDescription>::allocate(p_shader_allocate_info.shader_layout.vertex_input_layout.Capacity);
 
-		VkGraphicsPipelineCreateInfo l_pipeline_graphcis_create_info{};
-		l_pipeline_graphcis_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		l_pipeline_graphcis_create_info.layout = p_shader_allocate_info.shader_layout.layout;
-		l_pipeline_graphcis_create_info.renderPass = p_shader_allocate_info.p_graphics_pass.render_pass.render_pass;
+		VkGraphicsPipelineCreateInfo l_pipeline_graphics_create_info{};
+		l_pipeline_graphics_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		l_pipeline_graphics_create_info.layout = p_shader_allocate_info.shader_layout.layout;
+		l_pipeline_graphics_create_info.renderPass = p_shader_allocate_info.graphics_pass.render_pass.render_pass;
 
 		VkPipelineInputAssemblyStateCreateInfo l_inputassembly_state{};
 		l_inputassembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -803,24 +869,24 @@ namespace v2
 		l_shader_stages[0] = l_vertex_stage;
 		l_shader_stages[1] = l_fragment_stage;
 
-		l_pipeline_graphcis_create_info.stageCount = 2;
-		l_pipeline_graphcis_create_info.pStages = l_shader_stages;
+		l_pipeline_graphics_create_info.stageCount = 2;
+		l_pipeline_graphics_create_info.pStages = l_shader_stages;
 
 
-		l_pipeline_graphcis_create_info.pVertexInputState = &l_vertex_input_create;
-		l_pipeline_graphcis_create_info.pInputAssemblyState = &l_inputassembly_state;
-		l_pipeline_graphcis_create_info.pRasterizationState = &l_rasterization_state;
-		l_pipeline_graphcis_create_info.pColorBlendState = &l_blendattachment_state_create;
-		l_pipeline_graphcis_create_info.pMultisampleState = &l_multisample_state;
-		l_pipeline_graphcis_create_info.pViewportState = &l_viewport_state;
+		l_pipeline_graphics_create_info.pVertexInputState = &l_vertex_input_create;
+		l_pipeline_graphics_create_info.pInputAssemblyState = &l_inputassembly_state;
+		l_pipeline_graphics_create_info.pRasterizationState = &l_rasterization_state;
+		l_pipeline_graphics_create_info.pColorBlendState = &l_blendattachment_state_create;
+		l_pipeline_graphics_create_info.pMultisampleState = &l_multisample_state;
+		l_pipeline_graphics_create_info.pViewportState = &l_viewport_state;
 
 		if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
 		{
-			l_pipeline_graphcis_create_info.pDepthStencilState = &l_depthstencil_state;
+			l_pipeline_graphics_create_info.pDepthStencilState = &l_depthstencil_state;
 		}
-		l_pipeline_graphcis_create_info.pDynamicState = &l_dynamicstates;
+		l_pipeline_graphics_create_info.pDynamicState = &l_dynamicstates;
 
-		vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphcis_create_info, NULL, &l_shader.shader));
+		vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphics_create_info, NULL, &l_shader.shader));
 
 
 		return l_shader;
@@ -1023,7 +1089,7 @@ namespace v2
 
 	inline Token(BufferHost) GraphicsAllocator::read_graphics_pass_attachment_to_bufferhost(BufferAllocator& p_buffer_allocator, const GraphicsPass& p_graphics_pass, const uimax p_attachment_index)
 	{
-		Slice<Token(TextureGPU)> l_attachment = this->renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
+		Slice<Token(TextureGPU) > l_attachment = this->renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
 		Token(ImageGPU) l_attachment_image_token = this->textures_gpu.get(l_attachment.get(p_attachment_index)).Image;
 		return p_buffer_allocator.read_from_imagegpu_to_buffer(l_attachment_image_token, p_buffer_allocator.get_imagegpu(l_attachment_image_token));
 	};
@@ -1080,16 +1146,120 @@ namespace v2
 		return this->shaders.get(p_shader);
 	};
 
-	inline Material GraphicsAllocator::allocate_material_empty()
+	template<uint8 AttachmentCount>
+	inline GraphicsPass GraphicsAllocator::_allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount])
+	{
+		TextureGPU l_attachment_textures[AttachmentCount];
+		ImageView_t l_attachment_image_views[AttachmentCount];
+		Token(TextureGPU) l_tokenized_textures[AttachmentCount];
+		for (loop(i, 0, AttachmentCount))
+		{
+			l_attachment_textures[i] = TextureGPU::allocate(p_buffer_allocator, p_attachments[i].image_format);
+			l_attachment_image_views[i] = l_attachment_textures[i].ImageView;
+			l_tokenized_textures[i] = this->textures_gpu.alloc_element(l_attachment_textures[i]);
+		};
+
+		return GraphicsPass::allocate<AttachmentCount>(p_buffer_allocator, this->graphicsDevice,
+				this->renderpass_attachment_textures.alloc_vector_with_values(Slice<Token(TextureGPU) >::build_memory_elementnb(l_tokenized_textures, AttachmentCount)),
+				p_attachments, l_attachment_image_views);
+	};
+
+	inline void GraphicsAllocator::_free_graphics_pass(BufferAllocator& p_buffer_allocator, GraphicsPass& p_graphics_pass)
+	{
+		Slice<Token(TextureGPU) > l_attached_textures = this->renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
+		for (loop(i, 0, l_attached_textures.Size))
+		{
+			this->textures_gpu.get(l_attached_textures.get(i)).free(p_buffer_allocator);
+			this->textures_gpu.release_element(l_attached_textures.get(i));
+		}
+		this->renderpass_attachment_textures.release_vector(p_graphics_pass.attachment_textures);
+
+		p_graphics_pass.free(this->graphicsDevice);
+	};
+
+
+	/*
+		A Material is a convenient way to allocate and access shader parameter buffers.
+		On debug, it also performs runtime verification against the Shader layout.
+	*/
+	struct Material
+	{
+		Token(Slice<ShaderParameter>) parameters;
+
+		static Material allocate_empty(GraphicsAllocator& p_graphics_allocator);
+
+		void free(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator);
+
+		void add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferHost) p_memory_token, const BufferHost& p_memory);
+
+		void add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory);
+
+		template<class ElementType>
+		void add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory);
+
+		void add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory);
+
+		void add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory);
+
+		template<class ElementType>
+		void add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory);
+
+		void add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory);
+
+		void add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory);
+
+	private:
+		static void _free_shader_uniform_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter);
+
+		static void _free_shader_uniform_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferGPUParameter& p_parameter);
+
+		static void _free_shader_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderTextureGPUParameter& p_parameter);
+	};
+
+	inline Material Material::allocate_empty(GraphicsAllocator& p_graphics_allocator)
 	{
 		return Material{
-				this->material_parameters.alloc_vector()
+				p_graphics_allocator.material_parameters.alloc_vector()
 		};
 	};
 
-	inline void GraphicsAllocator::material_add_buffer_host_parameter(const Shader& p_shader, const Material p_material, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
+	inline void Material::free(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator)
 	{
-		uimax l_inserted_index = this->material_parameters.get_vector(p_material.parameters).Size;
+		Slice<ShaderParameter> l_shader_parameters = p_graphics_allocator.material_parameters.get_vector(this->parameters);
+		for (loop(i, 0, l_shader_parameters.Size))
+		{
+			ShaderParameter& l_shader_paramter = l_shader_parameters.get(i);
+			switch (l_shader_paramter.type)
+			{
+			case ShaderParameter::Type::UNIFORM_HOST:
+			{
+				_free_shader_uniform_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_graphics_allocator.shader_uniform_buffer_host_parameters.get(l_shader_paramter.uniform_host));
+				p_graphics_allocator.shader_uniform_buffer_host_parameters.release_element(l_shader_paramter.uniform_host);
+			}
+				break;
+			case ShaderParameter::Type::UNIFORM_GPU:
+			{
+				_free_shader_uniform_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_graphics_allocator.shader_uniform_buffer_gpu_parameters.get(l_shader_paramter.uniform_gpu));
+				p_graphics_allocator.shader_uniform_buffer_gpu_parameters.release_element(l_shader_paramter.uniform_gpu);
+			}
+				break;
+			case ShaderParameter::Type::TEXTURE_GPU:
+			{
+				_free_shader_texture_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_graphics_allocator.shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu));
+				p_graphics_allocator.shader_texture_gpu_parameters.release_element(l_shader_paramter.texture_gpu);
+			}
+				break;
+			default:
+				abort();
+			}
+		}
+
+		p_graphics_allocator.material_parameters.release_vector(this->parameters);
+	};
+
+	inline void Material::add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
+	{
+		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1098,21 +1268,34 @@ namespace v2
 #endif
 
 		ShaderUniformBufferHostParameter l_shader_uniform_buffer_parameter =
-				ShaderUniformBufferHostParameter::allocate(this->graphicsDevice, this->graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+				ShaderUniformBufferHostParameter::allocate(p_graphics_allocator.graphicsDevice,
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
-		this->material_parameters.element_push_back_element(
-				p_material.parameters,
+		p_graphics_allocator.material_parameters.element_push_back_element(
+				this->parameters,
 				ShaderParameter{
 						ShaderParameter::Type::UNIFORM_HOST,
-						tk_v(this->shader_uniform_buffer_host_parameters.alloc_element(l_shader_uniform_buffer_parameter))
+						tk_v(p_graphics_allocator.shader_uniform_buffer_host_parameters.alloc_element(l_shader_uniform_buffer_parameter))
 				}
 		);
 	};
 
-	inline void GraphicsAllocator::material_add_buffer_gpu_parameter(const Shader& p_shader, const Material p_material, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
+	inline void Material::add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory)
 	{
-		uimax l_inserted_index = this->material_parameters.get_vector(p_material.parameters).Size;
+		Token(BufferHost) l_buffer = p_buffer_allocator.allocate_bufferhost(p_memory, BufferUsageFlag::UNIFORM);
+		this->add_buffer_host_parameter(p_graphics_allocator, p_shader, l_buffer, p_buffer_allocator.get_bufferhost(l_buffer));
+	};
+
+	template<class ElementType>
+	inline void Material::add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory)
+	{
+		this->add_and_allocate_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+	};
+
+	inline void Material::add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
+	{
+		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1121,21 +1304,35 @@ namespace v2
 #endif
 
 		ShaderUniformBufferGPUParameter l_shader_uniform_buffer_parameter =
-				ShaderUniformBufferGPUParameter::allocate(this->graphicsDevice, this->graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+				ShaderUniformBufferGPUParameter::allocate(p_graphics_allocator.graphicsDevice,
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
-		this->material_parameters.element_push_back_element(
-				p_material.parameters,
+		p_graphics_allocator.material_parameters.element_push_back_element(
+				this->parameters,
 				ShaderParameter{
 						ShaderParameter::Type::UNIFORM_GPU,
-						tk_v(this->shader_uniform_buffer_gpu_parameters.alloc_element(l_shader_uniform_buffer_parameter))
+						tk_v(p_graphics_allocator.shader_uniform_buffer_gpu_parameters.alloc_element(l_shader_uniform_buffer_parameter))
 				}
 		);
 	};
 
-	inline void GraphicsAllocator::material_add_texture_gpu_parameter(const Shader& p_shader, const Material p_material, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory)
+	inline void Material::add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory)
 	{
-		uimax l_inserted_index = this->material_parameters.get_vector(p_material.parameters).Size;
+		Token(BufferGPU) l_buffer_gpu = p_buffer_allocator.allocate_buffergpu(p_memory.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::UNIFORM));
+		p_buffer_allocator.write_to_buffergpu(l_buffer_gpu, p_memory);
+		this->add_buffer_gpu_parameter(p_graphics_allocator, p_shader, l_buffer_gpu, p_buffer_allocator.get_buffergpu(l_buffer_gpu));
+	};
+
+	template<class ElementType>
+	inline void Material::add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory)
+	{
+		this->add_and_allocate_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_shader, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+	};
+
+	inline void Material::add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory)
+	{
+		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1143,136 +1340,50 @@ namespace v2
 #endif
 
 		ShaderTextureGPUParameter l_shader_texture_gpu_parameter =
-				ShaderTextureGPUParameter::allocate(this->graphicsDevice, this->graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+				ShaderTextureGPUParameter::allocate(p_graphics_allocator.graphicsDevice,
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
-		this->material_parameters.element_push_back_element(
-				p_material.parameters,
+		p_graphics_allocator.material_parameters.element_push_back_element(
+				this->parameters,
 				ShaderParameter{
 						ShaderParameter::Type::TEXTURE_GPU,
-						tk_v(this->shader_texture_gpu_parameters.alloc_element(l_shader_texture_gpu_parameter))
+						tk_v(p_graphics_allocator.shader_texture_gpu_parameters.alloc_element(l_shader_texture_gpu_parameter))
 				}
 		);
 	};
 
-	inline void GraphicsAllocator::free_material(BufferAllocator& p_buffer_allocator, const Material p_material)
+	inline void Material::add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory)
 	{
-		Slice<ShaderParameter> l_shader_parameters = this->material_parameters.get_vector(p_material.parameters);
-		for (loop(i, 0, l_shader_parameters.Size))
-		{
-			ShaderParameter& l_shader_paramter = l_shader_parameters.get(i);
-			switch (l_shader_paramter.type)
-			{
-			case ShaderParameter::Type::UNIFORM_HOST:
-			{
-				_free_shader_uniform_buffer_host_parameter(p_buffer_allocator, this->shader_uniform_buffer_host_parameters.get(l_shader_paramter.uniform_host));
-				this->shader_uniform_buffer_host_parameters.release_element(l_shader_paramter.uniform_host);
-			}
-				break;
-			case ShaderParameter::Type::UNIFORM_GPU:
-			{
-				_free_shader_uniform_buffer_gpu_parameter(p_buffer_allocator, this->shader_uniform_buffer_gpu_parameters.get(l_shader_paramter.uniform_gpu));
-				this->shader_uniform_buffer_gpu_parameters.release_element(l_shader_paramter.uniform_gpu);
-			}
-				break;
-			case ShaderParameter::Type::TEXTURE_GPU:
-			{
-				_free_shader_texture_gpu_parameter(p_buffer_allocator, this->shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu));
-				this->shader_texture_gpu_parameters.release_element(l_shader_paramter.texture_gpu);
-			}
-			break;
-			default:
-				abort();
-			}
-		}
-
-		this->material_parameters.release_vector(p_material.parameters);
+		ImageFormat l_format = p_base_image_format;
+		l_format.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+		Token(TextureGPU) l_texture_gpu_token = p_graphics_allocator.allocate_texturegpu(p_buffer_allocator, l_format);
+		TextureGPU& l_texture_gpu = p_graphics_allocator.get_texturegpu(l_texture_gpu_token);
+		p_buffer_allocator.write_to_imagegpu(l_texture_gpu.Image, p_buffer_allocator.get_imagegpu(l_texture_gpu.Image), p_memory);
+		this->add_texture_gpu_parameter(p_graphics_allocator, p_shader, l_texture_gpu_token, l_texture_gpu);
 	};
 
-	template<uint8 AttachmentCount>
-	inline GraphicsPass GraphicsAllocator::_allocate_graphics_pass(BufferAllocator& p_buffer_allocator, const RenderPassAttachment p_attachments[AttachmentCount])
-	{
-
-#if GPU_DEBUG
-		v3ui l_extend = p_attachments[0].image_format.extent;
-		for (loop(i, 1, AttachmentCount))
-		{
-			assert_true(p_attachments[i].image_format.extent == l_extend);
-		}
-#endif
-
-		RenderPass l_render_pass = RenderPass::allocate<2>(this->graphicsDevice, p_attachments);
-		TextureGPU l_attachment_textures[AttachmentCount];
-		ImageView_t l_attachment_image_views[AttachmentCount];
-		Token(TextureGPU) l_tokenized_textures[AttachmentCount];
-
-		for (loop(i, 0, AttachmentCount))
-		{
-			l_attachment_textures[i] = TextureGPU::allocate(p_buffer_allocator, p_attachments[i].image_format);
-			l_attachment_image_views[i] = l_attachment_textures[i].ImageView;
-			l_tokenized_textures[i] = this->textures_gpu.alloc_element(l_attachment_textures[i]);
-		};
-
-		VkFramebufferCreateInfo l_framebuffer_create{};
-		l_framebuffer_create.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		l_framebuffer_create.attachmentCount = AttachmentCount;
-		l_framebuffer_create.pAttachments = l_attachment_image_views;
-		l_framebuffer_create.layers = 1;
-		l_framebuffer_create.height = p_attachments[0].image_format.extent.x;
-		l_framebuffer_create.width = p_attachments[0].image_format.extent.y;
-		l_framebuffer_create.renderPass = l_render_pass.render_pass;
-
-		GraphicsPass l_graphics_pass;
-#if GPU_DEBUG
-		l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
-		l_graphics_pass.attachement_layout.copy_memory(0, Slice<RenderPassAttachment>::build_memory_elementnb((RenderPassAttachment*)p_attachments, AttachmentCount));
-#endif
-		vk_handle_result(vkCreateFramebuffer(p_buffer_allocator.device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
-
-		l_graphics_pass.attachment_textures = this->renderpass_attachment_textures.alloc_vector_with_values(
-				Slice<Token(TextureGPU) >::build_memory_elementnb(l_tokenized_textures, AttachmentCount));
-		l_graphics_pass.render_pass = l_render_pass;
-
-		return l_graphics_pass;
-	};
-
-	inline void GraphicsAllocator::_free_graphics_pass(BufferAllocator& p_buffer_allocator, GraphicsPass& p_graphics_pass)
-	{
-		p_graphics_pass.render_pass.free(this->graphicsDevice);
-		Slice<Token(TextureGPU) > l_attached_textures = this->renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
-		for (loop(i, 0, l_attached_textures.Size))
-		{
-			this->textures_gpu.get(l_attached_textures.get(i)).free(p_buffer_allocator);
-			this->textures_gpu.release_element(l_attached_textures.get(i));
-		}
-
-		this->renderpass_attachment_textures.release_vector(p_graphics_pass.attachment_textures);
-
-		vkDestroyFramebuffer(this->graphicsDevice.device, p_graphics_pass.frame_buffer, NULL);
-
-#if GPU_DEBUG
-		p_graphics_pass.attachement_layout.free();
-#endif
-	};
-
-	inline void GraphicsAllocator::_free_shader_uniform_buffer_host_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter)
+	inline void Material::_free_shader_uniform_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter)
 	{
 		p_buffer_allocator.free_bufferhost(p_parameter.memory);
-		p_parameter.free(this->graphicsDevice);
+		p_parameter.free(p_graphics_allocator.graphicsDevice);
 	};
 
-	inline void GraphicsAllocator::_free_shader_uniform_buffer_gpu_parameter(BufferAllocator& p_buffer_allocator, ShaderUniformBufferGPUParameter& p_parameter)
+	inline void Material::_free_shader_uniform_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferGPUParameter& p_parameter)
 	{
 		p_buffer_allocator.free_buffergpu(p_parameter.memory);
-		p_parameter.free(this->graphicsDevice);
+		p_parameter.free(p_graphics_allocator.graphicsDevice);
 	};
 
-	inline void GraphicsAllocator::_free_shader_texture_gpu_parameter(BufferAllocator& p_buffer_allocator, ShaderTextureGPUParameter& p_parameter)
+	inline void Material::_free_shader_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderTextureGPUParameter& p_parameter)
 	{
-		this->free_texturegpu(p_buffer_allocator, p_parameter.texture);
-		p_parameter.free(this->graphicsDevice);
+		p_graphics_allocator.free_texturegpu(p_buffer_allocator, p_parameter.texture);
+		p_parameter.free(p_graphics_allocator.graphicsDevice);
 	};
 
+	/*
+		A  GraphicsBinder is a convenient way to properly setup the graphics command buffer.
+	*/
 	struct GraphicsBinder
 	{
 		BufferAllocator& buffer_allocator;
@@ -1422,7 +1533,7 @@ namespace v2
 			{
 				_cmd_bind_shader_texture_gpu_parameter(p_shader, this->graphics_allocator.shader_texture_gpu_parameters.get(p_shader_parameter.texture_gpu), p_set_number);
 			}
-			break;
+				break;
 			default:
 				abort();
 			}
