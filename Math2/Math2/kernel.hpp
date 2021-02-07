@@ -71,6 +71,19 @@ namespace v2
 		}
 	};
 
+	inline uint8 Math::linear_to_sRGB_uint8(const uint8 p_linear)
+	{
+		float l_linear = (float)p_linear/(float)uint8_max;
+		if(l_linear <= 0.0031308f)
+		{
+			return (uint8)nearbyintf((l_linear*12.92f)*uint8_max);
+		}else
+		{
+			return (uint8)nearbyintf((1.055f*(powf(l_linear, 1.0f/2.4f))-0.055f)*uint8_max);
+		}
+	};
+
+
 }
 
 
@@ -354,6 +367,17 @@ inline v4ui8 v4ui8::sRGB_to_linear() const
 		v2::Math::sRGB_to_linear_uint8(this->y),
 		v2::Math::sRGB_to_linear_uint8(this->z),
 		v2::Math::sRGB_to_linear_uint8(this->w),
+	};
+};
+
+inline v4ui8 v4ui8::linear_to_sRGB() const
+{
+	return v4ui8
+	{
+		v2::Math::linear_to_sRGB_uint8(this->x),
+		v2::Math::linear_to_sRGB_uint8(this->y),
+		v2::Math::linear_to_sRGB_uint8(this->z),
+		v2::Math::linear_to_sRGB_uint8(this->w)
 	};
 };
 

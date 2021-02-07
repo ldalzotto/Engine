@@ -305,6 +305,8 @@ namespace v2
 
 		GraphicsPass& get_graphics_pass(const Token(GraphicsPass) p_graphics_pass);
 
+		Token(BufferHost) read_graphics_pass_attachment_to_bufferhost(BufferAllocator& p_buffer_allocator, const GraphicsPass& p_graphics_pass, const uimax p_attachment_index);
+
 		Token(ShaderLayout) allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout,
 				const uimax in_vertex_element_size);
 
@@ -323,8 +325,6 @@ namespace v2
 		void free_shader(const Token(Shader) p_shader);
 
 		Shader& get_shader(const Token(Shader) p_shader);
-
-		// Token(BufferGPu)
 
 		Material allocate_material_empty();
 
@@ -1019,6 +1019,13 @@ namespace v2
 	inline GraphicsPass& GraphicsAllocator::get_graphics_pass(const Token(GraphicsPass) p_graphics_pass)
 	{
 		return this->graphics_pass.get(p_graphics_pass);
+	};
+
+	inline Token(BufferHost) GraphicsAllocator::read_graphics_pass_attachment_to_bufferhost(BufferAllocator& p_buffer_allocator, const GraphicsPass& p_graphics_pass, const uimax p_attachment_index)
+	{
+		Slice<Token(TextureGPU)> l_attachment = this->renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
+		Token(ImageGPU) l_attachment_image_token = this->textures_gpu.get(l_attachment.get(p_attachment_index)).Image;
+		return p_buffer_allocator.read_from_imagegpu_to_buffer(l_attachment_image_token, p_buffer_allocator.get_imagegpu(l_attachment_image_token));
 	};
 
 	inline Token(ShaderLayout) GraphicsAllocator::allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout,

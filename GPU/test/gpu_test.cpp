@@ -1,11 +1,6 @@
 
 #include "GPU/gpu.hpp"
 
-//TODO
-/*
-	There is a bug that write to the first allocated GPU memory during the shader_creation test.
-*/
-
 // #define RENDER_DOC_DEBUG
 
 #ifdef RENDER_DOC_DEBUG
@@ -240,14 +235,14 @@ namespace v2
 				};
 		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
-		color l_clear_color = color{0,uint8_max, 51,uint8_max };
+		color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
 		{
 			l_buffer_allocator.step();
 			l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
 
 			v4f l_clear_values[2];
-			l_clear_values[0] = v4f{ 0.0f, (float)l_clear_color.y / (float)uint8_max, (float)l_clear_color.z/(float)uint8_max, 1.0f };
+			l_clear_values[0] = v4f{ 0.0f, (float)l_clear_color.y / (float)uint8_max, (float)l_clear_color.z / (float)uint8_max, 1.0f };
 			l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 			GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
@@ -260,27 +255,21 @@ namespace v2
 			l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
 		}
 
-
-		GraphicsPass& l_graphics_pass_value = l_graphics_allocator.get_graphics_pass(l_graphics_pass);
-		Slice<Token(TextureGPU) > l_attachment_textures = l_graphics_allocator.renderpass_attachment_textures.get_vector(l_graphics_pass_value.attachment_textures);
-		Token(ImageGPU) l_color_attachment_image = l_graphics_allocator.get_texturegpu(l_attachment_textures.get(0)).Image;
-
-		Token(ImageHost) l_color_attachment_value = l_buffer_allocator.read_from_imagegpu(l_color_attachment_image, l_buffer_allocator.get_imagegpu(l_color_attachment_image));
+		Token(BufferHost) l_color_attachment_value = l_graphics_allocator.read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator,
+				l_graphics_allocator.get_graphics_pass(l_graphics_pass), 0);
 
 		l_buffer_allocator.step();
 		l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-		
-		Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_imagehost(l_color_attachment_value).get_mapped_memory());
 
-		
+		Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_bufferhost(l_color_attachment_value).get_mapped_memory());
+
 		for (loop(i, 0, l_color_attachment_value_pixels.Size))
 		{
 			assert_true(l_color_attachment_value_pixels.get(i).sRGB_to_linear() == l_clear_color);
 		}
-		
 
-		l_buffer_allocator.free_imagehost(l_color_attachment_value);
+		l_buffer_allocator.free_bufferhost(l_color_attachment_value);
 
 #ifdef RENDER_DOC_DEBUG
 		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -314,7 +303,7 @@ namespace v2
 			l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 			l_color_imageformat.mipLevels = 1;
 			l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_color_imageformat.extent = v3ui{ 8, 8, 1 };
+			l_color_imageformat.extent = v3ui{ 4, 4, 1 };
 			l_color_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
 
 			ImageFormat l_depth_imageformat;
@@ -324,7 +313,7 @@ namespace v2
 			l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 			l_depth_imageformat.mipLevels = 1;
 			l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_depth_imageformat.extent = v3ui{ 8, 8, 1 };
+			l_depth_imageformat.extent = v3ui{ 4, 4, 1 };
 			l_depth_imageformat.imageUsage = ImageUsageFlag::SHADER_DEPTH_ATTACHMENT;
 
 			// TextureGPU allocation
@@ -357,11 +346,11 @@ namespace v2
 			l_vertices[5] = vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }};
 			Slice<vertex_position> l_vertices_slice = Slice<vertex_position>::build_memory_elementnb(l_vertices, 6);
 
-			// Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
-			// 	(BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-			// l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
+			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																			 (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
 
-			Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
+			// Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
 			Token(Shader) l_first_shader;
 			Token(ShaderLayout) l_first_shader_layout;
@@ -399,7 +388,7 @@ namespace v2
 
 								void main()\n
 						{ \n
-								outColor = (_v._val + _v2._val) * texture(texSampler, vec2(0.5f,0.5f));\n
+								outColor = (_v._val + _v2._val) * texture(texSampler, vec2(0.5f, 0.5f));\n
 						}\n
 						);
 
@@ -424,52 +413,47 @@ namespace v2
 				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
 			}
 
-		
 
 			struct color_f
 			{
 				float r, g, b, a;
 			};
 
-			color_f l_base_color = color_f{ 1.0f, 0, 0, 1.0f };
-			// Token(BufferHost) l_base_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color_f>::build_asint8_memory_singleelement(&l_base_color), BufferUsageFlag::UNIFORM);
+			color_f l_base_color = color_f{ 1.0f, 0, 0, 0.5f };
 			Token(BufferGPU) l_base_color_buffer = l_buffer_allocator.allocate_buffergpu(sizeof(color_f), (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::UNIFORM));
 			l_buffer_allocator.write_to_buffergpu(l_base_color_buffer, Slice<color_f>::build_asint8_memory_singleelement(&l_base_color));
-			color_f l_added_color = color_f{ 0, 0, 1.0f, 1.0f };
+			color_f l_added_color = color_f{ 0, 0, 1.0f, 0.5f };
 			Token(BufferHost) l_added_color_buffer = l_buffer_allocator.allocate_bufferhost(Slice<color_f>::build_asint8_memory_singleelement(&l_added_color), BufferUsageFlag::UNIFORM);
 
 			Material l_first_material = l_graphics_allocator.allocate_material_empty();
 			// l_graphics_allocator.material_add_buffer_host_parameter(l_shader_value, l_material, l_base_color_buffer, l_buffer_allocator.get_bufferhost(l_base_color_buffer));
 			l_graphics_allocator.material_add_buffer_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_base_color_buffer, l_buffer_allocator.get_buffergpu(l_base_color_buffer));
 			l_graphics_allocator.material_add_buffer_host_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_added_color_buffer, l_buffer_allocator.get_bufferhost(l_added_color_buffer));
-			
+
+			color l_multiplied_color_texture_color = color{ 100, 100, 100, 255 }; //sRGB
 			ImageFormat l_texture_parameter_format = l_color_imageformat;
 			l_texture_parameter_format.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
-			Token(TextureGPU) l_copy_color_texture_token = l_graphics_allocator.allocate_texturegpu(l_buffer_allocator, l_texture_parameter_format);
+			Token(TextureGPU) l_multiplied_color_texture = l_graphics_allocator.allocate_texturegpu(l_buffer_allocator, l_texture_parameter_format);
 			{
-				Token(ImageGPU) l_image_gpu = l_graphics_allocator.get_texturegpu(l_copy_color_texture_token).Image;
+				Token(ImageGPU) l_image_gpu = l_graphics_allocator.get_texturegpu(l_multiplied_color_texture).Image;
 
 				Span<color> l_colors = Span<color>::allocate(l_texture_parameter_format.extent.x * l_texture_parameter_format.extent.y);
 				for (loop(i, 0, l_colors.Capacity))
 				{
-					l_colors.get(i) = color{ 100, 100, 100, 255 };
+					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
 				l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_buffer_allocator.get_imagegpu(l_image_gpu), l_colors.slice.build_asint8());
 			}
-			l_graphics_allocator.material_add_texture_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_copy_color_texture_token, l_graphics_allocator.get_texturegpu(l_copy_color_texture_token));
+			l_graphics_allocator.material_add_texture_gpu_parameter(l_graphics_allocator.get_shader(l_first_shader), l_first_material, l_multiplied_color_texture, l_graphics_allocator.get_texturegpu(l_multiplied_color_texture));
 
-			//TODO -> debug
-			{
-			//	l_buffer_allocator.step();
 
-				// BufferHost& l_vertex_debug = l_buffer_allocator.get_bufferhost(l_vertex_buffer);
-			}
-			
 			Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_instance.logical_device);
+
+			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
 			{
 				v4f l_clear_values[2];
-				l_clear_values[0] = v4f{ 0.0f, 1.0f, 0.2f, 1.0f };
+				l_clear_values[0] = v4f{ 0.0f, 1.0f, (float)l_clear_color.z / (float)uint8_max, 1.0f };
 				l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 				l_buffer_allocator.step();
@@ -482,7 +466,7 @@ namespace v2
 
 				l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_first_shader));
 				l_graphics_binder.bind_material(l_first_material);
-				l_graphics_binder.bind_vertex_buffer_host(l_buffer_allocator.get_bufferhost(l_vertex_buffer));
+				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
 				l_graphics_binder.draw(l_vertices_slice.Size);
 				l_graphics_binder.end_render_pass();
 
@@ -495,21 +479,38 @@ namespace v2
 				l_buffer_allocator_semaphore.free(l_gpu_instance.logical_device);
 			}
 
-			/*
-			{
-				Token(BufferHost) l_vertex_buffer_host = l_buffer_allocator.read_from_buffergpu(l_vertex_buffer, l_buffer_allocator.get_buffergpu(l_vertex_buffer));
 
+			Token(BufferHost) l_color_attachment_value = l_graphics_allocator.read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator.get_graphics_pass(l_graphics_pass), 0);
+			{
 				l_buffer_allocator.step();
 				l_buffer_allocator.device.command_buffer.submit();
 				l_buffer_allocator.device.command_buffer.wait_for_completion();
-
-				BufferHost& l_bvvvvv = l_buffer_allocator.get_bufferhost(l_vertex_buffer_host);
-
-				int zd = 10;
 			}
-			*/
+			Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_bufferhost(l_color_attachment_value).get_mapped_memory());
 
-			l_buffer_allocator.free_bufferhost(l_vertex_buffer);
+			assert_true(l_color_attachment_value_pixels.get(0) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(1) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(2) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(3) == l_clear_color.linear_to_sRGB());
+
+			assert_true(l_color_attachment_value_pixels.get(4) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(5) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(6) == l_clear_color.linear_to_sRGB());
+			assert_true(l_color_attachment_value_pixels.get(7) == l_clear_color.linear_to_sRGB());
+
+			assert_true(l_color_attachment_value_pixels.get(8) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(9) == l_clear_color.linear_to_sRGB());
+			assert_true(l_color_attachment_value_pixels.get(10) == color{ 100, 0, 100, 255 });
+			assert_true(l_color_attachment_value_pixels.get(11) == l_clear_color.linear_to_sRGB());
+
+			assert_true(l_color_attachment_value_pixels.get(12) == l_clear_color.linear_to_sRGB());
+			assert_true(l_color_attachment_value_pixels.get(13) == l_clear_color.linear_to_sRGB());
+			assert_true(l_color_attachment_value_pixels.get(14) == l_clear_color.linear_to_sRGB());
+			assert_true(l_color_attachment_value_pixels.get(15) == l_clear_color.linear_to_sRGB());
+
+			l_buffer_allocator.free_bufferhost(l_color_attachment_value);
+
+			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
 			l_graphics_allocator.free_material(l_buffer_allocator, l_first_material);
 			l_graphics_allocator.free_shader(l_first_shader);
 			l_graphics_allocator.free_shader_layout(l_first_shader_layout);

@@ -833,12 +833,12 @@ namespace v2
 		{
 
 			HeapA::AllocatedElementReturn l_allocated_chunk;
-			assert_true(l_heap.allocate_element_with_alignment(1, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
-			assert_true(l_heap.allocate_element_with_alignment(7, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
 			assert_true(l_allocated_chunk.Offset == 5);
-			assert_true(l_heap.allocate_element_with_alignment(3, 7, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
+			assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
 			assert_heap_integrity(&l_heap);
 			assert_true(l_allocated_chunk.Offset == 14);
 
@@ -853,7 +853,7 @@ namespace v2
 			HeapA::AllocatedElementReturn l_allocated_chunk;
 
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
-			assert_true(l_heap.allocate_element_norealloc_with_alignment(l_initial_heap_size + 10, 0, &l_allocated_chunk) == HeapA::AllocationState::NOT_ALLOCATED);
+			assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == HeapA::AllocationState::NOT_ALLOCATED);
 			assert_true(l_heap.AllocatedChunks.get_size() == 0);
 		}
 
@@ -874,17 +874,17 @@ namespace v2
 			asset_heappaged_integrity(&l_heap_paged);
 
 			HeapPaged::AllocatedElementReturn l_allocated_element;
-			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
+			assert_true(l_heap_paged.allocate_element_norealloc_with_modulo_offset(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
 			assert_true(l_heap_paged.get_page_count() == 1);
 			assert_true(l_allocated_element.Offset == 0);
 			asset_heappaged_integrity(&l_heap_paged);
 
-			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
+			assert_true(l_heap_paged.allocate_element_norealloc_with_modulo_offset(6, 6, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED_AND_PAGE_CREATED);
 			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 0);
 			asset_heappaged_integrity(&l_heap_paged);
 
-			assert_true(l_heap_paged.allocate_element_norealloc_with_alignment(3, 3, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED);
+			assert_true(l_heap_paged.allocate_element_norealloc_with_modulo_offset(3, 3, &l_allocated_element) == HeapPaged::AllocationState::ALLOCATED);
 			assert_true(l_heap_paged.get_page_count() == 2);
 			assert_true(l_allocated_element.Offset == 6);
 			asset_heappaged_integrity(&l_heap_paged);

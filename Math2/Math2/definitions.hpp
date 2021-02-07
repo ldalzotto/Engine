@@ -23,6 +23,7 @@ namespace v2
 		inline static int16 sign(const float32 p_value);
 		inline static float32 clamp(const float32 p_value, const float32 p_left, const float32 p_right);
 		inline static uint8 sRGB_to_linear_uint8(const uint8 p_sRGB);
+		inline static uint8 linear_to_sRGB_uint8(const uint8 p_linear);
 	};
 }
 
@@ -165,6 +166,7 @@ struct alignas(sizeof(uint8)) v4ui8
 	int8 operator==(const v4ui8& p_other) const;
 
 	v4ui8 sRGB_to_linear() const;
+	v4ui8 linear_to_sRGB() const;
 };
 
 using color = v4ui8;

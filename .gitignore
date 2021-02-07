@@ -10,6 +10,10 @@ build
 .vscode
 cmake-build-debug
 
+ThirdParty/GLFW
+ThirdParty/glslang
+ThirdParty/vulkan
+
 Assets/**/*.db
 Assets/**/*.json
 Assets/**/*.jpg

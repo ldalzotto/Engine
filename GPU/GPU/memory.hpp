@@ -25,7 +25,7 @@ namespace v2
 
 		void free(const gc_t p_transfer_device);
 
-		int8 allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, const uint32 p_memory_type_index, HeapPagedToken* out_chunk);
+		int8 allocate_element(const uimax p_size, const uimax p_modulo_offset, gc_t p_transfer_device, const uint32 p_memory_type_index, HeapPagedToken* out_chunk);
 
 		void release_element(const HeapPagedToken& p_token);
 	};
@@ -455,10 +455,10 @@ namespace v2
 		this->heap.free();
 	};
 
-	inline int8 HeapPagedGPU::allocate_element(const uimax p_size, const uimax p_alignmenent_constaint, gc_t p_transfer_device, const uint32 p_memory_type_index, HeapPagedToken* out_chunk)
+	inline int8 HeapPagedGPU::allocate_element(const uimax p_size, const uimax p_modulo_offset, gc_t p_transfer_device, const uint32 p_memory_type_index, HeapPagedToken* out_chunk)
 	{
 		HeapPaged::AllocatedElementReturn l_allocated_chunk;
-		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_alignment(p_size, p_alignmenent_constaint, &l_allocated_chunk);
+		HeapPaged::AllocationState l_allocation_state = this->heap.allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_allocated_chunk);
 		if ((HeapPaged::AllocationState_t)l_allocation_state & (HeapPaged::AllocationState_t)HeapPaged::AllocationState::PAGE_CREATED)
 		{
 			this->gpu_memories.push_back_element(MemoryGPU::allocate(p_transfer_device, p_memory_type_index, this->heap.PageSize));
@@ -519,9 +519,16 @@ namespace v2
 	inline int8 TransferDeviceHeap::allocate_element(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device, const VkMemoryRequirements& p_requirements,
 			const VkMemoryPropertyFlags p_memory_property_flags, TransferDeviceHeapToken* out_token)
 	{
+		//We make sure that memory have an allocated heap size of max(p_requirements.size, p_requirements.alignment)
+		uimax l_aligned_size = p_requirements.size;
+		if (l_aligned_size < p_requirements.alignment)
+		{
+			l_aligned_size = p_requirements.alignment;
+		};
+
 		uint32 l_memory_type_index = p_graphics_card.get_memory_type_index(p_requirements, p_memory_property_flags);
 		out_token->heap_index = p_graphics_card.device_memory_properties.memoryTypes[l_memory_type_index].heapIndex;
-		return this->gpu_heaps.get(out_token->heap_index).allocate_element(p_requirements.size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
+		return this->gpu_heaps.get(out_token->heap_index).allocate_element(l_aligned_size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
 	};
 
 	inline void TransferDeviceHeap::release_element(const TransferDeviceHeapToken& p_memory)
