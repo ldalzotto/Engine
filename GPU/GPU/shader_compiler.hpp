@@ -231,30 +231,5 @@ namespace v2
 	};
 }
 
-/*
- * const char* shaderCodeVertex = "test";
-
-				const glslang_input_t input =
-						{
-								 GLSLANG_SOURCE_GLSL,
-								 GLSLANG_STAGE_VERTEX,
-								 GLSLANG_CLIENT_VULKAN,
-								 GLSLANG_TARGET_VULKAN_1_2,
-								 GLSLANG_TARGET_SPV,
-								GLSLANG_TARGET_SPV_1_3,
-								 shaderCodeVertex,
-								 100,
-								 GLSLANG_NO_PROFILE,
-								0,
-								0,
-								 GLSLANG_MSG_DEFAULT_BIT,
-						};
-
-
-				glslang_initialize_process();
-				glslang_shader_create(&input);
-
-				glslang_finalize_process();
- * */
 
 #undef sc_handle_error

@@ -1,0 +1,5 @@
+Implementing the Render module.
+
+The Render module is layered above GPU GraphicsAllocator.
+It just consists of creating object that are representation of 3D scene.
+It also provides the main loop hook that step over GPU command_buffers.

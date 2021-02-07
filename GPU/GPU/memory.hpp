@@ -173,6 +173,10 @@ namespace v2
 		uint32 mipLevels;
 		uint32 arrayLayers;
 		VkSampleCountFlagBits samples;
+
+		static ImageFormat build_color_2d(const v3ui& p_extend, const ImageUsageFlag p_usage);
+
+		static ImageFormat build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage);
 	};
 
 #define ShadowImage(Prefix) ShadowImage_##Prefix
@@ -719,6 +723,34 @@ namespace v2
 		SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
 		// SliceOffset<int8> l_memory = p_transfer_device.heap.get_gpu_write_gcmemory_and_offset(this->heap_token);
 		vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+	};
+
+	inline ImageFormat ImageFormat::build_color_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+	{
+		ImageFormat l_color_imageformat;
+		l_color_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+		l_color_imageformat.arrayLayers = 1;
+		l_color_imageformat.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
+		l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+		l_color_imageformat.mipLevels = 1;
+		l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		l_color_imageformat.extent = p_extend;
+		l_color_imageformat.imageUsage = p_usage;
+		return l_color_imageformat;
+	};
+
+	inline ImageFormat ImageFormat::build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+	{
+		ImageFormat l_depth_imageformat;
+		l_depth_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
+		l_depth_imageformat.arrayLayers = 1;
+		l_depth_imageformat.format = VkFormat::VK_FORMAT_D16_UNORM;
+		l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+		l_depth_imageformat.mipLevels = 1;
+		l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		l_depth_imageformat.extent = p_extend;
+		l_depth_imageformat.imageUsage = p_usage;
+		return l_depth_imageformat;
 	};
 
 	inline ImageHost ImageHost::allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout)

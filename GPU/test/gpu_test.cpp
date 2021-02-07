@@ -155,8 +155,6 @@ namespace v2
 
 			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 0);
 
-
-			//TODO -> re enable
 			assert_true(l_buffer_allocator.get_imagehost(l_read_buffer).get_mapped_memory().compare(l_pixels_slize.build_asint8()));
 
 			l_buffer_allocator.free_imagehost(l_read_buffer);
@@ -192,7 +190,11 @@ namespace v2
 		l_gpu_instance.free();
 	};
 
-	inline void gpu_abstraction()
+	/*
+		Creates a GraphicsPass that only clear input attachments.
+	 	We check that the attachment has well been cleared with the input color.
+	*/
+	inline void gpu_renderpass_clear()
 	{
 		const int8* l_extensions[1] = { VK_KHR_SURFACE_EXTENSION_NAME };
 		GPUInstance l_gpu_instance = GPUInstance::allocate(Slice<int8*>::build_memory_elementnb((int8**)l_extensions, 1));
@@ -203,35 +205,14 @@ namespace v2
 		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
 
-
 		Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_instance.logical_device);
-
-		ImageFormat l_color_imageformat;
-		l_color_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-		l_color_imageformat.arrayLayers = 1;
-		l_color_imageformat.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
-		l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-		l_color_imageformat.mipLevels = 1;
-		l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-		l_color_imageformat.extent = v3ui{ 32, 32, 1 };
-		l_color_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
-
-		ImageFormat l_depth_imageformat;
-		l_depth_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
-		l_depth_imageformat.arrayLayers = 1;
-		l_depth_imageformat.format = VkFormat::VK_FORMAT_D16_UNORM;
-		l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-		l_depth_imageformat.mipLevels = 1;
-		l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-		l_depth_imageformat.extent = v3ui{ 32, 32, 1 };
-		l_depth_imageformat.imageUsage = ImageUsageFlag::SHADER_DEPTH_ATTACHMENT;
-
-		// TextureGPU allocation
 
 		RenderPassAttachment l_attachments[2] =
 				{
-						RenderPassAttachment{ AttachmentType::COLOR, l_color_imageformat },
-						RenderPassAttachment{ AttachmentType::DEPTH, l_depth_imageformat }
+						RenderPassAttachment{ AttachmentType::COLOR,
+											  ImageFormat::build_color_2d(v3ui{ 32, 32, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
+						RenderPassAttachment{ AttachmentType::DEPTH,
+											  ImageFormat::build_depth_2d(v3ui{ 32, 32, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
 				};
 		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
@@ -283,7 +264,19 @@ namespace v2
 		l_gpu_instance.free();
 	};
 
-	inline void shader_creation()
+	/*
+		Creates a GraphicsPass with one Shader and draw vertices with Material.
+	 	GraphicsPass :
+	 		* Color and depth attachments
+		Shader :
+	 		* Vertex buffer (v3f)
+	 		* Host uniform parameter
+	 		* GPU uniform parameter
+	 		* texture sampler paramter
+
+	 	We check that the ouput color is the one awaited and calculated by the Shader.
+	*/
+	inline void gpu_draw()
 	{
 		const int8* l_extensions[1] = { VK_KHR_SURFACE_EXTENSION_NAME };
 		GPUInstance l_gpu_instance = GPUInstance::allocate(Slice<int8*>::build_memory_elementnb((int8**)l_extensions, 1));
@@ -295,34 +288,10 @@ namespace v2
 #endif
 
 		{
-
-			ImageFormat l_color_imageformat;
-			l_color_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-			l_color_imageformat.arrayLayers = 1;
-			l_color_imageformat.format = VkFormat::VK_FORMAT_A8B8G8R8_SRGB_PACK32;
-			l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-			l_color_imageformat.mipLevels = 1;
-			l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_color_imageformat.extent = v3ui{ 4, 4, 1 };
-			l_color_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
-
-			ImageFormat l_depth_imageformat;
-			l_depth_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
-			l_depth_imageformat.arrayLayers = 1;
-			l_depth_imageformat.format = VkFormat::VK_FORMAT_D16_UNORM;
-			l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
-			l_depth_imageformat.mipLevels = 1;
-			l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-			l_depth_imageformat.extent = v3ui{ 4, 4, 1 };
-			l_depth_imageformat.imageUsage = ImageUsageFlag::SHADER_DEPTH_ATTACHMENT;
-
-			// TextureGPU allocation
-
-
 			RenderPassAttachment l_attachments[2] =
 					{
-							RenderPassAttachment{ AttachmentType::COLOR, l_color_imageformat },
-							RenderPassAttachment{ AttachmentType::DEPTH, l_depth_imageformat }
+							RenderPassAttachment{ AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))  },
+							RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{ 4, 4, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
 					};
 			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
@@ -413,7 +382,6 @@ namespace v2
 				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
 			}
 
-
 			struct color_f
 			{
 				float r, g, b, a;
@@ -428,12 +396,12 @@ namespace v2
 
 			{
 				color l_multiplied_color_texture_color = color{ 100, 100, 100, 255 }; //sRGB
-				Span<color> l_colors = Span<color>::allocate(l_color_imageformat.extent.x * l_color_imageformat.extent.y);
+				Span<color> l_colors = Span<color>::allocate(l_attachments[0].image_format.extent.x * l_attachments[0].image_format.extent.y);
 				for (loop(i, 0, l_colors.Capacity))
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_color_imageformat, l_colors.slice.build_asint8());
+				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_attachments[0].image_format, l_colors.slice.build_asint8());
 			}
 
 
@@ -536,7 +504,7 @@ int main()
 
 	v2::gpu_buffer_allocation();
 	v2::gpu_image_allocation();
-	v2::gpu_abstraction();
-	v2::shader_creation();
+	v2::gpu_renderpass_clear();
+	v2::gpu_draw();
 };
 

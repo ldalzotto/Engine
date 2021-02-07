@@ -92,6 +92,10 @@ namespace v2
 #undef ShadowBuffer_member_buffer
 #undef ShadowBuffer_member_size
 
+#undef ShadowImage
+#undef ShadowImage_member_image
+#undef ShadowImage_member_format
+
 #undef ShadowShaderUniformBufferParameter_t
 #undef ShadowShaderUniformBufferParameter_member_descriptor_set
 #undef ShadowShaderUniformBufferParameter_member_memory

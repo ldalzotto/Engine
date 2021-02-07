@@ -508,7 +508,7 @@ namespace v2
 		l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family);
 		l_graphics_device.command_buffer = l_graphics_device.command_pool.allocate_command_buffer(l_graphics_device.device, l_graphics_device.graphics_queue);
 
-		l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000); //TODO -> adjust pool size
+		l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000);
 		l_graphics_device.shaderlayout_parameters = ShaderLayoutParameters::allocate(l_graphics_device.device);
 
 		l_graphics_device.texture_samplers = TextureSamplers::allocate(l_graphics_device.device);
