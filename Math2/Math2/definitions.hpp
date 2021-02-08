@@ -24,6 +24,8 @@ namespace v2
 		inline static float32 clamp(const float32 p_value, const float32 p_left, const float32 p_right);
 		inline static uint8 sRGB_to_linear_uint8(const uint8 p_sRGB);
 		inline static uint8 linear_to_sRGB_uint8(const uint8 p_linear);
+		inline static float32 sRGB_to_linear_float32(const float32 p_sRGB);
+		inline static float32 linear_to_sRGB_float32(const float32 p_linear);
 	};
 }
 
@@ -144,12 +146,18 @@ struct alignas(sizeof(float32)) v4f
 		return v4f{ p_v3f.x,p_v3f.y ,p_v3f.z , p_s };
 	};
 
+	v4f operator+(const v4f& p_other) const;
 	int8 operator==(const v4f& p_other) const;
 	int8 operator!=(const v4f& p_other) const;
 	v4f operator*(const float32 p_other) const;
 	v4f operator*(const v4f& p_other) const;
 	float32& operator[](const uint8 p_index);
 	float32 length() const;
+
+	v4f sRGB_to_linear() const;
+	v4f linear_to_sRGB() const;
+
+	v4ui8 to_uint8_color() const;
 };
 
 struct alignas(sizeof(uint8)) v4ui8
@@ -167,9 +175,11 @@ struct alignas(sizeof(uint8)) v4ui8
 
 	v4ui8 sRGB_to_linear() const;
 	v4ui8 linear_to_sRGB() const;
+	v4f to_color_f() const;
 };
 
 using color = v4ui8;
+using color_f = v4f;
 
 
 struct quat

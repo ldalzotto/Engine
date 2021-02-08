@@ -227,7 +227,7 @@ A *frame* of the collision engine.
 	   By :
 		 1/ Calculating intersections for every possible combinations with the moved Colliders that have a ColliderDetector.
 		 2/ Pushing enter and exit IntersectionEvents for further processing.
-	   The Colliders processing may induce duplicate intersections. eg: two Colliders with ColliderDetectors that have moved and intersect will generate 4 IntersectionEvents.
+	   The Colliders processing may induce duplicate intersections. eg: two Colliders with ColliderDetectors that have moved and intersect will generate 4 identical IntersectionEvents.
 	   IntersectionEvents generation is always done from the point of view of a single ColliderDetector. This is to handle the case where a ColliderDetector that is not moving (thus, not processed)
 	   stille generates events when another collider intersect with it.
 

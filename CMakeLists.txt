@@ -112,6 +112,10 @@ add_library(Collision INTERFACE)
 target_include_directories(Collision INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Collision)
 target_link_libraries(Collision INTERFACE Math2)
 
+add_library(Render INTERFACE)
+target_include_directories(Render INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Render)
+target_link_libraries(Render INTERFACE GPU)
+
 add_library(Scene2 INTERFACE)
 target_include_directories(Scene2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2)
 target_link_libraries(Scene2 INTERFACE Math2)
@@ -144,6 +148,9 @@ target_link_libraries(Scene2Test PUBLIC Scene2)
 add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 
+add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
+target_link_libraries(RenderTest PUBLIC Render)
+
 add_executable(WindowTest ${CMAKE_CURRENT_SOURCE_DIR}/Window/test/window_test.cpp)
 target_link_libraries(WindowTest PUBLIC Window)
 
@@ -156,6 +163,7 @@ add_custom_target(
         COMMAND Math2Test
         COMMAND WindowTest
         COMMAND CollisionTest
+        COMMAND RenderTest
         COMMAND Scene2Test
         COMMAND GPUTest
         COMMAND Scene2MiddlewareTest

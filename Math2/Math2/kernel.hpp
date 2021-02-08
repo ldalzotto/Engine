@@ -84,6 +84,30 @@ namespace v2
 	};
 
 
+	inline float32 Math::sRGB_to_linear_float32(const float32 p_sRGB)
+	{
+		if (p_sRGB <= 0.04045f)
+		{
+			return (p_sRGB / 12.92f);
+		}
+		else
+		{
+			return powf((p_sRGB + 0.055f) / 1.055f, 2.4f);
+		}
+	};
+
+	inline float32 Math::linear_to_sRGB_float32(const float32 p_linear)
+	{
+		if (p_linear <= 0.0031308f)
+		{
+			return (p_linear * 12.92f);
+		}
+		else
+		{
+			return (1.055f * (powf(p_linear, 1.0f / 2.4f)) - 0.055f);
+		}
+	};
+
 }
 
 
@@ -313,6 +337,11 @@ inline int8 v3ui::operator!=(const v3ui& p_other) const
 	return !Slice<v3ui>::build_asint8_memory_singleelement(this).compare(Slice<v3ui>::build_asint8_memory_singleelement(&p_other));
 };
 
+inline v4f v4f::operator+(const v4f& p_other) const
+{
+	return math_v4f_foreach_2(this, &p_other, math_add_op);
+};
+
 inline int8 v4f::operator==(const v4f& p_other) const
 {
 	return v2::Math::equals(this->Points[0], p_other.Points[0]) &&
@@ -351,6 +380,36 @@ inline float32 v4f::length() const
 	return sqrtf(math_v4f_reduce(&l_squared, math_add_op));
 };
 
+inline v4f v4f::sRGB_to_linear() const
+{
+	return v4f{
+		v2::Math::sRGB_to_linear_float32(this->x),
+		v2::Math::sRGB_to_linear_float32(this->y),
+		v2::Math::sRGB_to_linear_float32(this->z),
+		v2::Math::sRGB_to_linear_float32(this->w)
+	};
+};
+
+inline v4f v4f::linear_to_sRGB() const
+{
+	return v4f{
+			v2::Math::linear_to_sRGB_float32(this->x),
+			v2::Math::linear_to_sRGB_float32(this->y),
+			v2::Math::linear_to_sRGB_float32(this->z),
+			v2::Math::linear_to_sRGB_float32(this->w)
+	};
+};
+
+inline v4ui8 v4f::to_uint8_color() const
+{
+	return v4ui8 {
+			(uint8)nearbyintf(this->x*uint8_max),
+			(uint8)nearbyintf(this->y*uint8_max),
+			(uint8)nearbyintf(this->z*uint8_max),
+			(uint8)nearbyintf(this->w*uint8_max)
+	};
+};
+
 inline int8 v4ui8::operator==(const v4ui8& p_other) const
 {
 	return (this->Points[0] == p_other.Points[0]) &&
@@ -378,6 +437,16 @@ inline v4ui8 v4ui8::linear_to_sRGB() const
 		v2::Math::linear_to_sRGB_uint8(this->y),
 		v2::Math::linear_to_sRGB_uint8(this->z),
 		v2::Math::linear_to_sRGB_uint8(this->w)
+	};
+};
+
+inline v4f v4ui8::to_color_f() const
+{
+	return v4f{
+		(float)this->x / uint8_max,
+		(float)this->y / uint8_max,
+		(float)this->z / uint8_max,
+		(float)this->w / uint8_max
 	};
 };
 

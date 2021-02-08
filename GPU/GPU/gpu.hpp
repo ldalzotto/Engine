@@ -88,6 +88,38 @@ namespace v2
 #include "./shader_compiler.hpp"
 
 
+
+
+namespace v2
+{
+	struct GPUContext
+	{
+		GPUInstance instance;
+		BufferAllocator buffer_allocator;
+		GraphicsAllocator graphics_allocator;
+
+		inline static GPUContext allocate()
+		{
+			GPUContext l_context;
+			l_context.instance = GPUInstance::allocate(Slice<int8*>::build_default());
+			l_context.buffer_allocator = BufferAllocator::allocate_default(l_context.instance);
+			l_context.graphics_allocator = GraphicsAllocator::allocate_default(l_context.instance);
+			return l_context;
+		};
+
+		inline void free()
+		{
+			this->graphics_allocator.free();
+			this->buffer_allocator.free();
+			this->instance.free();
+		};
+	};
+}
+
+
+
+
+
 #undef ShadowBuffer_t
 #undef ShadowBuffer_member_buffer
 #undef ShadowBuffer_member_size

@@ -59,6 +59,18 @@ inline void math_tests()
 			v4f{ 0.000000000f, 0.000000000f, 7.00000000f, 1.00000000f }, v4f{ 0.000000000f, 0.000000000f, -24.0000000f, 0.000000000f }));
 };
 
+inline void color_tests()
+{
+	color l_rgb_linear = color{100,150,200,255};
+	assert_true(l_rgb_linear.to_color_f() == color_f{ 100.0f/255, 150.0f/255, 200.0f/255, 255.0f/255 });
+	assert_true(l_rgb_linear.linear_to_sRGB() == l_rgb_linear.to_color_f().linear_to_sRGB().to_uint8_color());
+	assert_true(l_rgb_linear.linear_to_sRGB() == color{168, 202, 229, 255});
+
+	color l_srgb = color{168, 202, 229, 255};
+	assert_true(l_srgb.sRGB_to_linear() == l_srgb.to_color_f().sRGB_to_linear().to_uint8_color());
+	assert_true(l_srgb.sRGB_to_linear() == color{100,151,200,255});
+};
+
 inline void assert_obb_overlap(const obb& p_left, const obb& p_right, const int8 p_overlap_result)
 {
 	assert_true(p_left.overlap(p_right) == p_overlap_result);
@@ -106,6 +118,7 @@ inline void geometry()
 int main()
 {
 	math_tests();
+	color_tests();
 	geometry();
 
 	memleak_ckeck();

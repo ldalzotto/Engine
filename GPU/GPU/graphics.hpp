@@ -1179,6 +1179,7 @@ namespace v2
 	};
 
 
+	//TODO -> should we move the Material to a dedicated GraphicsAllocator ressource ?
 	/*
 		A Material is a convenient way to allocate and access shader parameter buffers.
 		On debug, it also performs runtime verification against the Shader layout.
@@ -1187,7 +1188,9 @@ namespace v2
 	{
 		Token(Slice<ShaderParameter>) parameters;
 
-		static Material allocate_empty(GraphicsAllocator& p_graphics_allocator);
+		uint32 set_index_offset;
+
+		static Material allocate_empty(GraphicsAllocator& p_graphics_allocator, const uint32 p_set_index_offset);
 
 		void free(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator);
 
@@ -1217,10 +1220,10 @@ namespace v2
 		static void _free_shader_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderTextureGPUParameter& p_parameter);
 	};
 
-	inline Material Material::allocate_empty(GraphicsAllocator& p_graphics_allocator)
+	inline Material Material::allocate_empty(GraphicsAllocator& p_graphics_allocator, const uint32 p_set_index_offset)
 	{
 		return Material{
-				p_graphics_allocator.material_parameters.alloc_vector()
+				p_graphics_allocator.material_parameters.alloc_vector(),p_set_index_offset
 		};
 	};
 
@@ -1260,7 +1263,7 @@ namespace v2
 
 	inline void Material::add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
 	{
-		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
+		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1296,7 +1299,7 @@ namespace v2
 
 	inline void Material::add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
 	{
-		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
+		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1333,7 +1336,7 @@ namespace v2
 
 	inline void Material::add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory)
 	{
-		uimax l_inserted_index = p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
+		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
 		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
@@ -1391,7 +1394,6 @@ namespace v2
 		GraphicsAllocator& graphics_allocator;
 		GraphicsPass* binded_graphics_pass;
 		Shader* binded_shader;
-		uint32 global_set_count;
 		uint32 material_set_count;
 
 		inline static GraphicsBinder build(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator)
@@ -1449,13 +1451,17 @@ namespace v2
 
 		inline void bind_material(const Material p_material)
 		{
-			this->material_set_count = 0;
 			Slice<ShaderParameter> l_material_parameters = this->graphics_allocator.material_parameters.get_vector(p_material.parameters);
 			for (loop(i, 0, l_material_parameters.Size))
 			{
-				_cmd_bind_shader_parameter(*this->binded_shader, l_material_parameters.get(i), this->global_set_count + this->material_set_count);
+				_cmd_bind_shader_parameter(*this->binded_shader, l_material_parameters.get(i), this->material_set_count);
 				this->material_set_count += 1;
 			}
+		};
+
+		inline void pop_material_bind(const Material p_material)
+		{
+			this->material_set_count -= (uint32)this->graphics_allocator.material_parameters.get_vector(p_material.parameters).Size;
 		};
 
 		inline void bind_vertex_buffer_gpu(const BufferGPU& p_vertex_buffer_gpu)
@@ -1473,6 +1479,11 @@ namespace v2
 		inline void draw(const uimax p_vertex_count)
 		{
 			vkCmdDraw(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer, (uint32_t)p_vertex_count, 1, 0, 1);
+		};
+
+		inline void draw_offsetted(const uimax p_vertex_count, const uimax p_offset)
+		{
+			vkCmdDraw(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer, (uint32_t)p_vertex_count, 1, (uint32)p_offset, 1);
 		};
 
 	private:
@@ -1522,12 +1533,12 @@ namespace v2
 			{
 			case ShaderParameter::Type::UNIFORM_HOST:
 			{
-				_cmd_bind_shader_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_host_parameters.get(p_shader_parameter.uniform_host), p_set_number);
+				_cmd_bind_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_host_parameters.get(p_shader_parameter.uniform_host).descriptor_set, p_set_number);
 			}
 				break;
 			case ShaderParameter::Type::UNIFORM_GPU:
 			{
-				_cmd_bind_shader_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_gpu_parameters.get(p_shader_parameter.uniform_gpu), p_set_number);
+				_cmd_bind_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_gpu_parameters.get(p_shader_parameter.uniform_gpu).descriptor_set, p_set_number);
 			}
 				break;
 			case ShaderParameter::Type::TEXTURE_GPU:
@@ -1540,8 +1551,7 @@ namespace v2
 			}
 		};
 
-		template<class ShadowShaderUniformBufferParameter_t(_)>
-		inline void _cmd_bind_shader_uniform_buffer_parameter(const Shader& p_shader, const ShadowShaderUniformBufferParameter_t(_)& p_shader_parameter, const uint32 p_set_number)
+		inline void _cmd_bind_uniform_buffer_parameter(const Shader& p_shader, const VkDescriptorSet p_descriptor_set, const uint32 p_set_number)
 		{
 #if GPU_DEBUG
 			assert_true(p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
@@ -1550,7 +1560,7 @@ namespace v2
 
 			vkCmdBindDescriptorSets(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer,
 					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader.layout.layout, p_set_number,
-					1, &p_shader_parameter.ShadowShaderUniformBufferParameter_member_descriptor_set, 0, NULL);
+					1, &p_descriptor_set, 0, NULL);
 		};
 
 		inline void _cmd_bind_shader_texture_gpu_parameter(const Shader& p_shader, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)

@@ -26,10 +26,10 @@ namespace v2
 		inline static PoolOfVector<ElementType> allocate_default()
 		{
 			return PoolOfVector<ElementType>
-			{
-				VectorOfVector<ElementType>::allocate_default(),
-					Vector<PoolOfVectorToken<ElementType>>::allocate(0)
-			};
+					{
+							VectorOfVector<ElementType>::allocate_default(),
+							Vector<PoolOfVectorToken<ElementType>>::allocate(0)
+					};
 		};
 
 		inline void free()
@@ -139,6 +139,41 @@ namespace v2
 #endif
 			this->Memory.element_clear(tk_v(p_token));
 		};
+
+
+		//TODO -> write test
+		struct Element_ShadowVector
+		{
+			PoolOfVector<ElementType>* pool_of_vector;
+			PoolOfVectorToken<ElementType> index;
+
+			inline static Element_ShadowVector build(PoolOfVector<ElementType>* p_pool_of_vector, const PoolOfVectorToken<ElementType> p_index)
+			{
+				return Element_ShadowVector{p_pool_of_vector, p_index};
+			};
+
+			inline uimax sv_get_size()
+			{
+				return this->pool_of_vector->get_vector(this->index).Size;
+			};
+
+			inline ElementType& sv_get(const uimax p_index)
+			{
+				return this->pool_of_vector->get_vector(this->index).get(p_index);
+			};
+
+			inline void sv_push_back_element(const ElementType& p_element)
+			{
+				this->pool_of_vector->element_push_back_element(this->index, p_element);
+			};
+		};
+
+
+		inline Element_ShadowVector get_element_as_shadow_vector(const PoolOfVectorToken<ElementType> p_index)
+		{
+			return Element_ShadowVector::build(this, p_index);
+		};
+
 
 	private:
 		inline void token_not_free_check(const PoolOfVectorToken<ElementType> p_token)

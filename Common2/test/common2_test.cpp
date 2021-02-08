@@ -609,6 +609,16 @@ namespace v2
 			}
 		}
 
+		{
+			PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
+			PoolOfVector<uimax>::Element_ShadowVector l_shadow = l_pool_of_vector.get_element_as_shadow_vector(l_vector_0);
+
+			assert_true(l_shadow.get_size() == 0);
+			l_shadow.push_back_element(10);
+			assert_true(l_shadow.get_size() == 1);
+			assert_true(l_shadow.get(0) == 10);
+		}
+
 		l_pool_of_vector.free();
 	};
 
