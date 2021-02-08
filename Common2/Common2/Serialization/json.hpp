@@ -115,6 +115,8 @@ namespace v2
 
 		inline int8 next_object(const int8* p_field_name, JSONDeserializer* out_object_iterator)
 		{
+			out_object_iterator->free();
+
 			int8 l_field_found = 0;
 
 			Slice<int8> l_compared_slice = this->get_current_slice_cursor();

@@ -1,3 +1,4 @@
+
 #include "Common2/common2.hpp"
 
 namespace v2
@@ -50,6 +51,8 @@ namespace v2
 			assert_true(l_span_sizet.get(0) == 10);
 			assert_true(l_span_sizet.get(1) == 10);
 		}
+
+		l_span_sizet.free();
 	};
 
 	inline void vector_test()
@@ -59,7 +62,7 @@ namespace v2
 		// vector_push_back_array
 		{
 			uimax l_old_size = l_vector_sizet.Size;
-			uimax l_elements[5] = { 0,1,2,3,4 };
+			uimax l_elements[5] = { 0, 1, 2, 3, 4 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
 
 			l_vector_sizet.push_back_array(l_elements_slice);
@@ -89,7 +92,7 @@ namespace v2
 		// vector_insert_array_at
 		{
 			uimax l_old_size = l_vector_sizet.Size;
-			uimax l_elements[5] = { 0,1,2,3,4 };
+			uimax l_elements[5] = { 0, 1, 2, 3, 4 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
 			l_vector_sizet.insert_array_at(l_elements_slice, 0);
 			assert_true(l_vector_sizet.Size == l_old_size + 5);
@@ -207,7 +210,7 @@ namespace v2
 
 		// pool_release_element - release elements
 		{
-			Token(uimax) l_token = Token(uimax) { 0 };
+			Token(uimax) l_token = Token(uimax){ 0 };
 			l_pool_sizet.release_element(l_token);
 
 			// memory is not deallocated
@@ -221,7 +224,7 @@ namespace v2
 
 			l_pool_sizet.alloc_element(cast(uimax, 10));
 			l_pool_sizet.release_element(
-				l_pool_sizet.alloc_element(cast(uimax, 10))
+					l_pool_sizet.alloc_element(cast(uimax, 10))
 			);
 			l_pool_sizet.alloc_element(cast(uimax, 10));
 
@@ -231,7 +234,7 @@ namespace v2
 
 		for (pool_loop(&l_pool_sizet, i))
 		{
-			l_pool_sizet.get(Token(uimax) { i });
+			l_pool_sizet.get(Token(uimax){ i });
 		}
 
 		{
@@ -444,7 +447,7 @@ namespace v2
 
 		// vectorofvector_element_insert_element_at
 		{
-			uimax l_elements[3] = { 100,120,140 };
+			uimax l_elements[3] = { 100, 120, 140 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
 			l_vectorofvector_uimax.push_back_element(l_elements_slice);
 			uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
@@ -462,7 +465,7 @@ namespace v2
 
 		// vectorofvector_element_erase_element_at
 		{
-			uimax l_elements[3] = { 100,120,140 };
+			uimax l_elements[3] = { 100, 120, 140 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
 			l_vectorofvector_uimax.push_back_element(l_elements_slice);
 
@@ -477,7 +480,7 @@ namespace v2
 
 		// vectorofvector_element_push_back_array
 		{
-			uimax l_initial_elements[3] = { 1,2,3 };
+			uimax l_initial_elements[3] = { 1, 2, 3 };
 			{
 				Slice<uimax> l_initial_elements_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements, 3);
 				l_vectorofvector_uimax.push_back_element(l_initial_elements_slice);
@@ -485,7 +488,7 @@ namespace v2
 
 			uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
 
-			uimax l_elements[3] = { 100,120,140 };
+			uimax l_elements[3] = { 100, 120, 140 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
 
 			uimax l_old_size = 0;
@@ -543,10 +546,10 @@ namespace v2
 
 		{
 			l_vectorofvector_uimax.free();
-			l_vectorofvector_uimax.allocate_default();
+			l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
 
-			uimax l_initial_elements_0[3] = { 1,2,3 };
-			uimax l_initial_elements_1[3] = { 4,5,6 };
+			uimax l_initial_elements_0[3] = { 1, 2, 3 };
+			uimax l_initial_elements_1[3] = { 4, 5, 6 };
 			{
 				Slice<uimax> l_initial_elements_0_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_0, 3);
 				l_vectorofvector_uimax.push_back_element(l_initial_elements_0_slice);
@@ -564,7 +567,6 @@ namespace v2
 				assert_true(l_vectorofvector_uimax.get(1).get(0) == l_initial_elements_1[0]);
 				assert_true(l_vectorofvector_uimax.get(1).get(1) == l_initial_elements_1[1]);
 			}
-
 		}
 
 		l_vectorofvector_uimax.free();
@@ -595,7 +597,7 @@ namespace v2
 
 		// poolofvector_alloc_vector_with_values
 		{
-			uimax l_elements[3] = { 100,200,300 };
+			uimax l_elements[3] = { 100, 200, 300 };
 			Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
 			PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector_with_values(l_elements_slice);
 
@@ -636,7 +638,7 @@ namespace v2
 				assert_true(tk_v(l_root_element.Node->index) == (token_t)0);
 				assert_true(tk_v(l_root_element.Node->childs) != (token_t)-1);
 
-				Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
+				Slice<Token(NTreeNode) > l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
 				assert_true(l_childs_indices.Size == 3);
 				for (loop(i, 0, l_childs_indices.Size))
 				{
@@ -652,7 +654,7 @@ namespace v2
 				assert_true(tk_v(l_2_element.Node->index) == (token_t)2);
 				assert_true(tk_v(l_2_element.Node->childs) != (token_t)-1);
 
-				Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
+				Slice<Token(NTreeNode) > l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
 				assert_true(l_childs_indices.Size == 2);
 				for (loop(i, 0, l_childs_indices.Size))
 				{
@@ -666,10 +668,11 @@ namespace v2
 			uimax l_counter = 0;
 
 			l_uimax_tree.traverse3(tk_b(NTreeNode, 0),
-				[&l_counter](const NTree<uimax>::Resolve& p_node) {
-					l_counter += 1;
-					*(p_node.Element) += 1;
-				}
+					[&l_counter](const NTree<uimax>::Resolve& p_node)
+					{
+						l_counter += 1;
+						*(p_node.Element) += 1;
+					}
 			);
 
 			assert_true(l_counter == 7);
@@ -685,16 +688,17 @@ namespace v2
 			l_uimax_tree.remove_node_recursively(tk_bf(NTreeNode, l_2_node));
 
 			NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
-			Slice<Token(NTreeNode)> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
+			Slice<Token(NTreeNode) > l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
 			assert_true(l_root_node_childs.Size == 2);
 
 			{
 				uimax l_counter = 0;
 				l_uimax_tree.traverse3(tk_b(NTreeNode, 0),
-					[&l_counter](const NTree<uimax>::Resolve& p_node) {
-						l_counter += 1;
-						*p_node.Element += 1;
-					}
+						[&l_counter](const NTree<uimax>::Resolve& p_node)
+						{
+							l_counter += 1;
+							*p_node.Element += 1;
+						}
 				);
 
 				assert_true(l_counter == 4);
@@ -709,11 +713,11 @@ namespace v2
 
 			assert_true(l_uimax_tree.add_child(l_3_node, l_2_2_node));
 
-			Slice<Token(NTreeNode)> l_2_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_2_node));
+			Slice<Token(NTreeNode) > l_2_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_2_node));
 			assert_true(l_2_node_childs.Size == 1);
 			assert_true(tk_v(l_2_node_childs.get(0)) == tk_v(l_2_1_node));
 
-			Slice<Token(NTreeNode)> l_3_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_3_node));
+			Slice<Token(NTreeNode) > l_3_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_3_node));
 			assert_true(l_3_node_childs.Size == 2);
 			assert_true(tk_v(l_3_node_childs.get(1)) == tk_v(l_2_2_node));
 
@@ -729,9 +733,9 @@ namespace v2
 		for (loop(i, 0, p_heap->AllocatedChunks.get_size()))
 		{
 			// Token(SliceIndex)* l_chunk = ;
-			if (!p_heap->AllocatedChunks.is_element_free(Token(SliceIndex) { i }))
+			if (!p_heap->AllocatedChunks.is_element_free(Token(SliceIndex){ i }))
 			{
-				l_calculated_size += p_heap->AllocatedChunks.get(Token(SliceIndex) { i }).Size;
+				l_calculated_size += p_heap->AllocatedChunks.get(Token(SliceIndex){ i }).Size;
 			};
 		}
 
@@ -748,9 +752,9 @@ namespace v2
 		uimax l_calculated_size = 0;
 		for (loop(i, 0, p_heap_paged->AllocatedChunks.get_size()))
 		{
-			if (!p_heap_paged->AllocatedChunks.is_element_free(Token(SliceIndex) { i }))
+			if (!p_heap_paged->AllocatedChunks.is_element_free(Token(SliceIndex){ i }))
 			{
-				l_calculated_size += p_heap_paged->AllocatedChunks.get(Token(SliceIndex) { i }).Size;
+				l_calculated_size += p_heap_paged->AllocatedChunks.get(Token(SliceIndex){ i }).Size;
 			};
 		}
 
@@ -761,19 +765,20 @@ namespace v2
 				l_calculated_size += p_heap_paged->FreeChunks.get(i).get(j).Size;
 			}
 		}
-		
+
 		assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
 	};
 
 	inline void sort_test()
 	{
 		{
-			uimax l_sizet_array[10] = { 10,9,8,2,7,4,10,35,9,4 };
-			uimax l_sorted_sizet_array[10] = { 35,10,10,9,9,8,7,4,4,2 };
+			uimax l_sizet_array[10] = { 10, 9, 8, 2, 7, 4, 10, 35, 9, 4 };
+			uimax l_sorted_sizet_array[10] = { 35, 10, 10, 9, 9, 8, 7, 4, 4, 2 };
 			Slice<uimax> l_slice = Slice<uimax>::build_memory_elementnb(l_sizet_array, 10);
 
-			sort_linear2_begin(uimax, Tesss);
-			return p_left < p_right;
+			sort_linear2_begin(uimax, Tesss)
+					;
+					return p_left < p_right;
 			sort_linear2_end(l_slice, uimax, Tesss);
 
 			assert_true(memcmp(l_sizet_array, l_sorted_sizet_array, sizeof(uimax) * 10) == 0);
@@ -995,46 +1000,46 @@ namespace v2
 	{
 		{
 			const int8* l_json =
-				"{"
-				"\"local_position\":{"
-				"\"x\":  \"16.550000\","
-				"\"y\" : \"16.650000\","
-				"\"z\" : \"16.750000\""
-				"},"
-				"\"local_position2\":{"
-				"\"x\":\"  17.550000\","
-				"\"y\" : \"17.650000\","
-				"\"z\" : \"17.750000\""
-				"},"
-				"\"nodes\" : ["
-				"{"
-				"\"local_position\":{"
-				"\"x\":\"  10.550000\","
-				"\"y\" : \"10.650000\","
-				"\"z\" : \"10.750000\""
-				"}"
-				"},"
-				"{"
-				"\"local_position\":{"
-				"\"x\":\"  11.550000\","
-				"\"y\" : \"11.650000\","
-				"\"z\" : \"11.750000\""
-				"}"
-				"},"
-				"{"
-				"\"local_position\":{"
-				"\"x\":\"  12.550000\","
-				"\"y\" : \"12.650000\","
-				"\"z\" : \"12.750000\""
-				"}"
-				"}"
-				"]"
-				"}";
+					"{"
+					"\"local_position\":{"
+					"\"x\":  \"16.550000\","
+					"\"y\" : \"16.650000\","
+					"\"z\" : \"16.750000\""
+					"},"
+					"\"local_position2\":{"
+					"\"x\":\"  17.550000\","
+					"\"y\" : \"17.650000\","
+					"\"z\" : \"17.750000\""
+					"},"
+					"\"nodes\" : ["
+					"{"
+					"\"local_position\":{"
+					"\"x\":\"  10.550000\","
+					"\"y\" : \"10.650000\","
+					"\"z\" : \"10.750000\""
+					"}"
+					"},"
+					"{"
+					"\"local_position\":{"
+					"\"x\":\"  11.550000\","
+					"\"y\" : \"11.650000\","
+					"\"z\" : \"11.750000\""
+					"}"
+					"},"
+					"{"
+					"\"local_position\":{"
+					"\"x\":\"  12.550000\","
+					"\"y\" : \"12.650000\","
+					"\"z\" : \"12.750000\""
+					"}"
+					"}"
+					"]"
+					"}";
 
 			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
 			JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
 
-			JSONDeserializer l_v3;
+			JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 			l_deserialized.next_object("local_position", &l_v3);
 
 			l_v3.next_field("x");
@@ -1055,28 +1060,30 @@ namespace v2
 
 
 			float32 l_delta = 0.0f;
-			json_deser_iterate_array_start("nodes", &l_deserialized);
-			{
-				json_deser_iterate_array_object.next_object("local_position", &l_v3);
-				l_v3.next_field("x");
-				assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.550000f + l_delta);
-				l_v3.next_field("y");
-				assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.650000f + l_delta);
-				l_v3.next_field("z");
-				assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
-				l_delta += 1;
-			}
+			json_deser_iterate_array_start("nodes", &l_deserialized) ;
+					{
+						json_deser_iterate_array_object.next_object("local_position", &l_v3);
+						l_v3.next_field("x");
+						assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.550000f + l_delta);
+						l_v3.next_field("y");
+						assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.650000f + l_delta);
+						l_v3.next_field("z");
+						assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
+						l_delta += 1;
+					}
 			json_deser_iterate_array_end();
 
+			l_v3.free();
 			l_deserialized.free();
+			l_json_str.free();
 		}
 
 
 		// empty array
 		{
 			const int8* l_json =
-				"{"
-				"\"nodes\":[]}";
+					"{"
+					"\"nodes\":[]}";
 
 
 			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
@@ -1085,39 +1092,47 @@ namespace v2
 			JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
 			l_deserialized.next_array("nodes", &l_array);
 			l_array.next_array_object(&l_object);
+
+			l_object.free();
+			l_array.free();
 			l_deserialized.free();
+			l_json_str.free();
 		}
 
 		// missed field
 		{
 			const int8* l_json =
-				"{"
-				"\"local_position\":{"
-				"\"x\":\"16.506252\","
-				"\"y\" : \"16.604988\","
-				"\"z\" : \"16.705424\""
-				"}";
+					"{"
+					"\"local_position\":{"
+					"\"x\":\"16.506252\","
+					"\"y\" : \"16.604988\","
+					"\"z\" : \"16.705424\""
+					"}";
 
 			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
 			JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
 
-			JSONDeserializer l_v3;
+			JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 			l_deserialized.next_object("local_position", &l_v3);
 			l_v3.next_field("x");
 			l_v3.next_field("y");
 			l_v3.next_field("zz");
 			l_v3.next_field("z");
 			assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.705424f);
+
+			l_v3.free();
+			l_deserialized.free();
+			l_json_str.free();
 		}
 
 		// only fields
 		{
 			const int8* l_json =
-				"{"
-				"\"x\":\"16.506252\","
-				"\"y\" : \"16.604988\","
-				"\"z\" : \"16.705424\""
-				"}";
+					"{"
+					"\"x\":\"16.506252\","
+					"\"y\" : \"16.604988\","
+					"\"z\" : \"16.705424\""
+					"}";
 
 
 			String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
@@ -1128,6 +1143,8 @@ namespace v2
 			assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.604988f);
 			l_deserialized.next_field("z");
 			assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.705424f);
+			l_deserialized.free();
+			l_json_str.free();
 		}
 
 		// empty array - then filled array
@@ -1159,47 +1176,52 @@ namespace v2
 			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.604988f);
 			l_array_object.next_field("z");
 			assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.705424f);
+
+			l_deserialized.free();
+			l_array.free();
+			l_array_object.free();
+			l_json_str.free();
 		}
 	};
 
 	inline void serialize_json_test()
 	{
 		const int8* l_json =
-			"{"
-			"\"local_position\":{"
-			"\"x\":  \"16.55000\","
-			"\"y\" : \"16.65000\","
-			"\"z\" : \"16.75000\""
-			"},"
-			"\"local_position2\":{"
-			"\"x\":\"  17.55000\","
-			"\"y\" : \"17.65000\","
-			"\"z\" : \"17.75000\""
-			"},"
-			"\"nodes\" : ["
-			"{"
-			"\"local_position\":{"
-			"\"x\":\"  10.55000\","
-			"\"y\" : \"10.65000\","
-			"\"z\" : \"10.75000\""
-			"}"
-			"},"
-			"{"
-			"\"local_position\":{"
-			"\"x\":\"  11.55000\","
-			"\"y\" : \"11.65000\","
-			"\"z\" : \"11.75000\""
-			"}"
-			"},"
-			"{"
-			"\"local_position\":{"
-			"\"x\":\"  12.55000\","
-			"\"y\" : \"12.65000\","
-			"\"z\" : \"12.75000\""
-			"}"
-			"}"
-			"]"
-			"}";
+				"{"
+				"\"local_position\":{"
+				"\"x\":  \"16.55000\","
+				"\"y\" : \"16.65000\","
+				"\"z\" : \"16.75000\""
+				"},"
+				"\"local_position2\":{"
+				"\"x\":\"  17.55000\","
+				"\"y\" : \"17.65000\","
+				"\"z\" : \"17.75000\""
+				"},"
+				"\"nodes\" : ["
+				"{"
+				"\"local_position\":{"
+				"\"x\":\"  10.55000\","
+				"\"y\" : \"10.65000\","
+				"\"z\" : \"10.75000\""
+				"}"
+				"},"
+				"{"
+				"\"local_position\":{"
+				"\"x\":\"  11.55000\","
+				"\"y\" : \"11.65000\","
+				"\"z\" : \"11.75000\""
+				"}"
+				"},"
+				"{"
+				"\"local_position\":{"
+				"\"x\":\"  12.55000\","
+				"\"y\" : \"12.65000\","
+				"\"z\" : \"12.75000\""
+				"}"
+				"}"
+				"]"
+				"}";
 
 		int8 l_float_buffer[ToString::float32str_size];
 		Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
@@ -1255,11 +1277,12 @@ namespace v2
 
 		assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
 
+		l_compared_json.free();
 		l_serializer.free();
 	};
 }
 
-int  main()
+int main()
 {
 	v2::span_test();
 	v2::vector_test();
@@ -1276,4 +1299,7 @@ int  main()
 	v2::fromstring_test();
 	v2::deserialize_json_test();
 	v2::serialize_json_test();
+
+
+	memleak_ckeck();
 };

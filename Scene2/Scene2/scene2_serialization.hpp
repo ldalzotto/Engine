@@ -279,6 +279,8 @@ namespace v2
 
 				transform l_transform;
 				Token(transform) l_allocated_node;
+
+				// A temporary iterator to work within the loop
 				JSONDeserializer l_object_iterator = JSONDeserializer::allocate_default();
 
 				l_transform = deserialize_node_transform(l_object, l_object_iterator);
@@ -306,10 +308,13 @@ namespace v2
 					}
 					else
 					{
+						l_current_node.free();
 						l_stack.pop_stack();
 					};
 					l_child_node_iterator.free();
 				}
+
+				l_object_iterator.free();
 			}
 			json_deser_iterate_array_end();
 

@@ -48,7 +48,7 @@ namespace v2
 		CollisionAllocator allocator;
 
 		static CollisionMiddleware allocate_default();
-		void free();
+		void free(Collision2& p_collision, Scene* p_scene);
 
 		void step(Collision2& p_collision, Scene* p_scene);
 	};
@@ -203,8 +203,10 @@ namespace v2
 		};
 	};
 
-	inline void CollisionMiddleware::free()
+	inline void CollisionMiddleware::free(Collision2& p_collision, Scene* p_scene)
 	{
+		this->step(p_collision, p_scene);
+
 		this->allocator.free();
 	};
 

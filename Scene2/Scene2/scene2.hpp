@@ -291,6 +291,17 @@ namespace v2
 		return l_scene;
 	};
 
+	inline void Scene::free()
+	{
+		this->step_destroy_resource_only();
+
+		this->tree.free();
+		this->orphan_nodes.free();
+		this->node_that_will_be_destroyed.free();
+		this->component_removed_events.free();
+		this->node_to_components.free();
+	};
+
 	template<class ComponentRemovedCallbackFunc>
 	inline void Scene::free_and_consume_component_events()
 	{
@@ -430,16 +441,6 @@ namespace v2
 	inline void Scene::remove_node_component_typed(const Token(Node) p_node)
 	{
 		this->remove_node_component(p_node, ComponentType::Type);
-	};
-
-	inline void Scene::free()
-	{
-		this->step_destroy_resource_only();
-
-		this->tree.free();
-		this->orphan_nodes.free();
-		this->node_that_will_be_destroyed.free();
-		this->component_removed_events.free();
 	};
 
 	inline int8 Scene::remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component)

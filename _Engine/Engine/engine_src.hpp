@@ -74,9 +74,10 @@ inline Engine Engine::allocate(const Slice<int8>& p_executable_path)
 inline void Engine::free()
 {
 	ComponentReleaser l_component_releaser = ComponentReleaser{ *this };
-	this->scene.free_and_consume_component_events_stateful(l_component_releaser);
-	this->scene_middleware.free();
+	this->scene.consume_component_events_stateful(l_component_releaser);
+	this->scene_middleware.free(&this->scene, this->collision);
 	this->collision.free();
+	this->scene.free();
 };
 
 inline void Engine::close()

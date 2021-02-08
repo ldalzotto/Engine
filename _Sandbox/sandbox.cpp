@@ -126,4 +126,6 @@ inline void boxcollision()
 int main()
 {
 	boxcollision();
+
+	memleak_ckeck();
 };

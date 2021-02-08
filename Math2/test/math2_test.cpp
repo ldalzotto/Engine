@@ -107,4 +107,6 @@ int main()
 {
 	math_tests();
 	geometry();
+
+	memleak_ckeck();
 };

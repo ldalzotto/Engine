@@ -570,4 +570,6 @@ int main()
 	v2::scenetreeasset_merge();
 	v2::scene_to_sceneasset();
 	v2::sceneasset_to_json();
+
+	memleak_ckeck();
 };

@@ -36,6 +36,7 @@ namespace v2
 
     Pool<Window> app_windows = Pool<Window>::allocate(0);
 
+
     int8 glfw_initialized = 0;
     struct GLFWWindow_to_Window
     {
@@ -127,8 +128,9 @@ namespace v2
             }
         }
 
-        if (app_windows.get_size() == 0)
+        if (glfw_to_window.get_size() == 0)
         {
+            glfw_to_window.free();
             glfwTerminate();
         };
     };
@@ -136,6 +138,11 @@ namespace v2
     inline void WindowAllocator::free_headless(const Token(Window) p_window)
     {
         app_windows.release_element(p_window);
+
+        if (!app_windows.has_allocated_elements())
+        {
+            app_windows.free();
+        };
     };
 
     inline Window& WindowAllocator::get_window(const Token(Window) p_window)

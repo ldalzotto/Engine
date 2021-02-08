@@ -182,6 +182,20 @@ inline void CollisionDetectionStep::free(CollisionHeap2& p_collision_heap)
 	//To free pending resources
 	this->step_freeingresource_only(p_collision_heap);
 
+#if COLLIDER_BOUND_TEST
+	assert_true(this->in_colliders_disabled.get_size() == 0);
+	assert_true(this->in_colliders_processed.get_size() == 0);
+	assert_true(this->deleted_colliders_from_last_step.get_size() == 0);
+	assert_true(this->deleted_collider_detectors_from_last_step.get_size() == 0);
+	assert_true(this->currentstep_enter_intersection_events.get_size() == 0);
+	assert_true(this->currentstep_exit_intersection_events.get_size() == 0);
+	assert_true(this->is_waitingfor_trigger_stay_detector.get_size() == 0);
+	assert_true(this->is_waitingfor_trigger_stay_nextframe_detector.get_size() == 0);
+	assert_true(this->is_waitingfor_trigger_none_detector.get_size() == 0);
+	assert_true(this->is_waitingfor_trigger_none_nextframe_detector.get_size() == 0);
+#endif
+
+	this->in_colliders_disabled.free();
 	this->in_colliders_processed.free();
 	this->deleted_colliders_from_last_step.free();
 	this->deleted_collider_detectors_from_last_step.free();
@@ -648,14 +662,10 @@ struct Collision2
 		};
 	};
 
-	inline static void free(Collision2** p_collision_ptr)
-	{
-		(*p_collision_ptr)->free();
-		heap_free(cast(int8*, *p_collision_ptr));
-	};
-
 	inline void free()
 	{
+		this->step();
+
 		this->collision_detection_step.free(this->collision_heap);
 		this->collision_heap.free();
 	};

@@ -81,10 +81,10 @@ namespace v2
 			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 		}
 
-		l_scene.free_and_consume_component_events_stateful(component_releaser);
-
-		l_scene_middleware.free();
+		l_scene.consume_component_events_stateful(component_releaser);
+		l_scene_middleware.free(&l_scene, l_collision);
 		l_collision.free();
+		l_scene.free();
 	};
 
 	inline void collision_middleware_queuing_for_calculation()
@@ -109,9 +109,10 @@ namespace v2
 			l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
 		}
 
-		l_scene.free_and_consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free();
+		l_scene.consume_component_events_stateful(component_releaser);
+		l_scene_middleware.free(&l_scene, l_collision);
 		l_collision.free();
+		l_scene.free();
 	};
 };
 
@@ -119,4 +120,6 @@ int main()
 {
 	v2::collision_middleware_component_allocation();
 	v2::collision_middleware_queuing_for_calculation();
+
+	memleak_ckeck();
 }

@@ -136,6 +136,8 @@ namespace v2
 
 		static Scene allocate_default();
 
+		void free();
+
 		template<class ComponentRemovedCallbackFunc>
 		void free_and_consume_component_events();
 		template<class ComponentRemovedCallbackObj>
@@ -176,7 +178,6 @@ namespace v2
 		void remove_node_component_typed(const Token(Node) p_node);
 
 	private:
-		void free();
 
 		int8 remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component);
 

@@ -31,4 +31,6 @@ int main()
 {
     glfwwindow();
     headlesswindow();
+
+    memleak_ckeck();
 };

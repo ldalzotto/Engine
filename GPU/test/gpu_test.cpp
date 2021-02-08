@@ -402,6 +402,7 @@ namespace v2
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
 				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_attachments[0].image_format, l_colors.slice.build_asint8());
+				l_colors.free();
 			}
 
 
@@ -506,5 +507,7 @@ int main()
 	v2::gpu_image_allocation();
 	v2::gpu_renderpass_clear();
 	v2::gpu_draw();
+
+	memleak_ckeck();
 };
 

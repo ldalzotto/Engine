@@ -888,6 +888,7 @@ namespace v2
 
 		vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphics_create_info, NULL, &l_shader.shader));
 
+		l_vertex_input_attributes.free();
 
 		return l_shader;
 	};

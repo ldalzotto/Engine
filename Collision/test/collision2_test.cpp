@@ -626,4 +626,6 @@ int main()
 	collision_test_04();
 	collision_test_05();
 	collision_test_06();
+
+	memleak_ckeck();
 };
