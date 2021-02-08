@@ -303,20 +303,6 @@ namespace v2
 	};
 
 	template<class ComponentRemovedCallbackFunc>
-	inline void Scene::free_and_consume_component_events()
-	{
-		this->consume_component_events<ComponentRemovedCallbackFunc>();
-		this->free();
-	};
-
-	template<class ComponentRemovedCallbackObj>
-	inline void Scene::free_and_consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
-	{
-		this->consume_component_events_stateful(p_closure);
-		this->free();
-	};
-
-	template<class ComponentRemovedCallbackFunc>
 	inline void Scene::consume_component_events()
 	{
 		for (vector_loop(&this->component_removed_events, i))
@@ -336,6 +322,20 @@ namespace v2
 			p_closure.on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
 		};
 		this->component_removed_events.clear();
+	};
+
+	template<class ComponentRemovedCallbackFunc>
+	inline void Scene::free_and_consume_component_events()
+	{
+		this->consume_component_events<ComponentRemovedCallbackFunc>();
+		this->free();
+	};
+
+	template<class ComponentRemovedCallbackObj>
+	inline void Scene::free_and_consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
+	{
+		this->consume_component_events_stateful(p_closure);
+		this->free();
 	};
 
 	inline void Scene::step()

@@ -139,15 +139,15 @@ namespace v2
 		void free();
 
 		template<class ComponentRemovedCallbackFunc>
+		void consume_component_events();
+		template<class ComponentRemovedCallbackObj>
+		void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
+
+		template<class ComponentRemovedCallbackFunc>
 		void free_and_consume_component_events();
 		template<class ComponentRemovedCallbackObj>
 		void free_and_consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
 
-
-		template<class ComponentRemovedCallbackFunc>
-		void consume_component_events();
-		template<class ComponentRemovedCallbackObj>
-		void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure);
 
 		void step();
 

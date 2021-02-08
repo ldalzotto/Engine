@@ -16,7 +16,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
 endif ()
 
-add_compile_definitions(ASSETPATH_DEV=1)
 
 # OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug")
 if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
@@ -25,7 +24,9 @@ if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" 
     set(IS_DEBUG false)
 endif ()
 
-# message("${IS_DEBUG}")
+
+add_compile_definitions(MEM_LEAK_DETECTION=1)
+add_compile_definitions(ASSETPATH_DEV=1)
 
 if (IS_DEBUG)
     add_compile_definitions(TOKEN_TYPE_SAFETY=1)
