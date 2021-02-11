@@ -27,6 +27,14 @@ struct Span
 		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType))) };
 	};
 
+	template<uint8 Capacity_t>
+	inline static Span<ElementType> allocate_array(const ElementType p_elements[Capacity_t])
+	{
+		Span<ElementType> l_span = Span<ElementType>::allocate(Capacity_t);
+		slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements, Capacity_t));
+		return l_span;
+	};
+
 	inline static Span<ElementType> callocate(const uimax p_capacity)
 	{
 		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_calloc(p_capacity * sizeof(ElementType))) };

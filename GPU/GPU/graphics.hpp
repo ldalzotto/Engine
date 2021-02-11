@@ -195,6 +195,8 @@ namespace v2
 
 		static ShaderModule allocate(const GraphicsDevice& p_graphics_device, const Slice<int8>& p_shader_compiled_str);
 
+		static ShaderModule build_default();
+
 		void free(const GraphicsDevice& p_graphics_device);
 	};
 
@@ -751,6 +753,11 @@ namespace v2
 		return l_shader_module;
 	};
 
+	inline ShaderModule ShaderModule::build_default()
+	{
+		return ShaderModule{ NULL };
+	};
+
 	inline void ShaderModule::free(const GraphicsDevice& p_graphics_device)
 	{
 		vkDestroyShaderModule(p_graphics_device.device, this->module, NULL);
@@ -851,25 +858,30 @@ namespace v2
 		l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
 
 
-		VkPipelineShaderStageCreateInfo l_shader_stages[2];
+		VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
+		Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build(l_shader_stages, 0, 0);
 
-		VkPipelineShaderStageCreateInfo l_vertex_stage{};
-		l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-		l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
-		l_vertex_stage.pName = "main";
+		if (p_shader_allocate_info.vertex_shader.module != NULL)
+		{
+			l_shader_stages_slice.Size += 1;
+			VkPipelineShaderStageCreateInfo& l_vertex_stage = l_shader_stages_slice.get(0);
+			l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+			l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
+			l_vertex_stage.pName = "main";
+		}
 
+		if (p_shader_allocate_info.fragment_shader.module != NULL)
+		{
+			l_shader_stages_slice.Size += 1;
+			VkPipelineShaderStageCreateInfo& l_fragment_stage = l_shader_stages_slice.get(1);
+			l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+			l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+			l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
+			l_fragment_stage.pName = "main";
+		};
 
-		VkPipelineShaderStageCreateInfo l_fragment_stage{};
-		l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-		l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
-		l_fragment_stage.pName = "main";
-
-		l_shader_stages[0] = l_vertex_stage;
-		l_shader_stages[1] = l_fragment_stage;
-
-		l_pipeline_graphics_create_info.stageCount = 2;
+		l_pipeline_graphics_create_info.stageCount = (uint32_t)l_shader_stages_slice.Size;
 		l_pipeline_graphics_create_info.pStages = l_shader_stages;
 
 
@@ -1194,23 +1206,23 @@ namespace v2
 
 		void free(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator);
 
-		void add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferHost) p_memory_token, const BufferHost& p_memory);
+		void add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader_layout, const Token(BufferHost) p_memory_token, const BufferHost& p_memory);
 
-		void add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory);
-
-		template<class ElementType>
-		void add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory);
-
-		void add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory);
-
-		void add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory);
+		void add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
 
 		template<class ElementType>
-		void add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory);
+		void add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
 
-		void add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory);
+		void add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory);
 
-		void add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory);
+		void add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
+
+		template<class ElementType>
+		void add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
+
+		void add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory);
+
+		void add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory);
 
 	private:
 		static void _free_shader_uniform_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter);
@@ -1223,7 +1235,7 @@ namespace v2
 	inline Material Material::allocate_empty(GraphicsAllocator& p_graphics_allocator, const uint32 p_set_index_offset)
 	{
 		return Material{
-				p_graphics_allocator.material_parameters.alloc_vector(),p_set_index_offset
+				p_graphics_allocator.material_parameters.alloc_vector(), p_set_index_offset
 		};
 	};
 
@@ -1261,19 +1273,19 @@ namespace v2
 		p_graphics_allocator.material_parameters.release_vector(this->parameters);
 	};
 
-	inline void Material::add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
+	inline void Material::add_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader_layout, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
 	{
 		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
-		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
-		assert_true(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
-					|| p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+		assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
+		assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
+					|| p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
 		ShaderUniformBufferHostParameter l_shader_uniform_buffer_parameter =
 				ShaderUniformBufferHostParameter::allocate(p_graphics_allocator.graphicsDevice,
-						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
 		p_graphics_allocator.material_parameters.element_push_back_element(
@@ -1285,31 +1297,31 @@ namespace v2
 		);
 	};
 
-	inline void Material::add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory)
+	inline void Material::add_and_allocate_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
 	{
 		Token(BufferHost) l_buffer = p_buffer_allocator.allocate_bufferhost(p_memory, BufferUsageFlag::UNIFORM);
-		this->add_buffer_host_parameter(p_graphics_allocator, p_shader, l_buffer, p_buffer_allocator.get_bufferhost(l_buffer));
+		this->add_buffer_host_parameter(p_graphics_allocator, p_shader_layout, l_buffer, p_buffer_allocator.get_bufferhost(l_buffer));
 	};
 
 	template<class ElementType>
-	inline void Material::add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory)
+	inline void Material::add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
 	{
-		this->add_and_allocate_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+		this->add_and_allocate_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
 	};
 
-	inline void Material::add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
+	inline void Material::add_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader_layout, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
 	{
 		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
-		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
-		assert_true(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
-					|| p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+		assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
+		assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
+					|| p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
 		ShaderUniformBufferGPUParameter l_shader_uniform_buffer_parameter =
 				ShaderUniformBufferGPUParameter::allocate(p_graphics_allocator.graphicsDevice,
-						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
 		p_graphics_allocator.material_parameters.element_push_back_element(
@@ -1321,31 +1333,31 @@ namespace v2
 		);
 	};
 
-	inline void Material::add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const Slice<int8>& p_memory)
+	inline void Material::add_and_allocate_buffer_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
 	{
 		Token(BufferGPU) l_buffer_gpu = p_buffer_allocator.allocate_buffergpu(p_memory.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::UNIFORM));
 		p_buffer_allocator.write_to_buffergpu(l_buffer_gpu, p_memory);
-		this->add_buffer_gpu_parameter(p_graphics_allocator, p_shader, l_buffer_gpu, p_buffer_allocator.get_buffergpu(l_buffer_gpu));
+		this->add_buffer_gpu_parameter(p_graphics_allocator, p_shader_layout, l_buffer_gpu, p_buffer_allocator.get_buffergpu(l_buffer_gpu));
 	};
 
 	template<class ElementType>
-	inline void Material::add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ElementType& p_memory)
+	inline void Material::add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
 	{
-		this->add_and_allocate_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_shader, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+		this->add_and_allocate_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
 	};
 
-	inline void Material::add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const Shader& p_shader, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory)
+	inline void Material::add_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, const ShaderLayout& p_shader_layout, const Token(TextureGPU) p_memory_token, const TextureGPU& p_memory)
 	{
 		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.material_parameters.get_vector(this->parameters).Size;
 
 #if GPU_DEBUG
-		assert_true(l_inserted_index < p_shader.layout.shader_layout_parameter_types.Capacity);
-		assert_true(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+		assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
+		assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 
 		ShaderTextureGPUParameter l_shader_texture_gpu_parameter =
 				ShaderTextureGPUParameter::allocate(p_graphics_allocator.graphicsDevice,
-						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader.layout.shader_layout_parameter_types.get(l_inserted_index)),
+						p_graphics_allocator.graphicsDevice.shaderlayout_parameters.get_descriptorset_layout(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index)),
 						p_memory_token, p_memory);
 
 		p_graphics_allocator.material_parameters.element_push_back_element(
@@ -1357,14 +1369,15 @@ namespace v2
 		);
 	};
 
-	inline void Material::add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const Shader& p_shader, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory)
+	inline void
+	Material::add_and_allocate_texture_gpu_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory)
 	{
 		ImageFormat l_format = p_base_image_format;
 		l_format.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
 		Token(TextureGPU) l_texture_gpu_token = p_graphics_allocator.allocate_texturegpu(p_buffer_allocator, l_format);
 		TextureGPU& l_texture_gpu = p_graphics_allocator.get_texturegpu(l_texture_gpu_token);
 		p_buffer_allocator.write_to_imagegpu(l_texture_gpu.Image, p_buffer_allocator.get_imagegpu(l_texture_gpu.Image), p_memory);
-		this->add_texture_gpu_parameter(p_graphics_allocator, p_shader, l_texture_gpu_token, l_texture_gpu);
+		this->add_texture_gpu_parameter(p_graphics_allocator, p_shader_layout, l_texture_gpu_token, l_texture_gpu);
 	};
 
 	inline void Material::_free_shader_uniform_buffer_host_parameter(GraphicsAllocator& p_graphics_allocator, BufferAllocator& p_buffer_allocator, ShaderUniformBufferHostParameter& p_parameter)
@@ -1394,11 +1407,12 @@ namespace v2
 		GraphicsAllocator& graphics_allocator;
 		GraphicsPass* binded_graphics_pass;
 		Shader* binded_shader;
+		ShaderLayout* binded_shader_layout;
 		uint32 material_set_count;
 
 		inline static GraphicsBinder build(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator)
 		{
-			return GraphicsBinder{ p_buffer_allocator, p_graphics_allocator, NULL, 0, 0 };
+			return GraphicsBinder{ p_buffer_allocator, p_graphics_allocator, NULL, NULL, NULL, 0 };
 		};
 
 		inline void start()
@@ -1447,6 +1461,12 @@ namespace v2
 #endif
 			_cmd_bind_shader(p_shader);
 			this->binded_shader = &p_shader;
+			this->binded_shader_layout = &p_shader.layout;
+		};
+
+		inline void bind_shader_layout(ShaderLayout& p_shader_layout)
+		{
+			this->binded_shader_layout = &p_shader_layout;
 		};
 
 		inline void bind_material(const Material p_material)
@@ -1454,7 +1474,7 @@ namespace v2
 			Slice<ShaderParameter> l_material_parameters = this->graphics_allocator.material_parameters.get_vector(p_material.parameters);
 			for (loop(i, 0, l_material_parameters.Size))
 			{
-				_cmd_bind_shader_parameter(*this->binded_shader, l_material_parameters.get(i), this->material_set_count);
+				_cmd_bind_shader_parameter(*this->binded_shader_layout, l_material_parameters.get(i), this->material_set_count);
 				this->material_set_count += 1;
 			}
 		};
@@ -1462,6 +1482,10 @@ namespace v2
 		inline void pop_material_bind(const Material p_material)
 		{
 			this->material_set_count -= (uint32)this->graphics_allocator.material_parameters.get_vector(p_material.parameters).Size;
+
+#if GPU_DEBUG
+			assert_true(this->material_set_count <= 10000);
+#endif
 		};
 
 		inline void bind_vertex_buffer_gpu(const BufferGPU& p_vertex_buffer_gpu)
@@ -1527,23 +1551,23 @@ namespace v2
 		};
 
 
-		inline void _cmd_bind_shader_parameter(const Shader& p_shader, const ShaderParameter& p_shader_parameter, const uint32 p_set_number)
+		inline void _cmd_bind_shader_parameter(const ShaderLayout& p_shader_layout, const ShaderParameter& p_shader_parameter, const uint32 p_set_number)
 		{
 			switch (p_shader_parameter.type)
 			{
 			case ShaderParameter::Type::UNIFORM_HOST:
 			{
-				_cmd_bind_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_host_parameters.get(p_shader_parameter.uniform_host).descriptor_set, p_set_number);
+				_cmd_bind_uniform_buffer_parameter(p_shader_layout, this->graphics_allocator.shader_uniform_buffer_host_parameters.get(p_shader_parameter.uniform_host).descriptor_set, p_set_number);
 			}
 				break;
 			case ShaderParameter::Type::UNIFORM_GPU:
 			{
-				_cmd_bind_uniform_buffer_parameter(p_shader, this->graphics_allocator.shader_uniform_buffer_gpu_parameters.get(p_shader_parameter.uniform_gpu).descriptor_set, p_set_number);
+				_cmd_bind_uniform_buffer_parameter(p_shader_layout, this->graphics_allocator.shader_uniform_buffer_gpu_parameters.get(p_shader_parameter.uniform_gpu).descriptor_set, p_set_number);
 			}
 				break;
 			case ShaderParameter::Type::TEXTURE_GPU:
 			{
-				_cmd_bind_shader_texture_gpu_parameter(p_shader, this->graphics_allocator.shader_texture_gpu_parameters.get(p_shader_parameter.texture_gpu), p_set_number);
+				_cmd_bind_shader_texture_gpu_parameter(p_shader_layout, this->graphics_allocator.shader_texture_gpu_parameters.get(p_shader_parameter.texture_gpu), p_set_number);
 			}
 				break;
 			default:
@@ -1551,26 +1575,26 @@ namespace v2
 			}
 		};
 
-		inline void _cmd_bind_uniform_buffer_parameter(const Shader& p_shader, const VkDescriptorSet p_descriptor_set, const uint32 p_set_number)
+		inline void _cmd_bind_uniform_buffer_parameter(const ShaderLayout& p_shader_layout, const VkDescriptorSet p_descriptor_set, const uint32 p_set_number)
 		{
 #if GPU_DEBUG
-			assert_true(p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
-						|| p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+			assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX
+						|| p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
 			vkCmdBindDescriptorSets(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer,
-					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader.layout.layout, p_set_number,
+					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number,
 					1, &p_descriptor_set, 0, NULL);
 		};
 
-		inline void _cmd_bind_shader_texture_gpu_parameter(const Shader& p_shader, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)
+		inline void _cmd_bind_shader_texture_gpu_parameter(const ShaderLayout& p_shader_layout, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)
 		{
 #if GPU_DEBUG
-			assert_true(p_shader.layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+			assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 
 			vkCmdBindDescriptorSets(this->graphics_allocator.graphicsDevice.command_buffer.command_buffer,
-					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader.layout.layout, p_set_number,
+					VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number,
 					1, &p_shader_parameter.descriptor_set, 0, NULL);
 		};
 

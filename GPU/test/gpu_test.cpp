@@ -289,12 +289,6 @@ namespace v2
 					};
 			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
 
-			Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(4);
-			l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-			l_first_shader_layout_parameters.get(1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-			l_first_shader_layout_parameters.get(2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-			l_first_shader_layout_parameters.get(3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
-
 
 			struct vertex_position
 			{
@@ -322,7 +316,12 @@ namespace v2
 			{
 				Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
 				l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position) };
-				//			l_shader_vertex_input_primitives.get(1) = PrimitiveSerializedTypes::Type::FLOAT32_2;
+
+				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(4);
+				l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+				l_first_shader_layout_parameters.get(1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+				l_first_shader_layout_parameters.get(2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+				l_first_shader_layout_parameters.get(3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
 
 				l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
 
@@ -378,27 +377,37 @@ namespace v2
 				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
 			}
 
+
+			Token(ShaderLayout) l_global_shader_layout;
+			{
+				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
+				l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+				Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
+				l_global_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
+			}
+
+
 			color_f l_global_color = color_f{ 0.0f, 0.3f, 0.0f, 0.0f };
 			color_f l_mat_1_base_color = color_f{ 1.0f, 0.0f, 0.0f, 0.5f };
 			color_f l_mat_1_added_color = color_f{ 0.0f, 0.0f, 1.0f, 0.5f };
 			color l_multiplied_color_texture_color = color{ 100, 100, 100, 255 }; //sRGB
 
-			// l_graphics_allocator.all
+
 			Material l_global_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_global_color);
+			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_global_color);
 
 			Material l_first_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_mat_1_base_color);
-			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_mat_1_added_color);
+			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_1_base_color);
+			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_1_added_color);
 
 			{
-				
+
 				Span<color> l_colors = Span<color>::allocate(l_attachments[0].image_format.extent.x * l_attachments[0].image_format.extent.y);
 				for (loop(i, 0, l_colors.Capacity))
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_attachments[0].image_format, l_colors.slice.build_asint8());
+				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
 				l_colors.free();
 			}
 
@@ -406,8 +415,8 @@ namespace v2
 			color_f l_mat_2_added_color = color_f{ 0.6f, 0.0f, 0.0f };
 
 			Material l_second_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_mat_2_base_color);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader), l_mat_2_added_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_base_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_added_color);
 
 			Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_context.instance.logical_device);
 
@@ -424,11 +433,15 @@ namespace v2
 				GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
 				l_graphics_binder.start();
 
+				l_graphics_binder.bind_shader_layout(l_graphics_allocator.get_shader_layout(l_global_shader_layout));
+
+				// l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_global_shader));
+
+				l_graphics_binder.bind_material(l_global_material);
+
 				l_graphics_binder.begin_render_pass(l_graphics_allocator.get_graphics_pass(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 
 				l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_first_shader));
-
-				l_graphics_binder.bind_material(l_global_material);
 
 				l_graphics_binder.bind_material(l_first_material);
 				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
@@ -440,9 +453,9 @@ namespace v2
 				l_graphics_binder.draw_offsetted(3, 3);
 				l_graphics_binder.pop_material_bind(l_second_material);
 
-				l_graphics_binder.pop_material_bind(l_global_material);
-
 				l_graphics_binder.end_render_pass();
+
+				l_graphics_binder.pop_material_bind(l_global_material);
 
 				l_graphics_binder.end();
 				l_graphics_binder.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
@@ -493,6 +506,7 @@ namespace v2
 			l_first_material.free(l_graphics_allocator, l_buffer_allocator);
 			l_graphics_allocator.free_shader(l_first_shader);
 			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
+			l_graphics_allocator.free_shader_layout(l_global_shader_layout);
 
 			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
 			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
