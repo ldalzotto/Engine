@@ -19,12 +19,12 @@ namespace v2
 
 		inline static Vector<ElementType> build(ElementType* p_memory, const uimax p_initial_capacity)
 		{
-			return Vector<ElementType>{0, Span<ElementType>::build(p_memory, p_initial_capacity)};
+			return Vector<ElementType>{ 0, Span<ElementType>::build(p_memory, p_initial_capacity) };
 		};
 
 		inline static Vector<ElementType> allocate(const uimax p_initial_capacity)
 		{
-			return Vector<ElementType>{0, Span<ElementType>::allocate(p_initial_capacity)};
+			return Vector<ElementType>{ 0, Span<ElementType>::allocate(p_initial_capacity) };
 		};
 
 		inline static Vector<ElementType> allocate_elements(const Slice<ElementType>& p_initial_elements)
@@ -146,7 +146,6 @@ namespace v2
 		};
 
 
-
 		inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)
 		{
 #if CONTAINER_BOUND_TEST
@@ -199,7 +198,7 @@ namespace v2
 		{
 #if CONTAINER_BOUND_TEST
 			this->bound_check(p_index);
-			this->bound_head_check(p_index); // use vector_pop_back //TODO -> create a "always" variant of vector_erase_element_at
+			this->bound_head_check(p_index); // use vector_pop_back
 #endif
 
 			this->move_memory_up(p_index + 1, 1);
@@ -207,7 +206,6 @@ namespace v2
 
 			return 1;
 		};
-
 
 		inline int8 pop_back_array(const uimax p_element_nb)
 		{
@@ -221,6 +219,21 @@ namespace v2
 			return 1;
 		};
 
+		inline int8 erase_element_at_always(const uimax p_index)
+		{
+#if CONTAINER_BOUND_TEST
+			this->bound_check(p_index);
+#endif
+
+			if (p_index == this->Size)
+			{
+				return this->pop_back();
+			}
+			else
+			{
+				return this->erase_element_at(p_index);
+			}
+		};
 
 	private:
 
@@ -275,7 +288,6 @@ namespace v2
 
 			return 1;
 		};
-
 
 
 #define ShadowVector(ElementType) ElementType##_##ShadowVector

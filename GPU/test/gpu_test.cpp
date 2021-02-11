@@ -187,6 +187,7 @@ namespace v2
 		l_gpu_context.free();
 	};
 
+
 	/*
 		Creates a GraphicsPass that only clear input attachments.
 	 	We check that the attachment has well been cleared with the input color.
@@ -201,7 +202,6 @@ namespace v2
 		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
 
-		Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_context.instance.logical_device);
 
 		RenderPassAttachment l_attachments[2] =
 				{
@@ -215,21 +215,18 @@ namespace v2
 		color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
 		{
-			l_buffer_allocator.step();
-			l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
+			l_gpu_context.buffer_step_and_submit();
 
 			v4f l_clear_values[2];
 			l_clear_values[0] = v4f{ 0.0f, (float)l_clear_color.y / (float)uint8_max, (float)l_clear_color.z / (float)uint8_max, 1.0f };
 			l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
-			GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
-			l_graphics_binder.start();
+			GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 			l_graphics_binder.begin_render_pass(l_graphics_allocator.get_graphics_pass(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 			l_graphics_binder.end_render_pass();
-			l_graphics_binder.end();
-			l_graphics_binder.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-			l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
+			l_gpu_context.submit_graphics_binder(l_graphics_binder);
+			l_gpu_context.wait_for_completion();
 		}
 
 		Token(BufferHost) l_color_attachment_value = l_graphics_allocator.read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator,
@@ -252,7 +249,6 @@ namespace v2
 		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
 
-		l_buffer_allocator_semaphore.free(l_gpu_context.instance.logical_device);
 		l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
 
 		l_gpu_context.free();
@@ -383,7 +379,7 @@ namespace v2
 				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
 				l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
 				Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
-				l_global_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
+				l_global_shader_layout =l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
 			}
 
 
@@ -418,8 +414,6 @@ namespace v2
 			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_base_color);
 			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_added_color);
 
-			Semafore l_buffer_allocator_semaphore = Semafore::allocate(l_gpu_context.instance.logical_device);
-
 			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
 			{
@@ -427,11 +421,9 @@ namespace v2
 				l_clear_values[0] = v4f{ 0.0f, 1.0f, (float)l_clear_color.z / (float)uint8_max, 1.0f };
 				l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
-				l_buffer_allocator.step();
-				l_buffer_allocator.device.command_buffer.submit_and_notity(l_buffer_allocator_semaphore);
+				l_gpu_context.buffer_step_and_submit();
 
-				GraphicsBinder l_graphics_binder = GraphicsBinder::build(l_buffer_allocator, l_graphics_allocator);
-				l_graphics_binder.start();
+				GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
 				l_graphics_binder.bind_shader_layout(l_graphics_allocator.get_shader_layout(l_global_shader_layout));
 
@@ -457,13 +449,11 @@ namespace v2
 
 				l_graphics_binder.pop_material_bind(l_global_material);
 
-				l_graphics_binder.end();
-				l_graphics_binder.submit_after(l_buffer_allocator_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
+				l_gpu_context.submit_graphics_binder(l_graphics_binder);
 			}
 
 			{
-				l_graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
-				l_buffer_allocator_semaphore.free(l_gpu_context.instance.logical_device);
+				l_gpu_context.wait_for_completion();
 			}
 
 
@@ -498,19 +488,23 @@ namespace v2
 			assert_true(l_color_attachment_value_pixels.get(14) == l_clear_color.linear_to_sRGB());
 			assert_true(l_color_attachment_value_pixels.get(15) == l_clear_color.linear_to_sRGB());
 
+
 			l_buffer_allocator.free_bufferhost(l_color_attachment_value);
 
 			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
+
 			l_global_material.free(l_graphics_allocator, l_buffer_allocator);
 			l_second_material.free(l_graphics_allocator, l_buffer_allocator);
 			l_first_material.free(l_graphics_allocator, l_buffer_allocator);
-			l_graphics_allocator.free_shader(l_first_shader);
-			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
-			l_graphics_allocator.free_shader_layout(l_global_shader_layout);
 
-			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
+
 			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
+			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
 
+			l_graphics_allocator.free_shader_layout(l_global_shader_layout);
+			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
+
+			l_graphics_allocator.free_shader(l_first_shader);
 			l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
 		}
 

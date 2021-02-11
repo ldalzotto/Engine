@@ -33,10 +33,10 @@ namespace v2
 #endif
 
 	inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-		void* pUserData)
+			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			VkDebugUtilsMessageTypeFlagsEXT messageType,
+			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			void* pUserData)
 	{
 
 		String l_severity = String::allocate(100);
@@ -88,8 +88,6 @@ namespace v2
 #include "./shader_compiler.hpp"
 
 
-
-
 namespace v2
 {
 	struct GPUContext
@@ -98,26 +96,54 @@ namespace v2
 		BufferAllocator buffer_allocator;
 		GraphicsAllocator graphics_allocator;
 
+		Semafore execution_semaphore;
+
 		inline static GPUContext allocate()
 		{
 			GPUContext l_context;
 			l_context.instance = GPUInstance::allocate(Slice<int8*>::build_default());
 			l_context.buffer_allocator = BufferAllocator::allocate_default(l_context.instance);
 			l_context.graphics_allocator = GraphicsAllocator::allocate_default(l_context.instance);
+			l_context.execution_semaphore = Semafore::allocate(l_context.instance.logical_device);
 			return l_context;
 		};
 
 		inline void free()
 		{
+			this->execution_semaphore.free(this->instance.logical_device);
 			this->graphics_allocator.free();
 			this->buffer_allocator.free();
 			this->instance.free();
 		};
+
+
+		inline void buffer_step_and_submit()
+		{
+			this->buffer_allocator.step();
+			this->buffer_allocator.device.command_buffer.submit_and_notity(this->execution_semaphore);
+		};
+
+
+		inline GraphicsBinder creates_graphics_binder()
+		{
+			GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_allocator, this->graphics_allocator);
+			l_binder.start();
+			return l_binder;
+		};
+
+		inline void submit_graphics_binder(GraphicsBinder& p_binder)
+		{
+			p_binder.end();
+			p_binder.submit_after(this->execution_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
+		};
+
+		inline void wait_for_completion()
+		{
+			this->graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
+		};
+
 	};
 }
-
-
-
 
 
 #undef ShadowBuffer_t

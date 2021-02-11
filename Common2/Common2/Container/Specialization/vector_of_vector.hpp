@@ -100,9 +100,21 @@ namespace v2
 			l_pushed_memory.free();
 		};
 
+		//TODO -> add tests :-)
+		inline void insert_empty_at(const uimax p_index)
+		{
+			this->varying_vector.insert_at(Slice<int8>::build(NULL, 0, 1), p_index);
+		};
+
 		inline void erase_element_at(const uimax p_index)
 		{
 			this->varying_vector.erase_element_at(p_index);
+		};
+
+		//TODO -> add tests :-)
+		inline void erase_element_at_always(const uimax p_index)
+		{
+			this->varying_vector.erase_element_at_always(p_index);
 		};
 
 		inline Slice<ElementType> get(const uimax p_index)

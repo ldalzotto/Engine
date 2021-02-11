@@ -100,6 +100,19 @@ namespace v2
 			this->chunks.erase_element_at(p_index);
 		};
 
+		//TODO add test :-)
+		inline void erase_element_at_always(const uimax p_index)
+		{
+			if(p_index == this->get_size())
+			{
+				this->pop_back();
+			}
+			else
+			{
+				this->erase_element_at(p_index);
+			}
+		};
+
 		inline void erase_array_at(const uimax p_index, const uimax p_element_nb)
 		{
 			SliceIndex l_removed_chunk = SliceIndex::build_default();
