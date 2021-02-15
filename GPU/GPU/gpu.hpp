@@ -94,7 +94,7 @@ namespace v2
 	{
 		GPUInstance instance;
 		BufferAllocator buffer_allocator;
-		GraphicsAllocator graphics_allocator;
+		GraphicsAllocator2 graphics_allocator;
 
 		Semafore execution_semaphore;
 
@@ -103,7 +103,7 @@ namespace v2
 			GPUContext l_context;
 			l_context.instance = GPUInstance::allocate(Slice<int8*>::build_default());
 			l_context.buffer_allocator = BufferAllocator::allocate_default(l_context.instance);
-			l_context.graphics_allocator = GraphicsAllocator::allocate_default(l_context.instance);
+			l_context.graphics_allocator = GraphicsAllocator2::allocate_default(l_context.instance);
 			l_context.execution_semaphore = Semafore::allocate(l_context.instance.logical_device);
 			return l_context;
 		};
@@ -139,7 +139,7 @@ namespace v2
 
 		inline void wait_for_completion()
 		{
-			this->graphics_allocator.graphicsDevice.command_buffer.wait_for_completion();
+			this->graphics_allocator.graphics_device.command_buffer.wait_for_completion();
 		};
 
 	};

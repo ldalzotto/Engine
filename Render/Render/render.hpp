@@ -122,9 +122,9 @@ namespace v2
 
 		void graphics_step(GraphicsBinder& p_graphics_binder);
 
-		Token(RenderableObject) allocate_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator, const Slice<Vertex>& p_initial_vertices);
+		Token(RenderableObject) allocate_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator, const Slice<Vertex>& p_initial_vertices);
 
-		void free_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator, Token(RenderableObject) p_renderable_object);
+		void free_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator, Token(RenderableObject) p_renderable_object);
 	};
 
 
@@ -279,13 +279,13 @@ namespace v2
 
 		v4f l_clears[2] = { v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 0.0f, 0.0f, 0.0f, 0.0f }};
 		l_step.clear_values = Span<v4f>::allocate_array<2>(l_clears);
-		l_step.pass = p_gpu_context.graphics_allocator.allocate_graphicspass<2>(p_gpu_context.buffer_allocator, l_attachments);
+		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, l_attachments);
 		l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
 		Camera l_empty_camera{};
 		l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
 		l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_allocator,
-				p_gpu_context.graphics_allocator.get_shader_layout(l_step.global_buffer_layout), l_empty_camera);
+				p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
 
 		return l_step;
 	};
@@ -294,15 +294,15 @@ namespace v2
 	{
 		this->clear_values.free();
 		p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
-		p_gpu_context.graphics_allocator.free_graphicspass(p_gpu_context.buffer_allocator, this->pass);
+		GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, this->pass);
 		this->global_material.free(p_gpu_context.graphics_allocator, p_gpu_context.buffer_allocator);
 	};
 
 	inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
 	{
 		slice_memcpy(p_gpu_context.buffer_allocator.get_bufferhost(
-				p_gpu_context.graphics_allocator.shader_uniform_buffer_host_parameters.get(
-						p_gpu_context.graphics_allocator.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
+				p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(
+						p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
 				).memory
 		).get_mapped_memory(), Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
 	};
@@ -330,7 +330,7 @@ namespace v2
 
 			Slice<int8>& l_mapped_memory =
 					p_gpu_context.buffer_allocator.get_bufferhost(
-							p_gpu_context.graphics_allocator.shader_uniform_buffer_host_parameters.get(
+							p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(
 									this->heap.get_renderableobject(l_event.renderable_object).model
 							).memory).get_mapped_memory();
 
@@ -346,16 +346,16 @@ namespace v2
 
 	inline void D3Renderer::graphics_step(GraphicsBinder& p_graphics_binder)
 	{
-		p_graphics_binder.bind_shader_layout(p_graphics_binder.graphics_allocator.get_shader_layout(this->color_step.global_buffer_layout));
+		p_graphics_binder.bind_shader_layout(p_graphics_binder.graphics_allocator.heap.shader_layouts.get(this->color_step.global_buffer_layout));
 		p_graphics_binder.bind_material(this->color_step.global_material);
 
-		p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.get_graphics_pass(this->color_step.pass), this->color_step.clear_values.slice);
+		p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->color_step.pass), this->color_step.clear_values.slice);
 
 		for (loop(i, 0, this->heap.shaders_indexed.Size))
 		{
 			Token(ShaderIndex) l_shader_token = this->heap.shaders_indexed.get(i);
 			ShaderIndex& l_shader_index = this->heap.shaders.get(l_shader_token);
-			p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.get_shader(l_shader_index.shader_index));
+			p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(l_shader_index.shader_index));
 
 			auto l_materials = this->heap.get_materials_from_shader(l_shader_token);
 			for (loop(j, 0, l_materials.get_size()))
@@ -370,7 +370,7 @@ namespace v2
 					Token(RenderableObject) l_renderable_object_token = l_renderable_objects.get(k);
 					RenderableObject& l_renderable_object = this->heap.get_renderableobject(l_renderable_object_token);
 
-					p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
+					p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
 
 					//TODO -> adding a bind to a index buffer (stored in the Mesh object)
 					//TODO -> adding a draw_indexed variant
@@ -389,7 +389,7 @@ namespace v2
 		p_graphics_binder.pop_material_bind(this->color_step.global_material);
 	};
 
-	inline Token(RenderableObject) D3Renderer::allocate_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator, const Slice<Vertex>& p_initial_vertices)
+	inline Token(RenderableObject) D3Renderer::allocate_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator, const Slice<Vertex>& p_initial_vertices)
 	{
 		RenderableObject l_renderable_object;
 		l_renderable_object.mesh = Mesh{ p_buffer_allocator.allocate_buffergpu(sizeof(Vertex) * p_initial_vertices.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE)),
@@ -402,11 +402,14 @@ namespace v2
 	};
 
 
-	inline void D3Renderer::free_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator& p_graphics_allocator, Token(RenderableObject) p_renderable_object)
+	inline void D3Renderer::free_renderable_object(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator, Token(RenderableObject) p_renderable_object)
 	{
 		RenderableObject& l_renderable_object = this->heap.get_renderableobject(p_renderable_object);
 		p_buffer_allocator.free_buffergpu(l_renderable_object.mesh.gpu_memory);
-		p_graphics_allocator.free_shaderuniformbufferhost_parameter(p_buffer_allocator, l_renderable_object.model);
+
+		//TODO -> having a composition method ?
+		p_buffer_allocator.free_bufferhost(p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model).memory);
+		p_graphics_allocator.free_shaderuniformbufferhost_parameter(l_renderable_object.model);
 		this->heap.free_renderable_object(p_renderable_object);
 	};
 };

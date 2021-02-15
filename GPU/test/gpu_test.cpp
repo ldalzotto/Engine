@@ -197,7 +197,7 @@ namespace v2
 	{
 		GPUContext l_gpu_context = GPUContext::allocate();
 		BufferAllocator& l_buffer_allocator = l_gpu_context.buffer_allocator;
-		GraphicsAllocator& l_graphics_allocator = l_gpu_context.graphics_allocator;
+		GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
 #ifdef RENDER_DOC_DEBUG
 		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -211,7 +211,7 @@ namespace v2
 						RenderPassAttachment{ AttachmentType::DEPTH,
 											  ImageFormat::build_depth_2d(v3ui{ 32, 32, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
 				};
-		Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
+		Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
 
 		color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
@@ -223,15 +223,14 @@ namespace v2
 			l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 			GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
-			l_graphics_binder.begin_render_pass(l_graphics_allocator.get_graphics_pass(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+			l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 			l_graphics_binder.end_render_pass();
 
 			l_gpu_context.submit_graphics_binder(l_graphics_binder);
 			l_gpu_context.wait_for_completion();
 		}
 
-		Token(BufferHost) l_color_attachment_value = l_graphics_allocator.read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator,
-				l_graphics_allocator.get_graphics_pass(l_graphics_pass), 0);
+		Token(BufferHost) l_color_attachment_value = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
 
 		l_buffer_allocator.step();
 		l_buffer_allocator.device.command_buffer.force_sync_execution();
@@ -250,7 +249,7 @@ namespace v2
 		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
 
-		l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
+		GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_allocator, l_graphics_allocator, l_graphics_pass);
 
 		l_gpu_context.free();
 	};
@@ -271,7 +270,7 @@ namespace v2
 	{
 		GPUContext l_gpu_context = GPUContext::allocate();
 		BufferAllocator& l_buffer_allocator = l_gpu_context.buffer_allocator;
-		GraphicsAllocator& l_graphics_allocator = l_gpu_context.graphics_allocator;
+		GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
 #ifdef RENDER_DOC_DEBUG
 		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -284,7 +283,7 @@ namespace v2
 												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
 							RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{ 4, 4, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
 					};
-			Token(GraphicsPass) l_graphics_pass = l_graphics_allocator.allocate_graphicspass<2>(l_buffer_allocator, l_attachments);
+			Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
 
 
 			struct vertex_position
@@ -364,11 +363,11 @@ namespace v2
 				l_fragment_shader_compiled.free();
 
 				ShaderAllocateInfo l_shader_allocate_info{
-						l_graphics_allocator.get_graphics_pass(l_graphics_pass),
+						l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass),
 						ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
-						l_graphics_allocator.get_shader_layout(l_first_shader_layout),
-						l_graphics_allocator.get_shader_module(l_vertex_first_shader_module),
-						l_graphics_allocator.get_shader_module(l_fragment_first_shader_module)
+						l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout),
+						l_graphics_allocator.heap.shader_modules.get(l_vertex_first_shader_module),
+						l_graphics_allocator.heap.shader_modules.get(l_fragment_first_shader_module)
 				};
 
 				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
@@ -391,11 +390,11 @@ namespace v2
 
 
 			Material l_global_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_global_color);
+			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_global_color);
 
 			Material l_first_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_1_base_color);
-			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_1_added_color);
+			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_base_color);
+			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_added_color);
 
 			{
 
@@ -404,7 +403,7 @@ namespace v2
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
+				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
 				l_colors.free();
 			}
 
@@ -412,8 +411,8 @@ namespace v2
 			color_f l_mat_2_added_color = color_f{ 0.6f, 0.0f, 0.0f };
 
 			Material l_second_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_base_color);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.get_shader(l_first_shader).layout, l_mat_2_added_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_base_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_added_color);
 
 			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
@@ -426,15 +425,15 @@ namespace v2
 
 				GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-				l_graphics_binder.bind_shader_layout(l_graphics_allocator.get_shader_layout(l_global_shader_layout));
+				l_graphics_binder.bind_shader_layout(l_graphics_allocator.heap.shader_layouts.get(l_global_shader_layout));
 
 				// l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_global_shader));
 
 				l_graphics_binder.bind_material(l_global_material);
 
-				l_graphics_binder.begin_render_pass(l_graphics_allocator.get_graphics_pass(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+				l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 
-				l_graphics_binder.bind_shader(l_graphics_allocator.get_shader(l_first_shader));
+				l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
 				l_graphics_binder.bind_material(l_first_material);
 				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
@@ -458,7 +457,7 @@ namespace v2
 			}
 
 
-			Token(BufferHost) l_color_attachment_value = l_graphics_allocator.read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator.get_graphics_pass(l_graphics_pass), 0);
+			Token(BufferHost) l_color_attachment_value = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
 			{
 				l_buffer_allocator.step();
 				l_buffer_allocator.device.command_buffer.submit();
@@ -506,7 +505,7 @@ namespace v2
 			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 
 			l_graphics_allocator.free_shader(l_first_shader);
-			l_graphics_allocator.free_graphicspass(l_buffer_allocator, l_graphics_pass);
+			GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_allocator, l_graphics_allocator, l_graphics_pass);
 		}
 
 #ifdef RENDER_DOC_DEBUG

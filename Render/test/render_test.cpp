@@ -80,11 +80,11 @@ namespace v2
 
 
 		ShaderAllocateInfo l_shader_allocate_info{
-				l_ctx.graphics_allocator.get_graphics_pass(l_renderer.color_step.pass),
+				l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
 				ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
-				l_ctx.graphics_allocator.get_shader_layout(l_shader_layout),
-				l_ctx.graphics_allocator.get_shader_module(l_vertex_shader_module),
-				l_ctx.graphics_allocator.get_shader_module(l_fragment_shader_module)
+				l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
+				l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
+				l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module)
 		};
 
 		Token(Shader) l_graphics_shader = l_ctx.graphics_allocator.allocate_shader(l_shader_allocate_info);
@@ -92,11 +92,11 @@ namespace v2
 
 
 		Material l_red_material =Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_red_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.get_shader_layout(l_shader_layout),
+		l_red_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
 				v3f{ 1.0f, 0.0f, 0.0f });
 
 		Material l_green_material =Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_green_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.get_shader_layout(l_shader_layout),
+		l_green_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
 				v3f{ 0.0f, 1.0f, 0.0f });
 
 		Token(Material) l_red_material_token = l_renderer.heap.push_material(l_red_material);

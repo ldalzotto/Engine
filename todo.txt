@@ -5,10 +5,8 @@
 3/ Update the gpu_test to render 4 cubes
 4/ Image output comparison ?
 
+
 5/ Defining precisely what is an "Allocator". The difference between a "Heap" object and an "Allocator" object. (The allocator object include the heap object)
-    Two possibilities here :
     1) It simply allocates the dedicated ressource. External ressource token can be stored but they are never allocated or freed.
        Multi layer allocation is done by a "Composition" methods.
-    2) An allocation of one ressource may implicitly imply the allocation of another one, by passing the allocator object as parameter.
-
-    The 1) seems to produce cleaner code but more work and code to write.
+    * Done for the GraphicsAllocator, still to do for BufferAllocator and the Render.
