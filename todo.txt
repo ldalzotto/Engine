@@ -1,5 +1,14 @@
-Implementing the Render module.
 
-The Render module is layered above GPU GraphicsAllocator.
-It just consists of creating object that are representation of 3D scene.
-It also provides the main loop hook that step over GPU command_buffers.
+
+1/ Adding indexed vertex buffer binding
+2/ Updating the render Mesh object to use the indexed buffer binding
+3/ Update the gpu_test to render 4 cubes
+4/ Image output comparison ?
+
+5/ Defining precisely what is an "Allocator". The difference between a "Heap" object and an "Allocator" object. (The allocator object include the heap object)
+    Two possibilities here :
+    1) It simply allocates the dedicated ressource. External ressource token can be stored but they are never allocated or freed.
+       Multi layer allocation is done by a "Composition" methods.
+    2) An allocation of one ressource may implicitly imply the allocation of another one, by passing the allocator object as parameter.
+
+    The 1) seems to produce cleaner code but more work and code to write.

@@ -5,9 +5,10 @@
 
 #ifdef RENDER_DOC_DEBUG
 
-#include "./renderdoc_app.h"
+#include "TestCommon/renderdoc_app.h"
 
 RENDERDOC_API_1_1_0* rdoc_api = NULL;
+
 #endif
 
 namespace v2

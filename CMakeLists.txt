@@ -130,11 +130,15 @@ target_include_directories(Engine INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/_Engine)
 target_link_libraries(Engine INTERFACE Scene2Middleware)
 
 
+add_library(TestCommon INTERFACE)
+target_include_directories(TestCommon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/TestCommon)
+
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)
+target_link_libraries(GPUTest PUBLIC TestCommon)
 
 add_executable(Math2Test ${CMAKE_CURRENT_SOURCE_DIR}/Math2/test/math2_test.cpp)
 target_link_libraries(Math2Test PUBLIC Math2)
@@ -150,6 +154,7 @@ target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 
 add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
 target_link_libraries(RenderTest PUBLIC Render)
+target_link_libraries(RenderTest PUBLIC TestCommon)
 
 add_executable(WindowTest ${CMAKE_CURRENT_SOURCE_DIR}/Window/test/window_test.cpp)
 target_link_libraries(WindowTest PUBLIC Window)
