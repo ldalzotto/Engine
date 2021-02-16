@@ -18,7 +18,7 @@ namespace v2
 						{
 							l_return += (float32)((p_string.get(i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
 						}
-						for (loop_reverse(i, l_dot_index - 1, (uimax)0))
+						for (loop_reverse(i, 1, l_dot_index))
 						{
 							l_return += (float32)((p_string.get(i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
 						}
@@ -31,7 +31,7 @@ namespace v2
 						{
 							l_return += (float32)((p_string.get(i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
 						}
-						for (loop_reverse(i, l_dot_index - 1, (uimax)-1))
+						for (loop_reverse(i, 0, l_dot_index))
 						{
 							l_return += (float32)((p_string.get(i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
 						}
@@ -87,7 +87,7 @@ namespace v2
 #endif
 			int32 l_char_nb = sprintf(out.Begin, float_string_format_str, p_value);
 #ifdef _MSC_VER
-#pragma warning( pop ) 
+#pragma warning( pop )
 #endif
 
 

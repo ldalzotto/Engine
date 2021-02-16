@@ -39,7 +39,7 @@ namespace v2
 		// allocating and releasing a BufferGPU
 		{
 			Token(BufferGPU) l_buffer_gpu = l_buffer_allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size,
-					(BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
+				(BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
 
 			l_buffer_allocator.write_to_buffergpu(l_buffer_gpu, l_tested_uimax_slice.build_asint8());
 
@@ -191,7 +191,7 @@ namespace v2
 
 	/*
 		Creates a GraphicsPass that only clear input attachments.
-	 	We check that the attachment has well been cleared with the input color.
+		We check that the attachment has well been cleared with the input color.
 	*/
 	inline void gpu_renderpass_clear()
 	{
@@ -205,12 +205,12 @@ namespace v2
 
 
 		RenderPassAttachment l_attachments[2] =
-				{
-						RenderPassAttachment{ AttachmentType::COLOR,
-											  ImageFormat::build_color_2d(v3ui{ 32, 32, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
-						RenderPassAttachment{ AttachmentType::DEPTH,
-											  ImageFormat::build_depth_2d(v3ui{ 32, 32, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
-				};
+		{
+				RenderPassAttachment{ AttachmentType::COLOR,
+									  ImageFormat::build_color_2d(v3ui{ 32, 32, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
+				RenderPassAttachment{ AttachmentType::DEPTH,
+									  ImageFormat::build_depth_2d(v3ui{ 32, 32, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
+		};
 		Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
 
 		color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
@@ -256,15 +256,15 @@ namespace v2
 
 	/*
 		Creates a GraphicsPass with one Shader and draw vertices with Material.
-	 	GraphicsPass :
-	 		* Color and depth attachments
+		GraphicsPass :
+			* Color and depth attachments
 		Shader :
-	 		* Vertex buffer (v3f)
-	 		* Host uniform parameter
-	 		* GPU uniform parameter
-	 		* texture sampler paramter
+			* Vertex buffer (v3f)
+			* Host uniform parameter
+			* GPU uniform parameter
+			* texture sampler paramter
 
-	 	We check that the ouput color is the one awaited and calculated by the Shader.
+		We check that the ouput color is the one awaited and calculated by the Shader.
 	*/
 	inline void gpu_draw()
 	{
@@ -278,11 +278,11 @@ namespace v2
 
 		{
 			RenderPassAttachment l_attachments[2] =
-					{
-							RenderPassAttachment{ AttachmentType::COLOR,
-												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
-							RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{ 4, 4, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
-					};
+			{
+					RenderPassAttachment{ AttachmentType::COLOR,
+										  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
+					RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{ 4, 4, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
+			};
 			Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
 
 
@@ -292,16 +292,16 @@ namespace v2
 			};
 
 			vertex_position l_vertices[6] = {};
-			l_vertices[0] = vertex_position{ v3f{ -1.0f, 1.0f, 0.0f }};
-			l_vertices[1] = vertex_position{ v3f{ 1.0f, -1.0f, 0.0f }};
-			l_vertices[2] = vertex_position{ v3f{ -1.0f, -1.0f, 0.0f }};
-			l_vertices[3] = vertex_position{ v3f{ 0.0f, 0.5f, 0.0f }};
-			l_vertices[4] = vertex_position{ v3f{ 0.5f, 0.0f, 0.0f }};
-			l_vertices[5] = vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }};
+			l_vertices[0] = vertex_position{ v3f{ -1.0f, 1.0f, 0.0f } };
+			l_vertices[1] = vertex_position{ v3f{ 1.0f, -1.0f, 0.0f } };
+			l_vertices[2] = vertex_position{ v3f{ -1.0f, -1.0f, 0.0f } };
+			l_vertices[3] = vertex_position{ v3f{ 0.0f, 0.5f, 0.0f } };
+			l_vertices[4] = vertex_position{ v3f{ 0.5f, 0.0f, 0.0f } };
+			l_vertices[5] = vertex_position{ v3f{ 0.0f, 0.0f, 0.0f } };
 			Slice<vertex_position> l_vertices_slice = Slice<vertex_position>::build_memory_elementnb(l_vertices, 6);
 
 			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
-																																			 (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
+				(BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
 			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
 
 			// Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
@@ -322,35 +322,35 @@ namespace v2
 				l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
 
 				const int8* p_vertex_litteral =
-						MULTILINE(\
-                    #version 450 \n
+					MULTILINE(\
+						#version 450 \n
 
-								layout(location = 0) in vec3 pos; \n
+						layout(location = 0) in vec3 pos; \n
 
-								void main()\n
+						void main()\n
 						{ \n
 								gl_Position = vec4(pos.xyz, 0.5f);\n
 						}\n
-						);
+					);
 
 				const int8* p_fragment_litteral =
-						MULTILINE(\
-                    #version 450\n
+					MULTILINE(\
+						#version 450\n
 
-								struct Color { vec4 _val; }; \n
+						struct Color { vec4 _val; }; \n
 
-								layout(set = 0, binding = 0) uniform color0 { Color _global_color; }; \n
-								layout(set = 1, binding = 0) uniform color { Color _v; }; \n
-								layout(set = 2, binding = 0) uniform color2 { Color _v2; }; \n
-								layout(set = 3, binding = 0) uniform sampler2D texSampler; \n
+						layout(set = 0, binding = 0) uniform color0 { Color _global_color; }; \n
+						layout(set = 1, binding = 0) uniform color { Color _v; }; \n
+						layout(set = 2, binding = 0) uniform color2 { Color _v2; }; \n
+						layout(set = 3, binding = 0) uniform sampler2D texSampler; \n
 
-								layout(location = 0) out vec4 outColor;\n
+						layout(location = 0) out vec4 outColor;\n
 
-								void main()\n
+						void main()\n
 						{ \n
 								outColor = (_global_color._val + _v._val + _v2._val) * texture(texSampler, vec2(0.5f, 0.5f));\n
 						}\n
-						);
+					);
 
 				ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
 				ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
@@ -379,7 +379,7 @@ namespace v2
 				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
 				l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
 				Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
-				l_global_shader_layout =l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
+				l_global_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
 			}
 
 
@@ -390,11 +390,11 @@ namespace v2
 
 
 			Material l_global_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_global_color);
+			l_global_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_global_color);
 
 			Material l_first_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_base_color);
-			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_added_color);
+			l_first_material.add_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_base_color);
+			l_first_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_added_color);
 
 			{
 
@@ -403,7 +403,7 @@ namespace v2
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
+				l_first_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
 				l_colors.free();
 			}
 
@@ -411,8 +411,8 @@ namespace v2
 			color_f l_mat_2_added_color = color_f{ 0.6f, 0.0f, 0.0f };
 
 			Material l_second_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_base_color);
-			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_added_color);
+			l_second_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_base_color);
+			l_second_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_added_color);
 
 			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
@@ -524,7 +524,7 @@ int main()
 	HMODULE mod = GetModuleHandleA("renderdoc.dll");
 
 	pRENDERDOC_GetAPI RENDERDOC_GetAPI =
-			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+		(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
 	int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_0, (void**)&rdoc_api);
 	assert_true(ret == 1);
 #endif

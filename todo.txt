@@ -1,12 +1,5 @@
 
-
-1/ Adding indexed vertex buffer binding
-2/ Updating the render Mesh object to use the indexed buffer binding
-3/ Update the gpu_test to render 4 cubes
-4/ Image output comparison ?
-
-
-5/ Defining precisely what is an "Allocator". The difference between a "Heap" object and an "Allocator" object. (The allocator object include the heap object)
-    1) It simply allocates the dedicated ressource. External ressource token can be stored but they are never allocated or freed.
-       Multi layer allocation is done by a "Composition" methods.
-    * Done for the GraphicsAllocator, still to do for BufferAllocator and the Render.
+1/ Setting correct camera values for the render test
+2/ Image output comparison ?
+3/ Is it possible to simplyfy heap events management ? Or heap ressource dependencies ?
+4/ Defining clearly the Heap and Allocator of BufferAllocator.

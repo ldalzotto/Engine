@@ -1264,6 +1264,13 @@ namespace v2
 			p_graphics_allocator.free_texturegpu(p_buffer_allocator.device, p_texture_gpu);
 		};
 
+		inline static void free_shaderparameter_uniformbufferhost_with_buffer(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator, const Token(ShaderUniformBufferHostParameter) p_parameter)
+		{
+			ShaderUniformBufferHostParameter& l_parameter =	 p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(p_parameter);
+			p_buffer_allocator.free_bufferhost(l_parameter.memory);
+			p_graphics_allocator.free_shaderuniformbufferhost_parameter(p_parameter);
+		};
+
 	};
 
 	struct GraphicsPassReader
@@ -1277,8 +1284,6 @@ namespace v2
 		};
 	};
 
-
-	//TODO -> Having a simple way to retrieve material parameters
 	/*
 		A Material is a convenient way to allocate and access shader parameter buffers.
 		On debug, it also performs runtime verification against the Shader layout.
@@ -1293,18 +1298,23 @@ namespace v2
 
 		void free(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator);
 
-		void add_and_allocate_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
+		void add_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
 
 		template<class ElementType>
-		void add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
+		void add_buffer_host_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
 
-		void add_and_allocate_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
+		Token(BufferHost) get_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index);
+
+		void add_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory);
 
 		template<class ElementType>
-		void add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
+		void add_buffer_gpu_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory);
 
-		void add_and_allocate_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory);
+		Token(BufferGPU) get_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index);
 
+		void add_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory);
+
+		Token(TextureGPU) get_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index);
 	};
 
 	inline Material Material::allocate_empty(GraphicsAllocator2& p_graphics_allocator, const uint32 p_set_index_offset)
@@ -1352,7 +1362,7 @@ namespace v2
 	};
 
 
-	inline void Material::add_and_allocate_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
+	inline void Material::add_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
 	{
 		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).Size;
 
@@ -1378,12 +1388,23 @@ namespace v2
 	};
 
 	template<class ElementType>
-	inline void Material::add_and_allocate_buffer_host_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
+	inline void Material::add_buffer_host_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
 	{
-		this->add_and_allocate_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+		this->add_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
 	};
 
-	inline void Material::add_and_allocate_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
+	inline Token(BufferHost) Material::get_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index)
+	{
+		ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
+
+#if GPU_DEBUG
+		assert_true(l_shader_parameter.type == ShaderParameter::Type::UNIFORM_HOST);
+#endif
+
+		return p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_shader_parameter.uniform_host).memory;
+	};
+
+	inline void Material::add_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
 	{
 		uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).Size;
 
@@ -1410,13 +1431,24 @@ namespace v2
 	};
 
 	template<class ElementType>
-	inline void Material::add_and_allocate_buffer_gpu_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
+	inline void Material::add_buffer_gpu_parameter_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ElementType& p_memory)
 	{
-		this->add_and_allocate_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+		this->add_buffer_gpu_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
+	};
+
+	inline Token(BufferGPU) Material::get_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index)
+	{
+		ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
+
+#if GPU_DEBUG
+		assert_true(l_shader_parameter.type == ShaderParameter::Type::UNIFORM_GPU);
+#endif
+
+		return p_graphics_allocator.heap.shader_uniform_buffer_gpu_parameters.get(l_shader_parameter.uniform_gpu).memory;
 	};
 
 	inline void
-	Material::add_and_allocate_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory)
+	Material::add_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const ImageFormat& p_base_image_format, const Slice<int8>& p_memory)
 	{
 		ImageFormat l_format = p_base_image_format;
 		l_format.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
@@ -1441,6 +1473,17 @@ namespace v2
 						tk_v(l_shader_texture_gpu_parameter)
 				}
 		);
+	};
+
+	inline Token(TextureGPU) Material::get_texture_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index)
+	{
+		ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
+
+#if GPU_DEBUG
+		assert_true(l_shader_parameter.type == ShaderParameter::Type::TEXTURE_GPU);
+#endif
+
+		return p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_parameter.texture_gpu).texture;
 	};
 
 	/*
@@ -1547,6 +1590,13 @@ namespace v2
 #endif
 		};
 
+		//TODO -> adding a simple test for index buffer and draw indexed ?
+		inline void bind_index_buffer_gpu(const BufferGPU& p_index_buffer_gpu, const BufferIndexType p_index_type)
+		{
+			VkDeviceSize l_offset = 0;
+			vkCmdBindIndexBuffer(this->graphics_allocator.graphics_device.command_buffer.command_buffer, p_index_buffer_gpu.buffer, l_offset, (VkIndexType)p_index_type);
+		};
+
 		inline void bind_vertex_buffer_gpu(const BufferGPU& p_vertex_buffer_gpu)
 		{
 			VkDeviceSize l_offset = 0;
@@ -1562,6 +1612,11 @@ namespace v2
 		inline void draw(const uimax p_vertex_count)
 		{
 			vkCmdDraw(this->graphics_allocator.graphics_device.command_buffer.command_buffer, (uint32_t)p_vertex_count, 1, 0, 1);
+		};
+
+		inline void draw_indexed(const uimax p_indices_count)
+		{
+			vkCmdDrawIndexed(this->graphics_allocator.graphics_device.command_buffer.command_buffer, (uint32_t)p_indices_count, 1, 0, 0, 0);
 		};
 
 		inline void draw_offsetted(const uimax p_vertex_count, const uimax p_offset)

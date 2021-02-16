@@ -14,7 +14,7 @@
 #define loop(Iteratorname, BeginNumber, EndNumber) uimax Iteratorname = BeginNumber; Iteratorname < EndNumber; Iteratorname++
 #define loop_int16(Iteratorname, BeginNumber, EndNumber) int16 Iteratorname = BeginNumber; Iteratorname < EndNumber; Iteratorname++
 
-#define loop_reverse(Iteratorname, BeginNumber, EndNumber) uimax Iteratorname = BeginNumber; Iteratorname != EndNumber; --Iteratorname
+#define loop_reverse(Iteratorname, BeginNumber, EndNumber) uimax Iteratorname = EndNumber - 1; Iteratorname != ((uimax)BeginNumber - 1); --Iteratorname
 
 #define vector_loop(VectorVariable, Iteratorname) uimax Iteratorname = 0; Iteratorname < (VectorVariable)->Size; Iteratorname++
 #define vector_loop_reverse(VectorVariable, Iteratorname) uimax Iteratorname = (VectorVariable)->Size - 1; Iteratorname != ((uimax)-1); --Iteratorname

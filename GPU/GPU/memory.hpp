@@ -84,7 +84,14 @@ namespace v2
 		TRANSFER_READ = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		TRANSFER_WRITE = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		UNIFORM = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VERTEX = VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+		VERTEX = VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		INDEX = VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+	};
+
+	enum class BufferIndexType
+	{
+		UINT16 = VkIndexType::VK_INDEX_TYPE_UINT16,
+		UINT32 = VkIndexType::VK_INDEX_TYPE_UINT32
 	};
 
 	typedef VkFlags BufferUsageFlags;

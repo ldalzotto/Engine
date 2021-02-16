@@ -166,6 +166,11 @@ namespace v2
 			{
 				this->pool_of_vector->element_push_back_element(this->index, p_element);
 			};
+
+			inline Slice<ElementType> sv_to_slice()
+			{
+				return this->pool_of_vector->get_vector(this->index);
+			};
 		};
 
 
