@@ -194,7 +194,7 @@ namespace v2
 #if CONTAINER_BOUND_TEST
 			this->bound_check(p_index);
 			this->bound_check(p_index + p_element_nb);
-			this->bound_head_check(p_index); // use vector_pop_back_array
+			this->bound_lastelement_check(p_index); // use vector_pop_back_array
 #endif
 
 			this->move_memory_up(p_index + p_element_nb, p_element_nb);
@@ -207,7 +207,7 @@ namespace v2
 		{
 #if CONTAINER_BOUND_TEST
 			this->bound_check(p_index);
-			this->bound_head_check(p_index); // use vector_pop_back
+			this->bound_lastelement_check(p_index); // use vector_pop_back
 #endif
 
 			this->move_memory_up(p_index + 1, 1);
@@ -234,7 +234,7 @@ namespace v2
 			this->bound_check(p_index);
 #endif
 
-			if (p_index == this->Size)
+			if (p_index == this->Size - 1)
 			{
 				return this->pop_back();
 			}
@@ -265,6 +265,17 @@ namespace v2
 			}
 #endif
 		};
+
+		inline void bound_lastelement_check(const uimax p_index)
+		{
+#if CONTAINER_BOUND_TEST
+			if (p_index == this->Size - 1)
+			{
+				abort();
+			}
+#endif
+		};
+
 
 		inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
 		{
@@ -304,6 +315,7 @@ namespace v2
 #define sv_get_size() get_size()
 #define sv_get(p_index) get(p_index)
 #define sv_erase_element_at(p_index) erase_element_at(p_index)
+#define sv_erase_element_at_always(p_index) erase_element_at_always(p_index)
 #define sv_push_back_element(p_element) push_back_element(p_element)
 #define sv_to_slice() to_slice()
 

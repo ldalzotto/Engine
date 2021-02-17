@@ -43,7 +43,7 @@ namespace v2
 			{
 				if (tk_eq(this->Indices.get(i), p_element))
 				{
-					this->Indices.erase_element_at(i);
+					this->Indices.erase_element_at_always(i);
 					break;
 				}
 			};

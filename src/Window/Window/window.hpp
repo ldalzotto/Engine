@@ -124,7 +124,7 @@ namespace v2
             if (tk_eq(glfw_to_window.get(i).window, p_window))
             {
                 glfwDestroyWindow(glfw_to_window.get(i).glfw_window);
-                glfw_to_window.erase_element_at(i);
+                glfw_to_window.erase_element_at_always(i);
             }
         }
 

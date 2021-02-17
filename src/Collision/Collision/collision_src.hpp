@@ -568,7 +568,7 @@ inline void CollisionDetectionStep::remove_intersectionevents_duplicate(v2::Vect
 
 			if (l_left_intersection_event.equals_intersectionevent(l_right_intersection_event))
 			{
-				in_out_intersection_events->erase_element_at(j);
+				in_out_intersection_events->erase_element_at_always(j);
 			}
 		}
 	}

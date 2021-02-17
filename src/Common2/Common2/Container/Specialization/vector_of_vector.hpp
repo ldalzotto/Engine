@@ -286,6 +286,11 @@ namespace v2
 				this->vectorOfVector->element_erase_element_at(this->Index, p_index);
 			};
 
+			inline void sv_erase_element_at_always(const uimax p_index)
+			{
+				this->vectorOfVector->element_erase_element_at_always(this->Index, p_index);
+			};
+
 			inline void sv_push_back_element(const ElementType& p_index)
 			{
 				this->vectorOfVector->element_push_back_element(this->Index, p_index);

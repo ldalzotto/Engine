@@ -109,7 +109,7 @@ namespace v2
 
 		inline void erase_element_at_always(const uimax p_index)
 		{
-			if (p_index == this->get_size())
+			if (p_index == this->get_size() - 1)
 			{
 				this->pop_back();
 			}

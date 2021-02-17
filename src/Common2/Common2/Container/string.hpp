@@ -92,7 +92,7 @@ namespace v2
 			{
 				if (this->Memory.get(i) == p_int8)
 				{
-					this->Memory.erase_element_at(i);
+					this->Memory.erase_element_at_always(i);
 				}
 			}
 		}

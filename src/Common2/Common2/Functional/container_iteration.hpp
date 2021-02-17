@@ -24,7 +24,7 @@ auto& VectorElementVariableName = (VectorVariable)->get(IteratorName);
 #define vector_erase_if_2_end(VectorVariable, IteratorName, IfConditionVariableName) \
 if ((IfConditionVariableName))\
 {\
-	(VectorVariable)->erase_element_at(IteratorName);\
+	(VectorVariable)->erase_element_at_always(IteratorName);\
 };\
 }
 
@@ -32,7 +32,7 @@ if ((IfConditionVariableName))\
 #define vector_erase_if_2_break_end(VectorVariable, IteratorName, IfConditionVariableName) \
 if ((IfConditionVariableName))\
 {\
-	(VectorVariable)->erase_element_at(IteratorName);\
+	(VectorVariable)->erase_element_at_always(IteratorName);\
 	break; \
 };\
 }

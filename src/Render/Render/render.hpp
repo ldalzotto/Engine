@@ -250,7 +250,7 @@ namespace v2
 		{
 			if (tk_eq(this->heap.shaders_indexed.get(j), p_shader))
 			{
-				this->heap.shaders_indexed.erase_element_at(j);
+				this->heap.shaders_indexed.erase_element_at_always(j);
 				break;
 			}
 		}
@@ -308,7 +308,7 @@ namespace v2
 		{
 			if (tk_eq(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
 			{
-				this->heap.model_update_events.erase_element_at(i);
+				this->heap.model_update_events.erase_element_at_always(i);
 			}
 		}
 

@@ -1115,7 +1115,7 @@ namespace v2
 			if (tk_eq(l_event.source_buffer, p_buffer_gpu))
 			{
 				this->garbage_host_buffers.push_back_element(l_event.target_buffer);
-				this->buffer_gpu_to_host_copy_events.erase_element_at(i);
+				this->buffer_gpu_to_host_copy_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1125,7 +1125,7 @@ namespace v2
 			if (tk_eq(l_event.target_buffer, p_buffer_gpu))
 			{
 				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
-				this->buffer_host_to_gpu_copy_events.erase_element_at(i);
+				this->buffer_host_to_gpu_copy_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1173,7 +1173,7 @@ namespace v2
 			ImageHost_AllocatedEvent& l_event = this->image_host_allocate_events.get(i);
 			if (tk_eq(l_event.image, p_image_host))
 			{
-				this->image_host_allocate_events.erase_element_at(i);
+				this->image_host_allocate_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1208,7 +1208,7 @@ namespace v2
 			if (tk_eq(l_event.source_image, p_image_gpu))
 			{
 				this->garbage_host_images.push_back_element(l_event.target_image);
-				this->image_gpu_to_host_copy_events.erase_element_at(i);
+				this->image_gpu_to_host_copy_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1218,7 +1218,7 @@ namespace v2
 			if (tk_eq(l_event.target_image, p_image_gpu))
 			{
 				this->garbage_host_images.push_back_element(l_event.staging_image);
-				this->image_host_to_gpu_copy_events.erase_element_at(i);
+				this->image_host_to_gpu_copy_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1228,7 +1228,7 @@ namespace v2
 			if (tk_eq(l_event.target_image, p_image_gpu))
 			{
 				this->garbage_host_buffers.push_back_element(l_event.source_buffer);
-				this->buffer_host_to_image_gpu_cpy_event.erase_element_at(i);
+				this->buffer_host_to_image_gpu_cpy_event.erase_element_at_always(i);
 			}
 		}
 
@@ -1238,7 +1238,7 @@ namespace v2
 			if (tk_eq(l_event.source_image, p_image_gpu))
 			{
 				this->garbage_host_buffers.push_back_element(l_event.target_buffer);
-				this->image_gpu_to_buffer_host_copy_events.erase_element_at(i);
+				this->image_gpu_to_buffer_host_copy_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1247,7 +1247,7 @@ namespace v2
 			ImageGPU_AllocatedEvent& l_event = this->image_gpu_allocate_events.get(i);
 			if (tk_eq(l_event.image, p_image_gpu))
 			{
-				this->image_gpu_allocate_events.erase_element_at(i);
+				this->image_gpu_allocate_events.erase_element_at_always(i);
 			}
 		}
 

@@ -415,7 +415,7 @@ namespace v2
 			else if (l_free_chunk.Size == p_size)
 			{
 				*out_return = _push_chunk(p_heap, &l_free_chunk);
-				l_free_chunks.sv_erase_element_at(i);
+				l_free_chunks.sv_erase_element_at_always(i);
 				return 1;
 			}
 		}
@@ -516,7 +516,7 @@ namespace v2
 				if ((l_compared_chunk.Begin + l_compared_chunk.Size) == l_chunk.Begin)
 				{
 					l_compared_chunk.Size += l_chunk.Size;
-					l_free_chunks.sv_erase_element_at(i);
+					l_free_chunks.sv_erase_element_at_always(i);
 					i -= 1;
 				}
 				else
