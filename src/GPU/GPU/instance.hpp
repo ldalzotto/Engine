@@ -147,7 +147,7 @@ namespace v2
         l_extensions = Span<int8*>::allocate(p_required_instance_extensions.Size);
 #endif
 
-        l_extensions.copy_memory(0, p_required_instance_extensions);
+        l_extensions.slice.copy_memory(0, p_required_instance_extensions);
 
 #if GPU_DEBUG
         l_extensions.get(l_extensions.Capacity - 1) = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;

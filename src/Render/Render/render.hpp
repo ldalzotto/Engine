@@ -150,7 +150,7 @@ namespace v2
 		l_heap.shaders_indexed = Vector<Token(ShaderIndex) >::allocate(0);
 		l_heap.shaders_to_materials = PoolOfVector<Token(Material) >::allocate_default();
 		l_heap.material_to_renderable_objects = PoolOfVector<Token(RenderableObject) >::allocate_default();
-		l_heap.model_update_events =Vector<RenderableObject_ModelUpdateEvent>::allocate(0);
+		l_heap.model_update_events = Vector<RenderableObject_ModelUpdateEvent>::allocate(0);
 		return l_heap;
 	};
 
@@ -304,9 +304,9 @@ namespace v2
 
 	inline void D3RendererAllocator::free_renderable_object(const Token(RenderableObject) p_rendereable_object)
 	{
-		for(loop_reverse(i,0, this->heap.model_update_events.Size))
+		for (loop_reverse(i, 0, this->heap.model_update_events.Size))
 		{
-			if(tk_eq(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
+			if (tk_eq(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
 			{
 				this->heap.model_update_events.erase_element_at(i);
 			}
@@ -364,7 +364,8 @@ namespace v2
 		};
 
 		inline static void free_renderable_object_external_ressources(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator,
-				D3RendererAllocator& p_render_allocator,RenderableObject& p_renderable_object) {
+				D3RendererAllocator& p_render_allocator, RenderableObject& p_renderable_object)
+		{
 			GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_allocator, p_graphics_allocator, p_renderable_object.model);
 			free_mesh_with_buffers(p_buffer_allocator, p_render_allocator, p_renderable_object.mesh);
 		};
@@ -416,8 +417,7 @@ namespace v2
 				}
 		};
 
-		v4f l_clears[2] = { v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }};
-		l_step.clear_values = Span<v4f>::allocate_array<2>(l_clears);
+		l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }});
 		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, l_attachments);
 		l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
@@ -518,7 +518,6 @@ namespace v2
 
 					p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
 
-					//TODO -> adding a draw_indexed variant
 					Mesh& l_mesh = this->allocator.heap.meshes.get(l_renderable_object.mesh);
 					p_graphics_binder.bind_vertex_buffer_gpu(p_graphics_binder.buffer_allocator.get_buffergpu(l_mesh.vertices_buffer));
 					p_graphics_binder.bind_index_buffer_gpu(p_graphics_binder.buffer_allocator.get_buffergpu(l_mesh.indices_buffer), BufferIndexType::UINT32);

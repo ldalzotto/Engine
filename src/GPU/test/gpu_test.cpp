@@ -775,6 +775,9 @@ int main()
 	v2::gpu_draw();
 	v2::gpu_depth_compare_test();
 
+	//TODO -> adding a test to check texture uv mapping
+	//TODO -> adding a test for index buffer and draw indexed
+
 	memleak_ckeck();
 };
 

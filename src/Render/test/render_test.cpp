@@ -11,7 +11,6 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 #endif
 
-
 namespace v2
 {
 
@@ -110,15 +109,21 @@ namespace v2
 		ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
 		ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
+		//TODO -> how to make the shader layout creation more simple ?
+		/*
+			Having global Span<ShaderLayoutParameterType> constants to use when building layout ? so that we just describe explicit parameters
+			Moving the 	Span<ShaderLayoutParameterType> to Render constants ?
+		 	Same for ShaderConfigurations ?
+		*/
 		Token(ShaderLayout) l_shader_layout;
 
 		{
-			ShaderLayoutParameterType l_layout_parameter_types[3] = { ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX };
-			Span<ShaderLayoutParameterType> l_layout_parameter_types_span = Span<ShaderLayoutParameterType>::allocate_array<3>(l_layout_parameter_types);
-			ShaderLayout::VertexInputParameter l_layout_verex_input[2] = { ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, 0 },
-																		   ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv) }};
-			Span<ShaderLayout::VertexInputParameter> l_layout_verex_input_span = Span<ShaderLayout::VertexInputParameter>::allocate_array<2>(l_layout_verex_input);
-			l_shader_layout = l_ctx.graphics_allocator.allocate_shader_layout(l_layout_parameter_types_span, l_layout_verex_input_span, sizeof(Vertex));
+			Span<ShaderLayoutParameterType> l_layout_parameter_types = Span<ShaderLayoutParameterType>::allocate_slicen(
+					SliceN<ShaderLayoutParameterType, 3>{ ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX });
+			Span<ShaderLayout::VertexInputParameter> l_layout_verex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(
+					SliceN<ShaderLayout::VertexInputParameter, 2>{ ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, 0 },
+																   ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv) }});
+			l_shader_layout = l_ctx.graphics_allocator.allocate_shader_layout(l_layout_parameter_types, l_layout_verex_input, sizeof(Vertex));
 		}
 
 		Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());

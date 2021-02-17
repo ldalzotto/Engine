@@ -11,7 +11,7 @@ namespace v2
 		assert_true(p_span->Memory == NULL);
 	};
 
-	inline void span_test()
+	inline void slice_span_test()
 	{
 		Span<uimax> l_span_sizet = Span<uimax>::build(NULL, 0);
 
@@ -37,16 +37,16 @@ namespace v2
 			l_span_sizet.get(1) = 5;
 			l_span_sizet.get(3) = 10;
 
-			l_span_sizet.move_memory_down(1, 3, 1);
+			l_span_sizet.slice.move_memory_down(1, 3, 1);
 			assert_true(l_span_sizet.get(4) == 10);
 
-			l_span_sizet.move_memory_up(1, 4, 2);
+			l_span_sizet.slice.move_memory_up(1, 4, 2);
 			assert_true(l_span_sizet.get(2) == 10);
 
 			assert_true(l_span_sizet.get(0) == 3);
 			assert_true(l_span_sizet.get(1) == 5);
 
-			l_span_sizet.move_memory_up(2, 2, 2);
+			l_span_sizet.slice.move_memory_up(2, 2, 2);
 
 			assert_true(l_span_sizet.get(0) == 10);
 			assert_true(l_span_sizet.get(1) == 10);
@@ -315,6 +315,25 @@ namespace v2
 		l_varyingvector.free();
 		l_varyingvector = VaryingVector::allocate_default();
 
+		// erase_element_at_always
+		{
+			for (loop(i, 0, 5))
+			{
+				l_varyingvector.push_back_element(cast(uimax, i));
+			}
+
+			assert_true(l_varyingvector.get_size() == 5);
+			l_varyingvector.erase_element_at_always(2);
+			l_varyingvector.erase_element_at_always(l_varyingvector.get_size() - 1);
+			assert_true(l_varyingvector.get_size() == 3);
+
+			assert_true(*l_varyingvector.get_element_typed<uimax>(1) == 1);
+			assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 3);
+		}
+
+		l_varyingvector.free();
+		l_varyingvector = VaryingVector::allocate_default();
+
 		// varyingvector_erase_array_at
 		{
 			for (loop(i, 0, 5))
@@ -544,6 +563,20 @@ namespace v2
 			}
 		}
 
+		// insert_empty_at
+		{
+			l_vectorofvector_uimax.free();
+			l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
+
+			l_vectorofvector_uimax.push_back();
+			l_vectorofvector_uimax.element_push_back_element(0, 10);
+
+			l_vectorofvector_uimax.insert_empty_at(0);
+
+			assert_true(l_vectorofvector_uimax.varying_vector.get_size() == 2);
+			assert_true(l_vectorofvector_uimax.get_vectorheader(0)->Capacity == 0);
+		}
+
 		{
 			l_vectorofvector_uimax.free();
 			l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
@@ -617,6 +650,40 @@ namespace v2
 			l_shadow.push_back_element(10);
 			assert_true(l_shadow.get_size() == 1);
 			assert_true(l_shadow.get(0) == 10);
+		}
+
+		l_pool_of_vector.free();
+		l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
+
+		// Element_ShadowVector
+		{
+			PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
+			auto l_shadow_vector_0 = l_pool_of_vector.get_element_as_shadow_vector(l_vector_0);
+
+			uimax l_el_0 = 10;
+			uimax l_el_1 = 20;
+
+			assert_true(l_shadow_vector_0.get_size() == 0);
+			l_shadow_vector_0.push_back_element(l_el_0);
+			assert_true(l_shadow_vector_0.get_size() == 1);
+			assert_true(l_shadow_vector_0.get(0) == l_el_0);
+			l_shadow_vector_0.push_back_element(l_el_1);
+			assert_true(l_shadow_vector_0.get_size() == 2);
+			assert_true(l_shadow_vector_0.get(1) == l_el_1);
+
+			PoolOfVectorToken<uimax> l_vector_1 = l_pool_of_vector.alloc_vector();
+			auto l_shadow_vector_1 = l_pool_of_vector.get_element_as_shadow_vector(l_vector_1);
+			l_shadow_vector_1.push_back_element(30);
+			l_shadow_vector_1.push_back_element(40);
+			l_shadow_vector_1.push_back_element(50);
+
+			assert_true(l_shadow_vector_0.get_size() == 2);
+			assert_true(l_shadow_vector_1.get_size() == 3);
+
+			Slice<uimax> l_shadow_vector_0_slice = l_shadow_vector_0.to_slice();
+			assert_true(l_shadow_vector_0_slice.Size == 2);
+			assert_true(l_shadow_vector_0_slice.get(0) == l_el_0);
+			assert_true(l_shadow_vector_0_slice.get(1) == l_el_1);
 		}
 
 		l_pool_of_vector.free();
@@ -1294,7 +1361,7 @@ namespace v2
 
 int main()
 {
-	v2::span_test();
+	v2::slice_span_test();
 	v2::vector_test();
 	v2::pool_test();
 	v2::varyingvector_test();

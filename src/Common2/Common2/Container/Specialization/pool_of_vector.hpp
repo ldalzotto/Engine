@@ -140,8 +140,6 @@ namespace v2
 			this->Memory.element_clear(tk_v(p_token));
 		};
 
-
-		//TODO -> write test
 		struct Element_ShadowVector
 		{
 			PoolOfVector<ElementType>* pool_of_vector;

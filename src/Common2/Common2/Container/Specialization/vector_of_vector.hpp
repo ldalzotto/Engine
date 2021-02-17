@@ -3,14 +3,6 @@
 //TODO delete when common2 migration is complete
 namespace v2
 {
-	/*
-	//TODO
-
-	functions missing :
-		- insert array version of vectorofvector_element_insert_element_at and vectorofvector_element_erase_element_at
-*/
-
-
 
 /*
 	The header of every vector of the VectorOfVector. That indicates the associated memory chunk state.
@@ -34,20 +26,15 @@ namespace v2
 		{
 			Span<int8> l_allocated_element = Span<int8>::allocate(sizeof(VectorOfVector_VectorHeader) + p_vector_slice.Size);
 			VectorOfVector_VectorHeader l_vector_header = build(p_vector_size, p_vector_size);
-			l_allocated_element.copy_memory(0, Slice<VectorOfVector_VectorHeader>::build_asint8_memory_elementnb(&l_vector_header, 1));
-			l_allocated_element.copy_memory(sizeof(l_vector_header), p_vector_slice);
+			l_allocated_element.slice.copy_memory(0, Slice<VectorOfVector_VectorHeader>::build_asint8_memory_elementnb(&l_vector_header, 1));
+			l_allocated_element.slice.copy_memory(sizeof(l_vector_header), p_vector_slice);
 			return l_allocated_element;
-		};
-
-		inline static Span<int8> allocate_0v(const Slice<int8>& p_vector_slice, const uimax p_vector_size)
-		{
-			return allocate(p_vector_slice, p_vector_size);
 		};
 
 		template<class ElementType>
 		inline static Span<int8> allocate_vectorelements(const Slice<ElementType>& p_vector_elements)
 		{
-			return allocate_0v(p_vector_elements.build_asint8(), p_vector_elements.Size);
+			return allocate(p_vector_elements.build_asint8(), p_vector_elements.Size);
 		};
 
 		inline static uimax get_vector_offset()
@@ -63,7 +50,7 @@ namespace v2
 		template<class ElementType>
 		inline Slice<ElementType> get_vector_to_capacity() const
 		{
-			return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, cast(int8*, this) + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
+			return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, cast(int8 * , this) + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
 		};
 	};
 
@@ -78,7 +65,7 @@ namespace v2
 
 		inline static VectorOfVector<ElementType> allocate_default()
 		{
-			return VectorOfVector<ElementType>{VaryingVector::allocate_default()};
+			return VectorOfVector<ElementType>{ VaryingVector::allocate_default() };
 		};
 
 		inline void free()
@@ -89,21 +76,20 @@ namespace v2
 		inline void push_back()
 		{
 			VectorOfVector_VectorHeader l_header = VectorOfVector_VectorHeader::build_default();
-			Slice<int8> l_header_slice = Slice<VectorOfVector_VectorHeader>::build_asint8_memory_elementnb(&l_header, 1);
+			Slice<int8> l_header_slice = Slice<VectorOfVector_VectorHeader>::build_asint8_memory_singleelement(&l_header);
 			this->varying_vector.push_back(l_header_slice);
 		};
 
 		inline void push_back_element(const Slice<ElementType>& p_vector_elements)
 		{
-			Span<int8> l_pushed_memory = VectorOfVector_VectorHeader::allocate_vectorelements(p_vector_elements);
-			this->varying_vector.push_back(l_pushed_memory.slice);
-			l_pushed_memory.free();
+			VectorOfVector_VectorHeader l_header = VectorOfVector_VectorHeader::build(p_vector_elements.Size, p_vector_elements.Size);
+			this->varying_vector.push_back_2(Slice<VectorOfVector_VectorHeader>::build_asint8_memory_singleelement(&l_header), p_vector_elements.build_asint8());
 		};
 
-		//TODO -> add tests :-)
 		inline void insert_empty_at(const uimax p_index)
 		{
-			this->varying_vector.insert_at(Slice<int8>::build(NULL, 0, 1), p_index);
+			VectorOfVector_VectorHeader l_header = VectorOfVector_VectorHeader::build_default();
+			this->varying_vector.insert_at(Slice<VectorOfVector_VectorHeader>::build_asint8_memory_singleelement(&l_header), p_index);
 		};
 
 		inline void erase_element_at(const uimax p_index)
@@ -111,7 +97,6 @@ namespace v2
 			this->varying_vector.erase_element_at(p_index);
 		};
 
-		//TODO -> add tests :-)
 		inline void erase_element_at_always(const uimax p_index)
 		{
 			this->varying_vector.erase_element_at_always(p_index);
@@ -122,8 +107,8 @@ namespace v2
 			Slice<int8> l_element = this->varying_vector.get_element(p_index);
 			VectorOfVector_VectorHeader* l_header = cast(VectorOfVector_VectorHeader*, l_element.Begin);
 			return Slice<ElementType>::build_memory_elementnb(
-				cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin),
-				l_header->Size
+					cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin),
+					l_header->Size
 			);
 		};
 
@@ -139,8 +124,8 @@ namespace v2
 			if (l_vector_header->Size + 1 > l_vector_header->Capacity)
 			{
 				this->varying_vector.element_expand_with_value(
-					p_nested_vector_index,
-					Slice<ElementType>::build_asint8_memory_elementnb(&p_element, 1)
+						p_nested_vector_index,
+						Slice<ElementType>::build_asint8_memory_elementnb(&p_element, 1)
 				);
 
 				// /!\ because we potentially reallocate the p_vector_of_vector, we nee to requery for the VectorOfVector_VectorHeader
@@ -163,8 +148,8 @@ namespace v2
 			if (l_vector_header->Size == l_vector_header->Capacity)
 			{
 				this->varying_vector.element_expand_with_value(
-					p_nested_vector_index,
-					p_elements.build_asint8()
+						p_nested_vector_index,
+						p_elements.build_asint8()
 				);
 
 				l_vector_header = this->get_vectorheader(p_nested_vector_index);
@@ -179,8 +164,8 @@ namespace v2
 				this->element_write_array(p_nested_vector_index, l_vector_header->Size, Slice<ElementType>::build_memory_elementnb(p_elements.Begin, l_write_element_nb));
 
 				this->varying_vector.element_expand_with_value(
-					p_nested_vector_index,
-					Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin + l_write_element_nb, l_expand_element_nb)
+						p_nested_vector_index,
+						Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin + l_write_element_nb, l_expand_element_nb)
 				);
 
 				l_vector_header = this->get_vectorheader(p_nested_vector_index);
@@ -226,8 +211,10 @@ namespace v2
 			VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
 
 #if CONTAINER_BOUND_TEST
-			if (p_index == l_vector_header->Size) { abort(); } //use vectorofvector_element_pop_back_element
-			if (p_index > l_vector_header->Size) { abort(); }
+			if (p_index == l_vector_header->Size)
+			{ abort(); } //use vectorofvector_element_pop_back_element
+			if (p_index > l_vector_header->Size)
+			{ abort(); }
 #endif
 			this->element_erase_element_at_unchecked(p_nested_vector_index, p_index, l_vector_header);
 		};
@@ -248,7 +235,8 @@ namespace v2
 		{
 			VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
 #if CONTAINER_BOUND_TEST
-			if (p_index >= l_vector_header->Size) { abort(); }
+			if (p_index >= l_vector_header->Size)
+			{ abort(); }
 #endif
 			if (p_index < l_vector_header->Size - 1)
 			{
@@ -279,7 +267,7 @@ namespace v2
 			inline static Element_ShadowVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
 			{
 				return Element_ShadowVector{
-					p_vector_of_vector, p_index
+						p_vector_of_vector, p_index
 				};
 			};
 
@@ -316,67 +304,67 @@ namespace v2
 
 	private:
 		inline void element_movememory_up(const uimax p_nested_vector_index, const VectorOfVector_VectorHeader& p_nested_vector_header,
-			const uimax p_break_index, const uimax p_move_delta)
+				const uimax p_break_index, const uimax p_move_delta)
 		{
 			Slice<int8> l_source =
-				p_nested_vector_header.get_vector_to_capacity<ElementType>()
-				.slide_rv(p_break_index)
-				.build_asint8();
+					p_nested_vector_header.get_vector_to_capacity<ElementType>()
+							.slide_rv(p_break_index)
+							.build_asint8();
 
 			this->varying_vector.element_movememory(
-				p_nested_vector_index,
-				VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index - p_move_delta, sizeof(ElementType)),
-				l_source
+					p_nested_vector_index,
+					VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index - p_move_delta, sizeof(ElementType)),
+					l_source
 			);
 		};
 
 		inline void element_movememory_down(const uimax p_nested_vector_index, const VectorOfVector_VectorHeader& p_nested_vector_header,
-			const uimax p_break_index, const uimax p_move_delta)
+				const uimax p_break_index, const uimax p_move_delta)
 		{
 			Slice<int8> l_source =
-				p_nested_vector_header.get_vector_to_capacity<ElementType>()
-				.slide_rv(p_break_index)
-				.build_asint8();
+					p_nested_vector_header.get_vector_to_capacity<ElementType>()
+							.slide_rv(p_break_index)
+							.build_asint8();
 
 			this->varying_vector.element_movememory(
-				p_nested_vector_index,
-				VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index + p_move_delta, sizeof(ElementType)),
-				l_source
+					p_nested_vector_index,
+					VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index + p_move_delta, sizeof(ElementType)),
+					l_source
 			);
 		};
 
 		inline void element_movememory_down_and_resize(const uimax p_nested_vector_index, const VectorOfVector_VectorHeader& p_nested_vector_header,
-			const uimax p_break_index, const uimax p_move_delta)
+				const uimax p_break_index, const uimax p_move_delta)
 		{
 			Slice<int8> l_source =
-				p_nested_vector_header.get_vector_to_capacity<ElementType>()
-				.slide_rv(p_break_index)
-				.build_asint8();
+					p_nested_vector_header.get_vector_to_capacity<ElementType>()
+							.slide_rv(p_break_index)
+							.build_asint8();
 
 			this->varying_vector.element_expand(p_nested_vector_index, VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index + p_move_delta, sizeof(ElementType)) + l_source.Size);
 
 			this->varying_vector.element_movememory(
-				p_nested_vector_index,
-				VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index + p_move_delta, sizeof(ElementType)),
-				l_source
+					p_nested_vector_index,
+					VectorOfVector_VectorHeader::get_vector_element_offset(p_break_index + p_move_delta, sizeof(ElementType)),
+					l_source
 			);
 		};
 
 		inline void element_write_element(const uimax p_nested_vector_index, const uimax p_write_start_index, const ElementType& p_element)
 		{
 			this->varying_vector.element_writeto(
-				p_nested_vector_index,
-				VectorOfVector_VectorHeader::get_vector_element_offset(p_write_start_index, sizeof(ElementType)),
-				Slice<ElementType>::build_asint8_memory_singleelement(&p_element)
+					p_nested_vector_index,
+					VectorOfVector_VectorHeader::get_vector_element_offset(p_write_start_index, sizeof(ElementType)),
+					Slice<ElementType>::build_asint8_memory_singleelement(&p_element)
 			);
 		};
 
 		inline void element_write_array(const uimax p_nested_vector_index, const uimax p_write_start_index, const Slice<ElementType>& p_elements)
 		{
 			this->varying_vector.element_writeto(
-				p_nested_vector_index,
-				VectorOfVector_VectorHeader::get_vector_element_offset(p_write_start_index, sizeof(ElementType)),
-				Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin, p_elements.Size)
+					p_nested_vector_index,
+					VectorOfVector_VectorHeader::get_vector_element_offset(p_write_start_index, sizeof(ElementType)),
+					Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin, p_elements.Size)
 			);
 		};
 
@@ -390,8 +378,6 @@ namespace v2
 		{
 			p_vector_header->Size -= 1;
 		};
-
-
 
 
 	};

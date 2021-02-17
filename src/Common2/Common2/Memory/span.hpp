@@ -27,11 +27,19 @@ struct Span
 		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType))) };
 	};
 
-	template<uint8 Capacity_t>
-	inline static Span<ElementType> allocate_array(const ElementType p_elements[Capacity_t])
+	//TODO -> write test :)
+	inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
 	{
-		Span<ElementType> l_span = Span<ElementType>::allocate(Capacity_t);
-		slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements, Capacity_t));
+		Span<ElementType> l_span = Span<ElementType>::allocate(p_elements.Size);
+		slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements.Begin, p_elements.Size));
+		return l_span;
+	};
+
+	template<uint32 Size_t>
+	inline static Span<ElementType> allocate_slicen(const SliceN<ElementType, Size_t>& p_elements)
+	{
+		Span<ElementType> l_span = Span<ElementType>::allocate(Size_t);
+		slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements.Memory, Size_t));
 		return l_span;
 	};
 
@@ -101,57 +109,6 @@ struct Span
 		*this = Span<ElementType>::build(NULL, 0);
 	};
 
-	inline void bound_inside_check(const Slice<ElementType>& p_tested_slice)
-	{
-#if CONTAINER_BOUND_TEST
-		if ((p_tested_slice.Begin + p_tested_slice.Size) > (this->Memory + this->Capacity))
-		{
-			abort();
-		}
-#endif
-	};
-
-
-	inline void bound_check(const uimax p_index)
-	{
-#if CONTAINER_BOUND_TEST
-		if (p_index > this->Capacity)
-		{
-			abort();
-		}
-#endif
-	};
-
-	inline void move_memory_down(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
-	{
-		Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Memory, p_break_index + p_move_delta, p_moved_block_size);
-#if CONTAINER_BOUND_TEST
-		this->bound_inside_check(l_target);
-#endif
-		Slice<ElementType> l_source = Slice<ElementType>::build(this->Memory, p_break_index, p_break_index + p_moved_block_size);
-		slice_memmove(l_target, l_source);
-	};
-
-	inline void move_memory_up(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
-	{
-		Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Memory, p_break_index - p_move_delta, p_moved_block_size);
-#if CONTAINER_BOUND_TEST
-		this->bound_inside_check(l_target);
-#endif
-		Slice<ElementType> l_source = Slice<ElementType>::build(this->Memory, p_break_index, p_break_index + p_moved_block_size);
-		slice_memmove(l_target, l_source);
-	};
-
-	inline void copy_memory(const uimax p_copy_index, const Slice<ElementType>& p_elements)
-	{
-		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Memory + p_copy_index, p_elements.Size);
-
-#if CONTAINER_BOUND_TEST
-		this->bound_inside_check(l_target);
-#endif
-
-		slice_memcpy(l_target, p_elements);
-	};
 };
 
 

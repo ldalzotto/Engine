@@ -116,8 +116,17 @@ namespace v2
 		inline int8 push_back_array(const Slice<ElementType>& p_elements)
 		{
 			this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
-			this->Memory.copy_memory(this->Size, p_elements);
+			this->Memory.slice.copy_memory(this->Size, p_elements);
 			this->Size += p_elements.Size;
+
+			return 1;
+		};
+
+		inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
+		{
+			this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
+			this->Memory.slice.copy_memory_2(this->Size, p_elements_0, p_elements_1);
+			this->Size += (p_elements_0.Size + p_elements_1.Size);
 
 			return 1;
 		};
@@ -185,7 +194,7 @@ namespace v2
 #if CONTAINER_BOUND_TEST
 			this->bound_check(p_index);
 			this->bound_check(p_index + p_element_nb);
-			this->bound_head_check(p_index); // use vector_pop_back_array //TODO -> create a "always" variant of vector_erase_array_at
+			this->bound_head_check(p_index); // use vector_pop_back_array
 #endif
 
 			this->move_memory_up(p_index + p_element_nb, p_element_nb);
@@ -257,15 +266,14 @@ namespace v2
 #endif
 		};
 
-
 		inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
 		{
-			this->Memory.move_memory_down(this->Size - p_break_index, p_break_index, p_move_delta);
+			this->Memory.slice.move_memory_down(this->Size - p_break_index, p_break_index, p_move_delta);
 		};
 
 		inline void move_memory_up(const uimax p_break_index, const uimax p_move_delta)
 		{
-			this->Memory.move_memory_up(this->Size - p_break_index, p_break_index, p_move_delta);
+			this->Memory.slice.move_memory_up(this->Size - p_break_index, p_break_index, p_move_delta);
 		};
 
 		inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
@@ -282,7 +290,7 @@ namespace v2
 		{
 			this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
 			this->move_memory_down(p_index, p_elements.Size);
-			this->Memory.copy_memory(p_index, p_elements);
+			this->Memory.slice.copy_memory(p_index, p_elements);
 
 			this->Size += p_elements.Size;
 

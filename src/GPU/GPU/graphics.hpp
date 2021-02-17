@@ -122,6 +122,7 @@ namespace v2
 	{
 		RenderPass_t render_pass;
 
+		//TODO Replace p_attachements by SliceN
 		template<uint8 AttachmentCount>
 		static RenderPass allocate(const GraphicsDevice& p_device, const RenderPassAttachment p_attachments[AttachmentCount]);
 
@@ -671,7 +672,7 @@ namespace v2
 
 #if GPU_DEBUG
 		l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
-		l_graphics_pass.attachement_layout.copy_memory(0, Slice<RenderPassAttachment>::build_memory_elementnb((RenderPassAttachment*)p_render_pass_attachments, AttachmentCount));
+		l_graphics_pass.attachement_layout.slice.copy_memory(0, Slice<RenderPassAttachment>::build_memory_elementnb((RenderPassAttachment*)p_render_pass_attachments, AttachmentCount));
 #endif
 		vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 
@@ -1580,7 +1581,6 @@ namespace v2
 #endif
 		};
 
-		//TODO -> adding a simple test for index buffer and draw indexed ?
 		inline void bind_index_buffer_gpu(const BufferGPU& p_index_buffer_gpu, const BufferIndexType p_index_type)
 		{
 			VkDeviceSize l_offset = 0;

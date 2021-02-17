@@ -16,7 +16,7 @@ namespace v2
 		Memory_t memory;
 		Chunks_t chunks;
 
-		inline static  VaryingVector build(const Memory_t& p_memory, const Chunks_t& p_chunks)
+		inline static VaryingVector build(const Memory_t& p_memory, const Chunks_t& p_chunks)
 		{
 			return VaryingVector{ p_memory, p_chunks };
 		};
@@ -50,6 +50,13 @@ namespace v2
 			this->chunks.push_back_element(l_chunk);
 		};
 
+		inline void push_back_2(const Slice<int8>& p_bytes_1, const Slice<int8>& p_bytes_2)
+		{
+			SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_bytes_1.Size + p_bytes_2.Size);
+			this->memory.push_back_array_2(p_bytes_1, p_bytes_2);
+			this->chunks.push_back_element(l_chunk);
+		};
+
 		inline void push_back_empty(const uimax p_slice_size)
 		{
 			SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_slice_size);
@@ -66,7 +73,7 @@ namespace v2
 		inline void pop_back()
 		{
 			this->memory.pop_back_array(
-				this->chunks.get(this->chunks.Size - 1).Size
+					this->chunks.get(this->chunks.Size - 1).Size
 			);
 			this->chunks.pop_back();
 		};
@@ -88,8 +95,8 @@ namespace v2
 
 			SliceIndex& l_chunk = this->chunks.get(p_index);
 			this->memory.erase_array_at(
-				l_chunk.Begin,
-				l_chunk.Size
+					l_chunk.Begin,
+					l_chunk.Size
 			);
 
 			for (loop(i, p_index, this->chunks.Size))
@@ -100,10 +107,9 @@ namespace v2
 			this->chunks.erase_element_at(p_index);
 		};
 
-		//TODO add test :-)
 		inline void erase_element_at_always(const uimax p_index)
 		{
-			if(p_index == this->get_size())
+			if (p_index == this->get_size())
 			{
 				this->pop_back();
 			}
@@ -126,8 +132,8 @@ namespace v2
 			l_removed_chunk.Begin = l_first_chunk.Begin;
 
 			this->memory.erase_array_at(
-				l_removed_chunk.Begin,
-				l_removed_chunk.Size
+					l_removed_chunk.Begin,
+					l_removed_chunk.Size
 			);
 
 			for (loop(i, p_index + p_element_nb, this->chunks.Size))
@@ -137,7 +143,6 @@ namespace v2
 
 			this->chunks.erase_array_at(p_index, p_element_nb);
 		};
-
 
 
 		inline void element_expand(const uimax p_index, const uimax p_expansion_size)
@@ -220,9 +225,9 @@ namespace v2
 		{
 			SliceIndex& l_chunk = this->chunks.get(p_index);
 			return Slice<int8>::build_memory_offset_elementnb(
-				this->memory.get_memory(),
-				l_chunk.Begin,
-				l_chunk.Size
+					this->memory.get_memory(),
+					l_chunk.Begin,
+					l_chunk.Size
 			);
 		};
 
@@ -234,7 +239,7 @@ namespace v2
 		template<class ElementType>
 		inline ElementType* get_element_typed(const uimax p_index)
 		{
-			return  slice_cast_singleelement<ElementType>(this->get_element(p_index));
+			return slice_cast_singleelement<ElementType>(this->get_element(p_index));
 		};
 
 	};

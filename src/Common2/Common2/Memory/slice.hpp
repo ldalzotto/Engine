@@ -11,51 +11,48 @@ struct Slice
 
 	inline static Slice<ElementType> build_default()
 	{
-		return Slice<ElementType>{0, NULL};
+		return Slice<ElementType>{ 0, NULL };
 	};
 
 	inline static Slice<ElementType> build(ElementType* p_memory, const uimax p_begin, const uimax p_end)
 	{
-		return Slice<ElementType>{p_end - p_begin, p_memory + p_begin};
+		return Slice<ElementType>{ p_end - p_begin, p_memory + p_begin };
 	};
 
 	inline static Slice<ElementType> build_memory_elementnb(ElementType* p_memory, const uimax p_element_nb)
 	{
-		return Slice<ElementType>{p_element_nb, p_memory};
+		return Slice<ElementType>{ p_element_nb, p_memory };
 	};
 
 	inline static Slice<ElementType> build_memory_offset_elementnb(ElementType* p_memory, const uimax p_offset, const uimax p_element_nb)
 	{
-		return Slice<ElementType>{p_element_nb, p_memory + p_offset};
+		return Slice<ElementType>{ p_element_nb, p_memory + p_offset };
 	};
 
 	inline static Slice<int8> build_asint8(ElementType* p_memory, const uimax p_begin, const uimax p_end)
 	{
-		return Slice<int8>{sizeof(ElementType)* (p_end - p_begin), cast(int8*, (p_memory + p_begin))};
+		return Slice<int8>{ sizeof(ElementType) * (p_end - p_begin), cast(int8*, (p_memory + p_begin)) };
 	};
 
 	inline Slice<int8> build_asint8() const
 	{
-		return Slice<int8>{sizeof(ElementType)* this->Size, cast(int8*, this->Begin)};
+		return Slice<int8>{ sizeof(ElementType) * this->Size, cast(int8*, this->Begin) };
 	};
 
 	inline static Slice<int8> build_asint8_memory_elementnb(const ElementType* p_memory, const uimax p_element_nb)
 	{
-		return Slice<int8>{sizeof(ElementType)* p_element_nb, cast(int8*, p_memory)};
+		return Slice<int8>{ sizeof(ElementType) * p_element_nb, cast(int8*, p_memory) };
 	};
 
 	inline static Slice<int8> build_asint8_memory_singleelement(const ElementType* p_memory)
 	{
-		return Slice<int8>{sizeof(ElementType), cast(int8*, p_memory)};
+		return Slice<int8>{ sizeof(ElementType), cast(int8*, p_memory) };
 	};
 
 	inline ElementType& get(const uimax p_index)
 	{
 #if CONTAINER_BOUND_TEST
-		if (p_index >= this->Size)
-		{
-			abort();
-		}
+		this->bound_check(p_index);
 #endif
 		return this->Begin[p_index];
 	};
@@ -68,10 +65,7 @@ struct Slice
 	inline void slide(const uimax p_offset_index)
 	{
 #if CONTAINER_BOUND_TEST
-		if (p_offset_index > this->Size)
-		{
-			abort();
-		};
+		this->bound_check(p_offset_index);
 #endif
 
 		this->Begin = this->Begin + p_offset_index;
@@ -93,6 +87,77 @@ struct Slice
 	inline int8 find(const Slice<ElementType>& p_other, uimax* out_index) const
 	{
 		return slice_memfind(*this, p_other, out_index);
+	};
+
+	inline void move_memory_down(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
+	{
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Begin, p_break_index + p_move_delta, p_moved_block_size);
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		Slice<ElementType> l_source = Slice<ElementType>::build(this->Begin, p_break_index, p_break_index + p_moved_block_size);
+		slice_memmove(l_target, l_source);
+	};
+
+	inline void move_memory_up(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
+	{
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Begin, p_break_index - p_move_delta, p_moved_block_size);
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		Slice<ElementType> l_source = Slice<ElementType>::build(this->Begin, p_break_index, p_break_index + p_moved_block_size);
+		slice_memmove(l_target, l_source);
+	};
+
+	inline void copy_memory(const uimax p_copy_index, const Slice<ElementType>& p_elements)
+	{
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements.Size);
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+
+		slice_memcpy(l_target, p_elements);
+	};
+
+	//TODO -> write test :)
+	inline void copy_memory_2(const uimax p_copy_index, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
+	{
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements_1.Size);
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		slice_memcpy(l_target, p_elements_1);
+
+		l_target.slide(p_elements_1.Size);
+		l_target.Size = p_elements_2.Size;
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		slice_memcpy(l_target, p_elements_2);
+	};
+
+	inline void bound_inside_check(const Slice<ElementType>& p_tested_slice)
+	{
+#if CONTAINER_BOUND_TEST
+		if ((p_tested_slice.Begin + p_tested_slice.Size) > (this->Begin + this->Size))
+		{
+			abort();
+		}
+#endif
+	};
+
+
+	inline void bound_check(const uimax p_index)
+	{
+#if CONTAINER_BOUND_TEST
+		if (p_index > this->Size)
+		{
+			abort();
+		}
+#endif
 	};
 };
 
@@ -146,9 +211,6 @@ inline Slice<CastedType> slice_cast_fixedelementnb(const Slice<int8>& p_slice, c
 #else
 #define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice
 #endif
-
-
-
 
 
 template<class ElementType>
@@ -208,6 +270,18 @@ inline int8 slice_memfind(const Slice<ElementType>& p_target, const Slice<Elemen
 	return 0;
 };
 
+template<class ElementType, uint32 Size_t>
+struct SliceN
+{
+	ElementType Memory[Size_t];
+
+	//TODO -> write test :)
+	inline Slice<ElementType> to_slice()
+	{
+		return Slice<ElementType>{ Size_t, this->Memory };
+	};
+};
+
 /*
 	A SliceIndex is just a begin and end uimax
 */
@@ -242,12 +316,12 @@ struct SliceOffset
 
 	inline static SliceOffset<ElementType> build(ElementType* p_memory, const uimax p_offset)
 	{
-		return SliceOffset<ElementType> {p_offset, p_memory	};
+		return SliceOffset<ElementType>{ p_offset, p_memory };
 	};
 
 	inline static SliceOffset<ElementType> build_from_sliceindex(ElementType* p_memory, const SliceIndex& p_slice_index)
 	{
-		return SliceOffset<ElementType> {p_slice_index.Begin, p_memory};
+		return SliceOffset<ElementType>{ p_slice_index.Begin, p_memory };
 	};
 
 };
