@@ -1,5 +1,5 @@
 
-#include "glslang/Include/glslang_c_interface.h"
+#include "../../../ThirdParty/glslang/glslang/Include/glslang_c_interface.h"
 
 #ifdef GPU_DEBUG
 #define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) (ShaderCompiledPtr)->handle_error((ShaderPtr), Code)
@@ -7,7 +7,7 @@
 #define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) Code
 #endif
 
-#include "glslang/Include/ResourceLimits.h"
+#include "../../../ThirdParty/glslang/glslang/Include/ResourceLimits.h"
 
 static TBuiltInResource InitResources()
 {

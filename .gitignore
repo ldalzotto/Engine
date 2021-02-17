@@ -11,9 +11,7 @@ build
 cmake-build-debug
 cmake-build-release
 
-ThirdParty/GLFW
-ThirdParty/glslang
-ThirdParty/vulkan
+ThirdParty
 
 Assets/**/*.db
 Assets/**/*.json
