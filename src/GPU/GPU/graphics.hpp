@@ -585,43 +585,33 @@ namespace v2
 
 		for (loop(i, 0, AttachmentCount))
 		{
+
+			VkAttachmentDescription& l_attachment_description = l_attachments.get(i);
+			l_attachment_description = VkAttachmentDescription{};
+			l_attachment_description.format = p_attachments[i].image_format.format;
+			l_attachment_description.samples = p_attachments[i].image_format.samples;
+			l_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+			l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+			l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+			l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+			l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+			l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments[i].image_format.imageUsage);
+
 			switch (p_attachments[i].type)
 			{
 			case AttachmentType::COLOR:
 			{
-				VkAttachmentDescription& l_color_attachment = l_attachments.get(i);
-				l_color_attachment = VkAttachmentDescription{};
-				l_color_attachment.format = p_attachments[i].image_format.format;
-				l_color_attachment.samples = p_attachments[i].image_format.samples;
-				l_color_attachment.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-				l_color_attachment.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				l_color_attachment.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-				l_color_attachment.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				l_color_attachment.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-				l_color_attachment.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
 				VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
 				l_attachment_reference.attachment = (uint32)i;
-				l_attachment_reference.layout = l_color_attachment.finalLayout;
+				l_attachment_reference.layout = l_attachment_description.finalLayout;
 				l_color_attachments_ref_count += 1;
 			}
 				break;
 			case AttachmentType::DEPTH:
 			{
-				VkAttachmentDescription& l_color_attachment = l_attachments.get(i);
-				l_color_attachment = VkAttachmentDescription{};
-				l_color_attachment.format = p_attachments[i].image_format.format;
-				l_color_attachment.samples = p_attachments[i].image_format.samples;
-				l_color_attachment.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-				l_color_attachment.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				l_color_attachment.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-				l_color_attachment.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-				l_color_attachment.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-				l_color_attachment.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 				l_depth_attachment_reference = VkAttachmentReference{};
 				l_depth_attachment_reference.attachment = (uint32)i;
-				l_depth_attachment_reference.layout = l_color_attachment.finalLayout;
+				l_depth_attachment_reference.layout = l_attachment_description.finalLayout;
 				l_subpass.pDepthStencilAttachment = &l_depth_attachment_reference;
 			}
 				break;

@@ -957,7 +957,7 @@ namespace v2
 		}
 		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
 		{
-			return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
 		{
@@ -996,6 +996,10 @@ namespace v2
 			return 5;
 		}
 
+			/*
+			  This is very importtant to have the Transfer conditions after the other because a usage can be (SOMETHING | TRANSFER).
+			  In that case, we want to return the index linked to "SOMETHING" usage.
+			*/
 		else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ)
 		{
 			return 1;

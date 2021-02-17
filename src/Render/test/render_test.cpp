@@ -5,7 +5,7 @@
 
 #ifdef RENDER_DOC_DEBUG
 
-#include "TestCommon/renderdoc_app.h"
+#include "renderdoc_app.h"
 
 RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
@@ -28,7 +28,7 @@ namespace v2
 		Token(RenderableObject) l_renderable_object =
 				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
-		l_renderer.heap().push_modeupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object, m44f_const::IDENTITY });
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object, m44f_const::IDENTITY });
 
 		l_renderer.buffer_step(l_ctx);
 
@@ -48,7 +48,7 @@ namespace v2
 		Token(RenderableObject) l_renderable_object2 =
 				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
-		l_renderer.heap().push_modeupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object2, m44f_const::IDENTITY });
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object2, m44f_const::IDENTITY });
 
 		assert_true(l_renderer.heap().model_update_events.Size == 1);
 
@@ -130,7 +130,7 @@ namespace v2
 
 		ShaderAllocateInfo l_shader_allocate_info{
 				l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
-				ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
+				ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual },
 				l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
 				l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
 				l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module)
@@ -225,13 +225,30 @@ namespace v2
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 		}
 
+		m44f l_model = m44f::trs(v3f{ 2.0f, 0.0f, 0.0f }, m33f_const::IDENTITY, v3f_const::ONE);
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_obj_1, l_model });
+		l_model = m44f::trs(v3f{ -2.0f, 0.0f, 0.0f }, m33f_const::IDENTITY, v3f_const::ONE);
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_obj_2, l_model });
+		l_model = m44f::trs(v3f{ 0.0f, 2.0f, 0.0f }, m33f_const::IDENTITY, v3f_const::ONE);
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_obj_3, l_model });
+		l_model = m44f::trs(v3f{ 0.0f, -2.0f, 0.0f }, m33f_const::IDENTITY, v3f_const::ONE);
+		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_obj_4, l_model });
+
 		l_renderer.heap().link_material_with_renderable_object(l_red_material_token, l_obj_1);
 		l_renderer.heap().link_material_with_renderable_object(l_red_material_token, l_obj_2);
 		l_renderer.heap().link_material_with_renderable_object(l_green_material_token, l_obj_3);
 		l_renderer.heap().link_material_with_renderable_object(l_green_material_token, l_obj_4);
 
 
-		l_renderer.color_step.set_camera(l_ctx, Camera{ m44f_const::IDENTITY, m44f_const::IDENTITY });
+		{
+			quat l_camera_rotation = quat{ -0.106073f, 0.867209f, -0.283699f, -0.395236f };
+			m33f l_camera_rotation_axis = l_camera_rotation.to_axis();
+			m44f l_view = m44f::view(v3f{ 5.0f, 5.0f, 5.0f }, l_camera_rotation_axis.Forward, l_camera_rotation_axis.Up);
+			m44f l_projection = m44f::perspective(45.0f, 1.0f, 1.0f, 30.0f);
+			l_renderer.color_step.set_camera(l_ctx, Camera{ l_view, l_projection });
+		}
+
+
 		l_renderer.buffer_step(l_ctx);
 
 

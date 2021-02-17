@@ -69,7 +69,7 @@ namespace v2
 
 		PoolOfVector<Token(RenderableObject) >::Element_ShadowVector get_renderableobjects_from_material(const Token(Material) p_material);
 
-		void push_modeupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent);
+		void push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent);
 	};
 
 	struct D3RendererAllocator
@@ -207,7 +207,7 @@ namespace v2
 		return this->material_to_renderable_objects.get_element_as_shadow_vector(tk_bf(Slice<Token(RenderableObject)>, p_material));
 	};
 
-	inline void D3RendererHeap::push_modeupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
+	inline void D3RendererHeap::push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
 	{
 		this->model_update_events.push_back_element(p_modelupdateevent);
 	};
@@ -416,7 +416,7 @@ namespace v2
 				}
 		};
 
-		v4f l_clears[2] = { v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 0.0f, 0.0f, 0.0f, 0.0f }};
+		v4f l_clears[2] = { v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }};
 		l_step.clear_values = Span<v4f>::allocate_array<2>(l_clears);
 		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, l_attachments);
 		l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);

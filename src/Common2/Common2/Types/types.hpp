@@ -19,3 +19,4 @@ typedef long double float128;
 typedef size_t uimax;
 
 const uint8 uint8_max = UCHAR_MAX;
+const uint16 uint16_max = USHRT_MAX;
