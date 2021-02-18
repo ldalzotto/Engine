@@ -93,7 +93,7 @@ namespace v2
 	struct GPUContext
 	{
 		GPUInstance instance;
-		BufferAllocator buffer_allocator;
+		BufferMemory buffer_memory;
 		GraphicsAllocator2 graphics_allocator;
 
 		Semafore execution_semaphore;
@@ -102,7 +102,7 @@ namespace v2
 		{
 			GPUContext l_context;
 			l_context.instance = GPUInstance::allocate(Slice<int8*>::build_default());
-			l_context.buffer_allocator = BufferAllocator::allocate_default(l_context.instance);
+			l_context.buffer_memory = BufferMemory::allocate(l_context.instance);
 			l_context.graphics_allocator = GraphicsAllocator2::allocate_default(l_context.instance);
 			l_context.execution_semaphore = Semafore::allocate(l_context.instance.logical_device);
 			return l_context;
@@ -112,21 +112,21 @@ namespace v2
 		{
 			this->execution_semaphore.free(this->instance.logical_device);
 			this->graphics_allocator.free();
-			this->buffer_allocator.free();
+			this->buffer_memory.free();
 			this->instance.free();
 		};
 
 
 		inline void buffer_step_and_submit()
 		{
-			this->buffer_allocator.step();
-			this->buffer_allocator.device.command_buffer.submit_and_notity(this->execution_semaphore);
+			BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
+			this->buffer_memory.allocator.device.command_buffer.submit_and_notity(this->execution_semaphore);
 		};
 
 
 		inline GraphicsBinder creates_graphics_binder()
 		{
-			GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_allocator, this->graphics_allocator);
+			GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_memory.allocator, this->graphics_allocator);
 			l_binder.start();
 			return l_binder;
 		};

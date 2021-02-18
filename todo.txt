@@ -1,4 +1,3 @@
 
 2/ Image output comparison ?
 3/ Is it possible to simplify heap events management ? Or heap ressource dependencies ?
-4/ Defining clearly the Heap and Allocator of BufferAllocator.

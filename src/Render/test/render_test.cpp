@@ -25,7 +25,7 @@ namespace v2
 		Slice<uint32> l_test_indices = Slice<uint32>::build_memory_elementnb(l_indices, 2);
 
 		Token(RenderableObject) l_renderable_object =
-				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator,
+				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
 		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object, m44f_const::IDENTITY });
 
@@ -37,7 +37,7 @@ namespace v2
 		l_ctx.wait_for_completion();
 
 		assert_true(
-				l_ctx.buffer_allocator.get_bufferhost(
+				l_ctx.buffer_memory.allocator.host_buffers.get(
 						l_ctx.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderer.allocator.heap.renderable_objects.get(l_renderable_object).model).memory
 				).get_mapped_memory().compare(
 						Slice<m44f>::build_asint8_memory_singleelement(&m44f_const::IDENTITY)
@@ -45,17 +45,17 @@ namespace v2
 		);
 
 		Token(RenderableObject) l_renderable_object2 =
-				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator,
+				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
 		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object2, m44f_const::IDENTITY });
 
 		assert_true(l_renderer.heap().model_update_events.Size == 1);
 
-		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object2);
+		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object2);
 
 		assert_true(l_renderer.heap().model_update_events.Size == 0);
 
-		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object);
+		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object);
 
 		l_renderer.free(l_ctx);
 		l_ctx.free();
@@ -146,11 +146,11 @@ namespace v2
 
 
 		Material l_red_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_red_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
+		l_red_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
 				v3f{ 1.0f, 0.0f, 0.0f });
 
 		Material l_green_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_green_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
+		l_green_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
 				v3f{ 0.0f, 1.0f, 0.0f });
 
 		Token(Material) l_red_material_token = l_renderer.allocator.allocate_material(l_red_material);
@@ -220,13 +220,13 @@ namespace v2
 					4, 6, 9,
 					11, 13, 7
 			};
-			l_obj_1 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_1 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_2 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_2 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_3 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_3 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_4 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_4 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 		}
 
@@ -259,7 +259,7 @@ namespace v2
 
 		l_ctx.buffer_step_and_submit();
 
-		GraphicsBinder l_binder = GraphicsBinder::build(l_ctx.buffer_allocator, l_ctx.graphics_allocator);
+		GraphicsBinder l_binder = GraphicsBinder::build(l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator);
 		l_binder.start();
 		l_renderer.graphics_step(l_binder);
 		l_binder.end();
@@ -268,7 +268,7 @@ namespace v2
 		l_ctx.wait_for_completion();
 
 
-		D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_allocator, l_ctx.graphics_allocator, l_renderer.allocator, l_shader);
+		D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_shader);
 
 		l_ctx.graphics_allocator.free_shader_layout(l_shader_layout);
 		l_ctx.graphics_allocator.free_shader_module(l_vertex_shader_module);

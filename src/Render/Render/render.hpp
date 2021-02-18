@@ -318,58 +318,58 @@ namespace v2
 	struct D3RendererAllocatorComposition
 	{
 
-		inline static Token(Mesh) allocate_mesh_with_buffers(BufferAllocator& p_buffer_allocator, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
+		inline static Token(Mesh) allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
 		{
 			Mesh l_mesh;
 			Slice<int8> l_initial_vertices_binary = p_initial_vertices.build_asint8();
-			l_mesh.vertices_buffer = p_buffer_allocator.allocate_buffergpu(l_initial_vertices_binary.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
-			p_buffer_allocator.write_to_buffergpu(l_mesh.vertices_buffer, l_initial_vertices_binary);
+			l_mesh.vertices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_vertices_binary.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+			BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.vertices_buffer, l_initial_vertices_binary);
 
 			Slice<int8> l_initial_indices_binary = p_initial_indices.build_asint8();
-			l_mesh.indices_buffer = p_buffer_allocator.allocate_buffergpu(l_initial_indices_binary.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
-			p_buffer_allocator.write_to_buffergpu(l_mesh.indices_buffer, l_initial_indices_binary);
+			l_mesh.indices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_indices_binary.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+			BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.indices_buffer, l_initial_indices_binary);
 
 			l_mesh.indices_count = p_initial_indices.Size;
 
 			return p_render_allocator.allocate_mesh(l_mesh);
 		};
 
-		inline static void free_mesh_with_buffers(BufferAllocator& p_buffer_allocator, D3RendererAllocator& p_render_allocator, const Token(Mesh) p_mesh)
+		inline static void free_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Token(Mesh) p_mesh)
 		{
 			Mesh& l_mesh = p_render_allocator.heap.meshes.get(p_mesh);
-			p_buffer_allocator.free_buffergpu(l_mesh.vertices_buffer);
-			p_buffer_allocator.free_buffergpu(l_mesh.indices_buffer);
+			BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.vertices_buffer);
+			BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.indices_buffer);
 			p_render_allocator.free_mesh(p_mesh);
 		};
 
-		inline static Token(RenderableObject) allocate_renderable_object_with_mesh(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator,
+		inline static Token(RenderableObject) allocate_renderable_object_with_mesh(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
 		{
 			RenderableObject l_renderable_object;
-			l_renderable_object.mesh = allocate_mesh_with_buffers(p_buffer_allocator, p_render_allocator, p_initial_vertices, p_initial_indices);
+			l_renderable_object.mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
 
-			Token(BufferHost) l_buffer = p_buffer_allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
-			l_renderable_object.model = p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, l_buffer, p_buffer_allocator.get_bufferhost(l_buffer));
+			Token(BufferHost) l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
+			l_renderable_object.model = p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, l_buffer, p_buffer_memory.allocator.host_buffers.get(l_buffer));
 
 			return p_render_allocator.allocate_renderable_object(l_renderable_object);
 		};
 
-		inline static void free_renderable_object_with_mesh(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator,
+		inline static void free_renderable_object_with_mesh(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(RenderableObject) p_renderable_object)
 		{
 			RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
-			free_renderable_object_external_ressources(p_buffer_allocator, p_graphics_allocator, p_render_allocator, l_renderable_object);
+			free_renderable_object_external_ressources(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_object);
 			p_render_allocator.free_renderable_object(p_renderable_object);
 		};
 
-		inline static void free_renderable_object_external_ressources(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator,
+		inline static void free_renderable_object_external_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, RenderableObject& p_renderable_object)
 		{
-			GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_allocator, p_graphics_allocator, p_renderable_object.model);
-			free_mesh_with_buffers(p_buffer_allocator, p_render_allocator, p_renderable_object.mesh);
+			GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, p_renderable_object.model);
+			free_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_renderable_object.mesh);
 		};
 
-		inline static void free_shader_recursively_with_gpu_ressources(BufferAllocator& p_buffer_allocator, GraphicsAllocator2& p_graphics_allocator,
+		inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(ShaderIndex) p_shader)
 		{
 			Vector<Token(Material) > l_materials = Vector<Token(Material) >::allocate(0);
@@ -380,12 +380,12 @@ namespace v2
 			for (loop(i, 0, l_materials.Size))
 			{
 				Material& l_material = p_render_allocator.heap.materials.get(l_materials.get(i));
-				l_material.free(p_graphics_allocator, p_buffer_allocator);
+				l_material.free(p_graphics_allocator, p_buffer_memory);
 			}
 
 			for (loop(i, 0, l_renderable_objects.Size))
 			{
-				free_renderable_object_external_ressources(p_buffer_allocator, p_graphics_allocator, p_render_allocator, p_render_allocator.heap.renderable_objects.get(l_renderable_objects.get(i)));
+				free_renderable_object_external_ressources(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_allocator.heap.renderable_objects.get(l_renderable_objects.get(i)));
 			}
 
 			p_graphics_allocator.free_shader(p_render_allocator.heap.shaders.get(p_shader).shader_index);
@@ -416,13 +416,13 @@ namespace v2
 				}
 		};
 
-		l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }});
-		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, l_attachments);
+		l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{ v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }});
+		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
 		l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
 		Camera l_empty_camera{};
 		l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
-		l_step.global_material.add_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_allocator,
+		l_step.global_material.add_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
 				p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
 
 		return l_step;
@@ -432,13 +432,13 @@ namespace v2
 	{
 		this->clear_values.free();
 		p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
-		GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_allocator, p_gpu_context.graphics_allocator, this->pass);
-		this->global_material.free(p_gpu_context.graphics_allocator, p_gpu_context.buffer_allocator);
+		GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
+		this->global_material.free(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
 	};
 
 	inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
 	{
-		slice_memcpy(p_gpu_context.buffer_allocator.get_bufferhost(
+		slice_memcpy(p_gpu_context.buffer_memory.allocator.host_buffers.get(
 				p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(
 						p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
 				).memory
@@ -474,7 +474,7 @@ namespace v2
 
 
 			Slice<int8>& l_mapped_memory =
-					p_gpu_context.buffer_allocator.get_bufferhost(
+					p_gpu_context.buffer_memory.allocator.host_buffers.get(
 							p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(
 									this->allocator.heap.renderable_objects.get(l_event.renderable_object).model
 							).memory).get_mapped_memory();
@@ -518,8 +518,8 @@ namespace v2
 					p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
 
 					Mesh& l_mesh = this->allocator.heap.meshes.get(l_renderable_object.mesh);
-					p_graphics_binder.bind_vertex_buffer_gpu(p_graphics_binder.buffer_allocator.get_buffergpu(l_mesh.vertices_buffer));
-					p_graphics_binder.bind_index_buffer_gpu(p_graphics_binder.buffer_allocator.get_buffergpu(l_mesh.indices_buffer), BufferIndexType::UINT32);
+					p_graphics_binder.bind_vertex_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.vertices_buffer));
+					p_graphics_binder.bind_index_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.indices_buffer), BufferIndexType::UINT32);
 					p_graphics_binder.draw_indexed(l_mesh.indices_count);
 
 					p_graphics_binder.pop_shaderbufferhost_parameter();
