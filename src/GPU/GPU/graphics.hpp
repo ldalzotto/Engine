@@ -822,15 +822,12 @@ namespace v2
 		l_multisample_state.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
 
 
-		uimax l_vertex_input_total_size = 0;
 		for (loop(i, 0, l_vertex_input_attributes.Capacity))
 		{
 			const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = p_shader_allocate_info.shader_layout.vertex_input_layout.get(i);
 			l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{
-					(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_total_size
+					(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset
 			};
-
-			l_vertex_input_total_size += l_vertex_input_parameter.offset;
 		}
 
 		VkVertexInputBindingDescription l_vertex_input_binding{ 0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size,

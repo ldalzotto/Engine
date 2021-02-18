@@ -291,18 +291,19 @@ namespace v2
 				v3f position;
 			};
 
-			vertex_position l_vertices[6] = {};
-			l_vertices[0] = vertex_position{ v3f{ -1.0f, 1.0f, 0.0f }};
-			l_vertices[1] = vertex_position{ v3f{ 1.0f, -1.0f, 0.0f }};
-			l_vertices[2] = vertex_position{ v3f{ -1.0f, -1.0f, 0.0f }};
-			l_vertices[3] = vertex_position{ v3f{ 0.0f, 0.5f, 0.0f }};
-			l_vertices[4] = vertex_position{ v3f{ 0.5f, 0.0f, 0.0f }};
-			l_vertices[5] = vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }};
-			Slice<vertex_position> l_vertices_slice = Slice<vertex_position>::build_memory_elementnb(l_vertices, 6);
+			SliceN<vertex_position, 6> l_vertices = {
+					vertex_position{ v3f{ -1.0f, 1.0f, 0.0f }},
+					vertex_position{ v3f{ 1.0f, -1.0f, 0.0f }},
+					vertex_position{ v3f{ -1.0f, -1.0f, 0.0f }},
+					vertex_position{ v3f{ 0.0f, 0.5f, 0.0f }},
+					vertex_position{ v3f{ 0.5f, 0.0f, 0.0f }},
+					vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }}
+			};
 
-			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
-																																			 (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
+			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																				  (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ |
+																																				  (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices.to_slice().build_asint8());
 
 			// Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -552,18 +553,19 @@ namespace v2
 				v3f position;
 			};
 
-			vertex_position l_vertices[6] = {};
-			l_vertices[0] = vertex_position{ v3f{ -1.0f, 1.0f, 0.0f }};
-			l_vertices[1] = vertex_position{ v3f{ 1.0f, -1.0f, 0.0f }};
-			l_vertices[2] = vertex_position{ v3f{ -1.0f, -1.0f, 0.0f }};
-			l_vertices[3] = vertex_position{ v3f{ 0.0f, 0.5f, 0.1f }};
-			l_vertices[4] = vertex_position{ v3f{ 0.5f, 0.0f, 0.1f }};
-			l_vertices[5] = vertex_position{ v3f{ -0.5f, -0.5f, 0.1f }};
-			Slice<vertex_position> l_vertices_slice = Slice<vertex_position>::build_memory_elementnb(l_vertices, 6);
+			SliceN<vertex_position, 6> l_vertices = {
+					vertex_position{ v3f{ -1.0f, 1.0f, 0.0f }},
+					vertex_position{ v3f{ 1.0f, -1.0f, 0.0f }},
+					vertex_position{ v3f{ -1.0f, -1.0f, 0.0f }},
+					vertex_position{ v3f{ 0.0f, 0.5f, 0.1f }},
+					vertex_position{ v3f{ 0.5f, 0.0f, 0.1f }},
+					vertex_position{ v3f{ -0.5f, -0.5f, 0.1f }}
+			};
 
-			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
-																																			 (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices_slice.build_asint8());
+			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																				  (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ |
+																																				  (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices.to_slice().build_asint8());
 
 			// Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -754,7 +756,408 @@ namespace v2
 		l_gpu_context.free();
 	};
 
+	/*
+		Creates a GraphicsPass with one Shader and draw vertices with depth comparison.
+		GraphicsPass :
+			* Color and depth attachments
+		Shader :
+			* Vertex buffer (v3f)
+			* Index buffer (uint32)
 
+		We check that the indexed mesh is well written in the color attachment.
+	*/
+	inline void gpu_draw_indexed()
+	{
+		GPUContext l_gpu_context = GPUContext::allocate();
+		BufferAllocator& l_buffer_allocator = l_gpu_context.buffer_allocator;
+		GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
+
+		{
+			RenderPassAttachment l_attachments[2] =
+					{
+							RenderPassAttachment{ AttachmentType::COLOR,
+												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
+							RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{ 4, 4, 1 }, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
+					};
+			Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
+
+
+			struct vertex_position
+			{
+				v3f position;
+			};
+
+			SliceN<vertex_position, 4> l_vertices = {
+					vertex_position{ v3f{ 0.0f, 0.5f, 0.0f }},
+					vertex_position{ v3f{ 0.5f, 0.0f, 0.0f }},
+					vertex_position{ v3f{ 0.0f, 0.0f, 0.0f }},
+					vertex_position{ v3f{ 0.5f, 0.5f, 0.0f }}
+			};
+			SliceN<uint32, 6> l_indices = {
+					0, 1, 2,
+					0, 3, 1
+			};
+
+			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																				  (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ |
+																																				  (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices.to_slice().build_asint8());
+
+			Token(BufferGPU) l_indices_buffer = l_buffer_allocator.allocate_buffergpu(l_indices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																				  (BufferUsageFlags)BufferUsageFlag::INDEX));
+			l_buffer_allocator.write_to_buffergpu(l_indices_buffer, l_indices.to_slice().build_asint8());
+
+			Token(Shader) l_first_shader;
+			Token(ShaderLayout) l_first_shader_layout;
+			Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+			{
+				Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
+				l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position) };
+
+				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(0);
+
+				l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
+
+				const int8* p_vertex_litteral =
+						MULTILINE(\
+                        #version 450 \n
+
+								layout(location = 0) in vec3 pos; \n
+
+								void main()\n
+						{ \n
+								gl_Position = vec4(pos.xyz, 0.5f);\n
+						}\n
+						);
+
+				const int8* p_fragment_litteral =
+						MULTILINE(\
+                        #version 450\n
+								layout(location = 0) out vec4 outColor;\n
+
+								void main()\n
+						{ \n
+								outColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n
+						}\n
+						);
+
+				ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+				ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+
+
+				l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
+				l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
+
+				l_vertex_shader_compiled.free();
+				l_fragment_shader_compiled.free();
+
+				ShaderAllocateInfo l_shader_allocate_info{
+						l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass),
+						ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
+						l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout),
+						l_graphics_allocator.heap.shader_modules.get(l_vertex_first_shader_module),
+						l_graphics_allocator.heap.shader_modules.get(l_fragment_first_shader_module)
+				};
+
+				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
+			}
+
+
+			color l_clear_color = color{ 0, 0, 0, 0 };
+
+			{
+				v4f l_clear_values[2];
+				l_clear_values[0] = l_clear_color.to_color_f();
+				l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+				l_gpu_context.buffer_step_and_submit();
+
+				GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+
+				l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+
+				l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
+
+				l_graphics_binder.bind_index_buffer_gpu(l_buffer_allocator.get_buffergpu(l_indices_buffer), BufferIndexType::UINT32);
+				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
+				l_graphics_binder.draw_indexed(l_indices.Size());
+
+				l_graphics_binder.end_render_pass();
+
+				l_gpu_context.submit_graphics_binder(l_graphics_binder);
+			}
+
+			{
+				l_gpu_context.wait_for_completion();
+			}
+
+
+			Token(BufferHost) l_color_attachment_value = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
+			{
+				l_buffer_allocator.step();
+				l_buffer_allocator.device.command_buffer.submit();
+				l_buffer_allocator.device.command_buffer.wait_for_completion();
+			}
+			Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_bufferhost(l_color_attachment_value).get_mapped_memory());
+
+			color l_white = color{ uint8_max, uint8_max, uint8_max, uint8_max };
+
+			assert_true(l_color_attachment_value_pixels.get(0) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(1) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(2) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(3) == l_clear_color);
+
+			assert_true(l_color_attachment_value_pixels.get(4) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(5) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(6) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(7) == l_clear_color);
+
+			assert_true(l_color_attachment_value_pixels.get(8) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(9) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(10) == l_white);
+			assert_true(l_color_attachment_value_pixels.get(11) == l_white);
+
+			assert_true(l_color_attachment_value_pixels.get(12) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(13) == l_clear_color);
+			assert_true(l_color_attachment_value_pixels.get(14) == l_white);
+			assert_true(l_color_attachment_value_pixels.get(15) == l_white);
+
+
+			l_buffer_allocator.free_bufferhost(l_color_attachment_value);
+
+			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
+			l_buffer_allocator.free_buffergpu(l_indices_buffer);
+
+			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
+			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
+
+			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
+
+			l_graphics_allocator.free_shader(l_first_shader);
+			GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_allocator, l_graphics_allocator, l_graphics_pass);
+		}
+
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
+
+		l_gpu_context.free();
+	};
+
+	/*
+		Creates a GraphicsPass with one Shader and draw vertices with depth comparison.
+		GraphicsPass :
+			* Color and depth attachments
+		Shader :
+			* Vertex buffer (v3f + v2f)
+			* Texture parameter
+
+	 	We draw a quad and check that the texture is correctly sampled
+	*/
+	inline void gpu_texture_mapping()
+	{
+		GPUContext l_gpu_context = GPUContext::allocate();
+		BufferAllocator& l_buffer_allocator = l_gpu_context.buffer_allocator;
+		GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
+
+		{
+			v3ui l_render_extends = v3ui{ 16, 16, 1 };
+
+			RenderPassAttachment l_attachments[2] =
+					{
+							RenderPassAttachment{ AttachmentType::COLOR,
+												  ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
+							RenderPassAttachment{ AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) }
+					};
+			Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_allocator, l_graphics_allocator, l_attachments);
+
+
+			struct vertex
+			{
+				v3f position;
+				v2f uv;
+			};
+
+			SliceN<vertex, 6> l_vertices = {
+					vertex{ v3f{ -0.5f, 0.5f, 0.0f }, v2f{ 0.0f, 1.0f }},
+					vertex{ v3f{ 0.5f, -0.5f, 0.0f }, v2f{ 1.0f, 0.0f }},
+					vertex{ v3f{ -0.5f, -0.5f, 0.0f }, v2f{ 0.0f, 0.0f }},
+					vertex{ v3f{ -0.5f, 0.5f, 0.0f }, v2f{ 0.0f, 1.0f }},
+					vertex{ v3f{ 0.5f, 0.5f, 0.0f }, v2f{ 1.0f, 1.0f }},
+					vertex{ v3f{ 0.5f, -0.5f, 0.0f }, v2f{ 1.0f, 0.0f }}
+			};
+
+			Token(BufferGPU) l_vertex_buffer = l_buffer_allocator.allocate_buffergpu(l_vertices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE |
+																																				  (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ |
+																																				  (BufferUsageFlags)BufferUsageFlag::VERTEX));
+			l_buffer_allocator.write_to_buffergpu(l_vertex_buffer, l_vertices.to_slice().build_asint8());
+
+
+			/*
+			Token(TextureGPU) l_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(l_buffer_allocator, l_graphics_allocator,
+					ImageFormat::build_color_2d(l_render_extends,
+							(ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)));
+
+			Token(ImageGPU) l_texture_image = l_graphics_allocator.heap.textures_gpu.get(l_texture).Image;
+			*/
+
+			Span<color> l_texture_pixels = Span<color>::allocate(l_render_extends.x * l_render_extends.y);
+			for (loop(i, 0, l_texture_pixels.Capacity))
+			{
+				l_texture_pixels.get(i) = (color_f{ (float32)i, (float32)i, (float32)i, (float32)i } * (1.0f / l_texture_pixels.Capacity)).to_uint8_color();
+			}
+
+			// l_buffer_allocator.write_to_imagegpu(l_texture_image, l_buffer_allocator.get_imagegpu(l_texture_image), l_texture_pixels.slice.build_asint8());
+
+			Token(Shader) l_first_shader;
+			Token(ShaderLayout) l_first_shader_layout;
+			Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+			{
+				Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(
+						SliceN<ShaderLayout::VertexInputParameter, 2>{
+								ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position) },
+								ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv) }
+						}
+				);
+
+				Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate_slicen(
+						SliceN<ShaderLayoutParameterType, 1>
+								{
+										ShaderLayoutParameterType::TEXTURE_FRAGMENT
+								}
+				);
+
+				l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
+
+				const int8* p_vertex_litteral =
+						MULTILINE(\
+                        #version 450 \n
+
+								layout(location = 0) in vec3 pos; \n
+								layout(location = 1) in vec2 uv; \n
+
+								layout(location = 0) out vec2 out_uv;\n
+
+								void main()\n
+						{ \n
+								out_uv = uv;\n
+								gl_Position = vec4(pos.xyz, 0.5f);\n
+						}\n
+						);
+
+				const int8* p_fragment_litteral =
+						MULTILINE(\
+                        #version 450\n
+
+								layout(location = 0) in vec2 in_uv;\n
+
+								layout(location = 0) out vec4 outColor;\n
+
+								layout(set = 0, binding = 0) uniform sampler2D texSampler; \n
+
+								void main()\n
+						{ \n
+								outColor = texture(texSampler, in_uv);\n
+						}\n
+						);
+
+				ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+				ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+
+
+				l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
+				l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
+
+				l_vertex_shader_compiled.free();
+				l_fragment_shader_compiled.free();
+
+				ShaderAllocateInfo l_shader_allocate_info{
+						l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass),
+						ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::GreaterOrEqual },
+						l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout),
+						l_graphics_allocator.heap.shader_modules.get(l_vertex_first_shader_module),
+						l_graphics_allocator.heap.shader_modules.get(l_fragment_first_shader_module)
+				};
+
+				l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
+			}
+
+			Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
+			l_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments[0].image_format, l_texture_pixels.slice.build_asint8());
+
+			color l_clear_color = color{ 0, 0, 0, 0 };
+
+			{
+				v4f l_clear_values[2];
+				l_clear_values[0] = l_clear_color.to_color_f();
+				l_clear_values[1] = v4f{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+				l_gpu_context.buffer_step_and_submit();
+
+				GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+
+				l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+
+				l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
+
+				l_graphics_binder.bind_material(l_material);
+
+				l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_allocator.get_buffergpu(l_vertex_buffer));
+				l_graphics_binder.draw(l_vertices.Size());
+
+				l_graphics_binder.pop_material_bind(l_material);
+
+				l_graphics_binder.end_render_pass();
+
+				l_gpu_context.submit_graphics_binder(l_graphics_binder);
+			}
+
+			{
+				l_gpu_context.wait_for_completion();
+			}
+
+
+			Token(BufferHost) l_color_attachment_value = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_allocator, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
+			{
+				l_buffer_allocator.step();
+				l_buffer_allocator.device.command_buffer.submit();
+				l_buffer_allocator.device.command_buffer.wait_for_completion();
+			}
+			Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_allocator.get_bufferhost(l_color_attachment_value).get_mapped_memory());
+
+			assert_true(l_color_attachment_value_pixels.compare(l_texture_pixels.slice));
+
+			l_buffer_allocator.free_bufferhost(l_color_attachment_value);
+
+			l_buffer_allocator.free_buffergpu(l_vertex_buffer);
+
+			l_material.free(l_graphics_allocator, l_buffer_allocator);
+
+			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
+			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
+
+			l_graphics_allocator.free_shader_layout(l_first_shader_layout);
+
+			l_graphics_allocator.free_shader(l_first_shader);
+			GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_allocator, l_graphics_allocator, l_graphics_pass);
+
+			l_texture_pixels.free();
+		}
+
+#ifdef RENDER_DOC_DEBUG
+		rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+#endif
+
+		l_gpu_context.free();
+	};
 }
 
 
@@ -774,9 +1177,8 @@ int main()
 	v2::gpu_renderpass_clear();
 	v2::gpu_draw();
 	v2::gpu_depth_compare_test();
-
-	//TODO -> adding a test to check texture uv mapping
-	//TODO -> adding a test for index buffer and draw indexed
+	v2::gpu_draw_indexed();
+	v2::gpu_texture_mapping();
 
 	memleak_ckeck();
 };

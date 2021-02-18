@@ -278,6 +278,10 @@ struct SliceN
 	{
 		return Slice<ElementType>{ Size_t, this->Memory };
 	};
+
+	inline uimax Size(){
+		return Size_t;
+	};
 };
 
 /*
