@@ -1,6 +1,5 @@
 #pragma once
 
-
 namespace v2
 {
 	struct HeapPagedGPU

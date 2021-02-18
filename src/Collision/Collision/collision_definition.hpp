@@ -43,17 +43,17 @@ struct TriggerEvent
 */
 struct ColliderDetector
 {
-	v2::PoolOfVectorToken<TriggerEvent> collision_events;
+	PoolOfVectorToken<TriggerEvent> collision_events;
 
-	static ColliderDetector build(const v2::PoolOfVectorToken<TriggerEvent> p_collidsion_events);
+	static ColliderDetector build(const PoolOfVectorToken<TriggerEvent> p_collidsion_events);
 };
 
 struct CollisionHeap2
 {
-	v2::PoolIndexed<BoxCollider> box_colliders;
-	v2::Pool<Token(ColliderDetector)> box_colliders_to_collider_detector;
-	v2::PoolIndexed<ColliderDetector> collider_detectors;
-	v2::PoolOfVector<TriggerEvent> collider_detectors_events_2;
+	PoolIndexed<BoxCollider> box_colliders;
+	Pool<Token(ColliderDetector)> box_colliders_to_collider_detector;
+	PoolIndexed<ColliderDetector> collider_detectors;
+	PoolOfVector<TriggerEvent> collider_detectors_events_2;
 
 	static CollisionHeap2 allocate_default();
 	void free();
@@ -99,20 +99,20 @@ struct CollisionDetectionStep
 		inline static CollisionDetectorDeletionEvent build(const Token(BoxCollider) p_box_collider, const Token(ColliderDetector) p_collider_detector);
 	};
 
-	v2::Vector<Token(BoxCollider)> in_colliders_disabled;
-	v2::Vector<Token(BoxCollider)> in_colliders_processed;
+	Vector<Token(BoxCollider)> in_colliders_disabled;
+	Vector<Token(BoxCollider)> in_colliders_processed;
 
-	v2::Vector<Token(BoxCollider)> deleted_colliders_from_last_step;
-	v2::Vector<CollisionDetectorDeletionEvent> deleted_collider_detectors_from_last_step;
+	Vector<Token(BoxCollider)> deleted_colliders_from_last_step;
+	Vector<CollisionDetectorDeletionEvent> deleted_collider_detectors_from_last_step;
 
-	v2::Vector<IntersectionEvent> currentstep_enter_intersection_events;
-	v2::Vector<IntersectionEvent> currentstep_exit_intersection_events;
+	Vector<IntersectionEvent> currentstep_enter_intersection_events;
+	Vector<IntersectionEvent> currentstep_exit_intersection_events;
 
-	v2::Vector<IntersectionEvent> is_waitingfor_trigger_stay_detector;
-	v2::Vector<IntersectionEvent> is_waitingfor_trigger_none_detector;
+	Vector<IntersectionEvent> is_waitingfor_trigger_stay_detector;
+	Vector<IntersectionEvent> is_waitingfor_trigger_none_detector;
 
-	v2::Vector<IntersectionEvent> is_waitingfor_trigger_stay_nextframe_detector;
-	v2::Vector<IntersectionEvent> is_waitingfor_trigger_none_nextframe_detector;
+	Vector<IntersectionEvent> is_waitingfor_trigger_stay_nextframe_detector;
+	Vector<IntersectionEvent> is_waitingfor_trigger_none_nextframe_detector;
 
 	inline static CollisionDetectionStep allocate();
 	inline void free(CollisionHeap2& p_collision_heap);
@@ -159,7 +159,7 @@ private:
 	inline void process_deleted_colliders(CollisionHeap2& p_collision_heap);
 	inline void process_input_colliders(CollisionHeap2& p_collision_heap);
 
-	inline void remove_intersectionevents_duplicate(v2::Vector<IntersectionEvent>* in_out_intersection_events);
+	inline void remove_intersectionevents_duplicate(Vector<IntersectionEvent>* in_out_intersection_events);
 
 	/*
 		Previous step may push the same intersection events. Because a collider detector and it's related box collider may have moved, so they both generate the same intersection event.

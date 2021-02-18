@@ -261,7 +261,7 @@ inline float32 v3f::angle_unsigned_normalized(const v3f& p_end_normalized) const
 inline int8 v3f::anglesign(const v3f& p_end, const v3f& p_ref_axis) const
 {
 	float32 l_dot = this->cross(p_end).dot(p_ref_axis);
-	return l_dot >= v2::Limits::tol_f ? 1 : -1;
+	return l_dot >= Limits::tol_f ? 1 : -1;
 };
 
 inline v3f v3f::rotate(const quat& p_rotation) const
@@ -297,17 +297,17 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 #endif
 
 	float32 l_costtheta = this->dot(p_to);
-	if (l_costtheta >= v2::Math_const::one_f - v2::Limits::tol_f)
+	if (l_costtheta >= v2::Math_const::one_f - Limits::tol_f)
 	{
 		return quat_const::IDENTITY;
 	}
 
 	v3f l_rotation_axis;
 
-	if (l_costtheta < -v2::Math_const::one_f + v2::Limits::tol_f)
+	if (l_costtheta < -v2::Math_const::one_f + Limits::tol_f)
 	{
 		l_rotation_axis = v3f_const::FORWARD.cross(*this);
-		if (l_rotation_axis.length() < v2::Limits::tol_f)
+		if (l_rotation_axis.length() < Limits::tol_f)
 		{
 			l_rotation_axis = v3f_const::RIGHT.cross(*this);
 		}

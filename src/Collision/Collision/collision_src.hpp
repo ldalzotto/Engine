@@ -21,7 +21,7 @@ inline TriggerEvent TriggerEvent::build(const Token(BoxCollider) p_other, const 
 };
 
 
-inline ColliderDetector ColliderDetector::build(const v2::PoolOfVectorToken<TriggerEvent> p_collidsion_events)
+inline ColliderDetector ColliderDetector::build(const PoolOfVectorToken<TriggerEvent> p_collidsion_events)
 {
 	return ColliderDetector{ p_collidsion_events };
 };
@@ -31,10 +31,10 @@ inline ColliderDetector ColliderDetector::build(const v2::PoolOfVectorToken<Trig
 inline CollisionHeap2 CollisionHeap2::allocate_default()
 {
 	return CollisionHeap2{
-		v2::PoolIndexed<BoxCollider>::allocate_default(),
-		v2::Pool<Token(ColliderDetector)>::allocate(0),
-		v2::PoolIndexed<ColliderDetector>::allocate_default(),
-		v2::PoolOfVector<TriggerEvent>::allocate_default()
+		PoolIndexed<BoxCollider>::allocate_default(),
+		Pool<Token(ColliderDetector)>::allocate(0),
+		PoolIndexed<ColliderDetector>::allocate_default(),
+		PoolOfVector<TriggerEvent>::allocate_default()
 	};
 };
 
@@ -61,7 +61,7 @@ inline Token(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const T
 	assert_true(!this->does_boxcollider_have_colliderdetector(p_box_collider));
 #endif
 
-	v2::PoolOfVectorToken<TriggerEvent> l_trigger_events = this->collider_detectors_events_2.alloc_vector();
+	PoolOfVectorToken<TriggerEvent> l_trigger_events = this->collider_detectors_events_2.alloc_vector();
 	Token(ColliderDetector) l_collider_detector_token = this->collider_detectors.alloc_element(ColliderDetector::build(l_trigger_events));
 	this->get_colliderdetector_from_boxcollider(p_box_collider) = l_collider_detector_token;
 	return l_collider_detector_token;
@@ -164,16 +164,16 @@ inline CollisionDetectionStep::CollisionDetectorDeletionEvent CollisionDetection
 inline CollisionDetectionStep CollisionDetectionStep::allocate()
 {
 	return CollisionDetectionStep{
-		v2::Vector<Token(BoxCollider)>::allocate(0),
-		v2::Vector<Token(BoxCollider)>::allocate(0),
-		v2::Vector<Token(BoxCollider)>::allocate(0),
-		v2::Vector<CollisionDetectorDeletionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
-		v2::Vector<IntersectionEvent>::allocate(0),
+		Vector<Token(BoxCollider)>::allocate(0),
+		Vector<Token(BoxCollider)>::allocate(0),
+		Vector<Token(BoxCollider)>::allocate(0),
+		Vector<CollisionDetectorDeletionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
+		Vector<IntersectionEvent>::allocate(0),
 	};
 };
 
@@ -285,12 +285,12 @@ inline void CollisionDetectionStep::step_freeingresource_only(CollisionHeap2& p_
 inline void CollisionDetectionStep::swap_detector_events()
 {
 	{
-		v2::Vector<IntersectionEvent> l_tmp = this->is_waitingfor_trigger_stay_detector;
+		Vector<IntersectionEvent> l_tmp = this->is_waitingfor_trigger_stay_detector;
 		this->is_waitingfor_trigger_stay_detector = this->is_waitingfor_trigger_stay_nextframe_detector;
 		this->is_waitingfor_trigger_stay_nextframe_detector = l_tmp;
 	}
 	{
-		v2::Vector<IntersectionEvent> l_tmp = this->is_waitingfor_trigger_none_detector;
+		Vector<IntersectionEvent> l_tmp = this->is_waitingfor_trigger_none_detector;
 		this->is_waitingfor_trigger_none_detector = this->is_waitingfor_trigger_none_nextframe_detector;
 		this->is_waitingfor_trigger_none_nextframe_detector = l_tmp;
 	}
@@ -300,7 +300,7 @@ inline void CollisionDetectionStep::swap_detector_events()
 // If there is already a TriggerEvent event between them, we set to TRIGGER_STAY else, we initialize to TRIGGER_ENTER
 inline void CollisionDetectionStep::enter_collision(CollisionHeap2& p_collision_heap, const IntersectionEvent& p_intersection_event)
 {
-	v2::PoolOfVectorToken<TriggerEvent> l_collider_triggerevents_nestedvector = p_collision_heap.collider_detectors.get(p_intersection_event.detector).collision_events;
+	PoolOfVectorToken<TriggerEvent> l_collider_triggerevents_nestedvector = p_collision_heap.collider_detectors.get(p_intersection_event.detector).collision_events;
 	Slice<TriggerEvent> l_collider_triggerevents = p_collision_heap.collider_detectors_events_2.get_vector(l_collider_triggerevents_nestedvector);
 	bool l_trigger_event_found = false;
 	for (loop(i, 0, l_collider_triggerevents.Size))
@@ -557,7 +557,7 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
 	this->in_colliders_processed.clear();
 };
 
-inline void CollisionDetectionStep::remove_intersectionevents_duplicate(v2::Vector<IntersectionEvent>* in_out_intersection_events)
+inline void CollisionDetectionStep::remove_intersectionevents_duplicate(Vector<IntersectionEvent>* in_out_intersection_events)
 {
 	for (loop(i, 0, in_out_intersection_events->Size))
 	{

@@ -2,7 +2,6 @@
 
 #include "GPU/gpu.hpp"
 
-
 namespace v2
 {
 	struct Camera

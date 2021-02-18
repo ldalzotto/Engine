@@ -1,9 +1,5 @@
 #pragma once
 
-//TODO delete when common2 migration is complete
-namespace v2
-{
-
 /*
 	The header of every vector of the VectorOfVector. That indicates the associated memory chunk state.
 */
@@ -54,7 +50,7 @@ namespace v2
 		};
 	};
 
-	/*
+/*
 		A VectorOfVector is a chain of resizable Vector allocated on the same memory block.
 		Every nested vectors can be altered with "vectorofvector_element_*" functions.
 	*/
@@ -386,6 +382,3 @@ namespace v2
 
 
 	};
-
-}
-
