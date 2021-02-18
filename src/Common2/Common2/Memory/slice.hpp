@@ -279,9 +279,28 @@ struct SliceN
 		return Slice<ElementType>{ Size_t, this->Memory };
 	};
 
-	inline uimax Size(){
+	inline const Slice<ElementType> to_slice() const
+	{
+		return ((SliceN<ElementType, Size_t>*)this)->to_slice();
+	};
+
+	inline uimax Size()
+	{
 		return Size_t;
 	};
+
+	inline ElementType& get(const uimax p_index)
+	{
+#if CONTAINER_BOUND_TEST
+		assert_true(p_index < Size_t);
+#endif
+		return this->Memory[p_index];
+	};
+
+	inline const ElementType& get(const uimax p_index) const
+	{
+		return ((SliceN<ElementType, Size_t>*)this)->get(p_index);
+	}
 };
 
 /*

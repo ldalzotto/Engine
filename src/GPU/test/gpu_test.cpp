@@ -204,7 +204,7 @@ namespace v2
 #endif
 
 
-		RenderPassAttachment l_attachments[2] =
+		SliceN<RenderPassAttachment, 2> l_attachments =
 				{
 						RenderPassAttachment{ AttachmentType::COLOR,
 											  ImageFormat::build_color_2d(v3ui{ 32, 32, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
@@ -277,7 +277,7 @@ namespace v2
 #endif
 
 		{
-			RenderPassAttachment l_attachments[2] =
+			SliceN<RenderPassAttachment, 2> l_attachments =
 					{
 							RenderPassAttachment{ AttachmentType::COLOR,
 												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
@@ -399,12 +399,12 @@ namespace v2
 
 			{
 
-				Span<color> l_colors = Span<color>::allocate(l_attachments[0].image_format.extent.x * l_attachments[0].image_format.extent.y);
+				Span<color> l_colors = Span<color>::allocate(l_attachments.get(0).image_format.extent.x * l_attachments.get(0).image_format.extent.y);
 				for (loop(i, 0, l_colors.Capacity))
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments[0].image_format, l_colors.slice.build_asint8());
+				l_first_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments.get(0).image_format, l_colors.slice.build_asint8());
 				l_colors.free();
 			}
 
@@ -538,7 +538,7 @@ namespace v2
 #endif
 
 		{
-			RenderPassAttachment l_attachments[2] =
+			SliceN<RenderPassAttachment, 2> l_attachments =
 					{
 							RenderPassAttachment{ AttachmentType::COLOR,
 												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
@@ -777,7 +777,7 @@ namespace v2
 #endif
 
 		{
-			RenderPassAttachment l_attachments[2] =
+			SliceN<RenderPassAttachment, 2> l_attachments =
 					{
 							RenderPassAttachment{ AttachmentType::COLOR,
 												  ImageFormat::build_color_2d(v3ui{ 4, 4, 1 }, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
@@ -971,7 +971,7 @@ namespace v2
 		{
 			v3ui l_render_extends = v3ui{ 16, 16, 1 };
 
-			RenderPassAttachment l_attachments[2] =
+			SliceN<RenderPassAttachment, 2> l_attachments =
 					{
 							RenderPassAttachment{ AttachmentType::COLOR,
 												  ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)) },
@@ -1091,7 +1091,7 @@ namespace v2
 			}
 
 			Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments[0].image_format, l_texture_pixels.slice.build_asint8());
+			l_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_allocator, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format, l_texture_pixels.slice.build_asint8());
 
 			color l_clear_color = color{ 0, 0, 0, 0 };
 

@@ -405,7 +405,7 @@ namespace v2
 		Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
 
 
-		RenderPassAttachment l_attachments[2] = {
+		SliceN<RenderPassAttachment, 2> l_attachments = {
 				RenderPassAttachment{
 						AttachmentType::COLOR,
 						ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
