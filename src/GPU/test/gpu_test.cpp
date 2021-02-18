@@ -47,18 +47,18 @@ namespace v2
 			// We force command buffer submit just for the test
 			l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
 			Token(BufferHost) l_read_buffer = l_buffer_allocator.read_from_buffergpu(l_buffer_gpu, l_buffer_allocator.get_buffergpu(l_buffer_gpu));
 
 			// it creates an gpu read event that will be consumed the next step
-			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 1);
+			assert_true(l_buffer_allocator.write_buffer_gpu_to_buffer_host_events.Size == 1);
 
 			l_buffer_allocator.step();
 			// We force command buffer submit just for the test
 			l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-			assert_true(l_buffer_allocator.buffer_gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
 			assert_true(l_buffer_allocator.get_bufferhost(l_read_buffer).get_mapped_memory().compare(l_tested_uimax_slice.build_asint8()));
 
@@ -69,17 +69,17 @@ namespace v2
 		// creation of a BufferGPU deletion the same step
 		// nothing should happen
 		{
-			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_host_to_buffer_gpu_events.Size == 0);
 
 			Token(BufferGPU) l_buffer_gpu = l_buffer_allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size, BufferUsageFlag::TRANSFER_WRITE);
 			l_buffer_allocator.write_to_buffergpu(l_buffer_gpu, l_tested_uimax_slice.build_asint8());
 
 			// it creates an gpu write event that will be consumed the next step
-			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 1);
+			assert_true(l_buffer_allocator.write_buffer_host_to_buffer_gpu_events.Size == 1);
 
 			l_buffer_allocator.free_buffergpu(l_buffer_gpu);
 
-			assert_true(l_buffer_allocator.buffer_host_to_gpu_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_host_to_buffer_gpu_events.Size == 0);
 
 			l_buffer_allocator.step();
 			l_buffer_allocator.device.command_buffer.force_sync_execution();
@@ -141,22 +141,22 @@ namespace v2
 			// We force command buffer submit just for the test
 			l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_image_gpu_to_buffer_host_events.Size == 0);
 
-			Token(ImageHost) l_read_buffer = l_buffer_allocator.read_from_imagegpu(l_image_gpu, l_buffer_allocator.get_imagegpu(l_image_gpu));
+			Token(BufferHost) l_read_buffer = l_buffer_allocator.read_from_imagegpu_to_buffer(l_image_gpu, l_buffer_allocator.get_imagegpu(l_image_gpu));
 
 			// it creates an gpu read event that will be consumed the next step
-			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 1);
+			assert_true(l_buffer_allocator.write_image_gpu_to_buffer_host_events.Size == 1);
 
 			l_buffer_allocator.step();
 			// We force command buffer submit just for the test
 			l_buffer_allocator.device.command_buffer.force_sync_execution();
 
-			assert_true(l_buffer_allocator.image_gpu_to_host_copy_events.Size == 0);
+			assert_true(l_buffer_allocator.write_image_gpu_to_buffer_host_events.Size == 0);
 
-			assert_true(l_buffer_allocator.get_imagehost(l_read_buffer).get_mapped_memory().compare(l_pixels_slize.build_asint8()));
+			assert_true(l_buffer_allocator.get_bufferhost(l_read_buffer).get_mapped_memory().compare(l_pixels_slize.build_asint8()));
 
-			l_buffer_allocator.free_imagehost(l_read_buffer);
+			l_buffer_allocator.free_bufferhost(l_read_buffer);
 
 			l_buffer_allocator.free_imagegpu(l_image_gpu);
 		}
@@ -164,18 +164,18 @@ namespace v2
 		// creation of a BufferGPU deletion the same step
 		// nothing should happen
 		{
-			assert_true(l_buffer_allocator.buffer_host_to_image_gpu_cpy_event.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_host_to_image_gpu_events.Size == 0);
 
 			l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_WRITE;
 			Token(ImageGPU) l_image_gpu = l_buffer_allocator.allocate_imagegpu(l_imageformat);
 			l_buffer_allocator.write_to_imagegpu(l_image_gpu, l_buffer_allocator.get_imagegpu(l_image_gpu), l_pixels_slize.build_asint8());
 
 			// it creates an gpu write event that will be consumed the next 
-			assert_true(l_buffer_allocator.buffer_host_to_image_gpu_cpy_event.Size == 1);
+			assert_true(l_buffer_allocator.write_buffer_host_to_image_gpu_events.Size == 1);
 
 			l_buffer_allocator.free_imagegpu(l_image_gpu);
 
-			assert_true(l_buffer_allocator.buffer_host_to_image_gpu_cpy_event.Size == 0);
+			assert_true(l_buffer_allocator.write_buffer_host_to_image_gpu_events.Size == 0);
 
 			l_buffer_allocator.step();
 			l_buffer_allocator.device.command_buffer.force_sync_execution();

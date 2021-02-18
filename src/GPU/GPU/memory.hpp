@@ -17,7 +17,7 @@ namespace v2
 		};
 
 		HeapPaged heap;
-		Vector <MemoryGPU> gpu_memories;
+		Vector<MemoryGPU> gpu_memories;
 		int8 is_memory_mapped;
 
 		static HeapPagedGPU allocate_default(const int8 is_memory_mapped, const gc_t p_transfer_device, const uimax p_memory_chunk_size);
@@ -267,75 +267,60 @@ namespace v2
 		TransferDevice device;
 		ImageLayoutTransitionBarriers image_layout_barriers;
 
-		Pool <BufferHost> host_buffers;
-		Pool <BufferGPU> gpu_buffers;
-		Pool <ImageHost> host_images;
-		Pool <ImageGPU> gpu_images;
+		Pool<BufferHost> host_buffers;
+		Pool<BufferGPU> gpu_buffers;
+		Pool<ImageHost> host_images;
+		Pool<ImageGPU> gpu_images;
 
-		Vector <Token(BufferHost)> garbage_host_buffers;
-		Vector <Token(ImageHost)> garbage_host_images;
+		Vector<Token(BufferHost) > garbage_host_buffers;
 
-		struct Buffer_HosttoGPU_CopyEvent
+		struct WriteBufferHostToBufferGPU
 		{
-			Token(BufferHost) staging_buffer;
+			Token(BufferHost) source_buffer;
+			int8 source_buffer_dispose;
 			Token(BufferGPU) target_buffer;
 		};
 
-		Vector <Buffer_HosttoGPU_CopyEvent> buffer_host_to_gpu_copy_events;
+		Vector<WriteBufferHostToBufferGPU> write_buffer_host_to_buffer_gpu_events;
 
-		struct Buffer_GPUtoHost_CopyEvent
+		struct WriteBufferGPUToBufferHost
 		{
 			Token(BufferGPU) source_buffer;
 			Token(BufferHost) target_buffer;
 		};
 
-		Vector <Buffer_GPUtoHost_CopyEvent> buffer_gpu_to_host_copy_events;
+		Vector<WriteBufferGPUToBufferHost> write_buffer_gpu_to_buffer_host_events;
 
-		struct ImageHost_AllocatedEvent
+		struct AllocatedImageHost
 		{
 			Token(ImageHost) image;
 		};
 
-		Vector <ImageHost_AllocatedEvent> image_host_allocate_events;
+		Vector<AllocatedImageHost> image_host_allocate_events;
 
-		struct ImageGPU_AllocatedEvent
+		struct AllocatedImageGPU
 		{
 			Token(ImageGPU) image;
 		};
 
-		Vector <ImageGPU_AllocatedEvent> image_gpu_allocate_events;
+		Vector<AllocatedImageGPU> image_gpu_allocate_events;
 
-		struct Image_HosttoGPU_CopyEvent
-		{
-			Token(ImageHost) staging_image;
-			Token(ImageGPU) target_image;
-		};
-
-		Vector <Image_HosttoGPU_CopyEvent> image_host_to_gpu_copy_events;
-
-		struct ImageGPUtoHost_CopyEvent
-		{
-			Token(ImageGPU) source_image;
-			Token(ImageHost) target_image;
-		};
-
-		Vector <ImageGPUtoHost_CopyEvent> image_gpu_to_host_copy_events;
-
-		struct BufferHosttoImageGPU_CopyEvent
+		struct WriteBufferHostToImageGPU
 		{
 			Token(BufferHost) source_buffer;
+			int8 source_buffer_dispose;
 			Token(ImageGPU) target_image;
 		};
 
-		Vector <BufferHosttoImageGPU_CopyEvent> buffer_host_to_image_gpu_cpy_event;
+		Vector<WriteBufferHostToImageGPU> write_buffer_host_to_image_gpu_events;
 
-		struct ImageGPU_to_BufferHost_CopyEvent
+		struct WriteImageGPUToBufferHost
 		{
 			Token(ImageGPU) source_image;
 			Token(BufferHost) target_buffer;
 		};
 
-		Vector <ImageGPU_to_BufferHost_CopyEvent> image_gpu_to_buffer_host_copy_events;
+		Vector<WriteImageGPUToBufferHost> write_image_gpu_to_buffer_host_events;
 
 		static BufferAllocator allocate_default(const GPUInstance& p_instance);
 
@@ -374,8 +359,6 @@ namespace v2
 		ImageGPU& get_imagegpu(const Token(ImageGPU) p_image_gpu);
 
 		void write_to_imagegpu(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu, const Slice<int8>& p_value);
-
-		Token(ImageHost) read_from_imagegpu(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu);
 
 		Token(BufferHost) read_from_imagegpu_to_buffer(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu);
 
@@ -1022,15 +1005,12 @@ namespace v2
 				Pool<ImageHost>::allocate(0),
 				Pool<ImageGPU>::allocate(0),
 				Vector<Token(BufferHost) >::allocate(0),
-				Vector<Token(ImageHost) >::allocate(0),
-				Vector<Buffer_HosttoGPU_CopyEvent>::allocate(0),
-				Vector<Buffer_GPUtoHost_CopyEvent>::allocate(0),
-				Vector<ImageHost_AllocatedEvent>::allocate(0),
-				Vector<ImageGPU_AllocatedEvent>::allocate(0),
-				Vector<Image_HosttoGPU_CopyEvent>::allocate(0),
-				Vector<ImageGPUtoHost_CopyEvent>::allocate(0),
-				Vector<BufferHosttoImageGPU_CopyEvent>::allocate(0),
-				Vector<ImageGPU_to_BufferHost_CopyEvent>::allocate(0)
+				Vector<WriteBufferHostToBufferGPU>::allocate(0),
+				Vector<WriteBufferGPUToBufferHost>::allocate(0),
+				Vector<AllocatedImageHost>::allocate(0),
+				Vector<AllocatedImageGPU>::allocate(0),
+				Vector<WriteBufferHostToImageGPU>::allocate(0),
+				Vector<WriteImageGPUToBufferHost>::allocate(0)
 		};
 	};
 
@@ -1047,15 +1027,12 @@ namespace v2
 		assert_true(!this->host_images.has_allocated_elements());
 		assert_true(!this->gpu_images.has_allocated_elements());
 		assert_true(this->garbage_host_buffers.empty());
-		assert_true(this->garbage_host_images.empty());
-		assert_true(this->buffer_gpu_to_host_copy_events.empty());
-		assert_true(this->buffer_host_to_gpu_copy_events.empty());
+		assert_true(this->write_buffer_gpu_to_buffer_host_events.empty());
+		assert_true(this->write_buffer_host_to_buffer_gpu_events.empty());
 		assert_true(this->image_host_allocate_events.empty());
 		assert_true(this->image_gpu_allocate_events.empty());
-		assert_true(this->image_gpu_to_host_copy_events.empty());
-		assert_true(this->image_host_to_gpu_copy_events.empty());
-		assert_true(this->buffer_host_to_image_gpu_cpy_event.empty());
-		assert_true(this->image_gpu_to_buffer_host_copy_events.empty());
+		assert_true(this->write_buffer_host_to_image_gpu_events.empty());
+		assert_true(this->write_image_gpu_to_buffer_host_events.empty());
 #endif
 
 		this->image_layout_barriers.free();
@@ -1065,15 +1042,12 @@ namespace v2
 		this->host_images.free();
 		this->gpu_images.free();
 		this->garbage_host_buffers.free();
-		this->garbage_host_images.free();
-		this->buffer_gpu_to_host_copy_events.free();
-		this->buffer_host_to_gpu_copy_events.free();
+		this->write_buffer_gpu_to_buffer_host_events.free();
+		this->write_buffer_host_to_buffer_gpu_events.free();
 		this->image_host_allocate_events.free();
 		this->image_gpu_allocate_events.free();
-		this->image_gpu_to_host_copy_events.free();
-		this->image_host_to_gpu_copy_events.free();
-		this->buffer_host_to_image_gpu_cpy_event.free();
-		this->image_gpu_to_buffer_host_copy_events.free();
+		this->write_buffer_host_to_image_gpu_events.free();
+		this->write_image_gpu_to_buffer_host_events.free();
 		this->device.free();
 	};
 
@@ -1108,23 +1082,25 @@ namespace v2
 
 	inline void BufferAllocator::free_buffergpu(const Token(BufferGPU) p_buffer_gpu)
 	{
-		for (vector_loop_reverse(&this->buffer_gpu_to_host_copy_events, i))
+		for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
 		{
-			Buffer_GPUtoHost_CopyEvent& l_event = this->buffer_gpu_to_host_copy_events.get(i);
+			WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
 			if (tk_eq(l_event.source_buffer, p_buffer_gpu))
 			{
-				this->garbage_host_buffers.push_back_element(l_event.target_buffer);
-				this->buffer_gpu_to_host_copy_events.erase_element_at_always(i);
+				this->write_buffer_gpu_to_buffer_host_events.erase_element_at_always(i);
 			}
 		}
 
-		for (vector_loop_reverse(&this->buffer_host_to_gpu_copy_events, i))
+		for (vector_loop_reverse(&this->write_buffer_host_to_buffer_gpu_events, i))
 		{
-			Buffer_HosttoGPU_CopyEvent& l_event = this->buffer_host_to_gpu_copy_events.get(i);
+			WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
 			if (tk_eq(l_event.target_buffer, p_buffer_gpu))
 			{
-				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
-				this->buffer_host_to_gpu_copy_events.erase_element_at_always(i);
+				if (l_event.source_buffer_dispose)
+				{
+					this->garbage_host_buffers.push_back_element(l_event.source_buffer);
+				}
+				this->write_buffer_host_to_buffer_gpu_events.erase_element_at_always(i);
 			}
 		}
 
@@ -1136,7 +1112,7 @@ namespace v2
 	inline void BufferAllocator::write_to_buffergpu(const Token(BufferGPU) p_buffer_gpu, const Slice<int8>& p_value)
 	{
 		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
-		this->buffer_host_to_gpu_copy_events.push_back_element(Buffer_HosttoGPU_CopyEvent{ l_staging_buffer, p_buffer_gpu });
+		this->write_buffer_host_to_buffer_gpu_events.push_back_element(WriteBufferHostToBufferGPU{ l_staging_buffer, 1, p_buffer_gpu });
 	};
 
 	inline BufferGPU& BufferAllocator::get_buffergpu(const Token(BufferGPU) p_buffer_gpu)
@@ -1147,7 +1123,7 @@ namespace v2
 	inline Token(BufferHost) BufferAllocator::read_from_buffergpu(const Token(BufferGPU) p_buffer_gpu_token, const BufferGPU& p_buffer_gpu)
 	{
 		Token(BufferHost) l_staging_buffer = this->allocate_bufferhost_empty(p_buffer_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
-		this->buffer_gpu_to_host_copy_events.push_back_element(Buffer_GPUtoHost_CopyEvent{ p_buffer_gpu_token, l_staging_buffer });
+		this->write_buffer_gpu_to_buffer_host_events.push_back_element(WriteBufferGPUToBufferHost{ p_buffer_gpu_token, l_staging_buffer });
 		return l_staging_buffer;
 	};
 
@@ -1161,7 +1137,7 @@ namespace v2
 	inline Token(ImageHost) BufferAllocator::allocate_imagehost_empty(const ImageFormat& p_image_format)
 	{
 		Token(ImageHost) l_allocated_image = this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
-		this->image_host_allocate_events.push_back_element(ImageHost_AllocatedEvent{ l_allocated_image });
+		this->image_host_allocate_events.push_back_element(AllocatedImageHost{ l_allocated_image });
 		return l_allocated_image;
 	};
 
@@ -1169,7 +1145,7 @@ namespace v2
 	{
 		for (vector_loop_reverse(&this->image_host_allocate_events, i))
 		{
-			ImageHost_AllocatedEvent& l_event = this->image_host_allocate_events.get(i);
+			AllocatedImageHost& l_event = this->image_host_allocate_events.get(i);
 			if (tk_eq(l_event.image, p_image_host))
 			{
 				this->image_host_allocate_events.erase_element_at_always(i);
@@ -1190,7 +1166,7 @@ namespace v2
 	inline Token(ImageGPU) BufferAllocator::allocate_imagegpu(const ImageFormat& p_image_format)
 	{
 		Token(ImageGPU) l_allocated_image = this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
-		this->image_gpu_allocate_events.push_back_element(ImageGPU_AllocatedEvent{ l_allocated_image });
+		this->image_gpu_allocate_events.push_back_element(AllocatedImageGPU{ l_allocated_image });
 		return l_allocated_image;
 	};
 
@@ -1201,49 +1177,31 @@ namespace v2
 
 	inline void BufferAllocator::free_imagegpu(const Token(ImageGPU) p_image_gpu)
 	{
-		for (vector_loop_reverse(&this->image_gpu_to_host_copy_events, i))
+		for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
 		{
-			ImageGPUtoHost_CopyEvent& l_event = this->image_gpu_to_host_copy_events.get(i);
-			if (tk_eq(l_event.source_image, p_image_gpu))
-			{
-				this->garbage_host_images.push_back_element(l_event.target_image);
-				this->image_gpu_to_host_copy_events.erase_element_at_always(i);
-			}
-		}
-
-		for (vector_loop_reverse(&this->image_host_to_gpu_copy_events, i))
-		{
-			Image_HosttoGPU_CopyEvent& l_event = this->image_host_to_gpu_copy_events.get(i);
+			WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
 			if (tk_eq(l_event.target_image, p_image_gpu))
 			{
-				this->garbage_host_images.push_back_element(l_event.staging_image);
-				this->image_host_to_gpu_copy_events.erase_element_at_always(i);
+				if(l_event.source_buffer_dispose)
+				{
+					this->garbage_host_buffers.push_back_element(l_event.source_buffer);
+				}
+				this->write_buffer_host_to_image_gpu_events.erase_element_at_always(i);
 			}
 		}
 
-		for (vector_loop_reverse(&this->buffer_host_to_image_gpu_cpy_event, i))
+		for (vector_loop_reverse(&this->write_image_gpu_to_buffer_host_events, i))
 		{
-			BufferHosttoImageGPU_CopyEvent& l_event = this->buffer_host_to_image_gpu_cpy_event.get(i);
-			if (tk_eq(l_event.target_image, p_image_gpu))
-			{
-				this->garbage_host_buffers.push_back_element(l_event.source_buffer);
-				this->buffer_host_to_image_gpu_cpy_event.erase_element_at_always(i);
-			}
-		}
-
-		for (vector_loop_reverse(&this->image_gpu_to_buffer_host_copy_events, i))
-		{
-			ImageGPU_to_BufferHost_CopyEvent& l_event = this->image_gpu_to_buffer_host_copy_events.get(i);
+			WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
 			if (tk_eq(l_event.source_image, p_image_gpu))
 			{
-				this->garbage_host_buffers.push_back_element(l_event.target_buffer);
-				this->image_gpu_to_buffer_host_copy_events.erase_element_at_always(i);
+				this->write_image_gpu_to_buffer_host_events.erase_element_at_always(i);
 			}
 		}
 
 		for (vector_loop_reverse(&this->image_gpu_allocate_events, i))
 		{
-			ImageGPU_AllocatedEvent& l_event = this->image_gpu_allocate_events.get(i);
+			AllocatedImageGPU& l_event = this->image_gpu_allocate_events.get(i);
 			if (tk_eq(l_event.image, p_image_gpu))
 			{
 				this->image_gpu_allocate_events.erase_element_at_always(i);
@@ -1257,29 +1215,14 @@ namespace v2
 
 	inline void BufferAllocator::write_to_imagegpu(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu, const Slice<int8>& p_value)
 	{
-		/*
-		ImageFormat l_stagin_image_format = p_image_gpu.format;
-		l_stagin_image_format.imageUsage = ImageUsageFlag::TRANSFER_READ;
-		Token(ImageHost) l_stagin_image = this->allocate_imagehost(p_value, l_stagin_image_format);
-		this->image_host_to_gpu_copy_events.push_back_element(Image_HosttoGPU_CopyEvent{ l_stagin_image, p_image_gpu_token });
-		*/
 		Token(BufferHost) l_stagin_buffer = this->allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
-		this->buffer_host_to_image_gpu_cpy_event.push_back_element(BufferHosttoImageGPU_CopyEvent{ l_stagin_buffer, p_image_gpu_token });
-	};
-
-	inline Token(ImageHost) BufferAllocator::read_from_imagegpu(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu)
-	{
-		ImageFormat l_stagin_image_format = p_image_gpu.format;
-		l_stagin_image_format.imageUsage = ImageUsageFlag::TRANSFER_WRITE;
-		Token(ImageHost) l_staging_buffer = this->allocate_imagehost_empty(l_stagin_image_format);
-		this->image_gpu_to_host_copy_events.push_back_element(ImageGPUtoHost_CopyEvent{ p_image_gpu_token, l_staging_buffer });
-		return l_staging_buffer;
+		this->write_buffer_host_to_image_gpu_events.push_back_element(WriteBufferHostToImageGPU{ l_stagin_buffer, 1, p_image_gpu_token });
 	};
 
 	inline Token(BufferHost) BufferAllocator::read_from_imagegpu_to_buffer(const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu)
 	{
 		Token(BufferHost) l_stagin_buffer = this->allocate_bufferhost_empty(p_image_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
-		this->image_gpu_to_buffer_host_copy_events.push_back_element(ImageGPU_to_BufferHost_CopyEvent{ p_image_gpu_token, l_stagin_buffer });
+		this->write_image_gpu_to_buffer_host_events.push_back_element(WriteImageGPUToBufferHost{ p_image_gpu_token, l_stagin_buffer });
 		return l_stagin_buffer;
 	};
 
@@ -1317,88 +1260,69 @@ namespace v2
 			this->image_gpu_allocate_events.clear();
 		}
 
-		if (this->buffer_host_to_image_gpu_cpy_event.Size > 0)
+		if (this->write_buffer_host_to_image_gpu_events.Size > 0)
 		{
-			for (loop(i, 0, this->buffer_host_to_image_gpu_cpy_event.Size))
+			for (loop(i, 0, this->write_buffer_host_to_image_gpu_events.Size))
 			{
-				BufferHosttoImageGPU_CopyEvent& l_event = this->buffer_host_to_image_gpu_cpy_event.get(i);
+				WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
 				BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(
 						this->device.command_buffer, this->image_layout_barriers,
 						this->host_buffers.get(l_event.source_buffer),
 						this->gpu_images.get(l_event.target_image)
 				);
-				this->garbage_host_buffers.push_back_element(l_event.source_buffer);
+
+				if(l_event.source_buffer_dispose)
+				{
+					this->garbage_host_buffers.push_back_element(l_event.source_buffer);
+				}
 			}
-			this->buffer_host_to_image_gpu_cpy_event.clear();
+			this->write_buffer_host_to_image_gpu_events.clear();
 		}
 
-		if (this->image_gpu_to_buffer_host_copy_events.Size > 0)
+		if (this->write_image_gpu_to_buffer_host_events.Size > 0)
 		{
-			for (loop(i, 0, this->image_gpu_to_buffer_host_copy_events.Size))
+			for (loop(i, 0, this->write_image_gpu_to_buffer_host_events.Size))
 			{
-				ImageGPU_to_BufferHost_CopyEvent& l_event = this->image_gpu_to_buffer_host_copy_events.get(i);
+				WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
 				BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(
 						this->device.command_buffer, this->image_layout_barriers,
 						this->gpu_images.get(l_event.source_image),
 						this->host_buffers.get(l_event.target_buffer)
 				);
 			}
-			this->image_gpu_to_buffer_host_copy_events.clear();
+			this->write_image_gpu_to_buffer_host_events.clear();
 		}
 
-		if (this->buffer_host_to_gpu_copy_events.Size > 0)
+		if (this->write_buffer_host_to_buffer_gpu_events.Size > 0)
 		{
-			for (loop(i, 0, this->buffer_host_to_gpu_copy_events.Size))
+			for (loop(i, 0, this->write_buffer_host_to_buffer_gpu_events.Size))
 			{
-				Buffer_HosttoGPU_CopyEvent& l_event = this->buffer_host_to_gpu_copy_events.get(i);
+				WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
 				BufferCommandUtils::cmd_copy_buffer_host_to_gpu(this->device.command_buffer,
-						this->host_buffers.get(l_event.staging_buffer),
+						this->host_buffers.get(l_event.source_buffer),
 						this->gpu_buffers.get(l_event.target_buffer));
-				this->garbage_host_buffers.push_back_element(l_event.staging_buffer);
+
+				if (l_event.source_buffer_dispose)
+				{
+					this->garbage_host_buffers.push_back_element(l_event.source_buffer);
+				}
 			}
 
-			this->buffer_host_to_gpu_copy_events.clear();
+			this->write_buffer_host_to_buffer_gpu_events.clear();
 		}
 
-		if (this->buffer_gpu_to_host_copy_events.Size > 0)
+		if (this->write_buffer_gpu_to_buffer_host_events.Size > 0)
 		{
 
-			for (loop(i, 0, this->buffer_gpu_to_host_copy_events.Size))
+			for (loop(i, 0, this->write_buffer_gpu_to_buffer_host_events.Size))
 			{
-				Buffer_GPUtoHost_CopyEvent& l_event = this->buffer_gpu_to_host_copy_events.get(i);
+				WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
 				BufferCommandUtils::cmd_copy_buffer_gpu_to_host(this->device.command_buffer,
 						this->gpu_buffers.get(l_event.source_buffer),
 						this->host_buffers.get(l_event.target_buffer));
 			}
 
-			this->buffer_gpu_to_host_copy_events.clear();
-		}
-
-		if (this->image_host_to_gpu_copy_events.Size > 0)
-		{
-			for (loop(i, 0, this->image_host_to_gpu_copy_events.Size))
-			{
-				Image_HosttoGPU_CopyEvent& l_event = this->image_host_to_gpu_copy_events.get(i);
-				BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(this->device.command_buffer, this->image_layout_barriers,
-						this->host_images.get(l_event.staging_image),
-						this->gpu_images.get(l_event.target_image));
-				this->garbage_host_images.push_back_element(l_event.staging_image);
-			}
-
-			this->image_host_to_gpu_copy_events.clear();
-		}
-
-		if (this->image_gpu_to_host_copy_events.Size > 0)
-		{
-			for (loop(i, 0, this->image_gpu_to_host_copy_events.Size))
-			{
-				ImageGPUtoHost_CopyEvent& l_event = this->image_gpu_to_host_copy_events.get(i);
-				BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(this->device.command_buffer, this->image_layout_barriers,
-						this->gpu_images.get(l_event.source_image),
-						this->host_images.get(l_event.target_image));
-			}
-
-			this->image_gpu_to_host_copy_events.clear();
+			this->write_buffer_gpu_to_buffer_host_events.clear();
 		}
 
 		this->device.command_buffer.end();
@@ -1412,13 +1336,6 @@ namespace v2
 		}
 
 		this->garbage_host_buffers.clear();
-
-		for (loop(i, 0, this->garbage_host_images.Size))
-		{
-			this->free_imagehost(this->garbage_host_images.get(i));
-		}
-
-		this->garbage_host_images.clear();
 	};
 
 
