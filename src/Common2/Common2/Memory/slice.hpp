@@ -120,7 +120,6 @@ struct Slice
 		slice_memcpy(l_target, p_elements);
 	};
 
-	//TODO -> write test :)
 	inline void copy_memory_2(const uimax p_copy_index, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
 	{
 		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements_1.Size);
@@ -275,7 +274,6 @@ struct SliceN
 {
 	ElementType Memory[Size_t];
 
-	//TODO -> write test :)
 	inline Slice<ElementType> to_slice()
 	{
 		return Slice<ElementType>{ Size_t, this->Memory };

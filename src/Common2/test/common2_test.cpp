@@ -53,6 +53,27 @@ namespace v2
 		}
 
 		l_span_sizet.free();
+
+		{
+			l_span_sizet = Span<uimax>::allocate(10);
+
+			SliceN<uimax, 4> l_slice_1 = { 0, 1, 2, 3 };
+			SliceN<uimax, 4> l_slice_2 = { 5, 6, 7, 8 };
+			l_span_sizet.slice.copy_memory_2(1, l_slice_1.to_slice(), l_slice_2.to_slice());
+
+			assert_true(l_span_sizet.slice.slide_rv(1).compare(l_slice_1.to_slice()));
+			assert_true(l_span_sizet.slice.slide_rv(5).compare(l_slice_2.to_slice()));
+
+			l_span_sizet.free();
+		}
+		{
+			SliceN<uimax, 4> l_slice = { 15, 26, 78, 10 };
+			l_span_sizet = Span<uimax>::allocate_slice(l_slice.to_slice());
+			assert_true(l_span_sizet.Capacity == 4);
+			assert_true(l_span_sizet.slice.compare(l_slice.to_slice()));
+
+			l_span_sizet.free();
+		}
 	};
 
 	inline void vector_test()

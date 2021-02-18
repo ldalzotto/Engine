@@ -27,7 +27,6 @@ struct Span
 		return Span<ElementType>{ p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType))) };
 	};
 
-	//TODO -> write test :)
 	inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
 	{
 		Span<ElementType> l_span = Span<ElementType>::allocate(p_elements.Size);
