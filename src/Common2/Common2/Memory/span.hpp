@@ -34,6 +34,13 @@ struct Span
 		return l_span;
 	};
 
+	inline static Span<ElementType> allocate_slice_3(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2, const Slice<ElementType>& p_elements_3)
+	{
+		Span<ElementType> l_span = Span<ElementType>::allocate(p_elements_1.Size + p_elements_2.Size + p_elements_3.Size);
+		l_span.slice.copy_memory_3(0, p_elements_1, p_elements_2, p_elements_3);
+		return l_span;
+	};
+
 	template<uint32 Size_t>
 	inline static Span<ElementType> allocate_slicen(const SliceN<ElementType, Size_t>& p_elements)
 	{

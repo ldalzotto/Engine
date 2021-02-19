@@ -122,20 +122,40 @@ struct Slice
 
 	inline void copy_memory_2(const uimax p_copy_index, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
 	{
-		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements_1.Size);
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements_1.Size + p_elements_2.Size);
 
 #if CONTAINER_BOUND_TEST
 		this->bound_inside_check(l_target);
 #endif
 		slice_memcpy(l_target, p_elements_1);
-
 		l_target.slide(p_elements_1.Size);
-		l_target.Size = p_elements_2.Size;
 
 #if CONTAINER_BOUND_TEST
 		this->bound_inside_check(l_target);
 #endif
 		slice_memcpy(l_target, p_elements_2);
+	};
+
+	inline void copy_memory_3(const uimax p_copy_index, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2, const Slice<ElementType>& p_elements_3)
+	{
+		Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements_1.Size + p_elements_2.Size + p_elements_3.Size);
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		slice_memcpy(l_target, p_elements_1);
+		l_target.slide(p_elements_1.Size);
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		slice_memcpy(l_target, p_elements_2);
+		l_target.slide(p_elements_2.Size);
+
+#if CONTAINER_BOUND_TEST
+		this->bound_inside_check(l_target);
+#endif
+		slice_memcpy(l_target, p_elements_3);
 	};
 
 	inline void bound_inside_check(const Slice<ElementType>& p_tested_slice)

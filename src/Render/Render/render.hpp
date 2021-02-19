@@ -20,6 +20,7 @@ namespace v2
 	{
 		uimax execution_order;
 		Token(Shader) shader_index;
+		Token(ShaderLayout) shader_layout;
 	};
 
 	struct Mesh
@@ -98,6 +99,14 @@ namespace v2
 		void free_renderable_object(const Token(RenderableObject) p_rendereable_object);
 	};
 
+	namespace ColorStep_const
+	{
+		SliceN<ShaderLayoutParameterType, 1> shaderlayout_before = SliceN<ShaderLayoutParameterType, 1>{ ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX };
+		SliceN<ShaderLayoutParameterType, 1> shaderlayout_after = SliceN<ShaderLayoutParameterType, 1>{ ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX };
+		SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN<ShaderLayout::VertexInputParameter, 2>{ ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, 0 },
+																																 ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv) }};
+	};
+
 	struct ColorStep
 	{
 		Token(GraphicsPass) pass;
@@ -109,6 +118,7 @@ namespace v2
 		struct AllocateInfo
 		{
 			v3ui render_target_dimensions;
+			int8 attachment_host_read;
 		};
 
 		static ColorStep allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info);
@@ -369,6 +379,24 @@ namespace v2
 			free_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_renderable_object.mesh);
 		};
 
+		inline static Token(ShaderIndex) allocate_colorstep_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Slice<ShaderLayoutParameterType>& p_specific_parameters,
+				const uimax p_execution_order, const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration, const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
+		{
+			Span<ShaderLayoutParameterType> l_span = Span<ShaderLayoutParameterType>::allocate_slice_3(ColorStep_const::shaderlayout_before.to_slice(), p_specific_parameters, ColorStep_const::shaderlayout_after.to_slice());
+			Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(ColorStep_const::shaderlayout_vertex_input);
+
+			ShaderIndex l_shader_index;
+			l_shader_index.execution_order = p_execution_order;
+			l_shader_index.shader_layout = p_graphics_allocator.allocate_shader_layout(l_span, l_vertex_input, sizeof(Vertex));
+
+			ShaderAllocateInfo l_shader_allocate_info{
+					p_graphics_pass, p_shader_configuration, p_graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout),
+					p_vertex_shader, p_fragment_shader
+			};
+			l_shader_index.shader_index = p_graphics_allocator.allocate_shader(l_shader_allocate_info);
+			return p_render_allocator.allocate_shader(l_shader_index);
+		};
+
 		inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(ShaderIndex) p_shader)
 		{
@@ -388,6 +416,7 @@ namespace v2
 				free_renderable_object_external_ressources(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_allocator.heap.renderable_objects.get(l_renderable_objects.get(i)));
 			}
 
+			p_graphics_allocator.free_shader_layout(p_render_allocator.heap.shaders.get(p_shader).shader_layout);
 			p_graphics_allocator.free_shader(p_render_allocator.heap.shaders.get(p_shader).shader_index);
 			p_render_allocator.free_shader_with_materials_and_renderableobjects(p_shader);
 
@@ -404,15 +433,20 @@ namespace v2
 		l_global_buffer_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
 		Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
 
+		ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
+		if (p_allocate_info.attachment_host_read)
+		{
+			l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
+		}
 
 		SliceN<RenderPassAttachment, 2> l_attachments = {
 				RenderPassAttachment{
 						AttachmentType::COLOR,
-						ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
+						ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))
 				},
 				RenderPassAttachment{
 						AttachmentType::DEPTH,
-						ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
+						ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))
 				}
 		};
 

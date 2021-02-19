@@ -64,10 +64,10 @@ namespace v2
 	inline void draw_test()
 	{
 		GPUContext l_ctx = GPUContext::allocate();
-		D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }});
+		D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 1 });
 
 #ifdef RENDER_DOC_DEBUG
-		rdoc_api->StartFrameCapture(l_ctx.buffer_allocator.device.device, NULL);
+		rdoc_api->StartFrameCapture(l_ctx.buffer_memory.allocator.device.device, NULL);
 #endif
 
 		const int8* p_vertex_litteral =
@@ -109,48 +109,30 @@ namespace v2
 		ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
 		ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
-		//TODO -> how to make the shader layout creation more simple ?
-		/*
-			Having global Span<ShaderLayoutParameterType> constants to use when building layout ? so that we just describe explicit parameters
-			Moving the 	Span<ShaderLayoutParameterType> to Render constants ?
-		 	Same for ShaderConfigurations ?
-		*/
-		Token(ShaderLayout) l_shader_layout;
-
-		{
-			Span<ShaderLayoutParameterType> l_layout_parameter_types = Span<ShaderLayoutParameterType>::allocate_slicen(
-					SliceN<ShaderLayoutParameterType, 3>{ ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX });
-			Span<ShaderLayout::VertexInputParameter> l_layout_verex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(
-					SliceN<ShaderLayout::VertexInputParameter, 2>{ ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_3, 0 },
-																   ShaderLayout::VertexInputParameter{ PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv) }});
-			l_shader_layout = l_ctx.graphics_allocator.allocate_shader_layout(l_layout_parameter_types, l_layout_verex_input, sizeof(Vertex));
-		}
-
 		Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
 		Token(ShaderModule) l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
+
+		Token(ShaderIndex) l_shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
+				l_ctx.graphics_allocator, l_renderer.allocator,
+				SliceN<ShaderLayoutParameterType, 1>{ ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT }.to_slice(),
+				0,
+				l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
+				ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual },
+				l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
+				l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module)
+		);
+
+		ShaderIndex l_shader_value = l_renderer.heap().shaders.get(l_shader);
 
 		l_vertex_shader_compiled.free();
 		l_fragment_shader_compiled.free();
 
-
-		ShaderAllocateInfo l_shader_allocate_info{
-				l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
-				ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual },
-				l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
-				l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
-				l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module)
-		};
-
-		Token(Shader) l_graphics_shader = l_ctx.graphics_allocator.allocate_shader(l_shader_allocate_info);
-		Token(ShaderIndex) l_shader = l_renderer.allocator.allocate_shader(ShaderIndex{ 0, l_graphics_shader });
-
-
 		Material l_red_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_red_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
+		l_red_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
 				v3f{ 1.0f, 0.0f, 0.0f });
 
 		Material l_green_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_green_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_layout),
+		l_green_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
 				v3f{ 0.0f, 1.0f, 0.0f });
 
 		Token(Material) l_red_material_token = l_renderer.allocator.allocate_material(l_red_material);
@@ -267,15 +249,131 @@ namespace v2
 		l_ctx.submit_graphics_binder(l_binder);
 		l_ctx.wait_for_completion();
 
+		Token(BufferHost) l_color_attachment_token = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_ctx.buffer_memory, l_ctx.graphics_allocator,
+				l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass), 0);
+		{
+			BufferStep::step(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events);
+			l_ctx.buffer_memory.allocator.device.command_buffer.submit();
+			l_ctx.buffer_memory.allocator.device.command_buffer.wait_for_completion();
+		}
+
+		Slice<color> l_color_attachment = slice_cast<color>(l_ctx.buffer_memory.allocator.host_buffers.get(l_color_attachment_token).get_mapped_memory());
+
+		{
+			int l_index = 0;
+			for (; l_index <= 7; l_index++)
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+			}
+			{
+				for (loop(i, 0, 2))
+				{
+					assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+					l_index += 1;
+					assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+					l_index += 1;
+				}
+			}
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+			}
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+			}
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ uint8_max, 0, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+			}
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, uint8_max, 0, uint8_max });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+			}
+			for (loop(i, 0, 7))
+			{
+				assert_true(l_color_attachment.get(l_index) == color{ 0, 0, 0, 0 });
+				l_index += 1;
+			}
+		}
+
+		BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events, l_color_attachment_token);
 
 		D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_shader);
 
-		l_ctx.graphics_allocator.free_shader_layout(l_shader_layout);
 		l_ctx.graphics_allocator.free_shader_module(l_vertex_shader_module);
 		l_ctx.graphics_allocator.free_shader_module(l_fragment_shader_module);
 
 #ifdef RENDER_DOC_DEBUG
-		rdoc_api->EndFrameCapture(l_ctx.buffer_allocator.device.device, NULL);
+		rdoc_api->EndFrameCapture(l_ctx.buffer_memory.allocator.device.device, NULL);
 #endif
 
 		l_renderer.free(l_ctx);
