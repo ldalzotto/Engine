@@ -24,5 +24,5 @@ else()
     set(IS_DEBUG false)
 endif ()
 
-add_subdirectory(ThirdParty)
+add_subdirectory(ThirdParty2)
 add_subdirectory(src)

@@ -12,6 +12,7 @@ cmake-build-debug
 cmake-build-release
 
 ThirdParty
+ThirdParty2
 
 Assets/**/*.db
 Assets/**/*.json

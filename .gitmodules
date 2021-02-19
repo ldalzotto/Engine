@@ -1,0 +1,3 @@
+[submodule "ThirdParty2"]
+	path = ThirdParty2
+	url = https://github.com/ldalzotto/EngineCPP_ThirdParty.git
