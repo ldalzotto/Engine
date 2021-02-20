@@ -6,6 +6,7 @@ struct EngineLoop
 	static const uint8 MAX_UPDATE_CALL_PER_FRAME = 2;
 
 	time_t timebetweenupdates_mics;
+
 	time_t previousUpdateTime_mics;
 	time_t accumulatedelapsedtime_mics;
 

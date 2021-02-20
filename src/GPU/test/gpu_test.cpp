@@ -1,5 +1,6 @@
 
 #include "GPU/gpu.hpp"
+#include "shader_compiler.hpp"
 
 // #define RENDER_DOC_DEBUG
 

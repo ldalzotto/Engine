@@ -63,6 +63,7 @@ add_library(Scene2Middleware INTERFACE)
 target_include_directories(Scene2Middleware INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware)
 target_link_libraries(Scene2Middleware INTERFACE Scene2)
 target_link_libraries(Scene2Middleware INTERFACE Collision)
+target_link_libraries(Scene2Middleware INTERFACE Render)
 
 add_library(Engine INTERFACE)
 target_include_directories(Engine INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/_Engine)

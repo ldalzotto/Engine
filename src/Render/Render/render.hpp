@@ -109,6 +109,7 @@ namespace v2
 
 	struct ColorStep
 	{
+		v3ui render_target_dimensions;;
 		Token(GraphicsPass) pass;
 		Span<v4f> clear_values;
 
@@ -126,6 +127,8 @@ namespace v2
 		void free(GPUContext& p_gpu_context);
 
 		void set_camera(GPUContext& p_gpu_context, const Camera& p_camera);
+
+		Slice<Camera> get_camera(GPUContext& p_gpu_context);
 	};
 
 	/*
@@ -450,6 +453,7 @@ namespace v2
 				}
 		};
 
+		l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
 		l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{ v4f{ 0.0f, 0.0f, 0.0f, 0.0f }, v4f{ 1.0f, 0.0f, 0.0f, 0.0f }});
 		l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
 		l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
@@ -477,6 +481,17 @@ namespace v2
 						p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
 				).memory
 		).get_mapped_memory(), Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+	};
+
+	inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)
+	{
+		return slice_cast<Camera>(
+				p_gpu_context.buffer_memory.allocator.host_buffers.get(
+						p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(
+								p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
+						).memory
+				).get_mapped_memory()
+		);
 	};
 
 	inline D3Renderer D3Renderer::allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)

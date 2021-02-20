@@ -37,9 +37,9 @@ namespace v2
 		inline static BoxColliderComponentAsset desconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
 		{
 			return BoxColliderComponentAsset
-			{
-				p_scene_middleware.collision_middleware.allocator.box_collider_get_world_half_extend(p_collision, tk_b(BoxColliderComponent, p_node_component.resource))
-			};
+					{
+							p_scene_middleware.collision_middleware.allocator.box_collider_get_world_half_extend(p_collision, tk_b(BoxColliderComponent, p_node_component.resource))
+					};
 		};
 
 		inline static void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
@@ -47,6 +47,23 @@ namespace v2
 			p_scene_middleware->collision_middleware.allocator.free_box_collider_component(p_collision, tk_b(BoxColliderComponent, p_node_component.resource));
 		};
 	};
+
+	namespace RenderComponentAsset_SceneCommunication
+	{
+
+		inline static NodeComponent construct_nodecomponent()
+		{
+			return NodeComponent{ CameraComponent::Type, tokent_build_default() };
+		};
+
+		inline static CameraComponentAsset deconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, D3Renderer& p_renderer)
+		{
+			//TODO
+			return CameraComponentAsset{};
+		};
+
+	};
+
 
 	//global
 	inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
@@ -58,7 +75,7 @@ namespace v2
 		{
 			BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware, p_collision, p_node_component);
 		}
-		break;
+			break;
 		default:
 			abort();
 			break;

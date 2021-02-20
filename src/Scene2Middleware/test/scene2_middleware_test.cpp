@@ -21,6 +21,8 @@ namespace v2
 	{
 		Scene l_scene = Scene::allocate_default();
 		Collision2 l_collision = Collision2::allocate();
+		GPUContext l_gpu_ctx = GPUContext::allocate();
+		D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
 		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
 		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, &l_scene_middleware };
 
@@ -43,15 +45,15 @@ namespace v2
 			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
 
 			{
-				BoxColliderComponentAsset l_box_collider_component_asset = 
-					BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
+				BoxColliderComponentAsset l_box_collider_component_asset =
+						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
 				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 1);
 			}
 			{
-				l_scene_middleware.step(&l_scene, l_collision);
-				BoxColliderComponentAsset l_box_collider_component_asset = 
-					BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
+				l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
+				BoxColliderComponentAsset l_box_collider_component_asset =
+						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
 				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
 			}
@@ -82,8 +84,10 @@ namespace v2
 		}
 
 		l_scene.consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free(&l_scene, l_collision);
+		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 		l_collision.free();
+		l_renderer.free(l_gpu_ctx);
+		l_gpu_ctx.free();
 		l_scene.free();
 	};
 
@@ -91,6 +95,8 @@ namespace v2
 	{
 		Scene l_scene = Scene::allocate_default();
 		Collision2 l_collision = Collision2::allocate();
+		GPUContext l_gpu_ctx = GPUContext::allocate();
+		D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
 		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
 		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, &l_scene_middleware };
 
@@ -102,7 +108,7 @@ namespace v2
 
 			assert_true(!l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
 
-			l_scene_middleware.step(&l_scene, l_collision);
+			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 
 			assert_true(l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
 
@@ -110,8 +116,10 @@ namespace v2
 		}
 
 		l_scene.consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free(&l_scene, l_collision);
+		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 		l_collision.free();
+		l_renderer.free(l_gpu_ctx);
+		l_gpu_ctx.free();
 		l_scene.free();
 	};
 };

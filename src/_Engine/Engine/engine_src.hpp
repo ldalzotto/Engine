@@ -1,7 +1,6 @@
 #pragma once
 
 
-
 struct Engine
 {
 	int8 abort_condition;
@@ -10,12 +9,16 @@ struct Engine
 	EngineLoop engine_loop;
 
 	Collision2 collision;
+	v2::GPUContext gpu_context;
+	v2::D3Renderer renderer;
 
 	v2::Scene scene;
 	v2::SceneMiddleware scene_middleware;
 
 	static Engine allocate(const Slice<int8>& p_executable_path);
+
 	void free();
+
 	void close();
 
 	template<class ExternalCallbacksFn>
@@ -41,8 +44,11 @@ private:
 		ExternalCallbacksFn& external_callbacks;
 
 		void newframe();
+
 		void update(const float32 p_delta);
+
 		void render();
+
 		void endofframe();
 	};
 
@@ -52,7 +58,6 @@ private:
 };
 
 
-
 inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, const v2::NodeEntry& p_node, const v2::NodeComponent& p_component)
 {
 	on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, p_component);
@@ -60,23 +65,29 @@ inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, 
 
 inline Engine Engine::allocate(const Slice<int8>& p_executable_path)
 {
+	v2::GPUContext l_gpu_context = v2::GPUContext::allocate();
+	v2::D3Renderer l_renderer = v2::D3Renderer::allocate(l_gpu_context, v2::ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
 	return Engine
-	{
-		0,
-		Clock::allocate_default(),
-		EngineLoop::allocate_default(1000000 / 60),
-		Collision2::allocate(),
-		v2::Scene::allocate_default(),
-		v2::SceneMiddleware::allocate_default()
-	};
+			{
+					0,
+					Clock::allocate_default(),
+					EngineLoop::allocate_default(1000000 / 60),
+					Collision2::allocate(),
+					l_gpu_context,
+					l_renderer,
+					v2::Scene::allocate_default(),
+					v2::SceneMiddleware::allocate_default()
+			};
 };
 
 inline void Engine::free()
 {
 	ComponentReleaser l_component_releaser = ComponentReleaser{ *this };
 	this->scene.consume_component_events_stateful(l_component_releaser);
-	this->scene_middleware.free(&this->scene, this->collision);
+	this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context);
 	this->collision.free();
+	this->renderer.free(this->gpu_context);
+	this->gpu_context.free();
 	this->scene.free();
 };
 
@@ -127,13 +138,19 @@ inline void Engine::LoopCallbacks<ExternalCallbacksFn>::update(const float32 p_d
 	this->external_callbacks.after_collision(this->engine);
 	this->external_callbacks.before_update(this->engine);
 
-	this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision);
-
-	//TODO -> render
+	this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision, this->engine.renderer, this->engine.gpu_context);
 };
 
 template<class ExternalCallbacksFn>
-inline void Engine::LoopCallbacks<ExternalCallbacksFn>::render() {};
+inline void Engine::LoopCallbacks<ExternalCallbacksFn>::render()
+{
+	this->engine.renderer.buffer_step(this->engine.gpu_context);
+	this->engine.gpu_context.buffer_step_and_submit();
+	v2::GraphicsBinder l_graphics_binder = this->engine.gpu_context.creates_graphics_binder();
+	this->engine.renderer.graphics_step(l_graphics_binder);
+	this->engine.gpu_context.submit_graphics_binder(l_graphics_binder);
+	this->engine.gpu_context.wait_for_completion();
+};
 
 template<class ExternalCallbacksFn>
 inline void Engine::LoopCallbacks<ExternalCallbacksFn>::endofframe()
