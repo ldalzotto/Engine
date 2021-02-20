@@ -48,7 +48,7 @@ namespace v2
 		};
 	};
 
-	namespace RenderComponentAsset_SceneCommunication
+	namespace CameraComponentAsset_SceneCommunication
 	{
 
 		inline static NodeComponent construct_nodecomponent()
@@ -64,9 +64,22 @@ namespace v2
 
 	};
 
+	namespace MeshRendererComponentAsset_SceneCommunication
+	{
+		inline static NodeComponent construct_nodecomponent(const Token(MeshRendererComponent) p_component)
+		{
+			return NodeComponent{ MeshRendererComponent::Type, tk_v(p_component) };
+		};
+
+		inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, D3Renderer& p_renderer, GPUContext& p_gpu_context, const NodeComponent& p_node_component)
+		{
+			p_render_middleware.allocator.free_meshrenderer_component(p_renderer, p_gpu_context, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+		};
+	};
+
 
 	//global
-	inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
+	inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, const NodeComponent& p_node_component)
 	{
 		switch (p_node_component.type)
 		{
@@ -74,6 +87,11 @@ namespace v2
 		case BoxColliderComponent::Type:
 		{
 			BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware, p_collision, p_node_component);
+		}
+			break;
+		case v2::MeshRendererComponent::Type:
+		{
+			MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_renderer, p_gpu_context, p_node_component);
 		}
 			break;
 		default:

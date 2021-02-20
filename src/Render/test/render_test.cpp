@@ -26,7 +26,7 @@ namespace v2
 		Slice<uint32> l_test_indices = Slice<uint32>::build_memory_elementnb(l_indices, 2);
 
 		Token(RenderableObject) l_renderable_object =
-				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
 		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object, m44f_const::IDENTITY });
 
@@ -46,17 +46,17 @@ namespace v2
 		);
 
 		Token(RenderableObject) l_renderable_object2 =
-				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+				D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
 						l_test_vertices, l_test_indices);
 		l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{ l_renderable_object2, m44f_const::IDENTITY });
 
 		assert_true(l_renderer.heap().model_update_events.Size == 1);
 
-		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object2);
+		D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object2);
 
 		assert_true(l_renderer.heap().model_update_events.Size == 0);
 
-		D3RendererAllocatorComposition::free_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object);
+		D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object);
 
 		l_renderer.free(l_ctx);
 		l_ctx.free();
@@ -203,13 +203,13 @@ namespace v2
 					4, 6, 9,
 					11, 13, 7
 			};
-			l_obj_1 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_1 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_2 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_2 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_3 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_3 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
-			l_obj_4 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
+			l_obj_4 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14),
 					Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 		}
 

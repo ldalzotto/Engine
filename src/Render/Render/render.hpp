@@ -84,8 +84,6 @@ namespace v2
 
 		void free_shader(const Token(ShaderIndex) p_shader);
 
-		void free_shader_with_materials_and_renderableobjects(const Token(ShaderIndex) p_shader);
-
 		Token(Material) allocate_material(const Material& p_material);
 
 		void free_material(const Token(Material) p_material);
@@ -271,21 +269,6 @@ namespace v2
 		this->heap.shaders.release_element(p_shader);
 	};
 
-	inline void D3RendererAllocator::free_shader_with_materials_and_renderableobjects(const Token(ShaderIndex) p_shader)
-	{
-		auto l_materials = this->heap.get_materials_from_shader(p_shader);
-		for (loop(i, 0, l_materials.get_size()))
-		{
-			auto l_renderable_objects = this->heap.get_renderableobjects_from_material(l_materials.get(i));
-			for (loop(j, 0, l_renderable_objects.get_size()))
-			{
-				this->free_renderable_object(l_renderable_objects.get(j));
-			}
-			this->free_material(l_materials.get(i));
-		}
-		this->free_shader(p_shader);
-	};
-
 	inline Token(Material) D3RendererAllocator::allocate_material(const Material& p_material)
 	{
 		this->heap.material_to_renderable_objects.alloc_vector();
@@ -355,11 +338,23 @@ namespace v2
 			p_render_allocator.free_mesh(p_mesh);
 		};
 
-		inline static Token(RenderableObject) allocate_renderable_object_with_mesh(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-				D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
+		inline static Token(Material) allocate_emptymaterial_with_parameters(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator)
+		{
+			Material l_material = Material::allocate_empty(p_graphics_allocator, 1);
+			return p_render_allocator.allocate_material(l_material);
+		};
+
+		inline static void free_material_with_parameters(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
+		{
+			Material& l_material = p_render_allocator.heap.materials.get(p_material);
+			l_material.free(p_graphics_allocator, p_buffer_memory);
+			p_render_allocator.free_material(p_material);
+		};
+
+		inline static Token(RenderableObject) allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Mesh) p_mesh)
 		{
 			RenderableObject l_renderable_object;
-			l_renderable_object.mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
+			l_renderable_object.mesh = p_mesh;
 
 			Token(BufferHost) l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
 			l_renderable_object.model = p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, l_buffer, p_buffer_memory.allocator.host_buffers.get(l_buffer));
@@ -367,12 +362,27 @@ namespace v2
 			return p_render_allocator.allocate_renderable_object(l_renderable_object);
 		};
 
-		inline static void free_renderable_object_with_mesh(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+		inline static void free_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+				const Token(RenderableObject) p_renderable_object)
+		{
+			RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
+			GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, l_renderable_object.model);
+			p_render_allocator.free_renderable_object(p_renderable_object);
+		};
+
+		inline static Token(RenderableObject) allocate_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+				D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
+		{
+			Token(Mesh) l_mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
+			return allocate_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_mesh);
+		};
+
+		inline static void free_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(RenderableObject) p_renderable_object)
 		{
 			RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
-			free_renderable_object_external_ressources(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_object);
-			p_render_allocator.free_renderable_object(p_renderable_object);
+			free_mesh_with_buffers(p_buffer_memory, p_render_allocator, l_renderable_object.mesh);
+			free_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_renderable_object);
 		};
 
 		inline static void free_renderable_object_external_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
@@ -400,6 +410,13 @@ namespace v2
 			return p_render_allocator.allocate_shader(l_shader_index);
 		};
 
+		inline static void free_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(ShaderIndex) p_shader)
+		{
+			p_graphics_allocator.free_shader_layout(p_render_allocator.heap.shaders.get(p_shader).shader_layout);
+			p_graphics_allocator.free_shader(p_render_allocator.heap.shaders.get(p_shader).shader_index);
+			p_render_allocator.free_shader(p_shader);
+		};
+
 		inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(ShaderIndex) p_shader)
 		{
@@ -408,20 +425,17 @@ namespace v2
 
 			p_render_allocator.heap.get_materials_and_renderableobject_linked_to_shader(p_shader, &l_materials, &l_renderable_objects);
 
-			for (loop(i, 0, l_materials.Size))
-			{
-				Material& l_material = p_render_allocator.heap.materials.get(l_materials.get(i));
-				l_material.free(p_graphics_allocator, p_buffer_memory);
-			}
-
 			for (loop(i, 0, l_renderable_objects.Size))
 			{
-				free_renderable_object_external_ressources(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_allocator.heap.renderable_objects.get(l_renderable_objects.get(i)));
+				free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_objects.get(i));
 			}
 
-			p_graphics_allocator.free_shader_layout(p_render_allocator.heap.shaders.get(p_shader).shader_layout);
-			p_graphics_allocator.free_shader(p_render_allocator.heap.shaders.get(p_shader).shader_index);
-			p_render_allocator.free_shader_with_materials_and_renderableobjects(p_shader);
+			for (loop(i, 0, l_materials.Size))
+			{
+				free_material_with_parameters(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_materials.get(i));
+			}
+
+			free_shader_with_shaderlayout(p_graphics_allocator, p_render_allocator, p_shader);
 
 			l_materials.free();
 			l_renderable_objects.free();

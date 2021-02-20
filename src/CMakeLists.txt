@@ -97,6 +97,7 @@ target_link_libraries(Scene2Test PUBLIC Scene2)
 
 add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
+target_link_libraries(Scene2MiddlewareTest PUBLIC Test_ShaderCompile)
 
 add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
 target_link_libraries(RenderTest PUBLIC Render)

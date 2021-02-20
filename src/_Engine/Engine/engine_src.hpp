@@ -60,7 +60,7 @@ private:
 
 inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, const v2::NodeEntry& p_node, const v2::NodeComponent& p_component)
 {
-	on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, p_component);
+	on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, p_component);
 };
 
 inline Engine Engine::allocate(const Slice<int8>& p_executable_path)
