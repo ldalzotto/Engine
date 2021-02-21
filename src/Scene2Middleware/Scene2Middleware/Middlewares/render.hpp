@@ -106,6 +106,7 @@ namespace v2
 		};
 
 		static constexpr component_t Type = HashRaw_constexpr(STR(MeshRendererComponent));
+		RenderRessourceHeader header;
 		int8 force_update;
 		Token(Node) scene_node;
 		Token(RenderableObject) renderable_object;
@@ -114,7 +115,7 @@ namespace v2
 		{
 			return MeshRendererComponent
 					{
-							1, p_scene_node, tk_bd(RenderableObject)
+							RenderRessourceHeader::build_default(), 1, p_scene_node, tk_bd(RenderableObject)
 					};
 		};
 	};
@@ -149,6 +150,33 @@ namespace v2
 			l_event.ressource = p_target_ressource_token;
 			return l_event;
 		};
+	};
+
+	struct ShaderModuleRessourceFreeEvent
+	{
+		Token(ShaderModuleRessource) ressource;
+	};
+
+	struct MeshRessourceFreeEvent
+	{
+		Token(MeshRessource) ressource;
+	};
+
+	struct ShaderRessourceFreeEvent
+	{
+		Token(ShaderRessource) ressource;
+	};
+
+	struct MaterialRessourceFreeEvent
+	{
+		Token(MaterialRessource) ressource;
+		Token(ShaderRessource) linked_shader;
+	};
+
+	struct MeshRendererComponentFreeEvent
+	{
+		Token(MeshRendererComponent) component;
+		Token(MaterialRessource) linked_material;
 	};
 
 	struct ShaderModuleRessourceAsset
@@ -222,6 +250,12 @@ namespace v2
 		Vector<RessourceAllocationEvent<MaterialRessource::Dependencies, MaterialRessourceAsset, MaterialRessource>> material_allocation_events;
 		Vector<MeshRendererAllocationEvent> mesh_renderer_allocation_events;
 
+		Vector<ShaderModuleRessourceFreeEvent> shadermodule_free_events;
+		Vector<MeshRessourceFreeEvent> mesh_free_events;
+		Vector<ShaderRessourceFreeEvent> shader_free_events;
+		Vector<MaterialRessourceFreeEvent> material_free_events;
+		Vector<MeshRendererComponentFreeEvent> meshrenderer_free_events;
+
 		PoolIndexed<MeshRendererComponent> mesh_renderers;
 		PoolIndexed<MeshRendererComponent::NestedDependencies> mesh_renderers_dependencies;
 
@@ -234,6 +268,11 @@ namespace v2
 					Vector<RessourceAllocationEvent<ShaderRessource::Dependencies, ShaderRessourceAsset, ShaderRessource>>::allocate(0),
 					Vector<RessourceAllocationEvent<MaterialRessource::Dependencies, MaterialRessourceAsset, MaterialRessource>>::allocate(0),
 					Vector<MeshRendererAllocationEvent>::allocate(0),
+					Vector<ShaderModuleRessourceFreeEvent>::allocate(0),
+					Vector<MeshRessourceFreeEvent>::allocate(0),
+					Vector<ShaderRessourceFreeEvent>::allocate(0),
+					Vector<MaterialRessourceFreeEvent>::allocate(0),
+					Vector<MeshRendererComponentFreeEvent>::allocate(0),
 					PoolIndexed<MeshRendererComponent>::allocate_default(),
 					PoolIndexed<MeshRendererComponent::NestedDependencies>::allocate_default()
 			};
@@ -249,6 +288,11 @@ namespace v2
 			assert_true(this->shader_allocation_events.empty());
 			assert_true(this->material_allocation_events.empty());
 			assert_true(this->mesh_renderer_allocation_events.empty());
+			assert_true(this->shadermodule_free_events.empty());
+			assert_true(this->mesh_free_events.empty());
+			assert_true(this->shader_free_events.empty());
+			assert_true(this->material_free_events.empty());
+			assert_true(this->meshrenderer_free_events.empty());
 			assert_true(!this->mesh_renderers.has_allocated_elements());
 			assert_true(!this->mesh_renderers_dependencies.has_allocated_elements());
 #endif
@@ -258,12 +302,67 @@ namespace v2
 			this->shader_allocation_events.free();
 			this->material_allocation_events.free();
 			this->mesh_renderer_allocation_events.free();
+			this->shadermodule_free_events.free();
+			this->mesh_free_events.free();
+			this->shader_free_events.free();
+			this->material_free_events.free();
+			this->meshrenderer_free_events.free();
 			this->mesh_renderers.free();
 			this->mesh_renderers_dependencies.free();
 		};
 
 		inline void step(D3Renderer& p_renderer, GPUContext& p_gpu_context)
 		{
+			for (loop_reverse(i, 0, this->meshrenderer_free_events.Size))
+			{
+				auto& l_event = this->meshrenderer_free_events.get(i);
+				MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.component);
+				MaterialRessource& l_linked_material = this->heap.materials.get(l_event.linked_material);
+				p_renderer.allocator.heap.unlink_material_with_renderable_object(l_linked_material.material, l_mesh_renderer.renderable_object);
+				D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_mesh_renderer.renderable_object);
+				this->mesh_renderers.release_element(l_event.component);
+				this->mesh_renderers_dependencies.release_element(tk_bf(MeshRendererComponent::NestedDependencies, l_event.component));
+				this->meshrenderer_free_events.pop_back();
+			}
+
+			for (loop_reverse(i, 0, this->material_free_events.Size))
+			{
+				auto& l_event = this->material_free_events.get(i);
+				MaterialRessource& l_ressource = this->heap.materials.get(l_event.ressource);
+				ShaderRessource& l_linked_shader = this->heap.shaders.get(l_event.linked_shader);
+				p_renderer.allocator.heap.unlink_shader_with_material(l_linked_shader.shader, l_ressource.material);
+				D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.material);
+				this->heap.materials.release_element(l_event.ressource);
+				this->material_free_events.pop_back();
+			}
+
+			for (loop_reverse(i, 0, this->shader_free_events.Size))
+			{
+				auto& l_event = this->shader_free_events.get(i);
+				ShaderRessource& l_ressource = this->heap.shaders.get(l_event.ressource);
+				D3RendererAllocatorComposition::free_shader_with_shaderlayout(p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.shader);
+				this->heap.shaders.release_element(l_event.ressource);
+				this->shader_free_events.pop_back();
+			}
+
+			for (loop_reverse(i, 0, this->mesh_free_events.Size))
+			{
+				auto& l_event = this->mesh_free_events.get(i);
+				MeshRessource& l_ressource = this->heap.mesh.get(l_event.ressource);
+				D3RendererAllocatorComposition::free_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_ressource.mesh);
+				this->heap.mesh.release_element(l_event.ressource);
+				this->mesh_free_events.pop_back();
+			}
+
+			for (loop_reverse(i, 0, this->shadermodule_free_events.Size))
+			{
+				auto& l_event = this->shadermodule_free_events.get(i);
+				ShaderModuleRessource& l_ressource = this->heap.shader_modules.get(l_event.ressource);
+				p_gpu_context.graphics_allocator.free_shader_module(l_ressource.shader_module);
+				this->heap.shader_modules.release_element(l_event.ressource);
+				this->shadermodule_free_events.pop_back();
+			}
+
 			for (loop_reverse(i, 0, this->shadermodule_allocation_events.Size))
 			{
 				auto& l_event = this->shadermodule_allocation_events.get(i);
@@ -328,6 +427,7 @@ namespace v2
 						this->heap.mesh.get(l_dependencies.mesh).mesh);
 				p_renderer.allocator.heap.link_material_with_renderable_object(this->heap.materials.get(l_dependencies.material).material,
 						l_mesh_renderer.renderable_object);
+				l_mesh_renderer.header.allocated = 1;
 
 				this->mesh_renderer_allocation_events.pop_back();
 			}
@@ -381,70 +481,136 @@ namespace v2
 				const ShaderRessourceAsset& p_shader, const MaterialRessourceAsset& p_material, const MeshRessourceAsset& p_mesh, const Token(Node) p_scene_node)
 		{
 			MeshRendererComponent::NestedDependencies l_mesh_renderer_depencies;
-
 			l_mesh_renderer_depencies.shader_dependencies.vertex_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_vertex_shader);
 			l_mesh_renderer_depencies.shader_dependencies.fragment_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_fragment_shader);
 			l_mesh_renderer_depencies.material_dependencies.shader = p_render_ressource_allocator.allocate_shader_inline(p_shader, l_mesh_renderer_depencies.shader_dependencies);
 			l_mesh_renderer_depencies.material = p_render_ressource_allocator.allocate_material_inline(p_material, l_mesh_renderer_depencies.material_dependencies);
 			l_mesh_renderer_depencies.mesh = p_render_ressource_allocator.allocate_mesh_inline(p_mesh);
-
 			return p_render_ressource_allocator.allocate_meshrenderer_inline(l_mesh_renderer_depencies, p_scene_node);
 		};
 
-		inline static void free_meshrenderer(RenderRessourceAllocator2& p_render_ressource_allocator, D3Renderer& p_renderer, GPUContext& p_gpu_context, const Token(MeshRendererComponent) p_mesh_renderer)
+		inline static void free_meshrenderer(RenderRessourceAllocator2& p_render_ressource_allocator, const Token(MeshRendererComponent) p_mesh_renderer)
 		{
 			MeshRendererComponent& l_mesh_renderer = p_render_ressource_allocator.mesh_renderers.get(p_mesh_renderer);
 			MeshRendererComponent::NestedDependencies l_mesh_renderer_dependencies = p_render_ressource_allocator.mesh_renderers_dependencies.get(tk_bf(MeshRendererComponent::NestedDependencies, p_mesh_renderer));
+
+			MaterialRessource& l_material_ressource = p_render_ressource_allocator.heap.materials.get(l_mesh_renderer_dependencies.material);
+			ShaderRessource& l_shader_ressource = p_render_ressource_allocator.heap.shaders.get(l_mesh_renderer_dependencies.material_dependencies.shader);
+			MeshRessource& l_mesh_ressource = p_render_ressource_allocator.heap.mesh.get(l_mesh_renderer_dependencies.mesh);
+			ShaderModuleRessource& l_vertex_module_ressource = p_render_ressource_allocator.heap.shader_modules.get(l_mesh_renderer_dependencies.shader_dependencies.vertex_shader);
+			ShaderModuleRessource& l_fragment_module_ressource = p_render_ressource_allocator.heap.shader_modules.get(l_mesh_renderer_dependencies.shader_dependencies.fragment_shader);
+
+			if (l_mesh_renderer.header.allocated)
 			{
-				MeshRessource& l_mesh_ressource = p_render_ressource_allocator.heap.mesh.get(l_mesh_renderer_dependencies.mesh);
-				if (l_mesh_ressource.header.allocated)
+				p_render_ressource_allocator.meshrenderer_free_events.push_back_element(MeshRendererComponentFreeEvent{ p_mesh_renderer, l_mesh_renderer_dependencies.material });
+			}
+			else
+			{
+
+				for (loop_reverse(i, 0, p_render_ressource_allocator.mesh_renderer_allocation_events.Size))
 				{
-					D3RendererAllocatorComposition::free_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_mesh_ressource.mesh);
-				}
-				p_render_ressource_allocator.heap.mesh.release_element(l_mesh_renderer_dependencies.mesh);
-
-
-				MaterialRessource& l_material_ressource = p_render_ressource_allocator.heap.materials.get(l_mesh_renderer_dependencies.material);
-
-				if (l_material_ressource.header.allocated)
-				{
-					p_renderer.allocator.heap.unlink_material_with_renderable_object(l_material_ressource.material, l_mesh_renderer.renderable_object);
-
-					D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_material_ressource.material);
-
-					ShaderRessource& l_shader_ressource = p_render_ressource_allocator.heap.shaders.get(l_mesh_renderer_dependencies.material_dependencies.shader);
-					if (l_shader_ressource.header.allocated)
+					auto& l_event = p_render_ressource_allocator.mesh_renderer_allocation_events.get(i);
+					if (tk_eq(l_event.mesh_renderer, p_mesh_renderer))
 					{
-						p_renderer.allocator.heap.unlink_shader_with_material(l_shader_ressource.shader, l_material_ressource.material);
-						D3RendererAllocatorComposition::free_shader_with_shaderlayout(p_gpu_context.graphics_allocator, p_renderer.allocator, l_shader_ressource.shader);
-
-						ShaderModuleRessource& l_vertex_shader = p_render_ressource_allocator.heap.shader_modules.get(l_mesh_renderer_dependencies.shader_dependencies.vertex_shader);
-						if (l_vertex_shader.header.allocated)
-						{
-							p_gpu_context.graphics_allocator.free_shader_module(l_vertex_shader.shader_module);
-						}
-						p_render_ressource_allocator.heap.shader_modules.release_element(l_mesh_renderer_dependencies.shader_dependencies.vertex_shader);
-
-						ShaderModuleRessource& l_fragement_shader = p_render_ressource_allocator.heap.shader_modules.get(l_mesh_renderer_dependencies.shader_dependencies.fragment_shader);
-						if (l_fragement_shader.header.allocated)
-						{
-							p_gpu_context.graphics_allocator.free_shader_module(l_fragement_shader.shader_module);
-						}
-						p_render_ressource_allocator.heap.shader_modules.release_element(l_mesh_renderer_dependencies.shader_dependencies.fragment_shader);
+						p_render_ressource_allocator.mesh_renderer_allocation_events.erase_element_at_always(i);
 					}
-
-					p_render_ressource_allocator.heap.shaders.release_element(l_mesh_renderer_dependencies.material_dependencies.shader);
-
 				}
-
-				p_render_ressource_allocator.heap.materials.release_element(l_mesh_renderer_dependencies.material);
-
-				D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_mesh_renderer.renderable_object);
+				p_render_ressource_allocator.mesh_renderers.release_element(p_mesh_renderer);
+				p_render_ressource_allocator.mesh_renderers_dependencies.release_element(tk_bf(MeshRendererComponent::NestedDependencies, p_mesh_renderer));
 			}
 
-			p_render_ressource_allocator.mesh_renderers.release_element(p_mesh_renderer);
-			p_render_ressource_allocator.mesh_renderers_dependencies.release_element(tk_bf(MeshRendererComponent::NestedDependencies, p_mesh_renderer));
+			if (l_material_ressource.header.allocated)
+			{
+				p_render_ressource_allocator.material_free_events.push_back_element(MaterialRessourceFreeEvent{ l_mesh_renderer_dependencies.material, l_mesh_renderer_dependencies.material_dependencies.shader });
+			}
+			else
+			{
+				for (loop_reverse(i, 0, p_render_ressource_allocator.material_allocation_events.Size))
+				{
+					auto& l_event = p_render_ressource_allocator.material_allocation_events.get(i);
+					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.material))
+					{
+						p_render_ressource_allocator.material_allocation_events.erase_element_at_always(i);
+					}
+				}
+				p_render_ressource_allocator.heap.materials.release_element(l_mesh_renderer_dependencies.material);
+			}
+
+			if (l_shader_ressource.header.allocated)
+			{
+				p_render_ressource_allocator.shader_free_events.push_back_element(ShaderRessourceFreeEvent{ l_mesh_renderer_dependencies.material_dependencies.shader });
+			}
+			else
+			{
+				for (loop_reverse(i, 0, p_render_ressource_allocator.shader_allocation_events.Size))
+				{
+					auto& l_event = p_render_ressource_allocator.shader_allocation_events.get(i);
+					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.material_dependencies.shader))
+					{
+						l_event.asset.specific_parameters.free();
+						p_render_ressource_allocator.shader_allocation_events.erase_element_at_always(i);
+					}
+				}
+				p_render_ressource_allocator.heap.shaders.release_element(l_mesh_renderer_dependencies.material_dependencies.shader);
+			}
+
+			if (l_mesh_ressource.header.allocated)
+			{
+				p_render_ressource_allocator.mesh_free_events.push_back_element(MeshRessourceFreeEvent{ l_mesh_renderer_dependencies.mesh });
+			}
+			else
+			{
+				for (loop_reverse(i, 0, p_render_ressource_allocator.mesh_allocation_events.Size))
+				{
+					auto& l_event = p_render_ressource_allocator.mesh_allocation_events.get(i);
+					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.mesh))
+					{
+						l_event.asset.initial_vertices.free();
+						l_event.asset.initial_indices.free();
+						p_render_ressource_allocator.mesh_allocation_events.erase_element_at_always(i);
+					}
+				}
+				p_render_ressource_allocator.heap.mesh.release_element(l_mesh_renderer_dependencies.mesh);
+			}
+
+			if (l_vertex_module_ressource.header.allocated)
+			{
+				p_render_ressource_allocator.shadermodule_free_events.push_back_element(ShaderModuleRessourceFreeEvent{ l_mesh_renderer_dependencies.shader_dependencies.vertex_shader });
+			}
+			else
+			{
+				for (loop_reverse(i, 0, p_render_ressource_allocator.shadermodule_allocation_events.Size))
+				{
+					auto& l_event = p_render_ressource_allocator.shadermodule_allocation_events.get(i);
+					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.shader_dependencies.vertex_shader))
+					{
+						l_event.asset.compiled_shader.free();
+						p_render_ressource_allocator.shadermodule_allocation_events.erase_element_at_always(i);
+					}
+				}
+				p_render_ressource_allocator.heap.shader_modules.release_element(l_mesh_renderer_dependencies.shader_dependencies.vertex_shader);
+			}
+
+			if (l_fragment_module_ressource.header.allocated)
+			{
+				p_render_ressource_allocator.shadermodule_free_events.push_back_element(ShaderModuleRessourceFreeEvent{ l_mesh_renderer_dependencies.shader_dependencies.fragment_shader });
+			}
+			else
+			{
+				for (loop_reverse(i, 0, p_render_ressource_allocator.shadermodule_allocation_events.Size))
+				{
+					auto& l_event = p_render_ressource_allocator.shadermodule_allocation_events.get(i);
+					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.shader_dependencies.fragment_shader))
+					{
+						l_event.asset.compiled_shader.free();
+						p_render_ressource_allocator.shadermodule_allocation_events.erase_element_at_always(i);
+					}
+				}
+				p_render_ressource_allocator.heap.shader_modules.release_element(l_mesh_renderer_dependencies.shader_dependencies.fragment_shader);
+			}
+
 		};
+
 	};
 
 	struct RenderMiddleWare
@@ -520,4 +686,5 @@ namespace v2
 			*/
 		};
 	};
+
 };

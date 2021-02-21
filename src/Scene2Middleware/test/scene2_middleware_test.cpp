@@ -262,10 +262,42 @@ namespace v2
 					l_node
 			);
 
+			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
+					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
+					ShaderRessourceAsset{
+							Span<ShaderLayoutParameterType>::allocate_slice(l_shader_parameter_layout.slice),
+							0,
+							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
+					},
+					MaterialRessourceAsset{},
+					MeshRessourceAsset{
+							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
+					},
+					l_node
+			);
+
 			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
+			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_2));
 
 			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 
+			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
+					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
+					ShaderRessourceAsset{
+							Span<ShaderLayoutParameterType>::allocate_slice(l_shader_parameter_layout.slice),
+							0,
+							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
+					},
+					MaterialRessourceAsset{},
+					MeshRessourceAsset{
+							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
+					},
+					l_node
+			);
+
+			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_3));
 			l_scene.remove_node(l_scene.get_node(l_node));
 		}
 		l_scene.consume_component_events_stateful(component_releaser);

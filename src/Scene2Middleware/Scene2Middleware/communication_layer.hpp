@@ -71,9 +71,9 @@ namespace v2
 			return NodeComponent{ MeshRendererComponent::Type, tk_v(p_component) };
 		};
 
-		inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, D3Renderer& p_renderer, GPUContext& p_gpu_context, const NodeComponent& p_node_component)
+		inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
 		{
-			RenderRessourceAllocator2Composition::free_meshrenderer(p_render_middleware.allocator, p_renderer, p_gpu_context, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+			RenderRessourceAllocator2Composition::free_meshrenderer(p_render_middleware.allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
 		};
 	};
 
@@ -91,7 +91,7 @@ namespace v2
 			break;
 		case v2::MeshRendererComponent::Type:
 		{
-			MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_renderer, p_gpu_context, p_node_component);
+			MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_node_component);
 		}
 			break;
 		default:
