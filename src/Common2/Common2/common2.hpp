@@ -22,11 +22,12 @@
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
 
-
+#include "./Functional/hash.hpp"
 
 #include "./Functional/sort.hpp"
 
 #include "./Container/vector.hpp"
+#include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
 #include "./Container/varying_vector.hpp"
 #include "./Container/string.hpp"
@@ -41,7 +42,6 @@
 #include "./Container/Specialization/heap_memory.hpp"
 
 #include "./Functional/string_functions.hpp"
-#include "./Functional/hash.hpp"
 
 #include "./Serialization/json.hpp"
 #include "./Serialization/types.hpp"

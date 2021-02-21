@@ -206,6 +206,44 @@ inline void vector_test()
 
 };
 
+inline void hashmap_test()
+{
+	struct Key
+	{
+		uimax v1, v2, v3;
+	};
+
+	HashMap<Key, uimax> l_map = HashMap<Key, uimax>::allocate(2);
+
+	{
+		// push_key_value
+		l_map.push_key_value_nothashed(Key{ 0, 0, 0 }, 0);
+		l_map.push_key_value_nothashed(Key{ 0, 0, 1 }, 1);
+
+		assert_true(l_map.get_capacity() == 2);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 0, 0 }) == 0);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 0, 1 }) == 1);
+
+		l_map.push_key_value_nothashed(Key{ 0, 1, 1 }, 2);
+
+		assert_true(l_map.get_capacity() == 4);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 0, 0 }) == 0);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 0, 1 }) == 1);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 1, 1 }) == 2);
+
+		//put_value
+		l_map.put_value_nothashed(Key{ 0, 0, 1 }, 10);
+		assert_true(*l_map.get_value_nothashed(Key{ 0, 0, 1 }) == 10);
+
+		//erase_key
+		assert_true(l_map.has_key_nothashed(Key{ 0, 0, 1 }));
+		l_map.erase_key_nothashed(Key{ 0, 0, 1 });
+		assert_true(!l_map.has_key_nothashed(Key{ 0, 0, 1 }));
+	}
+
+	l_map.free();
+};
+
 inline void pool_test()
 {
 	Pool<uimax> l_pool_sizet = Pool<uimax>::allocate(10);
@@ -1381,6 +1419,7 @@ int main()
 {
 	slice_span_test();
 	vector_test();
+	hashmap_test();
 	pool_test();
 	varyingvector_test();
 	vectorofvector_test();

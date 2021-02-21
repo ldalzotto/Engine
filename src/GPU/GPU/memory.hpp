@@ -1200,7 +1200,7 @@ namespace v2
 		}
 	};
 
-	inline void BufferEvents::remove_buffer_gpu_references(const Token<BufferGPU> p_buffer_gpu)
+	inline void BufferEvents::remove_buffer_gpu_references(const Token(BufferGPU) p_buffer_gpu)
 	{
 		for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
 		{
@@ -1225,7 +1225,7 @@ namespace v2
 		}
 	};
 
-	inline void BufferEvents::remove_image_host_references(const Token<ImageHost> p_image_host)
+	inline void BufferEvents::remove_image_host_references(const Token(ImageHost) p_image_host)
 	{
 		for (vector_loop_reverse(&this->image_host_allocate_events, i))
 		{
@@ -1237,7 +1237,7 @@ namespace v2
 		}
 	};
 
-	inline void BufferEvents::remove_image_gpu_references(const Token<ImageGPU> p_image_gpu)
+	inline void BufferEvents::remove_image_gpu_references(const Token(ImageGPU) p_image_gpu)
 	{
 		for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
 		{

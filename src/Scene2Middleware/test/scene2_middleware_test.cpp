@@ -299,6 +299,7 @@ namespace v2
 
 			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_3));
 			l_scene.remove_node(l_scene.get_node(l_node));
+
 		}
 		l_scene.consume_component_events_stateful(component_releaser);
 		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
