@@ -147,7 +147,7 @@ struct PoolOfVector
 
 		inline static Element_ShadowVector build(PoolOfVector<ElementType>* p_pool_of_vector, const PoolOfVectorToken<ElementType> p_index)
 		{
-			return Element_ShadowVector{p_pool_of_vector, p_index};
+			return Element_ShadowVector{ p_pool_of_vector, p_index };
 		};
 
 		inline uimax sv_get_size()
@@ -163,6 +163,11 @@ struct PoolOfVector
 		inline void sv_push_back_element(const ElementType& p_element)
 		{
 			this->pool_of_vector->element_push_back_element(this->index, p_element);
+		};
+
+		inline void sv_erase_element_at_always(const uimax p_index)
+		{
+			this->pool_of_vector->element_erase_element_at_always(this->index, p_index);
 		};
 
 		inline Slice<ElementType> sv_to_slice()

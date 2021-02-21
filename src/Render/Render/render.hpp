@@ -61,11 +61,15 @@ namespace v2
 
 		void link_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material);
 
+		void unlink_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material);
+
 		void get_materials_and_renderableobject_linked_to_shader(const Token(ShaderIndex) p_shader, Vector<Token(Material) >* in_out_materials, Vector<Token(RenderableObject) >* in_out_renderableobject);
 
 		PoolOfVector<Token(Material) >::Element_ShadowVector get_materials_from_shader(const Token(ShaderIndex) p_shader);
 
 		void link_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object);
+
+		void unlink_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object);
 
 		PoolOfVector<Token(RenderableObject) >::Element_ShadowVector get_renderableobjects_from_material(const Token(Material) p_material);
 
@@ -192,6 +196,19 @@ namespace v2
 		this->shaders_to_materials.element_push_back_element(tk_bf(Slice<Token(Material)>, p_shader), p_material);
 	};
 
+	inline void D3RendererHeap::unlink_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material)
+	{
+		auto l_materials = this->get_materials_from_shader(p_shader);
+		for (loop(i, 0, l_materials.get_size()))
+		{
+			if (tk_eq(l_materials.get(i), p_material))
+			{
+				l_materials.erase_element_at_always(i);
+				return;
+			}
+		}
+	};
+
 	inline void D3RendererHeap::get_materials_and_renderableobject_linked_to_shader(const Token(ShaderIndex) p_shader, Vector<Token(Material) >* in_out_materials, Vector<Token(RenderableObject) >* in_out_renderableobject)
 	{
 		auto l_materials = this->get_materials_from_shader(p_shader);
@@ -210,6 +227,19 @@ namespace v2
 	inline void D3RendererHeap::link_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object)
 	{
 		this->material_to_renderable_objects.element_push_back_element(tk_bf(Slice<Token(RenderableObject)>, p_material), p_renderable_object);
+	};
+
+	inline void D3RendererHeap::unlink_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object)
+	{
+		auto l_linked_renderable_objects = this->get_renderableobjects_from_material(p_material);
+		for (loop(i, 0, l_linked_renderable_objects.get_size()))
+		{
+			if (tk_eq(l_linked_renderable_objects.get(i), p_renderable_object))
+			{
+				l_linked_renderable_objects.erase_element_at_always(i);
+				return;
+			}
+		}
 	};
 
 	inline PoolOfVector<Token(RenderableObject) >::Element_ShadowVector D3RendererHeap::get_renderableobjects_from_material(const Token(Material) p_material)
@@ -420,25 +450,28 @@ namespace v2
 		inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
 				D3RendererAllocator& p_render_allocator, const Token(ShaderIndex) p_shader)
 		{
-			Vector<Token(Material) > l_materials = Vector<Token(Material) >::allocate(0);
-			Vector<Token(RenderableObject) > l_renderable_objects = Vector<Token(RenderableObject) >::allocate(0);
+			auto l_materials_to_remove = p_render_allocator.heap.get_materials_from_shader(p_shader);
 
-			p_render_allocator.heap.get_materials_and_renderableobject_linked_to_shader(p_shader, &l_materials, &l_renderable_objects);
-
-			for (loop(i, 0, l_renderable_objects.Size))
+			for (loop_reverse(i, 0, l_materials_to_remove.get_size()))
 			{
-				free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_objects.get(i));
+				Token(Material) l_material_to_remove = l_materials_to_remove.get(i);
+
+				auto l_renderable_objects_to_remove = p_render_allocator.heap.get_renderableobjects_from_material(l_material_to_remove);
+
+
+				for (loop_reverse(j, 0, l_renderable_objects_to_remove.get_size()))
+				{
+					Token(RenderableObject) l_renderable_object_to_remove = l_renderable_objects_to_remove.get(j);
+					p_render_allocator.heap.unlink_material_with_renderable_object(l_material_to_remove, l_renderable_object_to_remove);
+					free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_object_to_remove);
+				}
+				
+				p_render_allocator.heap.unlink_shader_with_material(p_shader, l_material_to_remove);
+				free_material_with_parameters(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_material_to_remove);
 			}
 
-			for (loop(i, 0, l_materials.Size))
-			{
-				free_material_with_parameters(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_materials.get(i));
-			}
 
 			free_shader_with_shaderlayout(p_graphics_allocator, p_render_allocator, p_shader);
-
-			l_materials.free();
-			l_renderable_objects.free();
 		};
 	};
 

@@ -247,8 +247,21 @@ namespace v2
 			Span<Vertex> l_vertices_span = Span<Vertex>::allocate_slice(Slice<Vertex>::build_memory_elementnb(l_vertices, 14));
 			Span<uint32> l_indices_span = Span<uint32>::allocate_slice(Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 
-			Token(MeshRendererComponent) l_mesh_renderer = l_scene_middleware.render_middleware.allocator.allocate_meshrenderer_component(l_node, l_compiled_vertex, l_compiled_fragment,
-					l_shader_parameter_layout, 0, ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }, l_vertices_span, l_indices_span);
+			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+					ShaderModuleRessourceAsset{ l_compiled_vertex },
+					ShaderModuleRessourceAsset{ l_compiled_fragment },
+					ShaderRessourceAsset{
+							l_shader_parameter_layout,
+							0,
+							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
+					},
+					MaterialRessourceAsset{},
+					MeshRessourceAsset{
+							l_vertices_span, l_indices_span
+					},
+					l_node
+			);
+
 			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
 			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
