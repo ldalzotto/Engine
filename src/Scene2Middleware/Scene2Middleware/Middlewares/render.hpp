@@ -51,15 +51,23 @@ namespace v2
 		};
 
 		RenderRessourceHeader header;
+		hash_t id;
 		Token(ShaderIndex) shader;
 
 		inline static ShaderRessource build_default()
 		{
 			return ShaderRessource{
 					RenderRessourceHeader::build_default(),
+					0,
 					tk_bd(ShaderIndex)
 			};
 		};
+	};
+
+	struct ShaderRessourceCounted
+	{
+		Token(ShaderRessource) ressource;
+		uimax counter;
 	};
 
 	struct MaterialRessource
@@ -135,7 +143,7 @@ namespace v2
 		RessourceDependencies_t dependencies;
 		union
 		{
-			uimax database_id;
+			hash_t database_id;
 			RessourceAsset_t asset;
 		};
 		Token(Ressource_t) ressource;
@@ -207,6 +215,7 @@ namespace v2
 		Pool<ShaderModuleRessource> shader_modules;
 		Pool<MeshRessource> mesh;
 		Pool<ShaderRessource> shaders;
+		HashMap<hash_t, ShaderRessourceCounted> shaders_v2;
 		Pool<MaterialRessource> materials;
 		CameraComponent camera;
 
@@ -216,6 +225,7 @@ namespace v2
 					Pool<ShaderModuleRessource>::allocate(0),
 					Pool<MeshRessource>::allocate(0),
 					Pool<ShaderRessource>::allocate(0),
+					HashMap<hash_t, ShaderRessourceCounted>::allocate_default(),
 					Pool<MaterialRessource>::allocate(0)
 			};
 		};
@@ -226,11 +236,13 @@ namespace v2
 			assert_true(!this->shader_modules.has_allocated_elements());
 			assert_true(!this->mesh.has_allocated_elements());
 			assert_true(!this->shaders.has_allocated_elements());
+			assert_true(this->shaders_v2.empty());
 			assert_true(!this->materials.has_allocated_elements());
 #endif
 			this->shader_modules.free();
 			this->mesh.free();
 			this->shaders.free();
+			this->shaders_v2.free();
 			this->materials.free();
 		};
 	};
@@ -449,6 +461,27 @@ namespace v2
 			return l_event.ressource;
 		};
 
+		inline Token(ShaderRessource) allocate_shader_v2_inline(const hash_t p_shader_id, const ShaderRessourceAsset& p_shader_ressource_asset, const ShaderRessource::Dependencies& p_dependencies)
+		{
+			if (this->heap.shaders_v2.has_key_nothashed(p_shader_id))
+			{
+				auto* l_ressource = this->heap.shaders_v2.get_value_nothashed(p_shader_id);
+				l_ressource->counter += 1;
+				return l_ressource->ressource;
+			}
+			else
+			{
+				Token(ShaderRessource) l_ressource = this->allocate_shader_inline(p_shader_ressource_asset, p_dependencies);
+				this->heap.shaders_v2.push_key_value_nothashed(p_shader_id,
+						ShaderRessourceCounted{
+								l_ressource,
+								1
+						});
+				this->heap.shaders.get(l_ressource).id = p_shader_id;
+				return l_ressource;
+			}
+		};
+
 		inline Token(MeshRessource) allocate_mesh_inline(const MeshRessourceAsset& p_mesh_ressource_asset)
 		{
 			auto l_event = RessourceAllocationEvent<int8, MeshRessourceAsset, MeshRessource>::build_inline(this->heap.mesh.alloc_element(MeshRessource::build_default()), 0,
@@ -478,12 +511,12 @@ namespace v2
 	{
 		inline static Token(MeshRendererComponent) allocate_meshrenderer_inline_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator,
 				const ShaderModuleRessourceAsset& p_vertex_shader, const ShaderModuleRessourceAsset& p_fragment_shader,
-				const ShaderRessourceAsset& p_shader, const MaterialRessourceAsset& p_material, const MeshRessourceAsset& p_mesh, const Token(Node) p_scene_node)
+				const hash_t p_shader_id, const ShaderRessourceAsset& p_shader, const MaterialRessourceAsset& p_material, const MeshRessourceAsset& p_mesh, const Token(Node) p_scene_node)
 		{
 			MeshRendererComponent::NestedDependencies l_mesh_renderer_depencies;
 			l_mesh_renderer_depencies.shader_dependencies.vertex_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_vertex_shader);
 			l_mesh_renderer_depencies.shader_dependencies.fragment_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_fragment_shader);
-			l_mesh_renderer_depencies.material_dependencies.shader = p_render_ressource_allocator.allocate_shader_inline(p_shader, l_mesh_renderer_depencies.shader_dependencies);
+			l_mesh_renderer_depencies.material_dependencies.shader = p_render_ressource_allocator.allocate_shader_v2_inline(p_shader_id, p_shader, l_mesh_renderer_depencies.shader_dependencies);
 			l_mesh_renderer_depencies.material = p_render_ressource_allocator.allocate_material_inline(p_material, l_mesh_renderer_depencies.material_dependencies);
 			l_mesh_renderer_depencies.mesh = p_render_ressource_allocator.allocate_mesh_inline(p_mesh);
 			return p_render_ressource_allocator.allocate_meshrenderer_inline(l_mesh_renderer_depencies, p_scene_node);
@@ -538,20 +571,33 @@ namespace v2
 
 			if (l_shader_ressource.header.allocated)
 			{
-				p_render_ressource_allocator.shader_free_events.push_back_element(ShaderRessourceFreeEvent{ l_mesh_renderer_dependencies.material_dependencies.shader });
+				ShaderRessourceCounted* l_counter = p_render_ressource_allocator.heap.shaders_v2.get_value_nothashed(l_shader_ressource.id);
+				l_counter->counter -= 1;
+				if (l_counter->counter == 0)
+				{
+					p_render_ressource_allocator.heap.shaders_v2.erase_key_nothashed(l_shader_ressource.id);
+					p_render_ressource_allocator.shader_free_events.push_back_element(ShaderRessourceFreeEvent{ l_mesh_renderer_dependencies.material_dependencies.shader });
+				}
 			}
 			else
 			{
-				for (loop_reverse(i, 0, p_render_ressource_allocator.shader_allocation_events.Size))
+				ShaderRessourceCounted* l_counter = p_render_ressource_allocator.heap.shaders_v2.get_value_nothashed(l_shader_ressource.id);
+				l_counter->counter -= 1;
+				if (l_counter->counter == 0)
 				{
-					auto& l_event = p_render_ressource_allocator.shader_allocation_events.get(i);
-					if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.material_dependencies.shader))
+					p_render_ressource_allocator.heap.shaders_v2.erase_key_nothashed(l_shader_ressource.id);
+
+					for (loop_reverse(i, 0, p_render_ressource_allocator.shader_allocation_events.Size))
 					{
-						l_event.asset.specific_parameters.free();
-						p_render_ressource_allocator.shader_allocation_events.erase_element_at_always(i);
+						auto& l_event = p_render_ressource_allocator.shader_allocation_events.get(i);
+						if (tk_eq(l_event.ressource, l_mesh_renderer_dependencies.material_dependencies.shader))
+						{
+							l_event.asset.specific_parameters.free();
+							p_render_ressource_allocator.shader_allocation_events.erase_element_at_always(i);
+						}
 					}
+					p_render_ressource_allocator.heap.shaders.release_element(l_mesh_renderer_dependencies.material_dependencies.shader);
 				}
-				p_render_ressource_allocator.heap.shaders.release_element(l_mesh_renderer_dependencies.material_dependencies.shader);
 			}
 
 			if (l_mesh_ressource.header.allocated)

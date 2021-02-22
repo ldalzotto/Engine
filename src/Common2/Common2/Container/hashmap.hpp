@@ -70,6 +70,19 @@ struct HashMap
 		return this->Memory.Capacity;
 	};
 
+	inline int8 empty()
+	{
+		for(loop(i, 0, this->Slots.Capacity))
+		{
+			if(this->Slots.get(i))
+			{
+				return 0;
+			}
+		}
+
+		return 1;
+	};
+
 	inline int8 has_key(const hash_t p_hash)
 	{
 		return this->Slots.get(p_hash);

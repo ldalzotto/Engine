@@ -247,14 +247,17 @@ namespace v2
 			Span<Vertex> l_vertices_span = Span<Vertex>::allocate_slice(Slice<Vertex>::build_memory_elementnb(l_vertices, 14));
 			Span<uint32> l_indices_span = Span<uint32>::allocate_slice(Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 
+			hash_t l_shader_asset_id = 1482658;
+			ShaderRessourceAsset l_shader_asset = ShaderRessourceAsset{
+					l_shader_parameter_layout,
+					0,
+					ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
+			};
+
 			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
 					ShaderModuleRessourceAsset{ l_compiled_vertex },
 					ShaderModuleRessourceAsset{ l_compiled_fragment },
-					ShaderRessourceAsset{
-							l_shader_parameter_layout,
-							0,
-							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
-					},
+					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
 					MeshRessourceAsset{
 							l_vertices_span, l_indices_span
@@ -265,11 +268,7 @@ namespace v2
 			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
 					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
 					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
-					ShaderRessourceAsset{
-							Span<ShaderLayoutParameterType>::allocate_slice(l_shader_parameter_layout.slice),
-							0,
-							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
-					},
+					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
 					MeshRessourceAsset{
 							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
@@ -285,11 +284,7 @@ namespace v2
 			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
 					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
 					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
-					ShaderRessourceAsset{
-							Span<ShaderLayoutParameterType>::allocate_slice(l_shader_parameter_layout.slice),
-							0,
-							ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
-					},
+					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
 					MeshRessourceAsset{
 							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
