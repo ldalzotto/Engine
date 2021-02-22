@@ -35,6 +35,7 @@
 #include "./Container/Specialization/vector_of_vector.hpp"
 #include "./Container/Specialization/pool_of_vector.hpp"
 #include "./Container/Specialization/pool_indexed.hpp"
+#include "./Container/Specialization/pool_hashed_counted.hpp"
 
 #include "./Container/heap.hpp"
 #include "./Container/tree.hpp"

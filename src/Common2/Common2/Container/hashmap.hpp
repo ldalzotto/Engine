@@ -20,9 +20,6 @@ struct HashMap_HashFn<hash_t>
 	};
 };
 
-
-// TODO -> adding a method to push a raw hash_t to avoir calling the hash
-// function
 template<class KeyType, class ElementType>
 struct HashMap
 {

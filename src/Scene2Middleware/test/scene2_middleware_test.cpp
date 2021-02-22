@@ -247,6 +247,12 @@ namespace v2
 			Span<Vertex> l_vertices_span = Span<Vertex>::allocate_slice(Slice<Vertex>::build_memory_elementnb(l_vertices, 14));
 			Span<uint32> l_indices_span = Span<uint32>::allocate_slice(Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 
+			hash_t l_vertex_shader_id = 12;
+			ShaderModuleRessourceAsset l_vertex_shader = ShaderModuleRessourceAsset{ l_compiled_vertex };
+
+			hash_t l_fragment_shader_id = 14;
+			ShaderModuleRessourceAsset l_fragment_shader = ShaderModuleRessourceAsset{ l_compiled_fragment };
+
 			hash_t l_shader_asset_id = 1482658;
 			ShaderRessourceAsset l_shader_asset = ShaderRessourceAsset{
 					l_shader_parameter_layout,
@@ -254,25 +260,26 @@ namespace v2
 					ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
 			};
 
+			hash_t l_mesh_id = 1486;
+			MeshRessourceAsset l_mesh_asset = MeshRessourceAsset{
+					l_vertices_span, l_indices_span
+			};
+
 			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					ShaderModuleRessourceAsset{ l_compiled_vertex },
-					ShaderModuleRessourceAsset{ l_compiled_fragment },
+					l_vertex_shader_id, l_vertex_shader,
+					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
-					MeshRessourceAsset{
-							l_vertices_span, l_indices_span
-					},
+					l_mesh_id, l_mesh_asset,
 					l_node
 			);
 
 			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
-					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
+					l_vertex_shader_id, l_vertex_shader,
+					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
-					MeshRessourceAsset{
-							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
-					},
+					l_mesh_id, l_mesh_asset,
 					l_node
 			);
 
@@ -282,13 +289,11 @@ namespace v2
 			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 
 			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_vertex.slice) },
-					ShaderModuleRessourceAsset{ Span<int8>::allocate_slice(l_compiled_fragment.slice) },
+					l_vertex_shader_id, l_vertex_shader,
+					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
 					MaterialRessourceAsset{},
-					MeshRessourceAsset{
-							Span<Vertex>::allocate_slice(l_vertices_span.slice), Span<uint32>::allocate_slice(l_indices_span.slice)
-					},
+					l_mesh_id, l_mesh_asset,
 					l_node
 			);
 
