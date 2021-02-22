@@ -122,6 +122,22 @@ inline static int8* memory_cpy_safe(int8* p_dst, const uimax p_dst_size, const i
 	return memory_cpy(p_dst, p_src, p_size);
 };
 
+inline void memory_zero(int8* p_dst, const uimax p_size)
+{
+	::memset(p_dst, 0, p_size);
+};
+
+inline void memory_zero_safe(int8* p_dst, const uimax p_dst_size, const uimax p_size)
+{
+#if STANDARD_ALLOCATION_BOUND_TEST
+	if (p_size > p_dst_size)
+	{
+		abort();
+	}
+#endif
+	memory_zero(p_dst, p_size);
+};
+
 
 inline int8* memory_move(int8* p_dst, const int8* p_src, const uimax p_size)
 {

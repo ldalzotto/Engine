@@ -158,6 +158,11 @@ struct Slice
 		slice_memcpy(l_target, p_elements_3);
 	};
 
+	inline void zero()
+	{
+		slice_zero(*this);
+	};
+
 	inline void bound_inside_check(const Slice<ElementType>& p_tested_slice)
 	{
 #if CONTAINER_BOUND_TEST
@@ -250,6 +255,17 @@ inline int8* slice_memcpy(const Slice<ElementType>& p_target, const Slice<Elemen
 #else
 	return memory_cpy((int8*)p_target.Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
 #endif
+};
+
+template<class ElementType>
+inline void slice_zero(const Slice<ElementType>& p_target)
+{
+#if STANDARD_ALLOCATION_BOUND_TEST
+	memory_zero_safe((int8*)p_target.Begin, p_target.Size * sizeof(ElementType), p_target.Size * sizeof(ElementType));
+#else
+	memory_zero((int8*)p_target.Begin, p_target.Size * sizeof(ElementType));
+#endif
+
 };
 
 template<class ElementType>

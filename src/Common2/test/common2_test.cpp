@@ -208,14 +208,14 @@ inline void vector_test()
 
 inline void hashmap_test()
 {
-	struct Key
 	{
-		uimax v1, v2, v3;
-	};
+		struct Key
+		{
+			uimax v1, v2, v3;
+		};
 
-	HashMap<Key, uimax> l_map = HashMap<Key, uimax>::allocate(2);
+		HashMap<Key, uimax> l_map = HashMap<Key, uimax>::allocate(2);
 
-	{
 		// push_key_value
 		l_map.push_key_value_nothashed(Key{ 0, 0, 0 }, 0);
 		l_map.push_key_value_nothashed(Key{ 0, 0, 1 }, 1);
@@ -239,9 +239,39 @@ inline void hashmap_test()
 		assert_true(l_map.has_key_nothashed(Key{ 0, 0, 1 }));
 		l_map.erase_key_nothashed(Key{ 0, 0, 1 });
 		assert_true(!l_map.has_key_nothashed(Key{ 0, 0, 1 }));
+
+		l_map.free();
 	}
 
-	l_map.free();
+	{
+		HashMap<hash_t, uimax> l_map = HashMap<hash_t, uimax>::allocate(2);
+
+		l_map.push_key_value_nothashed(1, 0);
+		l_map.push_key_value_nothashed(0, 1);
+
+		assert_true(l_map.get_capacity() == 2);
+		assert_true(*l_map.get_value_nothashed(1) == 0);
+		assert_true(*l_map.get_value_nothashed(0) == 1);
+
+		l_map.push_key_value_nothashed(12, 2);
+
+		assert_true(l_map.get_capacity() == 8);
+
+		assert_true(*l_map.get_value_nothashed(1) == 0);
+		assert_true(*l_map.get_value_nothashed(0) == 1);
+		assert_true(*l_map.get_value_nothashed(12) == 2);
+
+		//put_value
+		l_map.put_value_nothashed(0, 10);
+		assert_true(*l_map.get_value_nothashed(0) == 10);
+
+		//erase_key
+		assert_true(l_map.has_key_nothashed(0));
+		l_map.erase_key_nothashed(0);
+		assert_true(!l_map.has_key_nothashed(0));
+
+		l_map.free();
+	}
 };
 
 inline void pool_test()
@@ -452,9 +482,9 @@ inline void varyingvector_test()
 
 
 		Slice<int8> l_varyingvector_element_2 = l_varyingvector.get_element(2);
-		assert_true(*cast(uimax*, l_varyingvector_element_2.Begin) == l_element_0);
-		assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin) == l_element_1);
-		assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin) == l_element_2);
+		assert_true(*cast(uimax *, l_varyingvector_element_2.Begin) == l_element_0);
+		assert_true(*cast(uimax *, l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin) == l_element_1);
+		assert_true(*cast(uimax *, l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin) == l_element_2);
 	}
 
 	{
