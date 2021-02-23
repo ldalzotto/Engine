@@ -32,56 +32,30 @@ struct PoolHashedCounted
 		return !this->pool.has_allocated_elements() && this->CountMap.empty();
 	};
 
-	struct IncrementOrAllocateState
+	//TODO -> simplify these templated functions to smaller ones and composition
+	//TODO -> add test :)
+	template<class AllocatedElementBuilderFunc, class OnAllocatedFunc>
+	inline Token(ElementType) increment_or_allocate_3(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func,
+			const OnAllocatedFunc& p_on_allocated_func)
 	{
-		enum class State
+		if (this->CountMap.has_key_nothashed(p_key))
 		{
-			UNDEFINED = 0, WAITING_FOR_ELEMENT = 1, INCREMENTED = 2, ALLOCATED = 3, END = ALLOCATED + 1
-		} state;
-		KeyType key;
-		ElementType element_to_allocate;
-		Token(ElementType) allocated_token;
-
-		inline static IncrementOrAllocateState build(const KeyType& p_key)
-		{
-			return IncrementOrAllocateState{
-					State::UNDEFINED, p_key
-			};
-		};
-	};
-
-	inline void increment_or_allocate_2(IncrementOrAllocateState& in_out_state)
-	{
-		switch (in_out_state.state)
-		{
-		case IncrementOrAllocateState::State::UNDEFINED:
-		{
-			if (this->CountMap.has_key_nothashed(in_out_state.key))
-			{
-				CountElement* l_counted_element = this->CountMap.get_value_nothashed(in_out_state.key);
-				l_counted_element->counter += 1;
-				in_out_state.allocated_token = l_counted_element->token;
-				in_out_state.state = IncrementOrAllocateState::State::INCREMENTED;
-			}
-			else
-			{
-				in_out_state.state = IncrementOrAllocateState::State::WAITING_FOR_ELEMENT;
-			}
+			CountElement* l_counted_element = this->CountMap.get_value_nothashed(p_key);
+			l_counted_element->counter += 1;
+			return l_counted_element->token;
 		}
-			break;
-		case IncrementOrAllocateState::State::WAITING_FOR_ELEMENT:
+		else
 		{
-			in_out_state.allocated_token = this->pool.alloc_element(in_out_state.element_to_allocate);
-			this->CountMap.push_key_value_nothashed(in_out_state.key, CountElement{ in_out_state.allocated_token, 1 });
-			in_out_state.state = IncrementOrAllocateState::State::ALLOCATED;
-		}
-			break;
+			Token(ElementType) l_allocated_token = this->pool.alloc_element(p_allocated_element_builder_func(p_key));
+			this->CountMap.push_key_value_nothashed(p_key, CountElement{ l_allocated_token, 1 });
+			p_on_allocated_func(l_allocated_token);
+			return l_allocated_token;
 		}
 	};
 
 	struct DecrementOrDeallocateReturn
 	{
-		int8 id_deallocated;
+		int8 is_deallocated;
 		Token(ElementType) deallocated_token;
 	};
 
@@ -91,8 +65,6 @@ struct PoolHashedCounted
 		l_counted_element->counter -= 1;
 		if (l_counted_element->counter == 0)
 		{
-			// p_element_deallocator(this->pool.get(l_counted_element->token));
-			// this->pool.release_element(l_counted_element->token);
 			this->CountMap.erase_key_nothashed(p_key);
 			return DecrementOrDeallocateReturn{
 					1, l_counted_element->token
@@ -103,3 +75,7 @@ struct PoolHashedCounted
 		};
 	};
 };
+
+#define ShadowPoolHashedCounted(KeyType, ElementType) ShadowPoolHashedCounted_##KeyType_##ElementType
+#define ShadowPoolHashedCounted_member_pool pool
+#define ShadowPoolHashedCounted_decrement_or_deallocate_pool_not_modified(p_key) decrement_or_deallocate_pool_not_modified(p_key)

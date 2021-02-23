@@ -248,20 +248,20 @@ namespace v2
 			Span<uint32> l_indices_span = Span<uint32>::allocate_slice(Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
 
 			hash_t l_vertex_shader_id = 12;
-			ShaderModuleRessourceAsset l_vertex_shader = ShaderModuleRessourceAsset{ l_compiled_vertex };
+			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset{ l_compiled_vertex };
 
 			hash_t l_fragment_shader_id = 14;
-			ShaderModuleRessourceAsset l_fragment_shader = ShaderModuleRessourceAsset{ l_compiled_fragment };
+			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset{ l_compiled_fragment };
 
 			hash_t l_shader_asset_id = 1482658;
-			ShaderRessourceAsset l_shader_asset = ShaderRessourceAsset{
+			ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset{
 					l_shader_parameter_layout,
 					0,
 					ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
 			};
 
 			hash_t l_mesh_id = 1486;
-			MeshRessourceAsset l_mesh_asset = MeshRessourceAsset{
+			MeshRessource::Asset l_mesh_asset = MeshRessource::Asset{
 					l_vertices_span, l_indices_span
 			};
 
@@ -269,7 +269,7 @@ namespace v2
 					l_vertex_shader_id, l_vertex_shader,
 					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
-					MaterialRessourceAsset{},
+					0, MaterialRessource::Asset{},
 					l_mesh_id, l_mesh_asset,
 					l_node
 			);
@@ -278,7 +278,7 @@ namespace v2
 					l_vertex_shader_id, l_vertex_shader,
 					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
-					MaterialRessourceAsset{},
+					1, MaterialRessource::Asset{},
 					l_mesh_id, l_mesh_asset,
 					l_node
 			);
@@ -292,7 +292,7 @@ namespace v2
 					l_vertex_shader_id, l_vertex_shader,
 					l_fragment_shader_id, l_fragment_shader,
 					l_shader_asset_id, l_shader_asset,
-					MaterialRessourceAsset{},
+					0, MaterialRessource::Asset{},
 					l_mesh_id, l_mesh_asset,
 					l_node
 			);

@@ -4,14 +4,6 @@ namespace v2
 {
 	namespace BoxColliderComponentAsset_SceneCommunication
 	{
-
-		/*
-			struct BoxColliderComponentAsset
-			{
-				v3f half_extend;
-			};
-		*/
-
 		inline static BoxColliderComponentAsset from_json(JSONDeserializer& p_json_deserialiazer)
 		{
 			BoxColliderComponentAsset l_return;

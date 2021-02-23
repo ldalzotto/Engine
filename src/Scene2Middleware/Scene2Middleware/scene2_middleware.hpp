@@ -4,7 +4,10 @@
 #include "Render/render.hpp"
 #include "Scene2/scene2.hpp"
 
+
+#include "./Ressource/ressource.hpp"
 #include "./Middlewares/collision.hpp"
+#include "./Middlewares/render_ressources.hpp"
 #include "./Middlewares/render.hpp"
 
 namespace v2
