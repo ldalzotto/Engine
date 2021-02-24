@@ -45,3 +45,6 @@ struct Token
 #define tk_bf(ElementType, SourceToken) tk_b(ElementType, tk_v(SourceToken))
 #define tk_eq(Left, Right) (tk_v(Left) == tk_v(Right))
 #define tk_neq(Left, Right) (tk_v(Left) != tk_v(Right))
+
+
+#define ShadowToken(ElementType) ShadowToken_##ElementType

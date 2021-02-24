@@ -235,10 +235,10 @@ namespace v2
 
 		inline Token(ShaderModuleRessource) allocate_shadermodule_inline(const hash_t p_shadermodule_id, const ShaderModuleRessource::Asset& p_shadermodule_ressource_asset)
 		{
-			return this->heap.shader_modules_v2.increment_or_allocate_3(p_shadermodule_id, ShaderModuleRessource::build_from_id,
-					[this, &p_shadermodule_ressource_asset](Token(ShaderModuleRessource) p_allocated_ressource)
+			return RessourceComposition::allocate_ressource_composition_explicit(this->heap.shader_modules_v2, this->shadermodule_allocation_events, p_shadermodule_id, ShaderModuleRessource::build_from_id,
+					[&p_shadermodule_ressource_asset](const Token(ShaderModuleRessource) p_allocated_ressource)
 					{
-						this->shadermodule_allocation_events.push_back_element(ShaderModuleRessource::AllocationEvent::build_inline(p_shadermodule_ressource_asset, p_allocated_ressource));
+						return ShaderModuleRessource::AllocationEvent::build_inline(p_shadermodule_ressource_asset, p_allocated_ressource);
 					});
 		};
 
@@ -252,44 +252,46 @@ namespace v2
 
 		inline Token(ShaderRessource) allocate_shader_v2_inline(const hash_t p_shader_id, const ShaderRessource::Asset& p_shader_ressource_asset, const ShaderRessource::Dependencies& p_dependencies)
 		{
-			return this->heap.shaders_v3.increment_or_allocate_3(p_shader_id, ShaderRessource::build_from_id,
-					[this, &p_shader_ressource_asset, &p_dependencies](Token(ShaderRessource) p_allocated_ressource)
+			return RessourceComposition::allocate_ressource_composition_explicit(
+					this->heap.shaders_v3, this->shader_allocation_events, p_shader_id, ShaderRessource::build_from_id, [&p_shader_ressource_asset, &p_dependencies](const Token(ShaderRessource) p_allocated_ressource)
 					{
-						auto l_event = ShaderRessource::AllocationEvent::build_inline(p_dependencies, p_shader_ressource_asset, p_allocated_ressource);
-						this->shader_allocation_events.push_back_element(l_event);
-					});
+						return ShaderRessource::AllocationEvent::build_inline(p_dependencies, p_shader_ressource_asset, p_allocated_ressource);
+					}
+			);
 		};
 
 		inline void free_shader(const ShaderRessource& p_shader)
 		{
-			RessourceComposition::free_ressource_composition(
-					this->heap.shaders_v3, this->shader_allocation_events, this->shader_free_events, p_shader.header, ShaderRessource::FreeEvent::build_from_token
+			RessourceComposition::free_ressource_composition_explicit(
+					this->heap.shaders_v3, this->shader_allocation_events, this->shader_free_events, p_shader.header, ShaderRessource::FreeEvent::build_from_token, RessourceComposition::AllocationEventFoundSlot::FreeAsset{}
 			);
 		};
 
 		inline Token(MeshRessource) allocate_mesh_inline(const hash_t p_mesh_id, const MeshRessource::Asset& p_mesh_ressource_asset)
 		{
-			return this->heap.mesh_v2.increment_or_allocate_3(p_mesh_id, MeshRessource::build_from_id,
-					[this, &p_mesh_ressource_asset](Token(MeshRessource) p_allocated_ressource)
+			return RessourceComposition::allocate_ressource_composition_explicit(
+					this->heap.mesh_v2, this->mesh_allocation_events, p_mesh_id, MeshRessource::build_from_id, [&p_mesh_ressource_asset](const Token(MeshRessource) p_allocated_ressource)
 					{
-						this->mesh_allocation_events.push_back_element(MeshRessource::AllocationEvent::build_inline(p_mesh_ressource_asset, p_allocated_ressource));
-					});
+						return MeshRessource::AllocationEvent::build_inline(p_mesh_ressource_asset, p_allocated_ressource);
+					}
+			);
 		};
 
 		inline void free_mesh(const MeshRessource& p_mesh)
 		{
-			RessourceComposition::free_ressource_composition(
-					this->heap.mesh_v2, this->mesh_allocation_events, this->mesh_free_events, p_mesh.header, MeshRessource::FreeEvent::build_from_token
+			RessourceComposition::free_ressource_composition_explicit(
+					this->heap.mesh_v2, this->mesh_allocation_events, this->mesh_free_events, p_mesh.header, MeshRessource::FreeEvent::build_from_token, RessourceComposition::AllocationEventFoundSlot::FreeAsset{}
 			);
 		};
 
 		inline Token(MaterialRessource) allocate_material_inline(const hash_t p_material_id, const MaterialRessource::Asset& p_material_ressource_asset, const MaterialRessource::Dependencies& p_dependencies)
 		{
-			return this->heap.materials.increment_or_allocate_3(p_material_id, MaterialRessource::build_from_id,
-					[this, &p_material_ressource_asset, &p_dependencies](Token(MaterialRessource) p_allocated_ressource)
+			return RessourceComposition::allocate_ressource_composition_explicit(
+					this->heap.materials, this->material_allocation_events, p_material_id, MaterialRessource::build_from_id, [&p_material_ressource_asset, &p_dependencies](const Token(MaterialRessource) p_allocated_ressource)
 					{
-						this->material_allocation_events.push_back_element(MaterialRessource::AllocationEvent::build_inline(p_dependencies, p_material_ressource_asset, p_allocated_ressource));
-					});
+						return MaterialRessource::AllocationEvent::build_inline(p_dependencies, p_material_ressource_asset, p_allocated_ressource);
+					}
+			);
 		};
 
 		inline void free_material(const Token(MaterialRessource) p_material_token, const MaterialRessource& p_material, const MaterialRessource::Dependencies& p_dependencies)

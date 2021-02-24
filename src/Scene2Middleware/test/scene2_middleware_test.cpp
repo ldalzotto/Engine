@@ -6,6 +6,133 @@
 
 namespace v2
 {
+
+	inline void ressource_componsition_test()
+	{
+		struct RessourceTest
+		{
+			RessourceIdentifiedHeader header;
+
+			struct Asset
+			{
+				uint8 free_called;
+
+				inline static Asset build_default()
+				{
+					return Asset{ 0 };
+				};
+
+				inline void free()
+				{
+					this->free_called = 1;
+				};
+			};
+
+			struct AllocateEvent
+			{
+				Token(RessourceTest) allocated_ressource;
+				Asset asset;
+			};
+
+			struct FreeEvent
+			{
+
+			};
+		};
+
+		PoolHashedCounted<hash_t, RessourceTest> hashed_counted_ressources = PoolHashedCounted<hash_t, RessourceTest>::allocate_default();
+		Vector<RessourceTest::AllocateEvent> ressource_allocation_events = Vector<RessourceTest::AllocateEvent>::allocate(0);
+		Vector<RessourceTest::FreeEvent> ressource_free_events = Vector<RessourceTest::FreeEvent>::allocate(0);
+
+		hash_t l_ressource_id = 10;
+
+		{
+			RessourceComposition::allocate_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, l_ressource_id, [](const hash_t p_key)
+			{
+				return RessourceTest{ RessourceIdentifiedHeader::build_with_id(p_key) };
+			}, [](const Token(RessourceTest) p_allocated_ressource_token)
+			{
+				return RessourceTest::AllocateEvent{ p_allocated_ressource_token, RessourceTest::Asset::build_default() };
+			});
+
+			assert_true(ressource_allocation_events.Size == 1);
+			assert_true(tk_eq(ressource_allocation_events.get(0).allocated_ressource, tk_b(RessourceTest, 0)));
+			assert_true(hashed_counted_ressources.has_key_nothashed(l_ressource_id));
+			assert_true(hashed_counted_ressources.CountMap.get_value_nothashed(10)->counter == 1);
+		}
+
+		auto l_allocate_event_builder = [](const Token(RessourceTest) p_allocated_ressource_token)
+		{
+			return RessourceTest::AllocateEvent{ p_allocated_ressource_token, RessourceTest::Asset::build_default() };
+		};
+		auto l_free_event_builder = [](const Token(RessourceTest) p_allocated_ressource_token)
+		{
+			return RessourceTest::FreeEvent{};
+		};
+
+		Token(RessourceTest) l_allocated_ressource;
+		{
+			l_allocated_ressource = RessourceComposition::allocate_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, l_ressource_id, [](const hash_t p_key)
+			{
+				return RessourceTest{};
+			}, l_allocate_event_builder);
+
+			assert_true(ressource_allocation_events.Size == 1);
+			assert_true(tk_eq(ressource_allocation_events.get(0).allocated_ressource, l_allocated_ressource));
+			assert_true(hashed_counted_ressources.has_key_nothashed(l_ressource_id));
+			assert_true(hashed_counted_ressources.CountMap.get_value_nothashed(10)->counter == 2);
+		}
+
+		{
+			RessourceTest& l_ressource = hashed_counted_ressources.pool.get(l_allocated_ressource);
+			RessourceComposition::free_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, ressource_free_events, l_ressource.header,
+					l_free_event_builder, RessourceComposition::AllocationEventFoundSlot::FreeAsset{});
+
+			assert_true(ressource_free_events.Size == 0);
+			assert_true(hashed_counted_ressources.CountMap.get_value_nothashed(10)->counter == 1);
+		}
+
+
+		//If the ressource has not been already allocated, then the allocation event is removed, but no free event is generated
+		{
+			RessourceTest& l_ressource = hashed_counted_ressources.pool.get(l_allocated_ressource);
+			RessourceComposition::free_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, ressource_free_events, l_ressource.header,
+					l_free_event_builder, RessourceComposition::AllocationEventFoundSlot::FreeAsset{});
+
+			assert_true(ressource_allocation_events.Size == 0);
+			assert_true(ressource_free_events.Size == 0);
+			assert_true(!hashed_counted_ressources.has_key_nothashed(10));
+		}
+
+		//If the ressource has already been allocated, then a free vent is generated
+		{
+			assert_true(ressource_free_events.Size == 0);
+
+			l_allocated_ressource = RessourceComposition::allocate_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, l_ressource_id, [](const hash_t p_key)
+			{
+				return RessourceTest{ RessourceIdentifiedHeader::build_with_id(p_key) };
+			}, l_allocate_event_builder);
+
+			assert_true(ressource_allocation_events.Size == 1);
+
+			RessourceTest& l_ressource = hashed_counted_ressources.pool.get(l_allocated_ressource);
+			l_ressource.header.allocated = 1;
+
+			ressource_allocation_events.clear();
+
+			RessourceComposition::free_ressource_composition_explicit(hashed_counted_ressources, ressource_allocation_events, ressource_free_events, l_ressource.header,
+					l_free_event_builder, RessourceComposition::AllocationEventFoundSlot::FreeAsset{});
+
+			assert_true(ressource_free_events.Size == 1);
+
+		}
+
+		ressource_free_events.free();
+		ressource_allocation_events.free();
+		hashed_counted_ressources.free();
+	};
+
+
 	struct ComponentReleaser2
 	{
 		Collision2& collision;
@@ -312,6 +439,7 @@ namespace v2
 
 int main()
 {
+	v2::ressource_componsition_test();
 	v2::collision_middleware_component_allocation();
 	v2::collision_middleware_queuing_for_calculation();
 	v2::render_middleware_allocation();

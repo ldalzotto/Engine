@@ -776,6 +776,34 @@ inline void poolofvector_test()
 	l_pool_of_vector.free();
 };
 
+inline void pool_hashed_counted_test()
+{
+	PoolHashedCounted<uimax, uimax> l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
+	{
+		auto l_return_cb = [](auto)
+		{ return 100; };
+		Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate(10, l_return_cb);
+
+		assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
+		assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+
+		l_pool_hashed_counted.increment_or_allocate(10, l_return_cb);
+
+		PoolHashedCounted<uimax, uimax>::CountElement* l_count_element = l_pool_hashed_counted.CountMap.get_value_nothashed(10);
+		assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+		assert_true(l_count_element->counter == 2);
+
+		l_count_element = l_pool_hashed_counted.decrement(10);
+		assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+		assert_true(l_count_element->counter == 1);
+
+		l_pool_hashed_counted.decrement_and_deallocate_pool_not_modified(10);
+		assert_true(!l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+		assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
+	}
+	l_pool_hashed_counted.free();
+};
+
 inline void ntree_test()
 {
 	NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
@@ -1454,6 +1482,7 @@ int main()
 	varyingvector_test();
 	vectorofvector_test();
 	poolofvector_test();
+	pool_hashed_counted_test();
 	ntree_test();
 	sort_test();
 	heap_test();

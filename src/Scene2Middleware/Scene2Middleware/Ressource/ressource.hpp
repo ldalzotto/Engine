@@ -29,6 +29,7 @@ struct RessourceIdentifiedHeader
 */
 struct RessourceComposition
 {
+
 	struct AllocationEventFoundSlot
 	{
 		struct Nil
@@ -44,7 +45,7 @@ struct RessourceComposition
 			template<class RessourceAllocationEvent_t>
 			inline static void slot(RessourceAllocationEvent_t& p_allocation_event)
 			{
-				p_allocation_event.RessourceAllocationEvent_member_asset.free();
+				p_allocation_event.asset.free();
 			};
 		};
 	};
@@ -53,9 +54,9 @@ struct RessourceComposition
 		Iterates over the vector of allocation events and remove those whom ressource token is the same as input,
 	 	calling AllocationEventFoundSlot_t on the way.
 	*/
-	template<class ShadowVector(RessourceAllocationEvent), class Ressource_t, class AllocationEventFoundSlot_t>
+	template<class ShadowVector(RessourceAllocationEvent), class ShadowToken(Ressource), class AllocationEventFoundSlot_t>
 	inline static void remove_reference_from_allocation_events_explicit(ShadowVector(RessourceAllocationEvent)& p_allocation_events,
-			const Token(Ressource_t) p_ressource, const AllocationEventFoundSlot_t& p_allocation_event_found_slot)
+			const ShadowToken(Ressource) p_ressource, const AllocationEventFoundSlot_t& p_allocation_event_found_slot)
 	{
 		for (loop_reverse(i, 0, p_allocation_events.sv_get_size()))
 		{
@@ -71,11 +72,27 @@ struct RessourceComposition
 	/*
 		Default version of remove_reference_from_allocation_events_explicit
 	*/
-	template<class ShadowVector(RessourceAllocationEvent), class Ressource_t>
+	template<class ShadowVector(RessourceAllocationEvent), class ShadowToken(Ressource)>
 	inline static void remove_reference_from_allocation_events(ShadowVector(RessourceAllocationEvent)& p_allocation_events,
-			const Token(Ressource_t) p_ressource)
+			const ShadowToken(Ressource) p_ressource)
 	{
 		remove_reference_from_allocation_events_explicit(p_allocation_events, p_ressource, AllocationEventFoundSlot::Nil{});
+	};
+
+	template<class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class RessourceBuilderFunc_t, class RessourceAllocationEventBuilderFunc_t>
+	inline static auto allocate_ressource_composition_explicit(
+			ShadowPoolHashedCounted(RessourceId, Ressource)& p_pool_hashed_counted,
+			ShadowVector(RessourceAllocationEvent)& p_ressource_allocation_events,
+			hash_t p_ressource_id,
+			const RessourceBuilderFunc_t& p_ressource_builder_func,
+			const RessourceAllocationEventBuilderFunc_t& p_ressource_allocation_event_builder_func
+	)
+	{
+		return p_pool_hashed_counted.increment_or_allocate_explicit(p_ressource_id, p_ressource_builder_func,
+				[&p_ressource_allocation_events, &p_ressource_allocation_event_builder_func](auto p_allocated_ressource)
+				{
+					p_ressource_allocation_events.push_back_element(p_ressource_allocation_event_builder_func(p_allocated_ressource));
+				});
 	};
 
 	/*
@@ -94,20 +111,20 @@ struct RessourceComposition
 	{
 		if (p_ressource_header.allocated)
 		{
-			auto l_return = p_pool_hashed_counted.ShadowPoolHashedCounted_decrement_or_deallocate_pool_not_modified(p_ressource_header.id);
-			if (l_return.is_deallocated)
-			{
-				p_ressource_free_events.sv_push_back_element(p_free_event_builder(l_return.deallocated_token));
-			}
+			p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(p_ressource_header.id,
+					[&p_ressource_free_events, &p_free_event_builder](auto p_deallocated_token)
+					{
+						p_ressource_free_events.sv_push_back_element(p_free_event_builder(p_deallocated_token));
+					});
 		}
 		else
 		{
-			auto l_return = p_pool_hashed_counted.ShadowPoolHashedCounted_decrement_or_deallocate_pool_not_modified(p_ressource_header.id);
-			if (l_return.is_deallocated)
-			{
-				RessourceComposition::remove_reference_from_allocation_events_explicit(p_ressource_allocation_events, l_return.deallocated_token, p_allocation_event_found_slot);
-				p_pool_hashed_counted.ShadowPoolHashedCounted_member_pool.sp_release_element(l_return.deallocated_token);
-			}
+			p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(p_ressource_header.id,
+					[&p_ressource_allocation_events, &p_pool_hashed_counted, &p_allocation_event_found_slot](auto p_deallocated_token)
+					{
+						RessourceComposition::remove_reference_from_allocation_events_explicit(p_ressource_allocation_events, p_deallocated_token, p_allocation_event_found_slot);
+						p_pool_hashed_counted.pool.sp_release_element(p_deallocated_token);
+					});
 		}
 	};
 
@@ -124,6 +141,6 @@ struct RessourceComposition
 	{
 		RessourceComposition::free_ressource_composition_explicit(p_pool_hashed_counted, p_ressource_allocation_events, p_ressource_free_events, p_ressource_header,
 				p_free_event_builder,
-				AllocationEventFoundSlot::FreeAsset{});
+				AllocationEventFoundSlot::Nil{});
 	};
 };
