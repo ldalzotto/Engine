@@ -1,6 +1,5 @@
 #pragma once
 
-#define RessourceAllocationEvent_member_dependencies dependencies
 #define RessourceAllocationEvent_member_allocated_ressource allocated_ressource
 #define RessourceAllocationEvent_member_asset asset
 

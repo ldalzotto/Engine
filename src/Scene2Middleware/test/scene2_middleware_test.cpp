@@ -393,20 +393,20 @@ namespace v2
 			};
 
 			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					l_vertex_shader_id, l_vertex_shader,
-					l_fragment_shader_id, l_fragment_shader,
-					l_shader_asset_id, l_shader_asset,
-					0, MaterialRessource::Asset{},
-					l_mesh_id, l_mesh_asset,
+					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
+					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
+					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
+					MaterialRessource::InlineRessourceInput{ 0 },
+					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
 					l_node
 			);
 
 			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					l_vertex_shader_id, l_vertex_shader,
-					l_fragment_shader_id, l_fragment_shader,
-					l_shader_asset_id, l_shader_asset,
-					1, MaterialRessource::Asset{},
-					l_mesh_id, l_mesh_asset,
+					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
+					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
+					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
+					MaterialRessource::InlineRessourceInput{ 1 },
+					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
 					l_node
 			);
 
@@ -416,18 +416,18 @@ namespace v2
 			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 
 			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
-					l_vertex_shader_id, l_vertex_shader,
-					l_fragment_shader_id, l_fragment_shader,
-					l_shader_asset_id, l_shader_asset,
-					0, MaterialRessource::Asset{},
-					l_mesh_id, l_mesh_asset,
+					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
+					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
+					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
+					MaterialRessource::InlineRessourceInput{ 0 },
+					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
 					l_node
 			);
 
 			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_3));
 			l_scene.remove_node(l_scene.get_node(l_node));
-
 		}
+		
 		l_scene.consume_component_events_stateful(component_releaser);
 		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
 		l_collision.free();

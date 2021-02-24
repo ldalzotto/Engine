@@ -2,10 +2,6 @@
 
 namespace v2
 {
-
-	//TODO -> Do we prefer to store Ressource dependencies in the Ressource himself ?
-	// as we don't iterate over Ressources, there is not much penalty to do this
-	// and this will allows us to allocate any ressource and in the future, duplicate it to create a "runtime copy" of the ressource.
 	struct ShaderModuleRessource
 	{
 		RessourceIdentifiedHeader header;
@@ -38,6 +34,11 @@ namespace v2
 			};
 		};
 
+		struct InlineAllocationInput
+		{
+			hash_t id;
+			Asset asset;
+		};
 
 		struct AllocationEvent
 		{
@@ -94,6 +95,12 @@ namespace v2
 			}
 		};
 
+		struct InlineAllocationInput
+		{
+			hash_t id;
+			Asset asset;
+		};
+
 		struct AllocationEvent
 		{
 			MeshRessource::Asset RessourceAllocationEvent_member_asset;
@@ -118,21 +125,23 @@ namespace v2
 
 	struct ShaderRessource
 	{
+		struct Dependencies
+		{
+			Token(ShaderModuleRessource) vertex_shader;
+			Token(ShaderModuleRessource) fragment_shader;
+		};
+
 		RessourceIdentifiedHeader header;
 		Token(ShaderIndex) shader;
+		Dependencies dependencies;
 
 		inline static ShaderRessource build_from_id(const hash_t p_id)
 		{
 			return ShaderRessource{
 					RessourceIdentifiedHeader::build_with_id(p_id),
-					tk_bd(ShaderIndex)
+					tk_bd(ShaderIndex),
+					Dependencies{ tk_bd(ShaderModuleRessource), tk_bd(ShaderModuleRessource)}
 			};
-		};
-
-		struct Dependencies
-		{
-			Token(ShaderModuleRessource) vertex_shader;
-			Token(ShaderModuleRessource) fragment_shader;
 		};
 
 		struct Asset
@@ -147,16 +156,20 @@ namespace v2
 			}
 		};
 
+		struct InlineAllocationInput
+		{
+			hash_t id;
+			Asset asset;
+		};
+
 		struct AllocationEvent
 		{
-			ShaderRessource::Dependencies RessourceAllocationEvent_member_dependencies;
 			ShaderRessource::Asset RessourceAllocationEvent_member_asset;
 			Token(ShaderRessource)RessourceAllocationEvent_member_allocated_ressource;
 
-			inline static AllocationEvent build_inline(const ShaderRessource::Dependencies& p_dependencies, const ShaderRessource::Asset& p_asset,
-					const Token(ShaderRessource) p_allocated_ressource)
+			inline static AllocationEvent build_inline(const ShaderRessource::Asset& p_asset, const Token(ShaderRessource) p_allocated_ressource)
 			{
-				return AllocationEvent{ p_dependencies, p_asset, p_allocated_ressource };
+				return AllocationEvent{ p_asset, p_allocated_ressource };
 			};
 		};
 
@@ -173,14 +186,21 @@ namespace v2
 
 	struct MaterialRessource
 	{
+		struct Dependencies
+		{
+			Token(ShaderRessource) shader;
+		};
+
 		RessourceIdentifiedHeader header;
 		Token(Material) material;
+		Dependencies dependencies;
 
 		inline static MaterialRessource build_default()
 		{
 			return MaterialRessource{
 					RessourceIdentifiedHeader::build_default(),
-					tk_bd(Material)
+					tk_bd(Material),
+					Dependencies{ tk_bd(ShaderRessource)}
 			};
 		};
 
@@ -192,34 +212,33 @@ namespace v2
 			};
 		};
 
-		struct Dependencies
-		{
-			Token(ShaderRessource) shader;
-		};
-
 		struct Asset
 		{
 			//TODO adding parameters
 			// Material allocation can be done by accepting an array of input parameters. This array will be in this structure to be used.
 		};
 
+		struct InlineRessourceInput
+		{
+			hash_t id;
+			Asset asset;
+		};
+
 		struct AllocationEvent
 		{
-			Dependencies RessourceAllocationEvent_member_dependencies;
 			Asset RessourceAllocationEvent_member_asset;
 			Token(MaterialRessource)RessourceAllocationEvent_member_allocated_ressource;
 
-			inline static AllocationEvent build_inline(const Dependencies& p_dependencies, const Asset& p_asset,
+			inline static AllocationEvent build_inline(const Asset& p_asset,
 					const Token(MaterialRessource) p_allocated_ressource)
 			{
-				return AllocationEvent{ p_dependencies, p_asset, p_allocated_ressource };
+				return AllocationEvent{ p_asset, p_allocated_ressource };
 			};
 		};
 
 		struct FreeEvent
 		{
 			Token(MaterialRessource) ressource;
-			MaterialRessource::Dependencies dependencies;
 		};
 
 	};
@@ -240,10 +259,8 @@ namespace v2
 
 	struct MeshRendererComponent
 	{
-		struct NestedDependencies
+		struct Dependencies
 		{
-			ShaderRessource::Dependencies shader_dependencies;
-			MaterialRessource::Dependencies material_dependencies;
 			Token(MaterialRessource) material;
 			Token(MeshRessource) mesh;
 		};
@@ -253,19 +270,19 @@ namespace v2
 		int8 force_update;
 		Token(Node) scene_node;
 		Token(RenderableObject) renderable_object;
+		Dependencies dependencies;
 
-		inline static MeshRendererComponent build(const Token(Node) p_scene_node)
+		inline static MeshRendererComponent build(const Token(Node) p_scene_node, const Dependencies& p_dependencies)
 		{
 			return MeshRendererComponent
 					{
-							0, 1, p_scene_node, tk_bd(RenderableObject)
+							0, 1, p_scene_node, tk_bd(RenderableObject), p_dependencies
 					};
 		};
 
 		struct FreeEvent
 		{
 			Token(MeshRendererComponent) component;
-			Token(MaterialRessource) linked_material;
 		};
 	};
 
