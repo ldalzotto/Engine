@@ -130,6 +130,10 @@ namespace v2
 
 		void set_camera(GPUContext& p_gpu_context, const Camera& p_camera);
 
+		void set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov);
+
+		void set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up);
+
 		Slice<Camera> get_camera(GPUContext& p_gpu_context);
 	};
 
@@ -465,7 +469,7 @@ namespace v2
 					p_render_allocator.heap.unlink_material_with_renderable_object(l_material_to_remove, l_renderable_object_to_remove);
 					free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_object_to_remove);
 				}
-				
+
 				p_render_allocator.heap.unlink_shader_with_material(p_shader, l_material_to_remove);
 				free_material_with_parameters(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_material_to_remove);
 			}
@@ -528,6 +532,16 @@ namespace v2
 						p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host
 				).memory
 		).get_mapped_memory(), Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+	};
+
+	inline void ColorStep::set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
+	{
+		this->get_camera(p_gpu_context).get(0).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
+	};
+
+	inline void ColorStep::set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
+	{
+		this->get_camera(p_gpu_context).get(0).view = m44f::view(p_world_position, p_forward, p_up);
 	};
 
 	inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)

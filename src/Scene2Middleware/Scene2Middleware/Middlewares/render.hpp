@@ -8,7 +8,6 @@ namespace v2
 		PoolHashedCounted<hash_t, MeshRessource> mesh_v2;
 		PoolHashedCounted<hash_t, ShaderRessource> shaders_v3;
 		PoolHashedCounted<hash_t, MaterialRessource> materials;
-		CameraComponent camera;
 
 		inline static RenderHeap allocate()
 		{
@@ -57,6 +56,7 @@ namespace v2
 		Vector<MeshRendererComponent::FreeEvent> meshrenderer_free_events;
 
 		PoolIndexed<MeshRendererComponent> mesh_renderers;
+		CameraComponent camera_component;
 
 		inline static RenderRessourceAllocator2 allocate()
 		{
@@ -72,7 +72,8 @@ namespace v2
 					Vector<ShaderRessource::FreeEvent>::allocate(0),
 					Vector<MaterialRessource::FreeEvent>::allocate(0),
 					Vector<MeshRendererComponent::FreeEvent>::allocate(0),
-					PoolIndexed<MeshRendererComponent>::allocate_default()
+					PoolIndexed<MeshRendererComponent>::allocate_default(),
+					CameraComponent::build_default()
 			};
 		};
 
@@ -92,6 +93,7 @@ namespace v2
 			assert_true(this->material_free_events.empty());
 			assert_true(this->meshrenderer_free_events.empty());
 			assert_true(!this->mesh_renderers.has_allocated_elements());
+			assert_true(!this->camera_component.allocated);
 #endif
 
 			this->shadermodule_allocation_events.free();
@@ -307,6 +309,19 @@ namespace v2
 			this->mesh_renderer_allocation_events.push_back_element(MeshRendererAllocationEvent{ l_mesh_renderer });
 			return l_mesh_renderer;
 		};
+
+		inline void allocate_camera_inline(const CameraComponent::Asset& p_camera_component_asset, const Token(Node) p_scene_node)
+		{
+			this->camera_component.force_update = 1;
+			this->camera_component.allocated = 1;
+			this->camera_component.scene_node = p_scene_node;
+			this->camera_component.asset = p_camera_component_asset;
+		};
+
+		inline void free_camera()
+		{
+			this->camera_component.allocated = 0;
+		};
 	};
 
 	struct RenderRessourceAllocator2Composition
@@ -391,40 +406,23 @@ namespace v2
 				}
 			}
 
-			/*
-			for (loop(i, 0, this->events.camera_allocated.Size))
+			if (this->allocator.camera_component.allocated)
 			{
-				RenderEvents::CameraAllocated& l_event = this->events.camera_allocated.get(i);
-				NodeEntry l_node = p_scene->get_node(l_event.scene_node);
-				this->allocator.heap.camera = CameraComponent{ l_event.scene_node };
-				Slice<Camera> l_camera_slice = p_renderer.color_step.get_camera(p_gpu_context);
-				l_camera_slice.get(0).projection = m44f::perspective(l_event.camera.Fov, (float32)p_renderer.color_step.render_target_dimensions.x / p_renderer.color_step.render_target_dimensions.y, l_event.camera.Near, l_event.camera.Far);
-				//TODO -> having a set_camera_projection raw values in the Render module
-			}
-			this->events.camera_allocated.clear();
-			*/
-			/*
-			for(loop(i, 0, this->events.shader_modules.Size))
-			{
-				auto& l_event = this->events.shader_modules.get(i);
-				Token(ShaderModule) l_shader_module = p_gpu_context.graphics_allocator.allocate_shader_module(l_event.compiled_shader.slice);
-				// RenderHeap::ShaderModule l_heap_shader_module = {l_event.id, l_shader_module};
-			}
-			*/
-			/*
-			if (this->allocator.camera_allocated)
-			{
-				NodeEntry l_node = p_scene->get_node(this->allocator.heap.camera.scene_node);
-				if (l_node.Element->state.haschanged_thisframe)
+				NodeEntry l_camera_node = p_scene->get_node(this->allocator.camera_component.scene_node);
+				if (this->allocator.camera_component.force_update)
 				{
-					Slice<Camera> l_camera_slice = p_renderer.color_step.get_camera(p_gpu_context);
-					m44f l_local_to_world = p_scene->tree.get_localtoworld(l_node);
-					l_camera_slice.get(0).view = m44f::view(p_scene->tree.get_worldposition(l_node), l_local_to_world.Forward.Vec3, l_local_to_world.Up.Vec3);
-					//TODO -> push view matrix
-					//TODO -> having a set_camera_view in the Render module
+					p_renderer.color_step.set_camera_projection(p_gpu_context, this->allocator.camera_component.asset.Near, this->allocator.camera_component.asset.Far, this->allocator.camera_component.asset.Fov);
+
+					m44f l_local_to_world = p_scene->tree.get_localtoworld(l_camera_node);
+					p_renderer.color_step.set_camera_view(p_gpu_context, p_scene->tree.get_worldposition(l_camera_node), l_local_to_world.Forward.Vec3, l_local_to_world.Up.Vec3);
+					this->allocator.camera_component.force_update = 0;
+				}
+				else if (l_camera_node.Element->state.haschanged_thisframe)
+				{
+					m44f l_local_to_world = p_scene->tree.get_localtoworld(l_camera_node);
+					p_renderer.color_step.set_camera_view(p_gpu_context, p_scene->tree.get_worldposition(l_camera_node), l_local_to_world.Forward.Vec3, l_local_to_world.Up.Vec3);
 				}
 			}
-			*/
 		};
 	};
 

@@ -147,15 +147,41 @@ namespace v2
 
 	};
 
+	struct Scene2MiddlewareContext
+	{
+		Scene scene;
+		Collision2 collision;
+		GPUContext gpu_ctx;
+		D3Renderer renderer;
+		SceneMiddleware scene_middleware;
+
+		inline static Scene2MiddlewareContext allocate()
+		{
+			Scene l_scene = Scene::allocate_default();
+			Collision2 l_collision = Collision2::allocate();
+			GPUContext l_gpu_ctx = GPUContext::allocate();
+			D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
+			SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
+			return Scene2MiddlewareContext{
+					l_scene, l_collision, l_gpu_ctx, l_renderer, l_scene_middleware
+			};
+		};
+
+		inline void free(ComponentReleaser2& p_component_releaser)
+		{
+			this->scene.consume_component_events_stateful(p_component_releaser);
+			this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_ctx);
+			this->collision.free();
+			this->renderer.free(this->gpu_ctx);
+			this->gpu_ctx.free();
+			this->scene.free();
+		};
+	};
+
 	inline void collision_middleware_component_allocation()
 	{
-		Scene l_scene = Scene::allocate_default();
-		Collision2 l_collision = Collision2::allocate();
-		GPUContext l_gpu_ctx = GPUContext::allocate();
-		D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
-		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
-		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, l_renderer, l_gpu_ctx, &l_scene_middleware };
-
+		Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
+		ComponentReleaser2 l_component_releaser = ComponentReleaser2{ l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, &l_ctx.scene_middleware };;
 		/*
 			We allocate the BoxCollider component with the "deferred" path.
 			  - The BoxColliderComponentAsset is descontructible even if the CollisionMiddleware step is not called.
@@ -167,105 +193,86 @@ namespace v2
 		*/
 		{
 			v3f l_half_extend = { 1.0f, 2.0f, 3.0f };
-			Token(Node) l_node = l_scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{ l_half_extend });
+			Token(Node) l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			Token(BoxColliderComponent) l_box_collider_component = l_ctx.scene_middleware.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{ l_half_extend });
 
 			NodeComponent l_box_collider_node_component = BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component);
-			l_scene.add_node_component_by_value(l_node, l_box_collider_node_component);
-			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene.add_node_component_by_value(l_node, l_box_collider_node_component);
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
 
 			{
 				BoxColliderComponentAsset l_box_collider_component_asset =
-						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
+						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_ctx.scene_middleware, l_ctx.collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
-				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 1);
+				assert_true(l_ctx.scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 1);
 			}
 			{
-				l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
+				l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
 				BoxColliderComponentAsset l_box_collider_component_asset =
-						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
+						BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_ctx.scene_middleware, l_ctx.collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
-				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
+				assert_true(l_ctx.scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
 			}
 
-			l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
-			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
 
 		}
 
 
 		{
 			v3f l_half_extend = { 1.0f, 2.0f, 3.0f };
-			Token(Node) l_node = l_scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component(l_collision, l_node, BoxColliderComponentAsset{ l_half_extend });
+			Token(Node) l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			Token(BoxColliderComponent) l_box_collider_component = l_ctx.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(l_ctx.collision, l_node, BoxColliderComponentAsset{ l_half_extend });
 
 			NodeComponent l_box_collider_node_component = BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component);
-			l_scene.add_node_component_by_value(l_node, l_box_collider_node_component);
-			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene.add_node_component_by_value(l_node, l_box_collider_node_component);
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
 
 			{
-				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_scene_middleware, l_collision, l_box_collider_node_component);
+				BoxColliderComponentAsset l_box_collider_component_asset = BoxColliderComponentAsset_SceneCommunication::desconstruct_nodecomponent(l_ctx.scene_middleware, l_ctx.collision, l_box_collider_node_component);
 				assert_true(l_box_collider_component_asset.half_extend == l_half_extend);
-				assert_true(l_scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
+				assert_true(l_ctx.scene_middleware.collision_middleware.allocator.box_colliders_waiting_for_allocation.Size == 0);
 			}
 
-			l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
-			l_scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
 		}
 
-		l_scene.consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
-		l_collision.free();
-		l_renderer.free(l_gpu_ctx);
-		l_gpu_ctx.free();
-		l_scene.free();
+		l_ctx.free(l_component_releaser);
 	};
 
 	inline void collision_middleware_queuing_for_calculation()
 	{
-		Scene l_scene = Scene::allocate_default();
-		Collision2 l_collision = Collision2::allocate();
-		GPUContext l_gpu_ctx = GPUContext::allocate();
-		D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
-		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
-		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, l_renderer, l_gpu_ctx, &l_scene_middleware };
+		Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
+		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, &l_ctx.scene_middleware };
 
 		{
 			v3f l_half_extend = { 1.0f, 2.0f, 3.0f };
-			Token(Node) l_node = l_scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-			Token(BoxColliderComponent) l_box_collider_component = l_scene_middleware.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{ l_half_extend });
-			l_scene.add_node_component_by_value(l_node, BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component));
+			Token(Node) l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			Token(BoxColliderComponent) l_box_collider_component = l_ctx.scene_middleware.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{ l_half_extend });
+			l_ctx.scene.add_node_component_by_value(l_node, BoxColliderComponentAsset_SceneCommunication::construct_nodecomponent(l_box_collider_component));
 
-			assert_true(!l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
+			assert_true(!l_ctx.scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_ctx.collision, l_box_collider_component));
 
-			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
+			l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
 
-			assert_true(l_scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_collision, l_box_collider_component));
+			assert_true(l_ctx.scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_ctx.collision, l_box_collider_component));
 
-			l_scene.remove_node_component_typed<BoxColliderComponent>(l_node);
+			l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
 		}
 
-		l_scene.consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
-		l_collision.free();
-		l_renderer.free(l_gpu_ctx);
-		l_gpu_ctx.free();
-		l_scene.free();
+		l_ctx.free(component_releaser);
 	};
 
-	inline void render_middleware_allocation()
+	inline void render_middleware_inline_allocation()
 	{
-		Scene l_scene = Scene::allocate_default();
-		Collision2 l_collision = Collision2::allocate();
-		GPUContext l_gpu_ctx = GPUContext::allocate();
-		D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
-		SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
-		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_collision, l_renderer, l_gpu_ctx, &l_scene_middleware };
+		Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
+		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, &l_ctx.scene_middleware };
 		{
-			Token(Node) l_node = l_scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-
-			//This is for test. Should we think of another way to do this ?
-
+			Token(Node) l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			Token(Node) l_node_2 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			Token(Node) l_node_3 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
 
 			const int8* p_vertex_litteral =
 					MULTILINE(\
@@ -392,48 +399,130 @@ namespace v2
 					l_vertices_span, l_indices_span
 			};
 
-			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
 					MaterialRessource::InlineRessourceInput{ 0 },
 					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
-					l_node
+					l_node_1
 			);
+			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
-			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
 					MaterialRessource::InlineRessourceInput{ 1 },
 					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
-					l_node
+					l_node_2
 			);
+			l_ctx.scene.add_node_component_by_value(l_node_2, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_2));
 
-			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
-			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_2));
 
-			l_scene_middleware.step(&l_scene, l_collision, l_renderer, l_gpu_ctx);
+			Token(Node) l_camera_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+			l_ctx.scene_middleware.render_middleware.allocator.allocate_camera_inline(
+					CameraComponent::Asset{ 10.0f, 2.0f, 100.0f }, l_camera_node
+			);
+			l_ctx.scene.add_node_component_by_value(l_camera_node, CameraComponentAsset_SceneCommunication::construct_nodecomponent());
 
-			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_scene_middleware.render_middleware.allocator,
+
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
+
+			/*
+				l_node_1 and l_node_2 have a MeshRenderer component attached.
+			 	They use the same Shader but have different Materials.
+			 	They use the same Mesh.
+			 	They are allocated and a step is executing -> render ressources will be allocated.
+			*/
+			{
+				{
+					MeshRendererComponent& l_mesh_renderer_ressource = l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.get(l_mesh_renderer);
+					assert_true(l_mesh_renderer_ressource.allocated);
+					assert_true(tk_eq(l_mesh_renderer_ressource.scene_node, l_node_1));
+					MaterialRessource& l_material = l_ctx.scene_middleware.render_middleware.allocator.heap.materials.pool.get(l_mesh_renderer_ressource.dependencies.material);
+					assert_true(l_material.header.id == 0);
+					assert_true(l_material.header.allocated == 1);
+					ShaderRessource& l_shader = l_ctx.scene_middleware.render_middleware.allocator.heap.shaders_v3.pool.get(l_material.dependencies.shader);
+					assert_true(l_shader.header.id == l_shader_asset_id);
+					assert_true(l_shader.header.allocated == 1);
+					MeshRessource& l_mesh = l_ctx.scene_middleware.render_middleware.allocator.heap.mesh_v2.pool.get(l_mesh_renderer_ressource.dependencies.mesh);
+					assert_true(l_mesh.header.id == l_mesh_id);
+					assert_true(l_mesh.header.allocated == 1);
+				}
+				{
+					MeshRendererComponent& l_mesh_renderer_ressource_2 = l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.get(l_mesh_renderer_2);
+					assert_true(l_mesh_renderer_ressource_2.allocated);
+					assert_true(tk_eq(l_mesh_renderer_ressource_2.scene_node, l_node_2));
+					MaterialRessource& l_material = l_ctx.scene_middleware.render_middleware.allocator.heap.materials.pool.get(l_mesh_renderer_ressource_2.dependencies.material);
+					assert_true(l_material.header.id == 1);
+					assert_true(l_material.header.allocated == 1);
+					ShaderRessource& l_shader = l_ctx.scene_middleware.render_middleware.allocator.heap.shaders_v3.pool.get(l_material.dependencies.shader);
+					assert_true(l_shader.header.id == l_shader_asset_id);
+					assert_true(l_shader.header.allocated == 1);
+					MeshRessource& l_mesh = l_ctx.scene_middleware.render_middleware.allocator.heap.mesh_v2.pool.get(l_mesh_renderer_ressource_2.dependencies.mesh);
+					assert_true(l_mesh.header.id == l_mesh_id);
+					assert_true(l_mesh.header.allocated == 1);
+				}
+			}
+
+
+			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
 					MaterialRessource::InlineRessourceInput{ 0 },
 					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
-					l_node
+					l_node_3
 			);
 
-			l_scene.add_node_component_by_value(l_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_3));
-			l_scene.remove_node(l_scene.get_node(l_node));
+			l_ctx.scene.add_node_component_by_value(l_node_3, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer_3));
+			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_3));
+
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+
+			/*
+				We have created a mesh_renderer but deleted on the same frame.
+			 	No render module allocation must occurs.
+			 	The MeshRenderer has been removed from the RenderRessourceAllocator.
+			*/
+			{
+				assert_true(l_ctx.scene_middleware.render_middleware.allocator.material_allocation_events.Size == 0);
+				assert_true(l_ctx.scene_middleware.render_middleware.allocator.mesh_renderer_allocation_events.Size == 0);
+				assert_true(l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.Memory.is_element_free(l_mesh_renderer_3));
+			}
+
+			l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
+
+			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_2));
+
+			l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
+			l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
+
+			// We removed the l_node_2. The l_node_1 is still here and common ressources still allocated
+			{
+				assert_true(l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.Memory.is_element_free(l_mesh_renderer_2));
+
+				MeshRendererComponent& l_mesh_renderer_ressource = l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.get(l_mesh_renderer);
+				assert_true(l_mesh_renderer_ressource.allocated);
+				assert_true(tk_eq(l_mesh_renderer_ressource.scene_node, l_node_1));
+				MaterialRessource& l_material = l_ctx.scene_middleware.render_middleware.allocator.heap.materials.pool.get(l_mesh_renderer_ressource.dependencies.material);
+				assert_true(l_material.header.id == 0);
+				assert_true(l_material.header.allocated == 1);
+				ShaderRessource& l_shader = l_ctx.scene_middleware.render_middleware.allocator.heap.shaders_v3.pool.get(l_material.dependencies.shader);
+				assert_true(l_shader.header.id == l_shader_asset_id);
+				assert_true(l_shader.header.allocated == 1);
+				MeshRessource& l_mesh = l_ctx.scene_middleware.render_middleware.allocator.heap.mesh_v2.pool.get(l_mesh_renderer_ressource.dependencies.mesh);
+				assert_true(l_mesh.header.id == l_mesh_id);
+				assert_true(l_mesh.header.allocated == 1);
+			}
+
+			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
+			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_camera_node));
 		}
-		
-		l_scene.consume_component_events_stateful(component_releaser);
-		l_scene_middleware.free(&l_scene, l_collision, l_renderer, l_gpu_ctx);
-		l_collision.free();
-		l_renderer.free(l_gpu_ctx);
-		l_gpu_ctx.free();
-		l_scene.free();
+
+		l_ctx.free(component_releaser);
 	};
 };
 
@@ -442,6 +531,6 @@ int main()
 	v2::ressource_componsition_test();
 	v2::collision_middleware_component_allocation();
 	v2::collision_middleware_queuing_for_calculation();
-	v2::render_middleware_allocation();
+	v2::render_middleware_inline_allocation();
 	memleak_ckeck();
 }

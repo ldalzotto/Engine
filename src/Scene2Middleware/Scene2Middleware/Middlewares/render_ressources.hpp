@@ -243,18 +243,26 @@ namespace v2
 
 	};
 
-	struct CameraComponentAsset
-	{
-		float32 Near;
-		float32 Far;
-		float32 Fov;
-	};
-
 	struct CameraComponent
 	{
 		static constexpr component_t Type = HashRaw_constexpr(STR(CameraComponent));
+
+		struct Asset
+		{
+			float32 Near;
+			float32 Far;
+			float32 Fov;
+		};
+
+		int8 allocated;
 		int8 force_update;
 		Token(Node) scene_node;
+		Asset asset;
+
+		inline static CameraComponent build_default()
+		{
+			return CameraComponent{ 0, 0, tk_bd(Node)};
+		};
 	};
 
 	struct MeshRendererComponent

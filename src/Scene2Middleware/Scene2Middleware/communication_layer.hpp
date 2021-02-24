@@ -48,10 +48,14 @@ namespace v2
 			return NodeComponent{ CameraComponent::Type, tokent_build_default() };
 		};
 
-		inline static CameraComponentAsset deconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, D3Renderer& p_renderer)
+		inline static CameraComponent::Asset deconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, D3Renderer& p_renderer)
 		{
-			//TODO
-			return CameraComponentAsset{};
+			return p_scene_middleware.render_middleware.allocator.camera_component.asset;
+		};
+
+		inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
+		{
+			p_render_middleware.allocator.free_camera();
 		};
 
 	};
@@ -84,6 +88,11 @@ namespace v2
 		case v2::MeshRendererComponent::Type:
 		{
 			MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_node_component);
+		}
+			break;
+		case v2::CameraComponent::Type:
+		{
+			CameraComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_node_component);
 		}
 			break;
 		default:
