@@ -7,6 +7,7 @@ namespace v2
 		PoolHashedCounted<hash_t, ShaderModuleRessource> shader_modules_v2;
 		PoolHashedCounted<hash_t, MeshRessource> mesh_v2;
 		PoolHashedCounted<hash_t, ShaderRessource> shaders_v3;
+		PoolHashedCounted<hash_t, TextureRessource> textures;
 		PoolHashedCounted<hash_t, MaterialRessource> materials;
 
 		inline static RenderHeap allocate()
@@ -15,6 +16,7 @@ namespace v2
 					PoolHashedCounted<hash_t, ShaderModuleRessource>::allocate_default(),
 					PoolHashedCounted<hash_t, MeshRessource>::allocate_default(),
 					PoolHashedCounted<hash_t, ShaderRessource>::allocate_default(),
+					PoolHashedCounted<hash_t, TextureRessource>::allocate_default(),
 					PoolHashedCounted<hash_t, MaterialRessource>::allocate_default()
 			};
 		};
@@ -25,11 +27,13 @@ namespace v2
 			assert_true(this->shaders_v3.empty());
 			assert_true(this->mesh_v2.empty());
 			assert_true(this->shaders_v3.empty());
+			assert_true(this->textures.empty());
 			assert_true(this->materials.empty());
 #endif
 			this->shader_modules_v2.free();
 			this->mesh_v2.free();
 			this->shaders_v3.free();
+			this->textures.free();
 			this->materials.free();
 		};
 	};
@@ -46,12 +50,14 @@ namespace v2
 		Vector<ShaderModuleRessource::AllocationEvent> shadermodule_allocation_events;
 		Vector<MeshRessource::AllocationEvent> mesh_allocation_events;
 		Vector<ShaderRessource::AllocationEvent> shader_allocation_events;
+		Vector<TextureRessource::AllocationEvent> texture_allocation_events;
 		Vector<MaterialRessource::AllocationEvent> material_allocation_events;
 		Vector<MeshRendererAllocationEvent> mesh_renderer_allocation_events;
 
 		Vector<ShaderModuleRessource::FreeEvent> shadermodule_free_events;
 		Vector<MeshRessource::FreeEvent> mesh_free_events;
 		Vector<ShaderRessource::FreeEvent> shader_free_events;
+		Vector<TextureRessource::FreeEvent> texture_free_events;
 		Vector<MaterialRessource::FreeEvent> material_free_events;
 		Vector<MeshRendererComponent::FreeEvent> meshrenderer_free_events;
 
@@ -65,11 +71,13 @@ namespace v2
 					Vector<ShaderModuleRessource::AllocationEvent>::allocate(0),
 					Vector<MeshRessource::AllocationEvent>::allocate(0),
 					Vector<ShaderRessource::AllocationEvent>::allocate(0),
+					Vector<TextureRessource::AllocationEvent>::allocate(0),
 					Vector<MaterialRessource::AllocationEvent>::allocate(0),
 					Vector<MeshRendererAllocationEvent>::allocate(0),
 					Vector<ShaderModuleRessource::FreeEvent>::allocate(0),
 					Vector<MeshRessource::FreeEvent>::allocate(0),
 					Vector<ShaderRessource::FreeEvent>::allocate(0),
+					Vector<TextureRessource::FreeEvent>::allocate(0),
 					Vector<MaterialRessource::FreeEvent>::allocate(0),
 					Vector<MeshRendererComponent::FreeEvent>::allocate(0),
 					PoolIndexed<MeshRendererComponent>::allocate_default(),
@@ -85,11 +93,13 @@ namespace v2
 			assert_true(this->shadermodule_allocation_events.empty());
 			assert_true(this->mesh_allocation_events.empty());
 			assert_true(this->shader_allocation_events.empty());
+			assert_true(this->texture_allocation_events.empty());
 			assert_true(this->material_allocation_events.empty());
 			assert_true(this->mesh_renderer_allocation_events.empty());
 			assert_true(this->shadermodule_free_events.empty());
 			assert_true(this->mesh_free_events.empty());
 			assert_true(this->shader_free_events.empty());
+			assert_true(this->texture_free_events.empty());
 			assert_true(this->material_free_events.empty());
 			assert_true(this->meshrenderer_free_events.empty());
 			assert_true(!this->mesh_renderers.has_allocated_elements());
@@ -99,11 +109,13 @@ namespace v2
 			this->shadermodule_allocation_events.free();
 			this->mesh_allocation_events.free();
 			this->shader_allocation_events.free();
+			this->texture_allocation_events.free();
 			this->material_allocation_events.free();
 			this->mesh_renderer_allocation_events.free();
 			this->shadermodule_free_events.free();
 			this->mesh_free_events.free();
 			this->shader_free_events.free();
+			this->texture_free_events.free();
 			this->material_free_events.free();
 			this->meshrenderer_free_events.free();
 			this->mesh_renderers.free();
@@ -131,6 +143,15 @@ namespace v2
 				D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.material);
 				this->heap.materials.pool.release_element(l_event.ressource);
 				this->material_free_events.pop_back();
+			}
+
+			for (loop_reverse(i, 0, this->texture_free_events.Size))
+			{
+				auto& l_event = this->texture_free_events.get(i);
+				TextureRessource& l_ressource = this->heap.textures.pool.get(l_event.ressource);
+				GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_ressource.texture);
+				this->heap.textures.pool.release_element(l_event.ressource);
+				this->texture_free_events.pop_back();
 			}
 
 			for (loop_reverse(i, 0, this->shader_free_events.Size))
@@ -201,15 +222,53 @@ namespace v2
 				this->shader_allocation_events.pop_back();
 			}
 
+			for (loop_reverse(i, 0, this->texture_allocation_events.Size))
+			{
+				auto& l_event = this->texture_allocation_events.get(i);
+				TextureRessource& l_ressource = this->heap.textures.pool.get(l_event.allocated_ressource);
+				l_ressource.texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator,
+						ImageFormat::build_color_2d(l_event.asset.size, ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
+				);
+				TextureGPU& l_texture_gpu = p_gpu_context.graphics_allocator.heap.textures_gpu.get(l_ressource.texture);
+				BufferReadWrite::write_to_imagegpu(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_texture_gpu.Image, p_gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image),
+						l_event.asset.pixels.slice);
+
+				l_event.asset.free();
+				l_ressource.header.allocated = 1;
+				this->texture_allocation_events.pop_back();
+			}
+
 			for (loop_reverse(i, 0, this->material_allocation_events.Size))
 			{
 				auto& l_event = this->material_allocation_events.get(i);
 				MaterialRessource& l_ressource = this->heap.materials.pool.get(l_event.allocated_ressource);
 
 				ShaderRessource& l_shader = this->heap.shaders_v3.pool.get(l_ressource.dependencies.shader);
+				ShaderIndex& l_shader_index = p_renderer.allocator.heap.shaders.get(l_shader.shader);
 
-				l_ressource.material = p_renderer.allocator.allocate_material(Material::allocate_empty(p_gpu_context.graphics_allocator, 1));
+				Material l_material_value = Material::allocate_empty(p_gpu_context.graphics_allocator, 1);
+
+				for (loop(j, 0, l_event.asset.parameters.get_size()))
+				{
+					Slice<int8> l_element = l_event.asset.parameters.get_element(j);
+					switch (*(MaterialRessource::Asset::ParameterType*)l_element.Begin)
+					{
+					case MaterialRessource::Asset::ParameterType::OBJECT:
+					{
+						l_element.slide(sizeof(MaterialRessource::Asset::ParameterType));
+						l_material_value.add_buffer_host_parameter(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
+								p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_element);
+					}
+						break;
+					default:
+						abort();
+					}
+				};
+
+				l_ressource.material = p_renderer.allocator.allocate_material(l_material_value);
 				p_renderer.allocator.heap.link_shader_with_material(l_shader.shader, l_ressource.material);
+
+				l_event.asset.free();
 				l_ressource.header.allocated = 1;
 				this->material_allocation_events.pop_back();
 			}
@@ -279,6 +338,29 @@ namespace v2
 		{
 			RessourceComposition::free_ressource_composition_explicit(
 					this->heap.mesh_v2, this->mesh_allocation_events, this->mesh_free_events, p_mesh.header, MeshRessource::FreeEvent::build_from_token, RessourceComposition::AllocationEventFoundSlot::FreeAsset{}
+			);
+		};
+
+		inline Token(TextureRessource) allocate_texture_inline(const TextureRessource::InlineRessourceInput& p_texture_ressource)
+		{
+			return RessourceComposition::allocate_ressource_composition_explicit(
+					this->heap.textures, this->texture_allocation_events, p_texture_ressource.id, [](const hash_t p_id)
+					{
+						return TextureRessource{ RessourceIdentifiedHeader::build_with_id(p_id) };
+					}, [&p_texture_ressource](const Token(TextureRessource) p_allocated_ressource)
+					{
+						return TextureRessource::AllocationEvent{ p_texture_ressource.asset, p_allocated_ressource };
+					}
+			);
+		};
+
+		inline void free_texture(const TextureRessource& p_texture_ressource)
+		{
+			RessourceComposition::free_ressource_composition_explicit(
+					this->heap.textures, this->texture_allocation_events, this->texture_free_events, p_texture_ressource.header, [](const Token(TextureRessource) p_texture_ressource)
+					{
+						return TextureRessource::FreeEvent{ p_texture_ressource };
+					}, RessourceComposition::AllocationEventFoundSlot::FreeAsset{}
 			);
 		};
 

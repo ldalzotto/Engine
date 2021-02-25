@@ -409,11 +409,21 @@ namespace v2
 			);
 			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
+			MaterialRessource::Asset l_material_asset;
+			{
+				Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
+				auto l_obj = MaterialRessource::Asset::ParameterType::OBJECT;
+				l_material_asset.parameters = VaryingVector::allocate_default();
+				l_material_asset.parameters.push_back_2(Slice<MaterialRessource::Asset::ParameterType>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+				l_material_parameter_temp.free();
+			}
+
+
 			Token(MeshRendererComponent) l_mesh_renderer_2 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
-					MaterialRessource::InlineRessourceInput{ 1 },
+					MaterialRessource::InlineRessourceInput{ 1, l_material_asset },
 					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
 					l_node_2
 			);
@@ -466,7 +476,6 @@ namespace v2
 					assert_true(l_mesh.header.allocated == 1);
 				}
 			}
-
 
 			Token(MeshRendererComponent) l_mesh_renderer_3 = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
@@ -521,6 +530,8 @@ namespace v2
 			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
 			l_ctx.scene.remove_node(l_ctx.scene.get_node(l_camera_node));
 		}
+
+		l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx);
 
 		l_ctx.free(component_releaser);
 	};

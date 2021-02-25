@@ -184,6 +184,40 @@ namespace v2
 		};
 	};
 
+	struct TextureRessource
+	{
+		RessourceIdentifiedHeader header;
+		Token(TextureGPU) texture;
+
+		struct Asset
+		{
+			v3ui size;
+			Span<int8> pixels;
+
+			inline void free()
+			{
+				this->pixels.free();
+			};
+		};
+
+		struct InlineRessourceInput
+		{
+			hash_t id;
+			Asset asset;
+		};
+
+		struct AllocationEvent
+		{
+			Asset RessourceAllocationEvent_member_asset;
+			Token(TextureRessource)RessourceAllocationEvent_member_allocated_ressource;
+		};
+
+		struct FreeEvent
+		{
+			Token(TextureRessource) ressource;
+		};
+	};
+
 	struct MaterialRessource
 	{
 		struct Dependencies
@@ -214,6 +248,17 @@ namespace v2
 
 		struct Asset
 		{
+			enum class ParameterType
+			{
+				UNKNOWN = 0, TEXTURE = 1, OBJECT = 2
+			};
+
+			VaryingVector parameters; //TODO -> implementing a "header" version
+
+			inline void free()
+			{
+				this->parameters.free();
+			};
 			//TODO adding parameters
 			// Material allocation can be done by accepting an array of input parameters. This array will be in this structure to be used.
 		};
