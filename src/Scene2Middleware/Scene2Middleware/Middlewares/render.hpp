@@ -146,7 +146,6 @@ namespace v2
 				p_renderer.allocator.heap.unlink_shader_with_material(l_linked_shader.shader, l_ressource.material);
 				D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.material);
 				this->heap.materials.pool.release_element(l_event.ressource);
-				this->heap.material_dynamic_dependencies.release_vector(l_ressource.dependencies.dynamic_dependencies);
 				this->material_free_events.pop_back();
 			}
 
@@ -312,9 +311,10 @@ namespace v2
 
 		inline void free_shadermodule(const ShaderModuleRessource& p_shader_module)
 		{
-			RessourceComposition::free_ressource_composition(
+			RessourceComposition::free_ressource_composition_explicit(
 					this->heap.shader_modules_v2, this->shadermodule_allocation_events, this->shadermodule_free_events, p_shader_module.header,
-					ShaderModuleRessource::FreeEvent::build_from_token
+					ShaderModuleRessource::FreeEvent::build_from_token,
+					RessourceComposition::AllocationEventFoundSlot::FreeAsset{}
 			);
 		};
 
@@ -405,6 +405,7 @@ namespace v2
 			{
 				this->free_texture(this->heap.textures.pool.get(l_material_parameter_dependencies.get(i).dependency));
 			}
+			this->heap.material_dynamic_dependencies.release_vector(p_material.dependencies.dynamic_dependencies);
 		};
 
 		inline Token(MaterialRessource) allocate_material_inline(const MaterialRessource::InlineRessourceInput& p_material_ressource,
@@ -424,13 +425,25 @@ namespace v2
 		inline int8 free_material(const MaterialRessource& p_material)
 		{
 			//TODO -> can we generalize the return ?
+			//TODO -> clean
+			struct FixTest
+			{
+				int8* in_out_return;
+
+				inline void slot(MaterialRessource::AllocationEvent& p_event) const
+				{
+					p_event.asset.free();
+					*(this->in_out_return) = 1;
+				};
+			};
+
 			int8 l_return = 0;
-			RessourceComposition::free_ressource_composition(
+			RessourceComposition::free_ressource_composition_explicit(
 					this->heap.materials, this->material_allocation_events, this->material_free_events, p_material.header, [&l_return](Token(MaterialRessource) p_removed_token)
 					{
 						l_return = 1;
 						return MaterialRessource::FreeEvent{ p_removed_token };
-					}
+					}, FixTest{ &l_return }
 			);
 			return l_return;
 		};

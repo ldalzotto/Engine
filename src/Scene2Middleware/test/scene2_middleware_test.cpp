@@ -578,6 +578,113 @@ namespace v2
 
 		l_ctx.free(component_releaser);
 	};
+
+	/*
+		We add a MeshComponent and remove it the same frame.
+	 	-> No allocations is performed
+	*/
+	inline void render_middleware_inline_alloc_dealloc_same_frame()
+	{
+		Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
+		ComponentReleaser2 component_releaser = ComponentReleaser2{ l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, &l_ctx.scene_middleware };
+		{
+
+			Token(Node) l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+
+			const int8* p_vertex_litteral = "a";
+			const int8* p_fragment_litteral = "b";
+
+			Span<int8> l_compiled_vertex = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)p_vertex_litteral, 1));
+			Span<int8> l_compiled_fragment = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)p_fragment_litteral, 1));
+
+			Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate_slice(SliceN<ShaderLayoutParameterType, 2>{
+					ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT
+			}.to_slice());
+
+			v3f l_positions[1] = {
+					v3f{ -1.0f, -1.0f, 1.0f }
+			};
+
+			v2f l_uvs[1] = {
+					v2f{ 0.625f, 0.0f }
+			};
+
+			Vertex l_vertices[1] = {
+					Vertex{ l_positions[0], l_uvs[0] }
+			};
+			uint32 l_indices[3] = {
+					0, 1, 2,
+			};
+
+			Span<Vertex> l_vertices_span = Span<Vertex>::allocate_slice(Slice<Vertex>::build_memory_elementnb(l_vertices, 1));
+			Span<uint32> l_indices_span = Span<uint32>::allocate_slice(Slice<uint32>::build_memory_elementnb(l_indices, 3));
+
+			hash_t l_vertex_shader_id = 12;
+			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset{ l_compiled_vertex };
+
+			hash_t l_fragment_shader_id = 14;
+			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset{ l_compiled_fragment };
+
+			hash_t l_shader_asset_id = 1482658;
+			ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset{
+					l_shader_parameter_layout,
+					0,
+					ShaderConfiguration{ 1, ShaderConfiguration::CompareOp::LessOrEqual }
+			};
+
+			hash_t l_mesh_id = 1486;
+			MeshRessource::Asset l_mesh_asset = MeshRessource::Asset{
+					l_vertices_span, l_indices_span
+			};
+
+			hash_t l_material_texture_id = 14874879;
+			Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
+			TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset{
+					v3ui{ 8, 8, 1 },
+					l_material_texture_span
+			};
+
+			MaterialRessource::Asset l_material_asset_1;
+			{
+				Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
+				auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
+				auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
+				l_material_asset_1.parameters = VaryingVector::allocate_default();
+				l_material_asset_1.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+				l_material_asset_1.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+				l_material_parameter_temp.free();
+			}
+
+
+			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
+					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
+					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
+					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
+					MaterialRessource::InlineRessourceInput{ 0, l_material_asset_1, SliceN<TextureRessource::InlineRessourceInput, 1>{
+							TextureRessource::InlineRessourceInput{
+									l_material_texture_id,
+									l_material_texture_asset
+							}
+					}.to_slice() },
+					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
+					l_node_1
+			);
+			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
+			l_ctx.scene.remove_node_component(l_node_1, MeshRendererComponent::Type);
+
+			l_ctx.scene.consume_component_events_stateful(component_releaser);
+			l_ctx.scene_middleware.render_middleware.step(l_ctx.renderer, l_ctx.gpu_ctx, &l_ctx.scene);
+
+
+			{
+				assert_true(!l_ctx.scene_middleware.render_middleware.allocator.mesh_renderers.has_allocated_elements());
+				assert_true(l_ctx.scene_middleware.render_middleware.allocator.heap.materials.empty());
+				assert_true(!l_ctx.scene_middleware.render_middleware.allocator.heap.material_dynamic_dependencies.has_allocated_elements());
+			}
+
+		}
+		l_ctx.free(component_releaser);
+	}
 };
 
 int main()
@@ -586,6 +693,6 @@ int main()
 	v2::collision_middleware_component_allocation();
 	v2::collision_middleware_queuing_for_calculation();
 	v2::render_middleware_inline_allocation();
-	//TODO -> render middleware test with alloc, free, alloc of the same ressources and the same frame.
+	v2::render_middleware_inline_alloc_dealloc_same_frame();
 	memleak_ckeck();
 }
