@@ -378,18 +378,15 @@ namespace v2
 			return p_render_allocator.allocate_material(l_material);
 		};
 
-		inline static void free_material_with_parameters(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
+		inline static void free_material_with_parameters_and_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
 		{
-			Material& l_material = p_render_allocator.heap.materials.get(p_material);
-			l_material.free(p_graphics_allocator, p_buffer_memory);
+			p_render_allocator.heap.materials.get(p_material).free_with_textures(p_graphics_allocator, p_buffer_memory);
 			p_render_allocator.free_material(p_material);
 		};
 
-		//TODO -> clean
-		inline static void free_material_with_parameters_but_not_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
+		inline static void free_material_with_parameters(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
 		{
-			Material& l_material = p_render_allocator.heap.materials.get(p_material);
-			l_material.free_but_not_textures(p_graphics_allocator, p_buffer_memory);
+			p_render_allocator.heap.materials.get(p_material).free(p_graphics_allocator, p_buffer_memory);
 			p_render_allocator.free_material(p_material);
 		};
 
@@ -479,7 +476,7 @@ namespace v2
 				}
 
 				p_render_allocator.heap.unlink_shader_with_material(p_shader, l_material_to_remove);
-				free_material_with_parameters(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_material_to_remove);
+				free_material_with_parameters_and_textures(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_material_to_remove);
 			}
 
 
@@ -530,7 +527,7 @@ namespace v2
 		this->clear_values.free();
 		p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
 		GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
-		this->global_material.free(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
+		this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
 	};
 
 	inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)

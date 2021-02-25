@@ -220,7 +220,7 @@ namespace v2
 
 	struct MaterialRessource
 	{
-		struct ParameterDependency
+		struct DynamicDependency
 		{
 			Token(TextureRessource) dependency;
 		};
@@ -228,7 +228,7 @@ namespace v2
 		struct Dependencies
 		{
 			Token(ShaderRessource) shader;
-			Token(Slice<MaterialRessource::ParameterDependency>) parameter_dependencies;
+			Token(Slice<MaterialRessource::DynamicDependency>) dynamic_dependencies;
 		};
 
 		RessourceIdentifiedHeader header;
@@ -240,7 +240,7 @@ namespace v2
 			return MaterialRessource{
 					RessourceIdentifiedHeader::build_default(),
 					tk_bd(Material),
-					Dependencies{ tk_bd(ShaderRessource), tk_bd(Slice<MaterialRessource::ParameterDependency>)}
+					Dependencies{ tk_bd(ShaderRessource), tk_bd(Slice<MaterialRessource::DynamicDependency>)}
 			};
 		};
 
@@ -254,19 +254,12 @@ namespace v2
 
 		struct Asset
 		{
-			enum class ParameterType
-			{
-				UNKNOWN = 0, TEXTURE = 1, OBJECT = 2
-			};
-
-			VaryingVector parameters; //TODO -> implementing a "header" version
+			VaryingVector parameters; //TODO -> implementing a "header" version of the VaryingVector
 
 			inline void free()
 			{
 				this->parameters.free();
 			};
-			//TODO adding parameters
-			// Material allocation can be done by accepting an array of input parameters. This array will be in this structure to be used.
 		};
 
 		struct InlineRessourceInput

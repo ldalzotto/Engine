@@ -56,8 +56,7 @@ namespace v2
 				case ShaderParameter::Type::TEXTURE_GPU:
 				{
 					auto& l_shader_pameter = p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu);
-					BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, p_graphics_allocator.heap.textures_gpu.get(l_shader_pameter.texture).Image);
-					p_graphics_allocator.free_shadertexturegpu_parameter(p_buffer_memory.allocator.device, l_shader_paramter.texture_gpu);
+					p_graphics_allocator.free_shadertexturegpu_parameter(p_buffer_memory.allocator.device, l_shader_paramter.texture_gpu, p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu));
 				}
 					break;
 				default:
@@ -68,9 +67,7 @@ namespace v2
 			p_graphics_allocator.free_material_parameters(this->parameters);
 		};
 
-
-		//TODO -> clean
-		inline void free_but_not_textures(GraphicsAllocator2& p_graphics_allocator, BufferMemory& p_buffer_memory)
+		inline void free_with_textures(GraphicsAllocator2& p_graphics_allocator, BufferMemory& p_buffer_memory)
 		{
 			Slice<ShaderParameter> l_shader_parameters = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters);
 			for (loop(i, 0, l_shader_parameters.Size))
@@ -95,7 +92,9 @@ namespace v2
 				case ShaderParameter::Type::TEXTURE_GPU:
 				{
 					auto& l_shader_pameter = p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu);
-					p_graphics_allocator.free_shadertexturegpu_parameter_butnot_texture(p_buffer_memory.allocator.device, l_shader_paramter.texture_gpu);
+					BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, p_graphics_allocator.heap.textures_gpu.get(l_shader_pameter.texture).Image);
+					p_graphics_allocator.free_shadertexturegpu_parameter_with_texture(p_buffer_memory.allocator.device, l_shader_paramter.texture_gpu,
+							p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_paramter.texture_gpu));
 				}
 					break;
 				default:

@@ -7,7 +7,7 @@
 namespace v2
 {
 
-	inline void ressource_componsition_test()
+	inline void ressource_composition_test()
 	{
 		struct RessourceTest
 		{
@@ -401,16 +401,6 @@ namespace v2
 					l_vertices_span, l_indices_span
 			};
 
-			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
-					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
-					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
-					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
-					MaterialRessource::InlineRessourceInput{ 0 },
-					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
-					l_node_1
-			);
-			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
-
 			hash_t l_material_texture_id = 14874879;
 			Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
 			TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset{
@@ -418,15 +408,42 @@ namespace v2
 					l_material_texture_span
 			};
 
-
-			MaterialRessource::Asset l_material_asset;
+			MaterialRessource::Asset l_material_asset_1;
 			{
 				Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
-				auto l_obj = MaterialRessource::Asset::ParameterType::OBJECT;
-				auto l_tex = MaterialRessource::Asset::ParameterType::TEXTURE;
-				l_material_asset.parameters = VaryingVector::allocate_default();
-				l_material_asset.parameters.push_back_2(Slice<MaterialRessource::Asset::ParameterType>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-				l_material_asset.parameters.push_back_2(Slice<MaterialRessource::Asset::ParameterType>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+				auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
+				auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
+				l_material_asset_1.parameters = VaryingVector::allocate_default();
+				l_material_asset_1.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+				l_material_asset_1.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+				l_material_parameter_temp.free();
+			}
+
+
+			Token(MeshRendererComponent) l_mesh_renderer = RenderRessourceAllocator2Composition::allocate_meshrenderer_inline_with_dependencies(l_ctx.scene_middleware.render_middleware.allocator,
+					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
+					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
+					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
+					MaterialRessource::InlineRessourceInput{ 0, l_material_asset_1, SliceN<TextureRessource::InlineRessourceInput, 1>{
+							TextureRessource::InlineRessourceInput{
+									l_material_texture_id,
+									l_material_texture_asset
+							}
+					}.to_slice() },
+					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
+					l_node_1
+			);
+			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
+
+
+			MaterialRessource::Asset l_material_asset_2;
+			{
+				Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
+				auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
+				auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
+				l_material_asset_2.parameters = VaryingVector::allocate_default();
+				l_material_asset_2.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+				l_material_asset_2.parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
 				l_material_parameter_temp.free();
 			}
 
@@ -435,7 +452,7 @@ namespace v2
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
-					MaterialRessource::InlineRessourceInput{ 1, l_material_asset,
+					MaterialRessource::InlineRessourceInput{ 1, l_material_asset_2,
 															 SliceN<TextureRessource::InlineRessourceInput, 1>{
 																	 TextureRessource::InlineRessourceInput{
 																			 l_material_texture_id,
@@ -472,6 +489,10 @@ namespace v2
 					MaterialRessource& l_material = l_ctx.scene_middleware.render_middleware.allocator.heap.materials.pool.get(l_mesh_renderer_ressource.dependencies.material);
 					assert_true(l_material.header.id == 0);
 					assert_true(l_material.header.allocated == 1);
+					Slice<MaterialRessource::DynamicDependency> l_material_parameter_dependencies = l_ctx.scene_middleware.render_middleware.allocator.heap.material_dynamic_dependencies.get_vector(
+							l_material.dependencies.dynamic_dependencies);
+					assert_true(l_material_parameter_dependencies.Size == 1);
+					assert_true(l_ctx.scene_middleware.render_middleware.allocator.heap.textures.pool.get(l_material_parameter_dependencies.get(0).dependency).header.id == l_material_texture_id);
 					ShaderRessource& l_shader = l_ctx.scene_middleware.render_middleware.allocator.heap.shaders_v3.pool.get(l_material.dependencies.shader);
 					assert_true(l_shader.header.id == l_shader_asset_id);
 					assert_true(l_shader.header.allocated == 1);
@@ -486,6 +507,10 @@ namespace v2
 					MaterialRessource& l_material = l_ctx.scene_middleware.render_middleware.allocator.heap.materials.pool.get(l_mesh_renderer_ressource_2.dependencies.material);
 					assert_true(l_material.header.id == 1);
 					assert_true(l_material.header.allocated == 1);
+					Slice<MaterialRessource::DynamicDependency> l_material_parameter_dependencies = l_ctx.scene_middleware.render_middleware.allocator.heap.material_dynamic_dependencies.get_vector(
+							l_material.dependencies.dynamic_dependencies);
+					assert_true(l_material_parameter_dependencies.Size == 1);
+					assert_true(l_ctx.scene_middleware.render_middleware.allocator.heap.textures.pool.get(l_material_parameter_dependencies.get(0).dependency).header.id == l_material_texture_id);
 					ShaderRessource& l_shader = l_ctx.scene_middleware.render_middleware.allocator.heap.shaders_v3.pool.get(l_material.dependencies.shader);
 					assert_true(l_shader.header.id == l_shader_asset_id);
 					assert_true(l_shader.header.allocated == 1);
@@ -557,9 +582,10 @@ namespace v2
 
 int main()
 {
-	v2::ressource_componsition_test();
+	v2::ressource_composition_test();
 	v2::collision_middleware_component_allocation();
 	v2::collision_middleware_queuing_for_calculation();
 	v2::render_middleware_inline_allocation();
+	//TODO -> render middleware test with alloc, free, alloc of the same ressources and the same frame.
 	memleak_ckeck();
 }

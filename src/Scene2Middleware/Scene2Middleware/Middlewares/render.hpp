@@ -9,7 +9,7 @@ namespace v2
 		PoolHashedCounted<hash_t, ShaderRessource> shaders_v3;
 		PoolHashedCounted<hash_t, TextureRessource> textures;
 		PoolHashedCounted<hash_t, MaterialRessource> materials;
-		PoolOfVector<MaterialRessource::ParameterDependency> material_parameters_dependency;
+		PoolOfVector<MaterialRessource::DynamicDependency> material_dynamic_dependencies;
 
 		inline static RenderHeap allocate()
 		{
@@ -19,7 +19,7 @@ namespace v2
 					PoolHashedCounted<hash_t, ShaderRessource>::allocate_default(),
 					PoolHashedCounted<hash_t, TextureRessource>::allocate_default(),
 					PoolHashedCounted<hash_t, MaterialRessource>::allocate_default(),
-					PoolOfVector<MaterialRessource::ParameterDependency>::allocate_default()
+					PoolOfVector<MaterialRessource::DynamicDependency>::allocate_default()
 			};
 		};
 
@@ -31,14 +31,14 @@ namespace v2
 			assert_true(this->shaders_v3.empty());
 			assert_true(this->textures.empty());
 			assert_true(this->materials.empty());
-			assert_true(!this->material_parameters_dependency.has_allocated_elements());
+			assert_true(!this->material_dynamic_dependencies.has_allocated_elements());
 #endif
 			this->shader_modules_v2.free();
 			this->mesh_v2.free();
 			this->shaders_v3.free();
 			this->textures.free();
 			this->materials.free();
-			this->material_parameters_dependency.free();
+			this->material_dynamic_dependencies.free();
 		};
 	};
 
@@ -144,9 +144,9 @@ namespace v2
 				MaterialRessource& l_ressource = this->heap.materials.pool.get(l_event.ressource);
 				ShaderRessource& l_linked_shader = this->heap.shaders_v3.pool.get(l_ressource.dependencies.shader);
 				p_renderer.allocator.heap.unlink_shader_with_material(l_linked_shader.shader, l_ressource.material);
-				D3RendererAllocatorComposition::free_material_with_parameters_but_not_textures(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.material);
+				D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_ressource.material);
 				this->heap.materials.pool.release_element(l_event.ressource);
-				this->heap.material_parameters_dependency.release_vector(l_ressource.dependencies.parameter_dependencies);
+				this->heap.material_dynamic_dependencies.release_vector(l_ressource.dependencies.dynamic_dependencies);
 				this->material_free_events.pop_back();
 			}
 
@@ -255,18 +255,18 @@ namespace v2
 				for (loop(j, 0, l_event.asset.parameters.get_size()))
 				{
 					Slice<int8> l_element = l_event.asset.parameters.get_element(j);
-					switch (*(MaterialRessource::Asset::ParameterType*)l_element.Begin)
+					switch (*(ShaderParameter::Type*)l_element.Begin)
 					{
-					case MaterialRessource::Asset::ParameterType::OBJECT:
+					case ShaderParameter::Type::UNIFORM_HOST:
 					{
-						l_element.slide(sizeof(MaterialRessource::Asset::ParameterType));
+						l_element.slide(sizeof(ShaderParameter::Type));
 						l_material_value.add_and_allocate_buffer_host_parameter(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
 								p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_element);
 					}
 						break;
-					case MaterialRessource::Asset::ParameterType::TEXTURE:
+					case ShaderParameter::Type::TEXTURE_GPU:
 					{
-						l_element.slide(sizeof(MaterialRessource::Asset::ParameterType));
+						l_element.slide(sizeof(ShaderParameter::Type));
 						hash_t l_texture_id = slice_cast<hash_t>(l_element).get(0);
 						Token(TextureGPU) l_texture = this->heap.textures.pool.get(this->heap.textures.CountMap.get_value_nothashed(l_texture_id)->token).texture;
 						l_material_value.add_texture_gpu_parameter(p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_texture,
@@ -277,9 +277,6 @@ namespace v2
 						abort();
 					}
 				};
-
-				// Token(Slice<MaterialRessource::ParameterDependency>) l_material_parameters_dependencies = this->heap.material_parameters_dependency.alloc_vector();
-				// this->heap.material_to_parameters_dependency.push_key_value_nothashed(l_ressource.header.id, l_material_parameters_dependencies);
 
 				l_ressource.material = p_renderer.allocator.allocate_material(l_material_value);
 				p_renderer.allocator.heap.link_shader_with_material(l_shader.shader, l_ressource.material);
@@ -380,28 +377,39 @@ namespace v2
 			);
 		};
 
+		//TODO -> can we generalize this behavior inside the RessourceComposition functions ?
+		inline Token(Slice<MaterialRessource::DynamicDependency>) allocate_material_parameter_dependencies_inline(const MaterialRessource::InlineRessourceInput& p_material_ressource)
+		{
+			if (this->heap.materials.has_key_nothashed(p_material_ressource.id))
+			{
+				Token(MaterialRessource) l_material_ressource = this->heap.materials.CountMap.get_value(p_material_ressource.id)->token;
+				return tk_bf(Slice<MaterialRessource::DynamicDependency>, l_material_ressource);
+			}
+			else
+			{
+				Span<MaterialRessource::DynamicDependency> l_material_texture_ressources = Span<MaterialRessource::DynamicDependency>::allocate(p_material_ressource.texture_dependencies_input.Size);
+				for (loop(i, 0, p_material_ressource.texture_dependencies_input.Size))
+				{
+					l_material_texture_ressources.get(0) = MaterialRessource::DynamicDependency{ this->allocate_texture_inline(p_material_ressource.texture_dependencies_input.get(0)) };
+				}
+				Token(Slice<MaterialRessource::DynamicDependency>) l_parameters = this->heap.material_dynamic_dependencies.alloc_vector_with_values(l_material_texture_ressources.slice);
+				l_material_texture_ressources.free();
+				return l_parameters;
+			}
+		};
+
+		inline void free_material_parameter_dependencies(const MaterialRessource& p_material)
+		{
+			Slice<MaterialRessource::DynamicDependency> l_material_parameter_dependencies = this->heap.material_dynamic_dependencies.get_vector(p_material.dependencies.dynamic_dependencies);
+			for (loop(i, 0, l_material_parameter_dependencies.Size))
+			{
+				this->free_texture(this->heap.textures.pool.get(l_material_parameter_dependencies.get(i).dependency));
+			}
+		};
+
 		inline Token(MaterialRessource) allocate_material_inline(const MaterialRessource::InlineRessourceInput& p_material_ressource,
 				const MaterialRessource::Dependencies& p_dependencies)
 		{
-			return this->heap.materials.increment_or_allocate_explicit(p_material_ressource.id, [this, &p_material_ressource, &p_dependencies](const hash_t p_id)
-			{
-				//TODO -> is this the good place to do this ?
-				Span<MaterialRessource::ParameterDependency> l_material_texture_ressources = Span<MaterialRessource::ParameterDependency>::allocate(p_material_ressource.texture_dependencies_input.Size);
-				for (loop(i, 0, p_material_ressource.texture_dependencies_input.Size))
-				{
-					l_material_texture_ressources.get(0) = MaterialRessource::ParameterDependency{ this->allocate_texture_inline(p_material_ressource.texture_dependencies_input.get(0)) };
-				}
-				MaterialRessource::Dependencies l_dep = p_dependencies;
-				l_dep.parameter_dependencies = this->heap.material_parameters_dependency.alloc_vector_with_values(l_material_texture_ressources.slice);
-				l_material_texture_ressources.free();
-				return MaterialRessource{ RessourceIdentifiedHeader::build_with_id(p_id), tk_bd(Material), l_dep };
-			}, [this, &p_material_ressource](const Token(MaterialRessource) p_allocated_ressource)
-			{
-				this->material_allocation_events.push_back_element(MaterialRessource::AllocationEvent::build_inline(p_material_ressource.asset, p_allocated_ressource));
-
-			});
-
-			/*
 			return RessourceComposition::allocate_ressource_composition_explicit(
 					this->heap.materials, this->material_allocation_events, p_material_ressource.id, [&p_dependencies](const hash_t p_id)
 					{
@@ -411,15 +419,20 @@ namespace v2
 						return MaterialRessource::AllocationEvent::build_inline(p_material_ressource.asset, p_allocated_ressource);
 					}
 			);
-			*/
 		};
 
-		inline void free_material(const MaterialRessource& p_material)
+		inline int8 free_material(const MaterialRessource& p_material)
 		{
+			//TODO -> can we generalize the return ?
+			int8 l_return = 0;
 			RessourceComposition::free_ressource_composition(
-					this->heap.materials, this->material_allocation_events, this->material_free_events, p_material.header, [](Token(MaterialRessource) p_removed_token)
-					{ return MaterialRessource::FreeEvent{ p_removed_token }; }
+					this->heap.materials, this->material_allocation_events, this->material_free_events, p_material.header, [&l_return](Token(MaterialRessource) p_removed_token)
+					{
+						l_return = 1;
+						return MaterialRessource::FreeEvent{ p_removed_token };
+					}
 			);
+			return l_return;
 		};
 
 		inline Token(MeshRendererComponent) allocate_meshrenderer_inline(const MeshRendererComponent::Dependencies& p_dependencies, const Token(Node) p_scene_node)
@@ -445,26 +458,41 @@ namespace v2
 
 	struct RenderRessourceAllocator2Composition
 	{
+		inline static Token(ShaderRessource) allocate_shader_v2_inline_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator,
+				const ShaderRessource::InlineAllocationInput& p_shader, const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader,
+				const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader)
+		{
+			ShaderRessource::Dependencies l_shader_dependencies;
+			l_shader_dependencies.vertex_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_vertex_shader);
+			l_shader_dependencies.fragment_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_fragment_shader);
+			return p_render_ressource_allocator.allocate_shader_v2_inline(p_shader, l_shader_dependencies);
+		};
+
+		inline static Token(MaterialRessource) allocate_material_inline_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const MaterialRessource::InlineRessourceInput& p_material,
+				const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader, const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader,
+				const ShaderRessource::InlineAllocationInput& p_shader)
+		{
+			Token(ShaderRessource) l_shader_ressource = RenderRessourceAllocator2Composition::allocate_shader_v2_inline_with_dependencies(p_render_ressource_allocator, p_shader, p_vertex_shader, p_fragment_shader);
+			Token(Slice<MaterialRessource::DynamicDependency>) l_material_parameters = p_render_ressource_allocator.allocate_material_parameter_dependencies_inline(p_material);
+			return p_render_ressource_allocator.allocate_material_inline(p_material, MaterialRessource::Dependencies{ l_shader_ressource, l_material_parameters });
+		};
+
 		inline static Token(MeshRendererComponent) allocate_meshrenderer_inline_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator,
 				const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader, const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader,
 				const ShaderRessource::InlineAllocationInput& p_shader, const MaterialRessource::InlineRessourceInput& p_material, const MeshRessource::InlineAllocationInput& p_mesh,
 				const Token(Node) p_scene_node)
 		{
-			Token(ShaderModuleRessource) l_vertex_shader_module_ressource = p_render_ressource_allocator.allocate_shadermodule_inline(p_vertex_shader);
-			Token(ShaderModuleRessource) l_fragment_shader_module_ressource = p_render_ressource_allocator.allocate_shadermodule_inline(p_fragment_shader);
-			Token(ShaderRessource) l_shader_ressource = p_render_ressource_allocator.allocate_shader_v2_inline(p_shader, ShaderRessource::Dependencies{ l_vertex_shader_module_ressource, l_fragment_shader_module_ressource });
-			Token(MaterialRessource) l_material_ressource = p_render_ressource_allocator.allocate_material_inline(p_material, MaterialRessource::Dependencies{ l_shader_ressource });
+			Token(MaterialRessource) l_material_ressource = RenderRessourceAllocator2Composition::allocate_material_inline_with_dependencies(p_render_ressource_allocator, p_material, p_vertex_shader, p_fragment_shader, p_shader);
 			Token(MeshRessource) l_mesh_ressource = p_render_ressource_allocator.allocate_mesh_inline(p_mesh);
-
 			return p_render_ressource_allocator.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{ l_material_ressource, l_mesh_ressource }, p_scene_node);
 		};
 
+		//TODO -> splitting this in small parts ?
 		inline static void free_meshrenderer(RenderRessourceAllocator2& p_render_ressource_allocator, const Token(MeshRendererComponent) p_mesh_renderer)
 		{
 			MeshRendererComponent& l_mesh_renderer = p_render_ressource_allocator.mesh_renderers.get(p_mesh_renderer);
 
 			MaterialRessource& l_material_ressource = p_render_ressource_allocator.heap.materials.pool.get(l_mesh_renderer.dependencies.material);
-			Slice<MaterialRessource::ParameterDependency> l_material_parameter_dependencies = p_render_ressource_allocator.heap.material_parameters_dependency.get_vector(l_material_ressource.dependencies.parameter_dependencies);
 			ShaderRessource& l_shader_ressource = p_render_ressource_allocator.heap.shaders_v3.pool.get(l_material_ressource.dependencies.shader);
 			MeshRessource& l_mesh_ressource = p_render_ressource_allocator.heap.mesh_v2.pool.get(l_mesh_renderer.dependencies.mesh);
 			ShaderModuleRessource& l_vertex_module_ressource = p_render_ressource_allocator.heap.shader_modules_v2.pool.get(l_shader_ressource.dependencies.vertex_shader);
@@ -480,10 +508,9 @@ namespace v2
 				p_render_ressource_allocator.mesh_renderers.release_element(p_mesh_renderer);
 			}
 
-			p_render_ressource_allocator.free_material(l_material_ressource);
-			for (loop(i, 0, l_material_parameter_dependencies.Size))
+			if (p_render_ressource_allocator.free_material(l_material_ressource))
 			{
-				p_render_ressource_allocator.free_texture(p_render_ressource_allocator.heap.textures.pool.get(l_material_parameter_dependencies.get(i).dependency));
+				p_render_ressource_allocator.free_material_parameter_dependencies(l_material_ressource);
 			}
 			p_render_ressource_allocator.free_shader(l_shader_ressource);
 			p_render_ressource_allocator.free_mesh(l_mesh_ressource);

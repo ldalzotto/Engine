@@ -493,9 +493,9 @@ namespace v2
 			BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
 			BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);
 
-			l_global_material.free(l_graphics_allocator, l_buffer_memory);
-			l_second_material.free(l_graphics_allocator, l_buffer_memory);
-			l_first_material.free(l_graphics_allocator, l_buffer_memory);
+			l_global_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
+			l_second_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
+			l_first_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
 
 
 			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
@@ -736,8 +736,8 @@ namespace v2
 
 			BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);
 
-			l_red_material.free(l_graphics_allocator, l_buffer_memory);
-			l_green_material.free(l_graphics_allocator, l_buffer_memory);
+			l_red_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
+			l_green_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
 
 			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
 			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);
@@ -1138,7 +1138,7 @@ namespace v2
 			BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
 			BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);
 
-			l_material.free(l_graphics_allocator, l_buffer_memory);
+			l_material.free_with_textures(l_graphics_allocator, l_buffer_memory);
 
 			l_graphics_allocator.free_shader_module(l_fragment_first_shader_module);
 			l_graphics_allocator.free_shader_module(l_vertex_first_shader_module);

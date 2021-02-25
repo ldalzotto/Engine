@@ -1166,20 +1166,16 @@ namespace v2
 			return this->heap.shader_texture_gpu_parameters.alloc_element(l_shader_texture_gpu_parameter);
 		};
 
-		inline void free_shadertexturegpu_parameter(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter)
+		inline void free_shadertexturegpu_parameter(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
 		{
-			ShaderTextureGPUParameter& l_parameter = this->heap.shader_texture_gpu_parameters.get(p_parameter);
-			this->free_texturegpu(p_transfer_device, l_parameter.texture);
-			l_parameter.free(this->graphics_device);
-			this->heap.shader_texture_gpu_parameters.release_element(p_parameter);
+			p_parameter.free(this->graphics_device);
+			this->heap.shader_texture_gpu_parameters.release_element(p_parameter_token);
 		};
 
-		//TODO ->clean
-		inline void free_shadertexturegpu_parameter_butnot_texture(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter)
+		inline void free_shadertexturegpu_parameter_with_texture(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
 		{
-			ShaderTextureGPUParameter& l_parameter = this->heap.shader_texture_gpu_parameters.get(p_parameter);
-			l_parameter.free(this->graphics_device);
-			this->heap.shader_texture_gpu_parameters.release_element(p_parameter);
+			this->free_texturegpu(p_transfer_device, p_parameter.texture);
+			this->free_shadertexturegpu_parameter(p_transfer_device, p_parameter_token, p_parameter);
 		};
 
 		inline Token(Slice<ShaderParameter>) allocate_material_parameters()
