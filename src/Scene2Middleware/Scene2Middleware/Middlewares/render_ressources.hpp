@@ -220,9 +220,15 @@ namespace v2
 
 	struct MaterialRessource
 	{
+		struct ParameterDependency
+		{
+			Token(TextureRessource) dependency;
+		};
+
 		struct Dependencies
 		{
 			Token(ShaderRessource) shader;
+			Token(Slice<MaterialRessource::ParameterDependency>) parameter_dependencies;
 		};
 
 		RessourceIdentifiedHeader header;
@@ -234,7 +240,7 @@ namespace v2
 			return MaterialRessource{
 					RessourceIdentifiedHeader::build_default(),
 					tk_bd(Material),
-					Dependencies{ tk_bd(ShaderRessource)}
+					Dependencies{ tk_bd(ShaderRessource), tk_bd(Slice<MaterialRessource::ParameterDependency>)}
 			};
 		};
 
@@ -267,6 +273,7 @@ namespace v2
 		{
 			hash_t id;
 			Asset asset;
+			Slice<TextureRessource::InlineRessourceInput> texture_dependencies_input;
 		};
 
 		struct AllocationEvent

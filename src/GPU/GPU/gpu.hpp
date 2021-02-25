@@ -85,6 +85,8 @@ namespace v2
 #include "./instance.hpp"
 #include "./memory.hpp"
 #include "./graphics.hpp"
+#include "./material.hpp"
+#include "./graphics_binder.hpp"
 
 namespace v2
 {

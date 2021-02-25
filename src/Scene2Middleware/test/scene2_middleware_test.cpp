@@ -317,7 +317,9 @@ namespace v2
 			l_vertex_shader_compiled.free();
 			l_fragment_shader_compiled.free();
 
-			Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate(0);
+			Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate_slice(SliceN<ShaderLayoutParameterType, 2>{
+					ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT
+			}.to_slice());
 
 			v3f l_positions[8] = {
 					v3f{ -1.0f, -1.0f, 1.0f },
@@ -409,12 +411,22 @@ namespace v2
 			);
 			l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
+			hash_t l_material_texture_id = 14874879;
+			Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
+			TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset{
+					v3ui{ 8, 8, 1 },
+					l_material_texture_span
+			};
+
+
 			MaterialRessource::Asset l_material_asset;
 			{
 				Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
 				auto l_obj = MaterialRessource::Asset::ParameterType::OBJECT;
+				auto l_tex = MaterialRessource::Asset::ParameterType::TEXTURE;
 				l_material_asset.parameters = VaryingVector::allocate_default();
 				l_material_asset.parameters.push_back_2(Slice<MaterialRessource::Asset::ParameterType>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+				l_material_asset.parameters.push_back_2(Slice<MaterialRessource::Asset::ParameterType>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
 				l_material_parameter_temp.free();
 			}
 
@@ -423,7 +435,13 @@ namespace v2
 					ShaderModuleRessource::InlineAllocationInput{ l_vertex_shader_id, l_vertex_shader },
 					ShaderModuleRessource::InlineAllocationInput{ l_fragment_shader_id, l_fragment_shader },
 					ShaderRessource::InlineAllocationInput{ l_shader_asset_id, l_shader_asset },
-					MaterialRessource::InlineRessourceInput{ 1, l_material_asset },
+					MaterialRessource::InlineRessourceInput{ 1, l_material_asset,
+															 SliceN<TextureRessource::InlineRessourceInput, 1>{
+																	 TextureRessource::InlineRessourceInput{
+																			 l_material_texture_id,
+																			 l_material_texture_asset
+																	 }
+															 }.to_slice() },
 					MeshRessource::InlineAllocationInput{ l_mesh_id, l_mesh_asset },
 					l_node_2
 			);

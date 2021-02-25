@@ -391,11 +391,11 @@ namespace v2
 
 
 			Material l_global_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_global_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_global_color);
+			l_global_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_global_color);
 
 			Material l_first_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_first_material.add_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_base_color);
-			l_first_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_added_color);
+			l_first_material.add_and_allocate_buffer_gpu_parameter_typed(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_base_color);
+			l_first_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_1_added_color);
 
 			{
 
@@ -404,7 +404,7 @@ namespace v2
 				{
 					l_colors.get(i) = l_multiplied_color_texture_color;
 				}
-				l_first_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments.get(0).image_format, l_colors.slice.build_asint8());
+				l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_attachments.get(0).image_format, l_colors.slice.build_asint8());
 				l_colors.free();
 			}
 
@@ -412,8 +412,8 @@ namespace v2
 			color_f l_mat_2_added_color = color_f{ 0.6f, 0.0f, 0.0f };
 
 			Material l_second_material = Material::allocate_empty(l_graphics_allocator, 1);
-			l_second_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_base_color);
-			l_second_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_added_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_base_color);
+			l_second_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_mat_2_added_color);
 
 			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
 
@@ -633,9 +633,9 @@ namespace v2
 			}
 
 			Material l_red_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_red_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, color_f{ 1.0f, 0.0f, 0.0f, 0.0f });
+			l_red_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, color_f{ 1.0f, 0.0f, 0.0f, 0.0f });
 			Material l_green_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_green_material.add_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, color_f{ 0.0f, 1.0f, 0.0f, 0.0f });
+			l_green_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, color_f{ 0.0f, 1.0f, 0.0f, 0.0f });
 
 
 			color l_clear_color = color{ 0, uint8_max, 51, uint8_max };
@@ -1090,7 +1090,8 @@ namespace v2
 			}
 
 			Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
-			l_material.add_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format, l_texture_pixels.slice.build_asint8());
+			l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format,
+					l_texture_pixels.slice.build_asint8());
 
 			color l_clear_color = color{ 0, 0, 0, 0 };
 

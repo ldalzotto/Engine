@@ -385,6 +385,14 @@ namespace v2
 			p_render_allocator.free_material(p_material);
 		};
 
+		//TODO -> clean
+		inline static void free_material_with_parameters_but_not_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Material) p_material)
+		{
+			Material& l_material = p_render_allocator.heap.materials.get(p_material);
+			l_material.free_but_not_textures(p_graphics_allocator, p_buffer_memory);
+			p_render_allocator.free_material(p_material);
+		};
+
 		inline static Token(RenderableObject) allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token(Mesh) p_mesh)
 		{
 			RenderableObject l_renderable_object;
@@ -511,7 +519,7 @@ namespace v2
 
 		Camera l_empty_camera{};
 		l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
-		l_step.global_material.add_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
+		l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
 				p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
 
 		return l_step;

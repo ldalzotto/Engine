@@ -129,11 +129,11 @@ namespace v2
 		l_fragment_shader_compiled.free();
 
 		Material l_red_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_red_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
+		l_red_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
 				v3f{ 1.0f, 0.0f, 0.0f });
 
 		Material l_green_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
-		l_green_material.add_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
+		l_green_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
 				v3f{ 0.0f, 1.0f, 0.0f });
 
 		Token(Material) l_red_material_token = l_renderer.allocator.allocate_material(l_red_material);
