@@ -38,6 +38,10 @@ struct PoolOfVector
 		this->FreeBlocks.free();
 	};
 
+	inline Slice<ElementType> sp_reflection_ElementType()
+	{
+		abort();
+	};
 
 	inline int8 is_token_free(const PoolOfVectorToken<ElementType> p_token)
 	{

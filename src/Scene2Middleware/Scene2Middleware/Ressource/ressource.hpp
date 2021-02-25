@@ -85,12 +85,12 @@ struct RessourceComposition
 			hash_t p_ressource_id,
 			const RessourceBuilderFunc_t& p_ressource_builder_func,
 			const RessourceAllocationEventBuilderFunc_t& p_ressource_allocation_event_builder_func
-	)
+	) -> Token(decltype(p_pool_hashed_counted.sp_reflection_ElementType()))
 	{
 		return p_pool_hashed_counted.increment_or_allocate_explicit(p_ressource_id, p_ressource_builder_func,
 				[&p_ressource_allocation_events, &p_ressource_allocation_event_builder_func](auto p_allocated_ressource)
 				{
-					p_ressource_allocation_events.push_back_element(p_ressource_allocation_event_builder_func(p_allocated_ressource));
+					p_ressource_allocation_events.sv_push_back_element(p_ressource_allocation_event_builder_func(p_allocated_ressource));
 				});
 	};
 
@@ -99,7 +99,7 @@ struct RessourceComposition
 	*/
 	template<class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class ShadowVector(RessourceFreeEvent), class RessourceFreeEventBuilderFunc_t,
 			class AllocationEventFoundSlot_t>
-	inline static void free_ressource_composition_explicit(
+	inline static int8 free_ressource_composition_explicit(
 			ShadowPoolHashedCounted(RessourceId, Ressource)& p_pool_hashed_counted,
 			ShadowVector(RessourceAllocationEvent)& p_ressource_allocation_events,
 			ShadowVector(RessourceFreeEvent)& p_ressource_free_events,
@@ -108,38 +108,62 @@ struct RessourceComposition
 			const AllocationEventFoundSlot_t& p_allocation_event_found_slot // Slot executed when an existing RessourceAllocationEvent with Ressource reference has been found
 	)
 	{
+		int8 l_return = 0;
 		if (p_ressource_header.allocated)
 		{
 			p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(p_ressource_header.id,
-					[&p_ressource_free_events, &p_free_event_builder](auto p_deallocated_token)
+					[&l_return, &p_ressource_free_events, &p_free_event_builder](auto p_deallocated_token)
 					{
 						p_ressource_free_events.sv_push_back_element(p_free_event_builder(p_deallocated_token));
+						l_return = 1;
 					});
 		}
 		else
 		{
 			p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(p_ressource_header.id,
-					[&p_ressource_allocation_events, &p_pool_hashed_counted, &p_allocation_event_found_slot](auto p_deallocated_token)
+					[&l_return, &p_ressource_allocation_events, &p_pool_hashed_counted, &p_allocation_event_found_slot](auto p_deallocated_token)
 					{
 						RessourceComposition::remove_reference_from_allocation_events_explicit(p_ressource_allocation_events, p_deallocated_token, p_allocation_event_found_slot);
 						p_pool_hashed_counted.pool.sp_release_element(p_deallocated_token);
+						l_return = 1;
 					});
 		}
+		return l_return;
 	};
 
 	/*
 		Default version of  free_ressource_composition_explicit
 	*/
 	template<class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class ShadowVector(RessourceFreeEvent), class RessourceFreeEventBuilder>
-	inline static void free_ressource_composition(
+	inline static int8 free_ressource_composition(
 			ShadowPoolHashedCounted(RessourceId, Ressource)& p_pool_hashed_counted,
 			ShadowVector(RessourceAllocationEvent)& p_ressource_allocation_events,
 			ShadowVector(RessourceFreeEvent)& p_ressource_free_events,
 			const RessourceIdentifiedHeader& p_ressource_header,
 			const RessourceFreeEventBuilder& p_free_event_builder)
 	{
-		RessourceComposition::free_ressource_composition_explicit(p_pool_hashed_counted, p_ressource_allocation_events, p_ressource_free_events, p_ressource_header,
+		return RessourceComposition::free_ressource_composition_explicit(p_pool_hashed_counted, p_ressource_allocation_events, p_ressource_free_events, p_ressource_header,
 				p_free_event_builder,
 				AllocationEventFoundSlot::Nil{});
+	};
+
+	template<class ShadowPoolHashedCounted(RessourceId, InitialRessource), class ShadowPool(DynamicDepenency), class DynamicDependencyTokenAllocationSlot_t>
+	inline static auto allocate_dynamic_dependencies(
+			ShadowPoolHashedCounted(RessourceId, InitialRessource)& p_source_pool_hashed_counted,
+			ShadowPool(DynamicDepenency)& p_dynamic_dependency_pool,
+			const hash_t p_initial_ressource_id,
+			const DynamicDependencyTokenAllocationSlot_t& p_dynamic_depenedency_allocation_slot
+	) -> Token(decltype(p_dynamic_dependency_pool.sp_reflection_ElementType()))
+	{
+		typedef decltype(p_dynamic_dependency_pool.sp_reflection_ElementType()) ReturnTokenElementType;
+
+		if (p_source_pool_hashed_counted.has_key_nothashed(p_initial_ressource_id))
+		{
+			return tk_bf(ReturnTokenElementType, p_source_pool_hashed_counted.CountMap.get_value(p_initial_ressource_id)->token);
+		}
+		else
+		{
+			return p_dynamic_depenedency_allocation_slot();
+		}
 	};
 };

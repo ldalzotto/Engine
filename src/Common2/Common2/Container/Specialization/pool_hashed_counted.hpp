@@ -34,6 +34,11 @@ struct PoolHashedCounted
 		this->CountMap.free();
 	};
 
+	inline ElementType sp_reflection_ElementType()
+	{
+		abort();
+	};
+
 	inline int8 empty()
 	{
 		return !this->pool.has_allocated_elements() && this->CountMap.empty();

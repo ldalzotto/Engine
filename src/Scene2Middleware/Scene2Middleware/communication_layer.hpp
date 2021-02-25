@@ -69,7 +69,7 @@ namespace v2
 
 		inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
 		{
-			RenderRessourceAllocator2Composition::free_meshrenderer(p_render_middleware.allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+			RenderRessourceAllocator2Composition::free_meshrenderer_with_dependencies(p_render_middleware.allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
 		};
 	};
 

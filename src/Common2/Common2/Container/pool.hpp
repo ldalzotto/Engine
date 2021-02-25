@@ -147,5 +147,6 @@ private:
 };
 
 #define ShadowPool(ElementType) ShadowPool_##ElementType
+#define sp_reflection_ElementType() reflection_elementType()
 #define sp_get(p_token) get(p_token)
 #define sp_release_element(p_token) release_element(p_token)

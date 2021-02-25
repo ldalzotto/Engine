@@ -1,7 +1,7 @@
 #pragma once
 
 namespace v2
-{ 
+{
 	struct BoxColliderComponentAsset
 	{
 		v3f half_extend;
@@ -19,23 +19,27 @@ namespace v2
 	struct CollisionAllocator
 	{
 		PoolIndexed<BoxColliderComponent> box_colliders;
-		
-		//TODO -> can we generalize the fact that a ressource allocation can be deferred ?
-		Vector<Token(BoxColliderComponent)> box_colliders_waiting_for_allocation;
+
+		//TODO -> can we generalize the fact that a ressource allocation can be deferred ? YES ! we want to refactor this file so that it uses the RessourceUtility methods.
+		Vector<Token(BoxColliderComponent) > box_colliders_waiting_for_allocation;
 		Vector<BoxColliderComponentAsset> box_colliders_asset_waiting_for_allocation; //linked to box_colliders_waiting_for_allocation
 
 		static CollisionAllocator allocate_default();
+
 		void free();
 
 		Token(BoxColliderComponent) allocate_box_collider_component(Collision2& p_collision, const Token(Node) p_scene_node, const BoxColliderComponentAsset& p_asset);
+
 		Token(BoxColliderComponent) allocate_box_collider_component_deferred(const Token(Node) p_scene_node, const BoxColliderComponentAsset& p_asset);
 
 		BoxColliderComponent& get_or_allocate_box_collider(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_token);
+
 		BoxColliderComponent& get_box_collider_ressource_unsafe(const Token(BoxColliderComponent) p_box_collider_token); //unsafe
 
 		void free_box_collider_component(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
 
 		v3f box_collider_get_world_half_extend(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
+
 		int8 box_collider_is_queued_for_detection(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
 
 		Token(ColliderDetector) attach_collider_detector(Collision2& p_collition, const Token(BoxColliderComponent) p_box_collider_component);
@@ -48,6 +52,7 @@ namespace v2
 		CollisionAllocator allocator;
 
 		static CollisionMiddleware allocate_default();
+
 		void free(Collision2& p_collision, Scene* p_scene);
 
 		void step(Collision2& p_collision, Scene* p_scene);
@@ -62,9 +67,9 @@ namespace v2
 	inline CollisionAllocator CollisionAllocator::allocate_default()
 	{
 		return CollisionAllocator{
-			PoolIndexed<BoxColliderComponent>::allocate_default(),
-			Vector<Token(BoxColliderComponent)>::allocate(0),
-			Vector<BoxColliderComponentAsset>::allocate(0)
+				PoolIndexed<BoxColliderComponent>::allocate_default(),
+				Vector<Token(BoxColliderComponent) >::allocate(0),
+				Vector<BoxColliderComponentAsset>::allocate(0)
 		};
 	};
 
@@ -83,7 +88,7 @@ namespace v2
 
 	inline Token(BoxColliderComponent) CollisionAllocator::allocate_box_collider_component_deferred(const Token(Node) p_scene_node, const BoxColliderComponentAsset& p_asset)
 	{
-		Token(BoxColliderComponent) l_box_collider_token = this->box_colliders.alloc_element(BoxColliderComponent{ 1, p_scene_node, tk_b(BoxCollider,tokent_build_default()) });
+		Token(BoxColliderComponent) l_box_collider_token = this->box_colliders.alloc_element(BoxColliderComponent{ 1, p_scene_node, tk_b(BoxCollider, tokent_build_default())});
 		this->box_colliders_waiting_for_allocation.push_back_element(l_box_collider_token);
 		this->box_colliders_asset_waiting_for_allocation.push_back_element(p_asset);
 		return l_box_collider_token;
@@ -95,17 +100,17 @@ namespace v2
 		if (this->box_colliders_waiting_for_allocation.Size != 0)
 		{
 			vector_foreach_begin(&this->box_colliders_waiting_for_allocation, i, l_box_collider_token);
-			{
-				if (tk_eq(p_box_collider_token, l_box_collider_token))
 				{
-					BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
-					l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{ v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend });
-					l_box_collider_component.force_update = 1;
-					this->box_colliders_waiting_for_allocation.erase_element_at(i);
-					this->box_colliders_asset_waiting_for_allocation.erase_element_at(i);
-					return l_box_collider_component;
+					if (tk_eq(p_box_collider_token, l_box_collider_token))
+					{
+						BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
+						l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{ v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend });
+						l_box_collider_component.force_update = 1;
+						this->box_colliders_waiting_for_allocation.erase_element_at(i);
+						this->box_colliders_asset_waiting_for_allocation.erase_element_at(i);
+						return l_box_collider_component;
+					}
 				}
-			}
 			vector_foreach_end();
 		};
 
@@ -182,11 +187,11 @@ namespace v2
 		if (this->box_colliders_waiting_for_allocation.Size != 0)
 		{
 			vector_foreach_begin(&this->box_colliders_waiting_for_allocation, i, l_box_collider_token);
-			{
-				BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
-				l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{ v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend });
-				l_box_collider_component.force_update = 1;
-			}
+				{
+					BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
+					l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{ v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend });
+					l_box_collider_component.force_update = 1;
+				}
 			vector_foreach_end();
 			this->box_colliders_waiting_for_allocation.clear();
 			this->box_colliders_asset_waiting_for_allocation.clear();
@@ -198,9 +203,9 @@ namespace v2
 	inline CollisionMiddleware CollisionMiddleware::allocate_default()
 	{
 		return CollisionMiddleware
-		{
-			CollisionAllocator::allocate_default()
-		};
+				{
+						CollisionAllocator::allocate_default()
+				};
 	};
 
 	inline void CollisionMiddleware::free(Collision2& p_collision, Scene* p_scene)
@@ -215,18 +220,18 @@ namespace v2
 		this->allocator.allocate_awaiting_entities(p_collision);
 
 		poolindexed_foreach_value_begin(&this->allocator.box_colliders, i, l_box_collider_token, l_box_collider_component);
-		{
-			NodeEntry l_node = p_scene->get_node(l_box_collider_component.scene_node);
-			if (l_box_collider_component.force_update || l_node.Element->state.haschanged_thisframe)
 			{
-				p_collision.on_collider_moved(l_box_collider_component.box_collider,
-					transform_pa{
-					p_scene->tree.get_worldposition(l_node),
-						p_scene->tree.get_worldrotation(l_node).to_axis()
-				});
-				l_box_collider_component.force_update = false;
+				NodeEntry l_node = p_scene->get_node(l_box_collider_component.scene_node);
+				if (l_box_collider_component.force_update || l_node.Element->state.haschanged_thisframe)
+				{
+					p_collision.on_collider_moved(l_box_collider_component.box_collider,
+							transform_pa{
+									p_scene->tree.get_worldposition(l_node),
+									p_scene->tree.get_worldrotation(l_node).to_axis()
+							});
+					l_box_collider_component.force_update = false;
+				}
 			}
-		}
 		poolindexed_foreach_token_2_end();
 	};
 }
