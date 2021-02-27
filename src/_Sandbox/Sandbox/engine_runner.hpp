@@ -7,9 +7,9 @@ struct SandboxEngineRunner
 	Engine engine;
 	float32 simulated_delta_time;
 
-	inline static SandboxEngineRunner allocate(const Slice<int8>& p_executable_path, const float32 p_simulated_delta_time)
+	inline static SandboxEngineRunner allocate(const EngineConfiguration& p_engine_configuration, const float32 p_simulated_delta_time)
 	{
-		return SandboxEngineRunner{ Engine::allocate(p_executable_path), p_simulated_delta_time };
+		return SandboxEngineRunner{ Engine::allocate(p_engine_configuration), p_simulated_delta_time };
 	};
 
 	template<class SandboxEngineCallbacks>

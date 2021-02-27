@@ -38,7 +38,7 @@ inline FileHandle FileNative::create_file(const Slice<int8>& p_path)
 inline FileHandle FileNative::open_file(const Slice<int8>& p_path)
 {
 	FileHandle l_handle = CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-#if MEM_LEAK_DETECTION
+	#if MEM_LEAK_DETECTION
 	if (FileNative::handle_is_valid(l_handle))
 	{
 		push_ptr_to_tracked((int8*)l_handle);
@@ -71,7 +71,7 @@ inline void FileNative::set_file_pointer(FileHandle& p_file_handle, uimax p_poin
 #if CONTAINER_BOUND_TEST
 	assert_true(
 #endif
-			SetFilePointer(p_file_handle, (int32)p_pointer, 0, FILE_BEGIN)
+			SetFilePointer(p_file_handle, (LONG)p_pointer, 0, FILE_BEGIN)
 			#if CONTAINER_BOUND_TEST
 			!= INVALID_SET_FILE_POINTER
 	)
@@ -98,6 +98,8 @@ inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 
 #endif
 
+//TODO -> adding a way to track opened files to check if they have been closed ?
+// like memory ?
 struct File
 {
 	union
@@ -146,12 +148,6 @@ struct File
 		FileNative::close_file(this->native_handle);
 	};
 
-	inline void free_with_path()
-	{
-		this->free();
-		this->path_allocated.free();
-	};
-
 	inline void erase_with_slicepath()
 	{
 		this->free();
@@ -160,8 +156,9 @@ struct File
 
 	inline void erase_with_spanpath()
 	{
+		this->free();
 		FileNative::delete_file(this->path_allocated.slice);
-		this->free_with_path();
+		this->path_allocated.free();
 	};
 
 	inline int8 is_valid()

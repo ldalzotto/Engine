@@ -124,9 +124,20 @@ struct BoxCollisionSandboxEnvironment
 
 inline void boxcollision()
 {
-	SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(slice_int8_build_rawstr(""), 1.0f / 60.0f);
+	String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+	l_database_path.append(slice_int8_build_rawstr("/asset.db"));
+	{
+		File l_tmp_file = File::create_or_open(l_database_path.to_slice());
+		l_tmp_file.erase_with_slicepath();
+		AssetDatabase::initialize_database(l_database_path.to_slice());
+	}
+	SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{ l_database_path.to_slice() }, 1.0f / 60.0f);
+	l_database_path.free();
+
 	BoxCollisionSandboxEnvironment l_sandbox_environment = BoxCollisionSandboxEnvironment::build_default();
 	l_runner.main_loop(l_sandbox_environment);
+
+
 };
 
 /*

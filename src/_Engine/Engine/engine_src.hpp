@@ -1,6 +1,11 @@
 #pragma once
 
 
+struct EngineConfiguration
+{
+	Slice<int8> asset_database_path;
+};
+
 struct Engine
 {
 	int8 abort_condition;
@@ -15,7 +20,9 @@ struct Engine
 	v2::Scene scene;
 	v2::SceneMiddleware scene_middleware;
 
-	static Engine allocate(const Slice<int8>& p_executable_path);
+	AssetDatabase asset_database;
+
+	static Engine allocate(const EngineConfiguration& p_configuration);
 
 	void free();
 
@@ -63,7 +70,7 @@ inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, 
 	on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, p_component);
 };
 
-inline Engine Engine::allocate(const Slice<int8>& p_executable_path)
+inline Engine Engine::allocate(const EngineConfiguration& p_configuration)
 {
 	v2::GPUContext l_gpu_context = v2::GPUContext::allocate();
 	v2::D3Renderer l_renderer = v2::D3Renderer::allocate(l_gpu_context, v2::ColorStep::AllocateInfo{ v3ui{ 8, 8, 1 }, 0 });
@@ -76,7 +83,8 @@ inline Engine Engine::allocate(const Slice<int8>& p_executable_path)
 					l_gpu_context,
 					l_renderer,
 					v2::Scene::allocate_default(),
-					v2::SceneMiddleware::allocate_default()
+					v2::SceneMiddleware::allocate_default(),
+					AssetDatabase::allocate(p_configuration.asset_database_path)
 			};
 };
 
@@ -85,6 +93,7 @@ inline void Engine::free()
 	ComponentReleaser l_component_releaser = ComponentReleaser{ *this };
 	this->scene.consume_component_events_stateful(l_component_releaser);
 	this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context);
+	this->asset_database.free();
 	this->collision.free();
 	this->renderer.free(this->gpu_context);
 	this->gpu_context.free();

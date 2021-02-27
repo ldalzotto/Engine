@@ -3,7 +3,7 @@
 #include "Collision/collision.hpp"
 #include "Render/render.hpp"
 #include "Scene2/scene2.hpp"
-
+#include "AssetDatabase/assetdatabase.hpp"
 
 #include "./Ressource/ressource.hpp"
 #include "./Middlewares/collision.hpp"

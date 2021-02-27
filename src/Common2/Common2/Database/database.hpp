@@ -75,7 +75,8 @@ enum class SQLiteQueryPrimitiveTypes
 {
 	UNKNOWN = 0,
 	INT64 = UNKNOWN + 1,
-	STR = INT64 + 1
+	TEXT = INT64 + 1,
+	BLOB = TEXT + 1
 };
 
 struct SQLiteQueryLayout
@@ -146,6 +147,13 @@ struct SQLitePreparedQuery
 		this->free(p_connection);
 		this->parameter_layout.free();
 	};
+
+	inline void free_with_parameterlayout_and_returnlayout(DatabaseConnection& p_connection)
+	{
+		this->free(p_connection);
+		this->parameter_layout.free();
+		this->return_layout.free();
+	};
 };
 
 struct SQLiteQuery
@@ -200,6 +208,26 @@ struct SQLiteQueryBinder
 		this->bind_counter += 1;
 	};
 
+	inline void bind_text(const Slice<int8>& p_text)
+	{
+#if DATABASE_BOUND_TEST
+		assert_true(this->binded_parameter_layout != NULL);
+		assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::TEXT);
+#endif
+		sqlite3_bind_text(this->binded_statement, this->bind_counter, p_text.Begin, (int32)p_text.Size, NULL);
+		this->bind_counter += 1;
+	};
+
+	inline void bind_blob(const Slice<int8>& p_blob)
+	{
+#if DATABASE_BOUND_TEST
+		assert_true(this->binded_parameter_layout != NULL);
+		assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::BLOB);
+#endif
+		sqlite3_bind_blob(this->binded_statement, this->bind_counter, p_blob.Begin, (int32)p_blob.Size, NULL);
+		this->bind_counter += 1;
+	};
+
 	inline void clear()
 	{
 		this->bind_counter = 1;
@@ -221,7 +249,7 @@ struct SQLiteResultSet
 	inline static SQLiteResultSet build_from_prepared_query(const SQLitePreparedQuery& p_prepared_query)
 	{
 		return SQLiteResultSet{
-				(SQLiteQueryLayout*)&p_prepared_query.parameter_layout,
+				(SQLiteQueryLayout*)&p_prepared_query.return_layout,
 				p_prepared_query.statement
 		};
 	};
@@ -233,6 +261,30 @@ struct SQLiteResultSet
 		assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::INT64);
 #endif
 		return sqlite3_column_int64(this->binded_statement, p_index);
+	};
+
+	inline Span<int8> get_text(const int8 p_index)
+	{
+#if DATABASE_BOUND_TEST
+		assert_true(this->binded_return_layout != NULL);
+		assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::TEXT);
+#endif
+		uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
+		return Span<int8>::allocate_slice(
+				Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size)
+		);
+	};
+
+	inline Span<int8> get_blob(const int8 p_index)
+	{
+#if DATABASE_BOUND_TEST
+		assert_true(this->binded_return_layout != NULL);
+		assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::BLOB);
+#endif
+		uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
+		return Span<int8>::allocate_slice(
+				Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size)
+		);
 	};
 
 };
@@ -258,5 +310,36 @@ struct SQliteQueryExecution
 				l_step_status = DatabaseConnection_Utils::handleStepError(sqlite3_step(p_statement), &p_connection.connection);
 			}
 		}
+	};
+
+	template<class ForeachRowFunc_t>
+	inline static int8 execute_sync_silent(DatabaseConnection& p_connection, sqlite3_stmt* p_statement, const ForeachRowFunc_t& p_foreach_row)
+	{
+		int l_step_status = SQLITE_BUSY;
+		while (l_step_status == SQLITE_BUSY)
+		{
+			int32 l_step_return = sqlite3_step(p_statement);
+			if (l_step_return != SQLITE_BUSY && l_step_return != SQLITE_DONE && l_step_return != SQLITE_ROW)
+			{
+				return 0;
+			}
+		}
+
+		while (l_step_status == SQLITE_ROW)
+		{
+			p_foreach_row();
+
+			l_step_status = SQLITE_BUSY;
+			while (l_step_status == SQLITE_BUSY)
+			{
+				int32 l_step_return = sqlite3_step(p_statement);
+				if (l_step_return != SQLITE_BUSY && l_step_return != SQLITE_DONE && l_step_return != SQLITE_ROW)
+				{
+					return 0;
+				}
+			}
+		}
+
+		return 1;
 	};
 };

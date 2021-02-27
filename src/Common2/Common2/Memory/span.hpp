@@ -17,6 +17,13 @@ struct Span
 		Slice<ElementType> slice;
 	};
 
+	inline static Span<ElementType> build_default()
+	{
+		Span<ElementType> l_return;
+		l_return.slice = Slice<ElementType>::build_default();
+		return l_return;
+	};
+
 	inline static Span<ElementType> build(ElementType* p_memory, const uimax p_capacity)
 	{
 		return Span<ElementType>{ p_capacity, p_memory };

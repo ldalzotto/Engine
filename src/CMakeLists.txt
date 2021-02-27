@@ -71,6 +71,7 @@ target_include_directories(Scene2Middleware INTERFACE ${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(Scene2Middleware INTERFACE Scene2)
 target_link_libraries(Scene2Middleware INTERFACE Collision)
 target_link_libraries(Scene2Middleware INTERFACE Render)
+target_link_libraries(Scene2Middleware INTERFACE AssetDatabase)
 
 add_library(Engine INTERFACE)
 target_include_directories(Engine INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/_Engine)
@@ -92,6 +93,7 @@ target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT
 
 add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
+target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/.asset/")
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)
@@ -121,10 +123,12 @@ target_link_libraries(WindowTest PUBLIC Window)
 
 add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)
+target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/.asset/")
 
 add_custom_target(
         Test_ALL
         COMMAND Common2Test
+        COMMAND AssetDatabaseTest
         COMMAND Math2Test
         COMMAND WindowTest
         COMMAND CollisionTest

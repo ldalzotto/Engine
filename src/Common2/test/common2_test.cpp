@@ -1532,7 +1532,9 @@ inline void database_test()
 				MULTILINE(
 						create table if not exists test(
 						id integer PRIMARY KEY,
-						num integer
+						num integer,
+						txt text,
+						data blob
 				);
 				)
 		));
@@ -1541,11 +1543,12 @@ inline void database_test()
 		{});
 		l_table_creation_query.free(l_connection);
 
-		SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 2>{ SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64 }.to_slice());
+		SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 4>{ SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64,
+																													SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB }.to_slice());
 		SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
 				MULTILINE(
-						insert into test(id, num)
-						values( ?, ?);
+						insert into test(id, num, txt, data)
+						values( ?, ?, ?, ?);
 				)
 		), l_parameter_layout, SQLiteQueryLayout::build_default());
 
@@ -1553,6 +1556,10 @@ inline void database_test()
 		l_binder.bind_sqlitepreparedquery(l_insersion_query);
 		l_binder.bind_int64(10);
 		l_binder.bind_int64(20);
+		l_binder.bind_text(slice_int8_build_rawstr("test"));
+
+		uimax l_value = 30;
+		l_binder.bind_blob(Slice<uimax>::build_asint8_memory_singleelement(&l_value));
 
 		SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []()
 		{});
@@ -1560,10 +1567,10 @@ inline void database_test()
 		l_insersion_query.free(l_connection);
 
 
-		SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{ SQLiteQueryPrimitiveTypes::INT64 }.to_slice());
+		SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 3>{ SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB }.to_slice());
 		SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
 				MULTILINE(
-						select num from test where test.id = ?;
+						select num, txt, data from test where test.id = ?;
 				)
 		), l_parameter_layout, l_return_layout);
 
@@ -1572,13 +1579,22 @@ inline void database_test()
 		l_binder.bind_int64(10);
 
 		int64 l_retrieved_id = 0;
-		SQliteQueryExecution::execute_sync(l_connection, l_select_query.statement, [&l_select_query, &l_retrieved_id]()
+		Span<int8> l_retrieved_str = Span<int8>::build_default();
+		Span<int8> l_retrieved_value = Span<int8>::build_default();
+		SQliteQueryExecution::execute_sync(l_connection, l_select_query.statement, [&l_select_query, &l_retrieved_id, &l_retrieved_str, &l_retrieved_value]()
 		{
 			SQLiteResultSet l_result_set = SQLiteResultSet::build_from_prepared_query(l_select_query);
 			l_retrieved_id = l_result_set.get_int64(0);
+			l_retrieved_str = l_result_set.get_text(1);
+			l_retrieved_value = l_result_set.get_blob(2);
 		});
 
 		assert_true(l_retrieved_id == 20);
+		assert_true(l_retrieved_str.slice.compare(slice_int8_build_rawstr("test")));
+		assert_true(l_retrieved_value.slice.compare(Slice<uimax>::build_asint8_memory_singleelement(&l_value)));
+
+		l_retrieved_str.free();
+		l_retrieved_value.free();
 
 		l_select_query.free(l_connection);
 
