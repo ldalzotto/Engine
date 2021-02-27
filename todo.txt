@@ -1,5 +1,4 @@
 
-1/ Adding MaterialAsset inline instanciation in the RenderMiddleware.
 2/ Creating the AssetDatabase module and integrate it in the engine.
 3/ Updating the RenderMiddleWware so that Asset can either be instanciated via database or inline.
 4/ Creating the Window module and allow application presentation.

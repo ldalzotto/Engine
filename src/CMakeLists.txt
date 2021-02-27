@@ -1,11 +1,11 @@
 
-add_compile_definitions(ASSETPATH_DEV=1)
-
 if (IS_DEBUG)
     add_compile_definitions(MEM_LEAK_DETECTION=1)
     add_compile_definitions(TOKEN_TYPE_SAFETY=1)
     add_compile_definitions(CONTAINER_BOUND_TEST=1)
     add_compile_definitions(CONTAINER_MEMORY_TEST=1)
+    add_compile_definitions(DATABASE_BOUND_TEST=1)
+    add_compile_definitions(DATABASE_DEBUG=1)
     add_compile_definitions(MATH_NORMALIZATION_TEST=1)
     add_compile_definitions(SCENE_BOUND_TEST=1)
     add_compile_definitions(GPU_DEBUG=1)
@@ -19,6 +19,8 @@ else ()
     add_compile_definitions(TOKEN_TYPE_SAFETY=0)
     add_compile_definitions(CONTAINER_BOUND_TEST=0)
     add_compile_definitions(CONTAINER_MEMORY_TEST=0)
+    add_compile_definitions(DATABASE_BOUND_TEST=0)
+    add_compile_definitions(DATABASE_DEBUG=0)
     add_compile_definitions(MATH_BOUND_TEST=0)
     add_compile_definitions(SCENE_BOUND_TEST=0)
     add_compile_definitions(GPU_DEBUG=0)
@@ -31,6 +33,11 @@ endif ()
 
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
+target_link_libraries(Common2 INTERFACE SQLite)
+
+add_library(AssetDatabase INTERFACE)
+target_include_directories(AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase)
+target_link_libraries(AssetDatabase INTERFACE Common2)
 
 add_library(Window INTERFACE)
 target_include_directories(Window INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Window)
@@ -80,6 +87,11 @@ target_link_libraries(Test_ShaderCompile INTERFACE GLSLANG)
 
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
+target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/.asset/")
+
+
+add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
+target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)

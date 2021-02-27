@@ -6,6 +6,8 @@
 #include <climits>
 #include <math.h>
 
+#include "sqlite3.h"
+
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
@@ -44,7 +46,11 @@
 
 #include "./Functional/string_functions.hpp"
 
+#include "./File/file.hpp"
+
 #include "./Serialization/json.hpp"
 #include "./Serialization/types.hpp"
 
 #include "./Functional/container_iteration.hpp"
+
+#include "./Database/database.hpp"

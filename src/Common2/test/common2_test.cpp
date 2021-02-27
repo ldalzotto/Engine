@@ -1473,7 +1473,123 @@ inline void serialize_json_test()
 	l_serializer.free();
 };
 
-int main()
+inline void file_test()
+{
+	String l_file_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+	l_file_path.append(slice_int8_build_rawstr("file_test.txt"));
+
+	{
+		File l_tmp_file = File::create_or_open(l_file_path.to_slice());
+		l_tmp_file.erase_with_slicepath();
+	}
+
+	File l_file = File::create(l_file_path.to_slice());
+	assert_true(l_file.is_valid());
+	l_file.erase_with_slicepath();
+
+	l_file_path.free();
+};
+
+inline void database_test()
+{
+	String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+	l_database_path.append(slice_int8_build_rawstr("asset.db"));
+	{
+		File l_tmp_file = File::create_or_open(l_database_path.to_slice());
+		l_tmp_file.erase_with_slicepath();
+	}
+
+	//create database and table
+	{
+		DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
+
+		SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(
+				MULTILINE(
+						create table if not exists test(
+						id integer PRIMARY KEY
+				);
+				)
+		));
+
+		SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []()
+		{});
+
+		l_query.free(l_connection);
+
+		l_connection.free();
+	}
+
+	{
+		File l_tmp_file = File::create_or_open(l_database_path.to_slice());
+		l_tmp_file.erase_with_slicepath();
+	}
+
+	//create/insert/read
+	{
+		DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
+
+		SQLiteQuery l_table_creation_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(
+				MULTILINE(
+						create table if not exists test(
+						id integer PRIMARY KEY,
+						num integer
+				);
+				)
+		));
+
+		SQliteQueryExecution::execute_sync(l_connection, l_table_creation_query.statement, []()
+		{});
+		l_table_creation_query.free(l_connection);
+
+		SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 2>{ SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64 }.to_slice());
+		SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
+				MULTILINE(
+						insert into test(id, num)
+						values( ?, ?);
+				)
+		), l_parameter_layout, SQLiteQueryLayout::build_default());
+
+		SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
+		l_binder.bind_sqlitepreparedquery(l_insersion_query);
+		l_binder.bind_int64(10);
+		l_binder.bind_int64(20);
+
+		SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []()
+		{});
+
+		l_insersion_query.free(l_connection);
+
+
+		SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{ SQLiteQueryPrimitiveTypes::INT64 }.to_slice());
+		SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
+				MULTILINE(
+						select num from test where test.id = ?;
+				)
+		), l_parameter_layout, l_return_layout);
+
+		l_binder = SQLiteQueryBinder::build_default();
+		l_binder.bind_sqlitepreparedquery(l_select_query);
+		l_binder.bind_int64(10);
+
+		int64 l_retrieved_id = 0;
+		SQliteQueryExecution::execute_sync(l_connection, l_select_query.statement, [&l_select_query, &l_retrieved_id]()
+		{
+			SQLiteResultSet l_result_set = SQLiteResultSet::build_from_prepared_query(l_select_query);
+			l_retrieved_id = l_result_set.get_int64(0);
+		});
+
+		assert_true(l_retrieved_id == 20);
+
+		l_select_query.free(l_connection);
+
+		l_connection.free();
+	}
+
+	l_database_path.free();
+
+};
+
+int main(int argc, int8** argv)
 {
 	slice_span_test();
 	vector_test();
@@ -1492,7 +1608,8 @@ int main()
 	fromstring_test();
 	deserialize_json_test();
 	serialize_json_test();
-
+	file_test();
+	database_test();
 
 	memleak_ckeck();
 };

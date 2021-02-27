@@ -1,6 +1,10 @@
 #pragma once
 
+
+
 #ifdef _WIN32
+
+
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -19,6 +23,7 @@ inline uint64 FILETIME_to_mics(FILETIME& p_filetime)
 };
 
 #elif __linux__
+
 
 #include <time.h>
 #include <unistd.h>
