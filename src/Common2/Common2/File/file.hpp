@@ -98,8 +98,6 @@ inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 
 #endif
 
-//TODO -> adding a way to track opened files to check if they have been closed ?
-// like memory ?
 struct File
 {
 	union

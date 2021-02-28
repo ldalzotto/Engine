@@ -43,7 +43,7 @@ namespace v2
 				};
 			};
 
-			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
 			{
 				return Asset{ p_allocated_binary };
 			};
@@ -69,11 +69,6 @@ namespace v2
 		{
 			Asset RessourceAllocationEvent_member_asset;
 			Token(ShaderModuleRessource)RessourceAllocationEvent_member_allocated_ressource;
-
-			inline static AllocationEvent build_inline(const Asset& p_asset, const Token(ShaderModuleRessource) p_allocated_ressource)
-			{
-				return AllocationEvent{ p_asset, p_allocated_ressource };
-			};
 		};
 
 		struct FreeEvent
@@ -132,7 +127,7 @@ namespace v2
 				};
 			};
 
-			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
 			{
 				return Asset{ p_allocated_binary };
 			};
@@ -142,7 +137,7 @@ namespace v2
 				Vector<int8> l_binary = Vector<int8>::allocate(0);
 				BinarySerializer::slice(&l_binary, p_values.initial_vertices.build_asint8());
 				BinarySerializer::slice(&l_binary, p_values.initial_indices.build_asint8());
-				return allocate_from_binary(l_binary.Memory);
+				return build_from_binary(l_binary.Memory);
 			};
 		};
 
@@ -161,11 +156,6 @@ namespace v2
 		{
 			MeshRessource::Asset RessourceAllocationEvent_member_asset;
 			Token(MeshRessource)RessourceAllocationEvent_member_allocated_ressource;
-
-			inline static AllocationEvent build_inline(const MeshRessource::Asset& p_asset, const Token(MeshRessource) p_allocated_ressource)
-			{
-				return AllocationEvent{ p_asset, p_allocated_ressource };
-			};
 		};
 
 		struct FreeEvent
@@ -221,7 +211,7 @@ namespace v2
 				};
 			};
 
-			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
 			{
 				return Asset{ p_allocated_binary };
 			};
@@ -232,7 +222,7 @@ namespace v2
 				BinarySerializer::slice(&l_binary, p_values.specific_parameters.build_asint8());
 				BinarySerializer::type(&l_binary, p_values.execution_order);
 				BinarySerializer::type(&l_binary, p_values.shader_configuration);
-				return allocate_from_binary(l_binary.Memory);
+				return build_from_binary(l_binary.Memory);
 			};
 
 			inline void free()
@@ -256,11 +246,6 @@ namespace v2
 		{
 			ShaderRessource::Asset RessourceAllocationEvent_member_asset;
 			Token(ShaderRessource)RessourceAllocationEvent_member_allocated_ressource;
-
-			inline static AllocationEvent build_inline(const ShaderRessource::Asset& p_asset, const Token(ShaderRessource) p_allocated_ressource)
-			{
-				return AllocationEvent{ p_asset, p_allocated_ressource };
-			};
 		};
 
 		struct FreeEvent
@@ -298,7 +283,7 @@ namespace v2
 				};
 			};
 
-			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
 			{
 				return Asset{ p_allocated_binary };
 			};
@@ -308,7 +293,7 @@ namespace v2
 				Vector<int8> l_binary = Vector<int8>::allocate(0);
 				BinarySerializer::type(&l_binary, p_value.size);
 				BinarySerializer::slice(&l_binary, p_value.pixels);
-				return allocate_from_binary(l_binary.Memory);
+				return build_from_binary(l_binary.Memory);
 			};
 
 			inline void free()
@@ -371,13 +356,13 @@ namespace v2
 
 			struct Value
 			{
-				VaryingVector parameters; //TODO -> implementing a "header" version of the VaryingVector. Or can't we build a VaryingSlice ? instead of using vectors
+				VaryingSlice parameters; //TODO -> implementing a "header" version of the VaryingSlice.
 
 				inline static Value build_from_asset(const Asset& p_asset)
 				{
 					Value l_value;
 					BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
-					l_value.parameters = l_deserializer.varying_vector();
+					l_value.parameters = l_deserializer.varying_slice();
 					return l_value;
 				};
 			};
@@ -387,7 +372,7 @@ namespace v2
 				this->allocated_binary.free();
 			};
 
-			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
 			{
 				return Asset{ p_allocated_binary };
 			};
@@ -395,8 +380,8 @@ namespace v2
 			inline static Asset allocate_from_values(const Value& p_value)
 			{
 				Vector<int8> l_binary = Vector<int8>::allocate(0);
-				BinarySerializer::varying_vector(&l_binary, p_value.parameters);
-				return allocate_from_binary(l_binary.Memory);
+				BinarySerializer::varying_slice(&l_binary, p_value.parameters);
+				return build_from_binary(l_binary.Memory);
 			};
 		};
 
@@ -417,12 +402,6 @@ namespace v2
 		{
 			Asset RessourceAllocationEvent_member_asset;
 			Token(MaterialRessource)RessourceAllocationEvent_member_allocated_ressource;
-
-			inline static AllocationEvent build_inline(const Asset& p_asset,
-					const Token(MaterialRessource) p_allocated_ressource)
-			{
-				return AllocationEvent{ p_asset, p_allocated_ressource };
-			};
 		};
 
 		struct FreeEvent
@@ -475,6 +454,11 @@ namespace v2
 					{
 							0, 1, p_scene_node, tk_bd(RenderableObject), p_dependencies
 					};
+		};
+
+		struct AllocationEvent
+		{
+			Token(MeshRendererComponent)RessourceAllocationEvent_member_allocated_ressource;
 		};
 
 		struct FreeEvent

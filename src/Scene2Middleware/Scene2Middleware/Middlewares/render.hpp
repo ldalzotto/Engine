@@ -1,5 +1,13 @@
 #pragma once
 
+//TODO ->
+// We want to split the allocation in two distinctive layers.
+//   1/ All ressources that are related to database/inline data retrieval. And allocate Token that are not related to the scene
+//		(eg ShaderModule, Shader, Material, Mesh, Textures). In the future, this layer can be called by other Layers to allocate specific ressources.
+//   2/ We keep this layer with the allocation of Component which is related to the Scene.
+// -
+// Of course, there will be an execution order to follow : deallocation : 2/ -> 1/   allocation : 1/ -> 2/
+
 namespace v2
 {
 	struct RenderHeap
@@ -46,17 +54,12 @@ namespace v2
 	{
 		RenderHeap heap;
 
-		struct MeshRendererAllocationEvent
-		{
-			Token(MeshRendererComponent)RessourceAllocationEvent_member_allocated_ressource;
-		};
-
 		Vector<ShaderModuleRessource::AllocationEvent> shadermodule_allocation_events;
 		Vector<MeshRessource::AllocationEvent> mesh_allocation_events;
 		Vector<ShaderRessource::AllocationEvent> shader_allocation_events;
 		Vector<TextureRessource::AllocationEvent> texture_allocation_events;
 		Vector<MaterialRessource::AllocationEvent> material_allocation_events;
-		Vector<MeshRendererAllocationEvent> mesh_renderer_allocation_events;
+		Vector<MeshRendererComponent::AllocationEvent> mesh_renderer_allocation_events;
 
 		Vector<ShaderModuleRessource::FreeEvent> shadermodule_free_events;
 		Vector<MeshRessource::FreeEvent> mesh_free_events;
@@ -77,7 +80,7 @@ namespace v2
 					Vector<ShaderRessource::AllocationEvent>::allocate(0),
 					Vector<TextureRessource::AllocationEvent>::allocate(0),
 					Vector<MaterialRessource::AllocationEvent>::allocate(0),
-					Vector<MeshRendererAllocationEvent>::allocate(0),
+					Vector<MeshRendererComponent::AllocationEvent>::allocate(0),
 					Vector<ShaderModuleRessource::FreeEvent>::allocate(0),
 					Vector<MeshRessource::FreeEvent>::allocate(0),
 					Vector<ShaderRessource::FreeEvent>::allocate(0),
@@ -125,7 +128,6 @@ namespace v2
 			this->mesh_renderers.free();
 		};
 
-		//TODO -> we can generalize the l_ressource.header.allocation_type switch
 		inline void step(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
 		{
 			for (loop_reverse(i, 0, this->meshrenderer_free_events.Size))
@@ -190,16 +192,7 @@ namespace v2
 			{
 				auto& l_event = this->shadermodule_allocation_events.get(i);
 				ShaderModuleRessource& l_ressource = this->heap.shader_modules_v2.pool.get(l_event.allocated_ressource);
-				switch (l_ressource.header.allocation_type)
-				{
-				case RessourceAllocationType::INLINE:
-					break;
-				case RessourceAllocationType::ASSET_DATABASE:
-					l_event.asset = ShaderModuleRessource::Asset::allocate_from_binary(p_asset_database.get_asset_blob(l_ressource.header.id));
-					break;
-				default:
-					abort();
-				}
+				RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
 
 				ShaderModuleRessource::Asset::Value l_value = ShaderModuleRessource::Asset::Value::build_from_asset(l_event.asset);
 				l_ressource.shader_module = p_gpu_context.graphics_allocator.allocate_shader_module(l_value.compiled_shader);
@@ -213,16 +206,7 @@ namespace v2
 				auto& l_event = this->mesh_allocation_events.get(i);
 
 				MeshRessource& l_ressource = this->heap.mesh_v2.pool.get(l_event.allocated_ressource);
-				switch (l_ressource.header.allocation_type)
-				{
-				case RessourceAllocationType::INLINE:
-					break;
-				case RessourceAllocationType::ASSET_DATABASE:
-					l_event.asset = MeshRessource::Asset::allocate_from_binary(p_asset_database.get_asset_blob(l_ressource.header.id));
-					break;
-				default:
-					abort();
-				}
+				RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
 
 				MeshRessource::Asset::Value l_value = MeshRessource::Asset::Value::build_from_asset(l_event.asset);
 				l_ressource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_value.initial_vertices, l_value.initial_indices);
@@ -236,16 +220,7 @@ namespace v2
 				auto& l_event = this->shader_allocation_events.get(i);
 				ShaderRessource& l_ressource = this->heap.shaders_v3.pool.get(l_event.allocated_ressource);
 
-				switch (l_ressource.header.allocation_type)
-				{
-				case RessourceAllocationType::INLINE:
-					break;
-				case RessourceAllocationType::ASSET_DATABASE:
-					l_event.asset = ShaderRessource::Asset::allocate_from_binary(p_asset_database.get_asset_blob(l_ressource.header.id));
-					break;
-				default:
-					abort();
-				}
+				RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
 
 				ShaderModuleRessource& l_vertex_shader = this->heap.shader_modules_v2.pool.get(l_ressource.dependencies.vertex_shader);
 				ShaderModuleRessource& l_fragment_shader = this->heap.shader_modules_v2.pool.get(l_ressource.dependencies.fragment_shader);
@@ -268,16 +243,7 @@ namespace v2
 				auto& l_event = this->texture_allocation_events.get(i);
 				TextureRessource& l_ressource = this->heap.textures.pool.get(l_event.allocated_ressource);
 
-				switch (l_ressource.header.allocation_type)
-				{
-				case RessourceAllocationType::INLINE:
-					break;
-				case RessourceAllocationType::ASSET_DATABASE:
-					l_event.asset = TextureRessource::Asset::allocate_from_binary(p_asset_database.get_asset_blob(l_ressource.header.id));
-					break;
-				default:
-					abort();
-				}
+				RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
 
 				TextureRessource::Asset::Value l_value = TextureRessource::Asset::Value::build_from_asset(l_event.asset);
 				l_ressource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory,
@@ -296,16 +262,7 @@ namespace v2
 				auto& l_event = this->material_allocation_events.get(i);
 				MaterialRessource& l_ressource = this->heap.materials.pool.get(l_event.allocated_ressource);
 
-				switch (l_ressource.header.allocation_type)
-				{
-				case RessourceAllocationType::INLINE:
-					break;
-				case RessourceAllocationType::ASSET_DATABASE:
-					l_event.asset = MaterialRessource::Asset::allocate_from_binary(p_asset_database.get_asset_blob(l_ressource.header.id));
-					break;
-				default:
-					abort();
-				}
+				RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
 
 				ShaderRessource& l_shader = this->heap.shaders_v3.pool.get(l_ressource.dependencies.shader);
 				ShaderIndex& l_shader_index = p_renderer.allocator.heap.shaders.get(l_shader.shader);
@@ -367,7 +324,7 @@ namespace v2
 			return RessourceComposition::allocate_ressource_composition_explicit(this->heap.shader_modules_v2, this->shadermodule_allocation_events, p_shader_module.id, ShaderModuleRessource::build_inline_from_id,
 					[&p_shader_module](const Token(ShaderModuleRessource) p_allocated_ressource)
 					{
-						return ShaderModuleRessource::AllocationEvent::build_inline(p_shader_module.asset, p_allocated_ressource);
+						return ShaderModuleRessource::AllocationEvent{ p_shader_module.asset, p_allocated_ressource };
 					});
 		};
 
@@ -396,7 +353,7 @@ namespace v2
 					{ return ShaderRessource{ RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(ShaderIndex), ShaderRessource::Dependencies{ p_dependencies.vertex_shader, p_dependencies.fragment_shader }}; },
 					[&p_shader](const Token(ShaderRessource) p_allocated_ressource)
 					{
-						return ShaderRessource::AllocationEvent::build_inline(p_shader.asset, p_allocated_ressource);
+						return ShaderRessource::AllocationEvent{ p_shader.asset, p_allocated_ressource };
 					}
 			);
 		};
@@ -406,7 +363,7 @@ namespace v2
 			return RessourceComposition::allocate_ressource_composition_explicit(
 					this->heap.shaders_v3, this->shader_allocation_events, p_shader.id, [&p_dependencies](hash_t p_id)
 					{ return ShaderRessource{ RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(ShaderIndex), ShaderRessource::Dependencies{ p_dependencies.vertex_shader, p_dependencies.fragment_shader }}; },
-					[&p_shader](const Token(ShaderRessource) p_allocated_ressource)
+					[](const Token(ShaderRessource) p_allocated_ressource)
 					{
 						return ShaderRessource::AllocationEvent{ ShaderRessource::Asset{}, p_allocated_ressource };
 					}
@@ -425,7 +382,7 @@ namespace v2
 			return RessourceComposition::allocate_ressource_composition_explicit(
 					this->heap.mesh_v2, this->mesh_allocation_events, p_mesh.id, MeshRessource::build_inline_from_id, [&p_mesh](const Token(MeshRessource) p_allocated_ressource)
 					{
-						return MeshRessource::AllocationEvent::build_inline(p_mesh.asset, p_allocated_ressource);
+						return MeshRessource::AllocationEvent{ p_mesh.asset, p_allocated_ressource };
 					}
 			);
 		};
@@ -466,7 +423,7 @@ namespace v2
 					this->heap.textures, this->texture_allocation_events, p_texture_ressource.id, [](const hash_t p_id)
 					{
 						return TextureRessource{ RessourceIdentifiedHeader::build_database_with_id(p_id) };
-					}, [&p_texture_ressource](const Token(TextureRessource) p_allocated_ressource)
+					}, [](const Token(TextureRessource) p_allocated_ressource)
 					{
 						return TextureRessource::AllocationEvent{ TextureRessource::Asset{}, p_allocated_ressource };
 					}
@@ -538,7 +495,7 @@ namespace v2
 						return MaterialRessource{ RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Material), p_dependencies };
 					}, [&p_material_ressource](const Token(MaterialRessource) p_allocated_ressource)
 					{
-						return MaterialRessource::AllocationEvent::build_inline(p_material_ressource.asset, p_allocated_ressource);
+						return MaterialRessource::AllocationEvent{ p_material_ressource.asset, p_allocated_ressource };
 					}
 			);
 		};
@@ -570,7 +527,7 @@ namespace v2
 		inline Token(MeshRendererComponent) allocate_meshrenderer(const MeshRendererComponent::Dependencies& p_dependencies, const Token(Node) p_scene_node)
 		{
 			Token(MeshRendererComponent) l_mesh_renderer = this->mesh_renderers.alloc_element(MeshRendererComponent::build(p_scene_node, p_dependencies));
-			this->mesh_renderer_allocation_events.push_back_element(MeshRendererAllocationEvent{ l_mesh_renderer });
+			this->mesh_renderer_allocation_events.push_back_element(MeshRendererComponent::AllocationEvent{ l_mesh_renderer });
 			return l_mesh_renderer;
 		};
 

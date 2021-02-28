@@ -332,6 +332,24 @@ inline void pool_test()
 	}
 };
 
+inline void varyingslice_test()
+{
+	Slice<uimax> l_varying_slice_memory = SliceN<uimax, 5>{ 0, 1, 2, 3, 4 }.to_slice();
+	Slice<SliceIndex> l_varying_slice_indices = SliceN<SliceIndex, 5>{
+			SliceIndex::build(0, sizeof(uimax)), SliceIndex::build(sizeof(uimax), sizeof(uimax)),
+			SliceIndex::build(sizeof(uimax) * 2, sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 3, sizeof(uimax)),
+			SliceIndex::build(sizeof(uimax) * 4, sizeof(uimax))
+	}.to_slice();
+
+	VaryingSlice l_varying_slice = VaryingSlice::build(l_varying_slice_memory.build_asint8(), l_varying_slice_indices);
+
+	assert_true(l_varying_slice.get_size() == l_varying_slice_indices.Size);
+	for (loop(i, 0, l_varying_slice.get_size()))
+	{
+		assert_true(l_varying_slice.get_element_typed<uimax>(i).get(0) == l_varying_slice_memory.get(i));
+	}
+};
+
 inline void varyingvector_test()
 {
 	VaryingVector l_varyingvector = VaryingVector::allocate_default();
@@ -395,8 +413,8 @@ inline void varyingvector_test()
 		l_varyingvector.erase_element_at(2);
 		assert_true(l_varyingvector.get_size() == 4);
 
-		assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 3);
-		assert_true(*l_varyingvector.get_element_typed<uimax>(3) == 4);
+		assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 3);
+		assert_true(l_varyingvector.get_element_typed<uimax>(3).get(0) == 4);
 	}
 
 	l_varyingvector.free();
@@ -414,8 +432,8 @@ inline void varyingvector_test()
 		l_varyingvector.erase_element_at_always(l_varyingvector.get_size() - 1);
 		assert_true(l_varyingvector.get_size() == 3);
 
-		assert_true(*l_varyingvector.get_element_typed<uimax>(1) == 1);
-		assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 3);
+		assert_true(l_varyingvector.get_element_typed<uimax>(1).get(0) == 1);
+		assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 3);
 	}
 
 	l_varyingvector.free();
@@ -432,7 +450,7 @@ inline void varyingvector_test()
 		l_varyingvector.erase_array_at(2, 2);
 		assert_true(l_varyingvector.get_size() == 3);
 
-		assert_true(*l_varyingvector.get_element_typed<uimax>(2) == 4);
+		assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 4);
 	}
 
 	l_varyingvector.free();
@@ -1628,6 +1646,7 @@ int main(int argc, int8** argv)
 	vector_test();
 	hashmap_test();
 	pool_test();
+	varyingslice_test();
 	varyingvector_test();
 	vectorofvector_test();
 	poolofvector_test();

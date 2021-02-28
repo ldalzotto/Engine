@@ -174,4 +174,22 @@ struct RessourceComposition
 			return p_dynamic_depenedency_allocation_slot();
 		}
 	};
+
+	/*
+		If the the Ressource is allocated from the asset database, this function try to retrieve asset from database by it's id and map it to the asset value
+	*/
+	template<class RessourceAsset_t>
+	inline static void retrieve_ressource_asset_from_database_if_necessary(AssetDatabase& p_asset_database, const RessourceIdentifiedHeader& p_ressource_header, RessourceAsset_t* in_out_asset)
+	{
+		switch (p_ressource_header.allocation_type)
+		{
+		case RessourceAllocationType::INLINE:
+			break;
+		case RessourceAllocationType::ASSET_DATABASE:
+			*in_out_asset = in_out_asset->build_from_binary(p_asset_database.get_asset_blob(p_ressource_header.id));
+			break;
+		default:
+			abort();
+		}
+	};
 };

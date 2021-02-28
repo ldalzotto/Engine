@@ -314,17 +314,20 @@ namespace v2
 			assert_true(l_deserialized_value.pixels.compare(l_value.pixels));
 			l_texture.free();
 		}
-		Slice<SliceIndex> l_chunkds = SliceN<SliceIndex, 2>{ SliceIndex{}, SliceIndex{}}.to_slice();
+
+		Slice<int8> l_material_parameters_memory = SliceN<ShaderParameter::Type, 2>{ ShaderParameter::Type::TEXTURE_GPU, ShaderParameter::Type::UNIFORM_HOST }.to_slice().build_asint8();
+		Slice<SliceIndex> l_chunkds = SliceN<SliceIndex, 2>{ SliceIndex::build(0, sizeof(ShaderParameter::Type)), SliceIndex::build(sizeof(ShaderParameter::Type), sizeof(ShaderParameter::Type)) }.to_slice();
+		VaryingSlice l_material_parameters_varying = VaryingSlice::build(
+				l_material_parameters_memory, l_chunkds
+		);
 		{
 			MaterialRessource::Asset::Value l_value = MaterialRessource::Asset::Value{
-					//TODO -> we must move the VaryingVector to a cleaner container (VaryingSlice)
-					VaryingVector{ Vector<int8>{ l_slice_int8.Size, l_slice_int8.Size, l_slice_int8.Begin },
-								   Vector<SliceIndex>{ l_chunkds.Size, l_chunkds.Size, l_chunkds.Begin }}
+					l_material_parameters_varying
 			};
 			MaterialRessource::Asset l_material = MaterialRessource::Asset::allocate_from_values(l_value);
 			MaterialRessource::Asset::Value l_deserialized_value = MaterialRessource::Asset::Value::build_from_asset(l_material);
-			assert_true(l_deserialized_value.parameters.memory.Memory.slice.compare(l_slice_int8));
-			assert_true(l_deserialized_value.parameters.chunks.Memory.slice.compare(l_chunkds));
+			assert_true(l_deserialized_value.parameters.memory.compare(l_material_parameters_varying.memory));
+			assert_true(l_deserialized_value.parameters.chunks.compare(l_material_parameters_varying.chunks));
 			l_material.free();
 		}
 
@@ -449,10 +452,10 @@ namespace v2
 			Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
 
 			hash_t l_vertex_shader_id = 12;
-			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::allocate_from_binary(l_compiled_vertex);
+			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_vertex);
 
 			hash_t l_fragment_shader_id = 14;
-			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::allocate_from_binary(l_compiled_fragment);
+			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_fragment);
 
 			hash_t l_shader_asset_id = 1482658;
 			ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{ l_shader_parameter_layout,
@@ -483,7 +486,7 @@ namespace v2
 				VaryingVector l_varying_vector = VaryingVector::allocate_default();
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
-				l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector });
+				l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector.to_varying_slice() });
 				l_varying_vector.free();
 				l_material_parameter_temp.free();
 			}
@@ -513,7 +516,7 @@ namespace v2
 				VaryingVector l_varying_vector = VaryingVector::allocate_default();
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
-				l_material_asset_2 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector });
+				l_material_asset_2 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector.to_varying_slice() });
 				l_varying_vector.free();
 				l_material_parameter_temp.free();
 			}
@@ -691,10 +694,10 @@ namespace v2
 			Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 3);
 
 			hash_t l_vertex_shader_id = 12;
-			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::allocate_from_binary(l_compiled_vertex);
+			ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_vertex);
 
 			hash_t l_fragment_shader_id = 14;
-			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::allocate_from_binary(l_compiled_fragment);
+			ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_fragment);
 
 			hash_t l_shader_asset_id = 1482658;
 			ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{
@@ -726,7 +729,7 @@ namespace v2
 				VaryingVector l_varying_vector = VaryingVector::allocate_default();
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
-				l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector });
+				l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector.to_varying_slice() });
 				l_varying_vector.free();
 				l_material_parameter_temp.free();
 			}
@@ -834,7 +837,7 @@ namespace v2
 				VaryingVector l_varying_vector = VaryingVector::allocate_default();
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
 				l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), SliceN<hash_t, 1>{ HashSlice(l_texture_path) }.to_slice().build_asint8());
-				l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector });
+				l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{ l_varying_vector.to_varying_slice() });
 				l_varying_vector.free();
 				l_material_parameter_temp.free();
 			}

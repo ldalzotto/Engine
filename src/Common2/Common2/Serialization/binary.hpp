@@ -14,16 +14,10 @@ namespace BinarySerializer
 		in_out_serialization_target->push_back_array(p_slice);
 	};
 
-	inline static void span(Vector<int8>* in_out_serialization_target, const Span<int8>& p_span)
+	inline static void varying_slice(Vector<int8>* in_out_serialization_target, const VaryingSlice& p_varying_slice)
 	{
-		slice(in_out_serialization_target, p_span.slice);
-	};
-
-	//TODO -> delete, we don't want to serialize a resizable container
-	inline static void varying_vector(Vector<int8>* in_out_serialization_target, const VaryingVector& p_varying_vector)
-	{
-		slice(in_out_serialization_target, p_varying_vector.memory.to_slice());
-		slice(in_out_serialization_target, p_varying_vector.chunks.to_slice().build_asint8());
+		slice(in_out_serialization_target, p_varying_slice.memory);
+		slice(in_out_serialization_target, p_varying_slice.chunks.build_asint8());
 	};
 };
 
@@ -53,29 +47,11 @@ struct BinaryDeserializer
 		return l_slice;
 	};
 
-	inline Span<int8> span()
+	inline VaryingSlice varying_slice()
 	{
-		Span<int8> l_span;
-		l_span.slice = slice();
-		return l_span;
-	};
-
-	//TODO -> delete, we don't want to deserialize to a resizable container
-	template<class ElementType>
-	inline Vector<ElementType> vector()
-	{
-		Vector<ElementType> l_vector;
-		l_vector.Memory.slice = slice_cast<ElementType>(span().slice);
-		l_vector.Size = l_vector.Memory.Capacity;
-		return l_vector;
-	};
-
-	//TODO -> delete, we don't want to deserialize to a resizable container
-	inline VaryingVector varying_vector()
-	{
-		VaryingVector l_verying_vector;
-		l_verying_vector.memory = vector<int8>();
-		l_verying_vector.chunks = vector<SliceIndex>();
+		VaryingSlice l_verying_vector;
+		l_verying_vector.memory = slice();
+		l_verying_vector.chunks = slice_cast<SliceIndex>(slice());
 		return l_verying_vector;
 	};
 

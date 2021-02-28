@@ -16,6 +16,8 @@ cmake-build-relwithdebinfo
 ThirdParty
 ThirdParty2
 
+.asset/
+
 Assets/**/*.db
 Assets/**/*.json
 Assets/**/*.jpg
@@ -288,7 +290,7 @@ ServiceFabricBackup/
 
 # Business Intelligence projects
 *.rdl.data
-*.bim.layout
+*.bim.parameter_layout
 *.bim_*.settings
 *.rptproj.rsuser
 *- [Bb]ackup.rdl

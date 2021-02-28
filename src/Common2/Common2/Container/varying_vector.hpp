@@ -234,9 +234,17 @@ struct VaryingVector
 	};
 
 	template<class ElementType>
-	inline ElementType* get_element_typed(const uimax p_index)
+	inline Slice<ElementType> get_element_typed(const uimax p_index)
 	{
-		return slice_cast_singleelement<ElementType>(this->get_element(p_index));
+		return slice_cast<ElementType>(this->get_element(p_index));
+	};
+
+	inline VaryingSlice to_varying_slice()
+	{
+		return VaryingSlice{
+				this->memory.to_slice(),
+				this->chunks.to_slice()
+		};
 	};
 
 };

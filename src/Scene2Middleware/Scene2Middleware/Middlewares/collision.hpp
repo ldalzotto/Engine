@@ -20,7 +20,7 @@ namespace v2
 	{
 		PoolIndexed<BoxColliderComponent> box_colliders;
 
-		//TODO -> can we generalize the fact that a ressource allocation can be deferred ? YES ! we want to refactor this file so that it uses the RessourceUtility methods.
+		//TODO -> can we generalize the fact that a ressource allocation can be deferred ? YES ! we want to refactor this file so that it uses the RessourceUtility methods. Like the render.
 		Vector<Token(BoxColliderComponent) > box_colliders_waiting_for_allocation;
 		Vector<BoxColliderComponentAsset> box_colliders_asset_waiting_for_allocation; //linked to box_colliders_waiting_for_allocation
 

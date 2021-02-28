@@ -31,6 +31,7 @@
 #include "./Container/vector.hpp"
 #include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
+#include "./Container/varying_slice.hpp"
 #include "./Container/varying_vector.hpp"
 #include "./Container/string.hpp"
 
