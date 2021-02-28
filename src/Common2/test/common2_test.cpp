@@ -76,7 +76,7 @@ inline void slice_span_test()
 
 inline void vector_test()
 {
-	Vector<uimax> l_vector_sizet = Vector<uimax>::build((uimax*)NULL, 0);
+	Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
 
 	// vector_push_back_array
 	{
@@ -1473,6 +1473,23 @@ inline void serialize_json_test()
 	l_serializer.free();
 };
 
+inline void serialize_deserialize_binary_test()
+{
+	Slice<uimax> l_slice = SliceN<uimax, 5>{ 0, 1, 2, 3, 4 }.to_slice();
+
+	Vector<int8> l_binary_data = Vector<int8>::allocate(0);
+
+	BinarySerializer::slice(&l_binary_data, l_slice.build_asint8());
+
+	BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
+	Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
+
+	assert_true(l_slice.Size == l_slice_deserialized.Size);
+	assert_true(l_slice.compare(l_slice_deserialized));
+
+	l_binary_data.free();
+};
+
 inline void file_test()
 {
 	String l_file_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
@@ -1553,7 +1570,7 @@ inline void database_test()
 		), l_parameter_layout, SQLiteQueryLayout::build_default());
 
 		SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
-		l_binder.bind_sqlitepreparedquery(l_insersion_query);
+		l_binder.bind_sqlitepreparedquery(l_insersion_query, l_connection);
 		l_binder.bind_int64(10);
 		l_binder.bind_int64(20);
 		l_binder.bind_text(slice_int8_build_rawstr("test"));
@@ -1575,7 +1592,7 @@ inline void database_test()
 		), l_parameter_layout, l_return_layout);
 
 		l_binder = SQLiteQueryBinder::build_default();
-		l_binder.bind_sqlitepreparedquery(l_select_query);
+		l_binder.bind_sqlitepreparedquery(l_select_query, l_connection);
 		l_binder.bind_int64(10);
 
 		int64 l_retrieved_id = 0;
@@ -1624,6 +1641,7 @@ int main(int argc, int8** argv)
 	fromstring_test();
 	deserialize_json_test();
 	serialize_json_test();
+	serialize_deserialize_binary_test();
 	file_test();
 	database_test();
 

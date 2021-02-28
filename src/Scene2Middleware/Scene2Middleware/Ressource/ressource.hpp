@@ -3,22 +3,30 @@
 #define RessourceAllocationEvent_member_allocated_ressource allocated_ressource
 #define RessourceAllocationEvent_member_asset asset
 
+enum class RessourceAllocationType
+{
+	UNKNOWN = 0,
+	INLINE = 1,
+	ASSET_DATABASE = 2
+};
+
 struct RessourceIdentifiedHeader
 {
+	RessourceAllocationType allocation_type;
 	int8 allocated;
 	hash_t id;
 
-	inline static RessourceIdentifiedHeader build_default()
+	inline static RessourceIdentifiedHeader build_inline_with_id(const hash_t p_id)
 	{
 		return RessourceIdentifiedHeader{
-				0, 0
+				RessourceAllocationType::INLINE, 0, p_id
 		};
 	};
 
-	inline static RessourceIdentifiedHeader build_with_id(const hash_t p_id)
+	inline static RessourceIdentifiedHeader build_database_with_id(const hash_t p_id)
 	{
 		return RessourceIdentifiedHeader{
-				0, p_id
+				RessourceAllocationType::ASSET_DATABASE, 0, p_id
 		};
 	};
 };

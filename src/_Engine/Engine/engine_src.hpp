@@ -92,7 +92,7 @@ inline void Engine::free()
 {
 	ComponentReleaser l_component_releaser = ComponentReleaser{ *this };
 	this->scene.consume_component_events_stateful(l_component_releaser);
-	this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context);
+	this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->asset_database);
 	this->asset_database.free();
 	this->collision.free();
 	this->renderer.free(this->gpu_context);
@@ -147,7 +147,7 @@ inline void Engine::LoopCallbacks<ExternalCallbacksFn>::update(const float32 p_d
 	this->external_callbacks.after_collision(this->engine);
 	this->external_callbacks.before_update(this->engine);
 
-	this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision, this->engine.renderer, this->engine.gpu_context);
+	this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.asset_database);
 };
 
 template<class ExternalCallbacksFn>

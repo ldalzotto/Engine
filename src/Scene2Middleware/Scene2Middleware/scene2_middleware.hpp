@@ -25,9 +25,9 @@ namespace v2
 
 		static SceneMiddleware allocate_default();
 
-		void free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context);
+		void free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database);
 
-		void step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context);
+		void step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database);
 	};
 
 	inline SceneMiddleware SceneMiddleware::allocate_default()
@@ -38,16 +38,16 @@ namespace v2
 		};
 	};
 
-	inline void SceneMiddleware::free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context)
+	inline void SceneMiddleware::free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
 	{
 		this->collision_middleware.free(p_collision, p_scene);
-		this->render_middleware.free(p_renderer, p_gpu_context, p_scene);
+		this->render_middleware.free(p_renderer, p_gpu_context, p_asset_database, p_scene);
 	};
 
-	void SceneMiddleware::step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context)
+	void SceneMiddleware::step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
 	{
 		this->collision_middleware.step(p_collision, p_scene);
-		this->render_middleware.step(p_renderer, p_gpu_context, p_scene);
+		this->render_middleware.step(p_renderer, p_gpu_context, p_asset_database, p_scene);
 	};
 }
 

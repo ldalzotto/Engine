@@ -13,7 +13,7 @@ struct Vector
 	uimax Size;
 	Span<ElementType> Memory;
 
-	inline static Vector<ElementType> build(ElementType* p_memory, const uimax p_initial_capacity)
+	inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
 	{
 		return Vector<ElementType>{ 0, Span<ElementType>::build(p_memory, p_initial_capacity) };
 	};
@@ -45,7 +45,7 @@ struct Vector
 	inline void free()
 	{
 		this->Memory.free();
-		*this = Vector<ElementType>::build(NULL, 0);
+		*this = Vector<ElementType>::build_zero_size(NULL, 0);
 	};
 
 	inline ElementType* get_memory()

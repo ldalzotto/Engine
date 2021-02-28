@@ -78,7 +78,7 @@ struct AssetDatabase
 	inline Span<int8> get_asset_blob(const hash_t p_asset_id)
 	{
 		SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
-		l_binder.bind_sqlitepreparedquery(this->asset_blob_select_query);
+		l_binder.bind_sqlitepreparedquery(this->asset_blob_select_query, this->connection);
 		l_binder.bind_int64(p_asset_id);
 
 		Span<int8> l_asset_blob = Span<int8>::build_default();
@@ -96,7 +96,7 @@ struct AssetDatabase
 		hash_t l_id = HashSlice(p_asset_path);
 
 		SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
-		l_binder.bind_sqlitepreparedquery(this->asset_insert_query);
+		l_binder.bind_sqlitepreparedquery(this->asset_insert_query, this->connection);
 		l_binder.bind_int64(l_id);
 		l_binder.bind_text(p_asset_path);
 		l_binder.bind_blob(p_blob);
@@ -112,7 +112,7 @@ struct AssetDatabase
 		hash_t l_id = HashSlice(p_asset_path);
 
 		SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
-		l_binder.bind_sqlitepreparedquery(this->asset_insert_query);
+		l_binder.bind_sqlitepreparedquery(this->asset_insert_query, this->connection);
 		l_binder.bind_int64(l_id);
 		l_binder.bind_text(p_asset_path);
 		l_binder.bind_blob(p_blob);
@@ -121,7 +121,7 @@ struct AssetDatabase
 		{}))
 		{
 			l_binder = SQLiteQueryBinder::build_default();
-			l_binder.bind_sqlitepreparedquery(this->asset_update_query);
+			l_binder.bind_sqlitepreparedquery(this->asset_update_query, this->connection);
 			l_binder.bind_blob(p_blob);
 			l_binder.bind_int64(l_id);
 

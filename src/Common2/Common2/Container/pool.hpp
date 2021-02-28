@@ -25,7 +25,7 @@ struct Pool
 
 	inline static Pool<ElementType> allocate(const uimax p_memory_capacity)
 	{
-		return Pool<ElementType>{ Vector<ElementType>::allocate(p_memory_capacity), Vector<Token(ElementType)>::build(cast(Token(ElementType)*, NULL), 0) };
+		return Pool<ElementType>{ Vector<ElementType>::allocate(p_memory_capacity), Vector<Token(ElementType) >::build_zero_size(cast(Token(ElementType)*, NULL), 0) };
 	};
 
 

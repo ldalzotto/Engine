@@ -49,6 +49,7 @@
 #include "./File/file.hpp"
 
 #include "./Serialization/json.hpp"
+#include "./Serialization/binary.hpp"
 #include "./Serialization/types.hpp"
 
 #include "./Functional/container_iteration.hpp"

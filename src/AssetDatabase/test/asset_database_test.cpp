@@ -1,19 +1,13 @@
 #pragma once
 
 #include "AssetDatabase/assetdatabase.hpp"
+#include "asset_database_test_utils.hpp"
 
 namespace v2
 {
 	inline void asset_blob_insert_read()
 	{
-		String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-		l_database_path.append(slice_int8_build_rawstr("asset.db"));
-		{
-			File l_tmp_file = File::create_or_open(l_database_path.to_slice());
-			l_tmp_file.erase_with_slicepath();
-		}
-
-		AssetDatabase::initialize_database(l_database_path.to_slice());
+		String l_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
 		AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_path.to_slice());
 
 		{

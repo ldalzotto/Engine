@@ -7,30 +7,50 @@ namespace v2
 		RessourceIdentifiedHeader header;
 		Token(ShaderModule) shader_module;
 
-		inline static ShaderModuleRessource build_default()
+		inline static ShaderModuleRessource build_inline_from_id(const hash_t p_id)
 		{
 			return ShaderModuleRessource{
-					RessourceIdentifiedHeader::build_default(),
+					RessourceIdentifiedHeader::build_inline_with_id(p_id),
 					tk_bd(ShaderModule)
 			};
 		};
 
-		inline static ShaderModuleRessource build_from_id(const hash_t p_id)
+
+		inline static ShaderModuleRessource build_database_from_id(const hash_t p_id)
 		{
 			return ShaderModuleRessource{
-					RessourceIdentifiedHeader::build_with_id(p_id),
+					RessourceIdentifiedHeader::build_database_with_id(p_id),
 					tk_bd(ShaderModule)
 			};
 		};
-
 
 		struct Asset
 		{
-			Span<int8> compiled_shader;
+			Span<int8> allocated_binary;
 
 			inline void free()
 			{
-				this->compiled_shader.free();
+				this->allocated_binary.free();
+			};
+
+			struct Value
+			{
+				Slice<int8> compiled_shader;
+
+				inline static Value build_from_asset(const Asset& p_asset)
+				{
+					return Value{ p_asset.allocated_binary.slice };
+				};
+			};
+
+			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			{
+				return Asset{ p_allocated_binary };
+			};
+
+			inline static Asset allocate_from_values(const Value& p_value)
+			{
+				return Asset{ Span<int8>::allocate_slice(p_value.compiled_shader) };
 			};
 		};
 
@@ -38,6 +58,11 @@ namespace v2
 		{
 			hash_t id;
 			Asset asset;
+		};
+
+		struct DatabaseAllocationInput
+		{
+			hash_t id;
 		};
 
 		struct AllocationEvent
@@ -67,38 +92,69 @@ namespace v2
 		RessourceIdentifiedHeader header;
 		Token(Mesh) mesh;
 
-		inline static MeshRessource build_default()
+		inline static MeshRessource build_inline_from_id(const hash_t p_id)
 		{
 			return MeshRessource{
-					RessourceIdentifiedHeader::build_default(),
+					RessourceIdentifiedHeader::build_inline_with_id(p_id),
 					tk_bd(Mesh)
 			};
 		};
 
-		inline static MeshRessource build_from_id(const hash_t p_id)
+		inline static MeshRessource build_database_from_id(const hash_t p_id)
 		{
 			return MeshRessource{
-					RessourceIdentifiedHeader::build_with_id(p_id),
+					RessourceIdentifiedHeader::build_database_with_id(p_id),
 					tk_bd(Mesh)
 			};
 		};
 
 		struct Asset
 		{
-			Span<Vertex> initial_vertices;
-			Span<uint32> initial_indices;
+			Span<int8> allocated_binary;
 
 			inline void free()
 			{
-				this->initial_vertices.free();
-				this->initial_indices.free();
+				this->allocated_binary.free();
 			}
+
+			struct Value
+			{
+				Slice<Vertex> initial_vertices;
+				Slice<uint32> initial_indices;
+
+				inline static Value build_from_asset(const Asset& p_asset)
+				{
+					Value l_value;
+					BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
+					l_value.initial_vertices = slice_cast<Vertex>(l_deserializer.slice());
+					l_value.initial_indices = slice_cast<uint32>(l_deserializer.slice());
+					return l_value;
+				};
+			};
+
+			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			{
+				return Asset{ p_allocated_binary };
+			};
+
+			inline static Asset allocate_from_values(const Value& p_values)
+			{
+				Vector<int8> l_binary = Vector<int8>::allocate(0);
+				BinarySerializer::slice(&l_binary, p_values.initial_vertices.build_asint8());
+				BinarySerializer::slice(&l_binary, p_values.initial_indices.build_asint8());
+				return allocate_from_binary(l_binary.Memory);
+			};
 		};
 
 		struct InlineAllocationInput
 		{
 			hash_t id;
 			Asset asset;
+		};
+
+		struct DatabaseAllocationInput
+		{
+			hash_t id;
 		};
 
 		struct AllocationEvent
@@ -138,7 +194,7 @@ namespace v2
 		inline static ShaderRessource build_from_id(const hash_t p_id)
 		{
 			return ShaderRessource{
-					RessourceIdentifiedHeader::build_with_id(p_id),
+					RessourceIdentifiedHeader::build_inline_with_id(p_id),
 					tk_bd(ShaderIndex),
 					Dependencies{ tk_bd(ShaderModuleRessource), tk_bd(ShaderModuleRessource)}
 			};
@@ -146,13 +202,42 @@ namespace v2
 
 		struct Asset
 		{
-			Span<ShaderLayoutParameterType> specific_parameters;
-			uimax execution_order;
-			ShaderConfiguration shader_configuration;
+			Span<int8> allocated_binary;
+
+			struct Value
+			{
+				Slice<ShaderLayoutParameterType> specific_parameters;
+				uimax execution_order;
+				ShaderConfiguration shader_configuration;
+
+				inline static Value build_from_asset(const Asset& p_asset)
+				{
+					Value l_value;
+					BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
+					l_value.specific_parameters = slice_cast<ShaderLayoutParameterType>(l_deserializer.slice());
+					l_value.execution_order = *l_deserializer.type<uimax>();
+					l_value.shader_configuration = *l_deserializer.type<ShaderConfiguration>();
+					return l_value;
+				};
+			};
+
+			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			{
+				return Asset{ p_allocated_binary };
+			};
+
+			inline static Asset allocate_from_values(const Value& p_values)
+			{
+				Vector<int8> l_binary = Vector<int8>::allocate(0);
+				BinarySerializer::slice(&l_binary, p_values.specific_parameters.build_asint8());
+				BinarySerializer::type(&l_binary, p_values.execution_order);
+				BinarySerializer::type(&l_binary, p_values.shader_configuration);
+				return allocate_from_binary(l_binary.Memory);
+			};
 
 			inline void free()
 			{
-				this->specific_parameters.free();
+				this->allocated_binary.free();
 			}
 		};
 
@@ -160,6 +245,11 @@ namespace v2
 		{
 			hash_t id;
 			Asset asset;
+		};
+
+		struct DatabaseAllocationInput
+		{
+			hash_t id;
 		};
 
 		struct AllocationEvent
@@ -191,12 +281,39 @@ namespace v2
 
 		struct Asset
 		{
-			v3ui size;
-			Span<int8> pixels;
+			Span<int8> allocated_binary;
+
+			struct Value
+			{
+				v3ui size;
+				Slice<int8> pixels;
+
+				inline static Value build_from_asset(const Asset& p_asset)
+				{
+					Value l_value;
+					BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
+					l_value.size = *l_deserializer.type<v3ui>();
+					l_value.pixels = l_deserializer.slice();
+					return l_value;
+				};
+			};
+
+			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			{
+				return Asset{ p_allocated_binary };
+			};
+
+			inline static Asset allocate_from_values(const Value& p_value)
+			{
+				Vector<int8> l_binary = Vector<int8>::allocate(0);
+				BinarySerializer::type(&l_binary, p_value.size);
+				BinarySerializer::slice(&l_binary, p_value.pixels);
+				return allocate_from_binary(l_binary.Memory);
+			};
 
 			inline void free()
 			{
-				this->pixels.free();
+				this->allocated_binary.free();
 			};
 		};
 
@@ -204,6 +321,11 @@ namespace v2
 		{
 			hash_t id;
 			Asset asset;
+		};
+
+		struct DatabaseRessourceInput
+		{
+			hash_t id;
 		};
 
 		struct AllocationEvent
@@ -235,38 +357,60 @@ namespace v2
 		Token(Material) material;
 		Dependencies dependencies;
 
-		inline static MaterialRessource build_default()
-		{
-			return MaterialRessource{
-					RessourceIdentifiedHeader::build_default(),
-					tk_bd(Material),
-					Dependencies{ tk_bd(ShaderRessource), tk_bd(Slice<MaterialRessource::DynamicDependency>)}
-			};
-		};
-
 		static MaterialRessource build_from_id(const hash_t p_id)
 		{
 			return MaterialRessource{
-					RessourceIdentifiedHeader::build_with_id(p_id),
+					RessourceIdentifiedHeader::build_inline_with_id(p_id),
 					tk_bd(Material)
 			};
 		};
 
 		struct Asset
 		{
-			VaryingVector parameters; //TODO -> implementing a "header" version of the VaryingVector
+			Span<int8> allocated_binary;
+
+			struct Value
+			{
+				VaryingVector parameters; //TODO -> implementing a "header" version of the VaryingVector. Or can't we build a VaryingSlice ? instead of using vectors
+
+				inline static Value build_from_asset(const Asset& p_asset)
+				{
+					Value l_value;
+					BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
+					l_value.parameters = l_deserializer.varying_vector();
+					return l_value;
+				};
+			};
 
 			inline void free()
 			{
-				this->parameters.free();
+				this->allocated_binary.free();
+			};
+
+			inline static Asset allocate_from_binary(const Span<int8>& p_allocated_binary)
+			{
+				return Asset{ p_allocated_binary };
+			};
+
+			inline static Asset allocate_from_values(const Value& p_value)
+			{
+				Vector<int8> l_binary = Vector<int8>::allocate(0);
+				BinarySerializer::varying_vector(&l_binary, p_value.parameters);
+				return allocate_from_binary(l_binary.Memory);
 			};
 		};
 
-		struct InlineRessourceInput
+		struct InlineAllocationInput
 		{
 			hash_t id;
 			Asset asset;
 			Slice<TextureRessource::InlineRessourceInput> texture_dependencies_input;
+		};
+
+		struct DatabaseAllocationInput
+		{
+			hash_t id;
+			Slice<TextureRessource::DatabaseRessourceInput> texture_dependencies_input;
 		};
 
 		struct AllocationEvent

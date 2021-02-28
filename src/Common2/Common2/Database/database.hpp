@@ -192,8 +192,9 @@ struct SQLiteQueryBinder
 		};
 	};
 
-	inline void bind_sqlitepreparedquery(SQLitePreparedQuery& p_prepared_query)
+	inline void bind_sqlitepreparedquery(SQLitePreparedQuery& p_prepared_query, DatabaseConnection& p_connection)
 	{
+		DatabaseConnection_Utils::handleSQLiteError(sqlite3_reset(p_prepared_query.statement), &p_connection.connection);
 		this->binded_statement = p_prepared_query.statement;
 		this->binded_parameter_layout = &p_prepared_query.parameter_layout;
 	};

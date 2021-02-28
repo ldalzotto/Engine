@@ -86,6 +86,9 @@ add_library(Test_ShaderCompile INTERFACE)
 target_include_directories(Test_ShaderCompile INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Test/ShaderCompile)
 target_link_libraries(Test_ShaderCompile INTERFACE GLSLANG)
 
+add_library(Test_AssetDatabase INTERFACE)
+target_include_directories(Test_AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Test/AssetDatabase)
+
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
 target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/.asset/")
@@ -93,6 +96,7 @@ target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT
 
 add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
+target_link_libraries(AssetDatabaseTest PUBLIC Test_AssetDatabase)
 target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/.asset/")
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
@@ -112,6 +116,8 @@ target_link_libraries(Scene2Test PUBLIC Scene2)
 add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/scene2_middleware_test.cpp)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Test_ShaderCompile)
+target_link_libraries(Scene2MiddlewareTest PUBLIC Test_AssetDatabase)
+target_compile_definitions(Scene2MiddlewareTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/.asset/")
 
 add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
 target_link_libraries(RenderTest PUBLIC Render)
