@@ -1478,6 +1478,15 @@ inline void file_test()
 
     File l_file = File::create(l_file_path.to_slice());
     assert_true(l_file.is_valid());
+
+    Slice<int8> l_source_buffer = SliceN<int8, 100>{0, 1, 2, 3, 4, 5}.to_slice();
+    Slice<int8> l_buffer = SliceN<int8, 100>{}.to_slice();
+
+    l_file.write_file(l_source_buffer);
+    l_file.read_file(&l_buffer);
+
+    assert_true(l_buffer.compare(l_source_buffer));
+
     l_file.erase_with_slicepath();
 
     l_file_path.free();

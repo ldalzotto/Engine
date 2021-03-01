@@ -71,8 +71,9 @@ struct Scene2MiddlewareContext
 namespace MeshRederer_AllocationTestUtil
 {
 
-inline static Token(MeshRendererComponent) allocate_mesh_renderer(Scene2MiddlewareContext& p_ctx, const Token(Node) p_scene_node, const hash_t p_vertex_shader_id, const hash_t p_fragment_shader_id,
-                                                                  const hash_t p_shader_asset_id, const hash_t p_mesh_id, const hash_t p_material_texture_id, const hash_t p_material_id)
+inline static Token(MeshRendererComponent)
+    allocate_mesh_renderer(Scene2MiddlewareContext& p_ctx, ShaderCompiler& p_shader_compiler, const Token(Node) p_scene_node, const hash_t p_vertex_shader_id, const hash_t p_fragment_shader_id,
+                           const hash_t p_shader_asset_id, const hash_t p_mesh_id, const hash_t p_material_texture_id, const hash_t p_material_id)
 {
     const int8* p_vertex_litteral = MULTILINE(#version 450 \n layout(location = 0) in vec3 pos; \n layout(location = 1) in vec2 uv; \n void main()\n {
         \n gl_Position = vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -84,8 +85,8 @@ inline static Token(MeshRendererComponent) allocate_mesh_renderer(Scene2Middlewa
         \n
     }\n);
 
-    ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-    ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+    ShaderCompiled l_vertex_shader_compiled = p_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+    ShaderCompiled l_fragment_shader_compiled = p_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
     Span<int8> l_compiled_vertex = Span<int8>::allocate_slice(l_vertex_shader_compiled.get_compiled_binary());
     Span<int8> l_compiled_fragment = Span<int8>::allocate_slice(l_fragment_shader_compiled.get_compiled_binary());
@@ -241,6 +242,7 @@ inline void render_middleware_inline_allocation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
     ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
         Token(Node) l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
         Token(Node) l_node_2 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
@@ -256,8 +258,8 @@ inline void render_middleware_inline_allocation()
             \n
         }\n);
 
-        ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-        ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
         Span<int8> l_compiled_vertex = Span<int8>::allocate_slice(l_vertex_shader_compiled.get_compiled_binary());
         Span<int8> l_compiled_fragment = Span<int8>::allocate_slice(l_fragment_shader_compiled.get_compiled_binary());
@@ -349,6 +351,7 @@ inline void render_middleware_inline_allocation()
     }
 
     l_ctx.free(component_releaser);
+    l_shader_compiler.free();
 };
 
 /*
@@ -441,9 +444,10 @@ inline void scene_object_movement()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
     ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
         Token(Node) l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token(MeshRendererComponent) l_mesh_renderer = MeshRederer_AllocationTestUtil::allocate_mesh_renderer(l_ctx, l_node_1, 0, 1, 2, 3, 4, 5);
+        Token(MeshRendererComponent) l_mesh_renderer = MeshRederer_AllocationTestUtil::allocate_mesh_renderer(l_ctx, l_shader_compiler, l_node_1, 0, 1, 2, 3, 4, 5);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
         l_ctx.step(component_releaser);
@@ -458,6 +462,7 @@ inline void scene_object_movement()
         l_ctx.step(component_releaser);
     }
     l_ctx.free(component_releaser);
+    l_shader_compiler.free();
 };
 
 }; // namespace v2

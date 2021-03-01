@@ -12,9 +12,35 @@ struct FileNative
 
     static void close_file(const FileHandle& p_file_handle);
 
-    static void set_file_pointer(FileHandle& p_file_handle, uimax p_pointer);
+    static void set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer);
 
     static void delete_file(const Slice<int8>& p_path);
+
+    static uimax get_file_size(const FileHandle& p_file_handle);
+
+    inline static void read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer)
+    {
+#if CONTAINER_BOUND_TEST
+        assert_true(
+#endif
+            ReadFile(p_file_handle, in_out_buffer->Begin, in_out_buffer->Size, NULL, NULL)
+#if CONTAINER_BOUND_TEST
+        )
+#endif
+            ;
+    };
+
+    inline static void write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer)
+    {
+#if CONTAINER_BOUND_TEST
+        assert_true(
+#endif
+            WriteFile(p_file_handle, p_buffer.Begin, (DWORD)p_buffer.Size, NULL, NULL)
+#if CONTAINER_BOUND_TEST
+        )
+#endif
+            ;
+    };
 
     static int8 handle_is_valid(const FileHandle& p_file_handle);
 };
@@ -64,7 +90,7 @@ inline void FileNative::close_file(const FileHandle& p_file_handle)
         ;
 };
 
-inline void FileNative::set_file_pointer(FileHandle& p_file_handle, uimax p_pointer)
+inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
 {
 #if CONTAINER_BOUND_TEST
     assert_true(
@@ -86,6 +112,16 @@ inline void FileNative::delete_file(const Slice<int8>& p_path)
     )
 #endif
         ;
+};
+
+inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
+{
+    DWORD l_file_size_high;
+    DWORD l_return = GetFileSize(p_file_handle, &l_file_size_high);
+#if CONTAINER_BOUND_TEST
+    assert_true(l_return != INVALID_FILE_SIZE);
+#endif
+    return dword_lowhigh_to_uimax(l_return, l_file_size_high);
 };
 
 inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
@@ -141,6 +177,7 @@ struct File
     inline void free()
     {
         FileNative::close_file(this->native_handle);
+        this->native_handle = NULL;
     };
 
     inline void erase_with_slicepath()
@@ -154,6 +191,36 @@ struct File
         this->free();
         FileNative::delete_file(this->path_allocated.slice);
         this->path_allocated.free();
+    };
+
+    inline uimax get_size()
+    {
+        return FileNative::get_file_size(this->native_handle);
+    };
+
+    inline void read_file(Slice<int8>* in_out_buffer) const
+    {
+        FileNative::set_file_pointer(this->native_handle, 0);
+        uimax l_file_size = FileNative::get_file_size(this->native_handle);
+#if CONTAINER_BOUND_TEST
+        assert_true(l_file_size <= in_out_buffer->Size);
+#endif
+        in_out_buffer->Size = l_file_size;
+        FileNative::read_buffer(this->native_handle, in_out_buffer);
+    };
+
+    inline Span<int8> read_file_allocate() const
+    {
+        uimax l_file_size = FileNative::get_file_size(this->native_handle);
+        Span<int8> l_buffer = Span<int8>::allocate(l_file_size);
+        this->read_file(&l_buffer.slice);
+        return l_buffer;
+    };
+
+    inline void write_file(const Slice<int8>& p_buffer)
+    {
+        FileNative::set_file_pointer(this->native_handle, 0);
+        FileNative::write_buffer(this->native_handle, 0, p_buffer);
     };
 
     inline int8 is_valid()

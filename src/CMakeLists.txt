@@ -67,6 +67,10 @@ target_include_directories(AssetRessource INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(AssetRessource INTERFACE Render)
 target_link_libraries(AssetRessource INTERFACE AssetDatabase)
 
+add_library(AssetCompiler INTERFACE)
+target_include_directories(AssetCompiler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler)
+target_link_libraries(AssetCompiler INTERFACE AssetRessource)
+
 add_library(Scene2 INTERFACE)
 target_include_directories(Scene2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2)
 target_link_libraries(Scene2 INTERFACE Math2)
@@ -102,6 +106,9 @@ add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
 target_link_libraries(AssetDatabaseTest PUBLIC Test_AssetDatabase)
 target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/.asset/")
+
+add_executable(AssetCompilerTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/test/asset_compiler_test.cpp)
+target_link_libraries(AssetCompilerTest PUBLIC AssetCompiler)
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)

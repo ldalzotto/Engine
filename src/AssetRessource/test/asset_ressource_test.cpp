@@ -202,6 +202,7 @@ struct AssetRessourceTestContext
 inline void render_middleware_inline_allocation()
 {
     AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
         const int8* p_vertex_litteral =
             MULTILINE(\
@@ -237,8 +238,8 @@ inline void render_middleware_inline_allocation()
             }\n
             );
 
-        ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-        ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
         Span<int8> l_compiled_vertex = Span<int8>::allocate_slice(l_vertex_shader_compiled.get_compiled_binary());
         Span<int8> l_compiled_fragment = Span<int8>::allocate_slice(l_fragment_shader_compiled.get_compiled_binary());
@@ -419,6 +420,7 @@ inline void render_middleware_inline_allocation()
     // l_ctx.scene_middleware.step(&l_ctx.scene, l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
 
     l_ctx.free();
+    l_shader_compiler.free();
 };
 
 inline void render_middleware_inline_alloc_dealloc_same_frame()
@@ -506,6 +508,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 inline void render_middleware_database_allocation()
 {
     AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
     const Slice<int8> l_vertex_shader_path = slice_int8_build_rawstr("shader/v.vert");
     const Slice<int8> l_fragment_shader_path = slice_int8_build_rawstr("shader/f.frag");
@@ -549,8 +552,8 @@ inline void render_middleware_database_allocation()
             }\n
             );
 
-        ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-        ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
         ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset::allocate_from_values(
             ShaderRessource::Asset::Value{SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice(), 0,
@@ -620,6 +623,7 @@ inline void render_middleware_database_allocation()
 
     }
     l_ctx.free();
+    l_shader_compiler.free();
 };
 
 } // namespace v2

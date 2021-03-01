@@ -61,6 +61,7 @@ inline void draw_test()
 {
     GPUContext l_ctx = GPUContext::allocate();
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_ctx.buffer_memory.allocator.device.device, NULL);
@@ -102,8 +103,8 @@ inline void draw_test()
 				}\n
 				);
 
-    ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-    ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+    ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+    ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
     Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
     Token(ShaderModule) l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -319,6 +320,7 @@ inline void draw_test()
 
     l_renderer.free(l_ctx);
     l_ctx.free();
+    l_shader_compiler.free();
 };
 }; // namespace v2
 

@@ -268,6 +268,7 @@ inline void gpu_draw()
     GPUContext l_gpu_context = GPUContext::allocate();
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -341,8 +342,8 @@ inline void gpu_draw()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -497,6 +498,7 @@ inline void gpu_draw()
 #endif
 
     l_gpu_context.free();
+    l_shader_compiler.free();
 };
 
 /*
@@ -515,6 +517,7 @@ inline void gpu_depth_compare_test()
     GPUContext l_gpu_context = GPUContext::allocate();
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -586,8 +589,8 @@ inline void gpu_depth_compare_test()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -724,6 +727,7 @@ inline void gpu_depth_compare_test()
 #endif
 
     l_gpu_context.free();
+    l_shader_compiler.free();
 };
 
 /*
@@ -741,7 +745,7 @@ inline void gpu_draw_indexed()
     GPUContext l_gpu_context = GPUContext::allocate();
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
-
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
 #endif
@@ -801,8 +805,8 @@ inline void gpu_draw_indexed()
                                                             \n
                                                         }\n);
 
-            ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -895,6 +899,7 @@ inline void gpu_draw_indexed()
 #endif
 
     l_gpu_context.free();
+    l_shader_compiler.free();
 };
 
 /*
@@ -912,6 +917,7 @@ inline void gpu_texture_mapping()
     GPUContext l_gpu_context = GPUContext::allocate();
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
@@ -1002,8 +1008,8 @@ inline void gpu_texture_mapping()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = ShaderCompiled::compile(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -1085,6 +1091,7 @@ inline void gpu_texture_mapping()
 #endif
 
     l_gpu_context.free();
+    l_shader_compiler.free();
 };
 } // namespace v2
 
