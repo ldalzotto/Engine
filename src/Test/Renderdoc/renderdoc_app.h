@@ -1,7 +1,6 @@
 
 #ifdef RENDER_DOC_DEBUG
 
-
 /******************************************************************************
  * The MIT License (MIT)
  *
@@ -28,10 +27,10 @@
 
 #pragma once
 
- //////////////////////////////////////////////////////////////////////////////////////////////////
- //
- // Documentation for the API is available at https://renderdoc.org/docs/in_application_api.html
- //
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Documentation for the API is available at https://renderdoc.org/docs/in_application_api.html
+//
 
 #if !defined(RENDERDOC_NO_STDINT)
 #include <stdint.h>
@@ -48,7 +47,8 @@
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,25 +58,26 @@ extern "C" {
     // information can be found to match up with a stripped shader.
     // the define can be used like so: const GUID RENDERDOC_ShaderDebugMagicValue =
     // RENDERDOC_ShaderDebugMagicValue_value
-#define RENDERDOC_ShaderDebugMagicValue_struct                                \
-  {                                                                           \
-    0xeab25520, 0x6670, 0x4865, 0x84, 0x29, 0x6c, 0x8, 0x51, 0x54, 0x00, 0xff \
-  }
+#define RENDERDOC_ShaderDebugMagicValue_struct                                                                                                                                                         \
+    {                                                                                                                                                                                                  \
+        0xeab25520, 0x6670, 0x4865, 0x84, 0x29, 0x6c, 0x8, 0x51, 0x54, 0x00, 0xff                                                                                                                      \
+    }
 
 // as an alternative when you want a byte array (assuming x86 endianness):
-#define RENDERDOC_ShaderDebugMagicValue_bytearray                                                 \
-  {                                                                                               \
-    0x20, 0x55, 0xb2, 0xea, 0x70, 0x66, 0x65, 0x48, 0x84, 0x29, 0x6c, 0x8, 0x51, 0x54, 0x00, 0xff \
-  }
+#define RENDERDOC_ShaderDebugMagicValue_bytearray                                                                                                                                                      \
+    {                                                                                                                                                                                                  \
+        0x20, 0x55, 0xb2, 0xea, 0x70, 0x66, 0x65, 0x48, 0x84, 0x29, 0x6c, 0x8, 0x51, 0x54, 0x00, 0xff                                                                                                  \
+    }
 
 // truncated version when only a uint64_t is available (e.g. Vulkan tags):
 #define RENDERDOC_ShaderDebugMagicValue_truncated 0x48656670eab25520ULL
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
-// RenderDoc capture options
-//
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    // RenderDoc capture options
+    //
 
-    typedef enum RENDERDOC_CaptureOption {
+    typedef enum RENDERDOC_CaptureOption
+    {
         // Allow the application to enable vsync
         //
         // Default - enabled
@@ -101,7 +102,7 @@ extern "C" {
         //     the capture, which is matched up with events on replay
         // 0 - no API debugging is forcibly enabled
         eRENDERDOC_Option_APIValidation = 2,
-        eRENDERDOC_Option_DebugDeviceMode = 2,    // deprecated name of this enum
+        eRENDERDOC_Option_DebugDeviceMode = 2, // deprecated name of this enum
 
         // Capture CPU callstacks for API events
         //
@@ -236,7 +237,8 @@ extern "C" {
     // If the option is invalid, -FLT_MAX is returned
     typedef float(RENDERDOC_CC* pRENDERDOC_GetCaptureOptionF32)(RENDERDOC_CaptureOption opt);
 
-    typedef enum RENDERDOC_InputButton {
+    typedef enum RENDERDOC_InputButton
+    {
         // '0' - '9' matches ASCII values
         eRENDERDOC_Key_0 = 0x30,
         eRENDERDOC_Key_1 = 0x31,
@@ -324,7 +326,8 @@ extern "C" {
     // If keys is NULL or num is 0, captures keys will be disabled
     typedef void(RENDERDOC_CC* pRENDERDOC_SetCaptureKeys)(RENDERDOC_InputButton* keys, int num);
 
-    typedef enum RENDERDOC_OverlayBits {
+    typedef enum RENDERDOC_OverlayBits
+    {
         // This single bit controls whether the overlay is enabled or disabled globally
         eRENDERDOC_Overlay_Enabled = 0x1,
 
@@ -338,8 +341,7 @@ extern "C" {
         eRENDERDOC_Overlay_CaptureList = 0x8,
 
         // Default values for the overlay mask
-        eRENDERDOC_Overlay_Default = (eRENDERDOC_Overlay_Enabled | eRENDERDOC_Overlay_FrameRate |
-        eRENDERDOC_Overlay_FrameNumber | eRENDERDOC_Overlay_CaptureList),
+        eRENDERDOC_Overlay_Default = (eRENDERDOC_Overlay_Enabled | eRENDERDOC_Overlay_FrameRate | eRENDERDOC_Overlay_FrameNumber | eRENDERDOC_Overlay_CaptureList),
 
         // Enable all bits
         eRENDERDOC_Overlay_All = ~0U,
@@ -392,7 +394,7 @@ extern "C" {
     typedef void(RENDERDOC_CC* pRENDERDOC_SetCaptureFilePathTemplate)(const char* pathtemplate);
 
     // returns the current capture path template, see SetCaptureFileTemplate above, as a UTF-8 string
-    typedef const char* (RENDERDOC_CC* pRENDERDOC_GetCaptureFilePathTemplate)();
+    typedef const char*(RENDERDOC_CC* pRENDERDOC_GetCaptureFilePathTemplate)();
 
     // DEPRECATED: compatibility for code compiled against pre-1.1.2 headers.
     typedef pRENDERDOC_SetCaptureFilePathTemplate pRENDERDOC_SetLogFilePathTemplate;
@@ -415,8 +417,7 @@ extern "C" {
     //
     // Note: when captures are deleted in the UI they will remain in this list, so the
     // capture path may not exist anymore.
-    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_GetCapture)(uint32_t idx, char* filename,
-        uint32_t* pathlength, uint64_t* timestamp);
+    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_GetCapture)(uint32_t idx, char* filename, uint32_t* pathlength, uint64_t* timestamp);
 
     // Sets the comments associated with a capture file. These comments are displayed in the
     // UI program when opening.
@@ -426,8 +427,7 @@ extern "C" {
     // comments should be a NULL-terminated UTF-8 string to add as comments.
     //
     // Any existing comments will be overwritten.
-    typedef void(RENDERDOC_CC* pRENDERDOC_SetCaptureFileComments)(const char* filePath,
-        const char* comments);
+    typedef void(RENDERDOC_CC* pRENDERDOC_SetCaptureFileComments)(const char* filePath, const char* comments);
 
     // returns 1 if the RenderDoc UI is connected to this application, 0 otherwise
     typedef uint32_t(RENDERDOC_CC* pRENDERDOC_IsTargetControlConnected)();
@@ -447,8 +447,7 @@ extern "C" {
     // if cmdline is NULL, the command line will be empty.
     //
     // returns the PID of the replay UI if successful, 0 if not successful.
-    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_LaunchReplayUI)(uint32_t connectTargetControl,
-        const char* cmdline);
+    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_LaunchReplayUI)(uint32_t connectTargetControl, const char* cmdline);
 
     // RenderDoc can return a higher version than requested if it's backwards compatible,
     // this function returns the actual version returned. If a parameter is NULL, it will be
@@ -476,12 +475,11 @@ extern "C" {
     // Specifically, the value needed is the dispatch table pointer, which sits as the first
     // pointer-sized object in the memory pointed to by the VkInstance. Thus we cast to a void** and
     // indirect once.
-#define RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(inst) (*((void **)(inst)))
+#define RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(inst) (*((void**)(inst)))
 
-// This sets the RenderDoc in-app overlay in the API/window pair as 'active' and it will
-// respond to keypresses. Neither parameter can be NULL
-    typedef void(RENDERDOC_CC* pRENDERDOC_SetActiveWindow)(RENDERDOC_DevicePointer device,
-        RENDERDOC_WindowHandle wndHandle);
+    // This sets the RenderDoc in-app overlay in the API/window pair as 'active' and it will
+    // respond to keypresses. Neither parameter can be NULL
+    typedef void(RENDERDOC_CC* pRENDERDOC_SetActiveWindow)(RENDERDOC_DevicePointer device, RENDERDOC_WindowHandle wndHandle);
 
     // capture the next frame on whichever window and API is currently considered active
     typedef void(RENDERDOC_CC* pRENDERDOC_TriggerCapture)();
@@ -507,8 +505,7 @@ extern "C" {
     //
     // The results are undefined (including crashes) if two captures are started overlapping,
     // even on separate devices and/oror windows.
-    typedef void(RENDERDOC_CC* pRENDERDOC_StartFrameCapture)(RENDERDOC_DevicePointer device,
-        RENDERDOC_WindowHandle wndHandle);
+    typedef void(RENDERDOC_CC* pRENDERDOC_StartFrameCapture)(RENDERDOC_DevicePointer device, RENDERDOC_WindowHandle wndHandle);
 
     // Returns whether or not a frame capture is currently ongoing anywhere.
     //
@@ -518,15 +515,13 @@ extern "C" {
     // Ends capturing immediately.
     //
     // This will return 1 if the capture succeeded, and 0 if there was an error capturing.
-    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_EndFrameCapture)(RENDERDOC_DevicePointer device,
-        RENDERDOC_WindowHandle wndHandle);
+    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_EndFrameCapture)(RENDERDOC_DevicePointer device, RENDERDOC_WindowHandle wndHandle);
 
     // Ends capturing immediately and discard any data stored without saving to disk.
     //
     // This will return 1 if the capture was discarded, and 0 if there was an error or no capture
     // was in progress
-    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_DiscardFrameCapture)(RENDERDOC_DevicePointer device,
-        RENDERDOC_WindowHandle wndHandle);
+    typedef uint32_t(RENDERDOC_CC* pRENDERDOC_DiscardFrameCapture)(RENDERDOC_DevicePointer device, RENDERDOC_WindowHandle wndHandle);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     // RenderDoc API versions
@@ -541,17 +536,18 @@ extern "C" {
     // Note that this means the API returned can be higher than the one you might have requested.
     // e.g. if you are running against a newer RenderDoc that supports 1.0.1, it will be returned
     // instead of 1.0.0. You can check this with the GetAPIVersion entry point
-    typedef enum RENDERDOC_Version {
-        eRENDERDOC_API_Version_1_0_0 = 10000,    // RENDERDOC_API_1_0_0 = 1 00 00
-        eRENDERDOC_API_Version_1_0_1 = 10001,    // RENDERDOC_API_1_0_1 = 1 00 01
-        eRENDERDOC_API_Version_1_0_2 = 10002,    // RENDERDOC_API_1_0_2 = 1 00 02
-        eRENDERDOC_API_Version_1_1_0 = 10100,    // RENDERDOC_API_1_1_0 = 1 01 00
-        eRENDERDOC_API_Version_1_1_1 = 10101,    // RENDERDOC_API_1_1_1 = 1 01 01
-        eRENDERDOC_API_Version_1_1_2 = 10102,    // RENDERDOC_API_1_1_2 = 1 01 02
-        eRENDERDOC_API_Version_1_2_0 = 10200,    // RENDERDOC_API_1_2_0 = 1 02 00
-        eRENDERDOC_API_Version_1_3_0 = 10300,    // RENDERDOC_API_1_3_0 = 1 03 00
-        eRENDERDOC_API_Version_1_4_0 = 10400,    // RENDERDOC_API_1_4_0 = 1 04 00
-        eRENDERDOC_API_Version_1_4_1 = 10401,    // RENDERDOC_API_1_4_1 = 1 04 01
+    typedef enum RENDERDOC_Version
+    {
+        eRENDERDOC_API_Version_1_0_0 = 10000, // RENDERDOC_API_1_0_0 = 1 00 00
+        eRENDERDOC_API_Version_1_0_1 = 10001, // RENDERDOC_API_1_0_1 = 1 00 01
+        eRENDERDOC_API_Version_1_0_2 = 10002, // RENDERDOC_API_1_0_2 = 1 00 02
+        eRENDERDOC_API_Version_1_1_0 = 10100, // RENDERDOC_API_1_1_0 = 1 01 00
+        eRENDERDOC_API_Version_1_1_1 = 10101, // RENDERDOC_API_1_1_1 = 1 01 01
+        eRENDERDOC_API_Version_1_1_2 = 10102, // RENDERDOC_API_1_1_2 = 1 01 02
+        eRENDERDOC_API_Version_1_2_0 = 10200, // RENDERDOC_API_1_2_0 = 1 02 00
+        eRENDERDOC_API_Version_1_3_0 = 10300, // RENDERDOC_API_1_3_0 = 1 03 00
+        eRENDERDOC_API_Version_1_4_0 = 10400, // RENDERDOC_API_1_4_0 = 1 04 00
+        eRENDERDOC_API_Version_1_4_1 = 10401, // RENDERDOC_API_1_4_1 = 1 04 01
     } RENDERDOC_Version;
 
     // API version changelog:
@@ -688,9 +684,7 @@ extern "C" {
     typedef int(RENDERDOC_CC* pRENDERDOC_GetAPI)(RENDERDOC_Version version, void** outAPIPointers);
 
 #ifdef __cplusplus
-}    // extern "C"
+} // extern "C"
 #endif
 
-
 #endif // RENDER_DOC_DEBUG
-

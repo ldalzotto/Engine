@@ -1,6 +1,5 @@
 #include "Window/window.hpp"
 
-
 inline void glfwwindow()
 {
     Token(v2::Window) l_window = v2::WindowAllocator::allocate(100, 150, slice_int8_build_rawstr("TEST"));

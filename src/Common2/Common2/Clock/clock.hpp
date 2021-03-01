@@ -2,27 +2,26 @@
 
 struct Clock
 {
-	uimax framecount;
-	float deltatime;
+    uimax framecount;
+    float deltatime;
 
-	inline static Clock allocate_default()
-	{
-		return Clock{ 0,0.0f };
-	};
+    inline static Clock allocate_default()
+    {
+        return Clock{0, 0.0f};
+    };
 
-	inline void newframe()
-	{
-		this->framecount += 1;
-	}
+    inline void newframe()
+    {
+        this->framecount += 1;
+    }
 
-	inline void newupdate(float p_delta)
-	{
-		this->deltatime = p_delta;
-	}
+    inline void newupdate(float p_delta)
+    {
+        this->deltatime = p_delta;
+    }
 };
 
 // typedef uint64 time_t;
-
 
 time_t clock_currenttime_mics();
 
@@ -30,18 +29,18 @@ time_t clock_currenttime_mics();
 
 inline time_t clock_currenttime_mics()
 {
-	FILETIME l_currentTime;
-	GetSystemTimeAsFileTime(&l_currentTime);
-	return FILETIME_to_mics(l_currentTime);
+    FILETIME l_currentTime;
+    GetSystemTimeAsFileTime(&l_currentTime);
+    return FILETIME_to_mics(l_currentTime);
 };
 
 #elif __linux__
 
 inline time_t clock_currenttime_mics()
 {
-	struct timespec spec;
-	clock_gettime(CLOCK_REALTIME, &spec);
-	return round(spec.tv_nsec / 1000);
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    return round(spec.tv_nsec / 1000);
 };
 
 #endif

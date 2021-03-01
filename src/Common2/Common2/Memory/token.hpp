@@ -4,28 +4,31 @@ typedef uimax token_t;
 
 inline token_t tokent_build_default()
 {
-	return -1;
+    return -1;
 };
 
 inline void tokent_reset(token_t* p_token)
 {
-	*p_token = tokent_build_default();
+    *p_token = tokent_build_default();
 };
 
 inline int8 tokent_is_valid(const token_t* p_token)
 {
-	return *p_token != (token_t)-1;
+    return *p_token != (token_t)-1;
 };
 
 #if TOKEN_TYPE_SAFETY
 
-template<class ElementType>
-struct Token
+template <class ElementType> struct Token
 {
-	token_t tok;
+    token_t tok;
 };
 
-#define tk_b(ElementType, TokenT) Token<ElementType> { (token_t)(TokenT)}
+#define tk_b(ElementType, TokenT)                                                                                                                                                                      \
+    Token<ElementType>                                                                                                                                                                                 \
+    {                                                                                                                                                                                                  \
+        (token_t)(TokenT)                                                                                                                                                                              \
+    }
 
 #define tk_v(TokenVariable) ((TokenVariable).tok)
 
@@ -33,7 +36,7 @@ struct Token
 
 #else
 
-#define tk_b(ElementType, TokenT) (token_t)TokenT
+#define tk_b(ElementType, TokenT) (token_t) TokenT
 
 #define tk_v(TokenVariable) (TokenVariable)
 
@@ -45,6 +48,5 @@ struct Token
 #define tk_bf(ElementType, SourceToken) tk_b(ElementType, tk_v(SourceToken))
 #define tk_eq(Left, Right) (tk_v(Left) == tk_v(Right))
 #define tk_neq(Left, Right) (tk_v(Left) != tk_v(Right))
-
 
 #define ShadowToken(ElementType) ShadowToken_##ElementType

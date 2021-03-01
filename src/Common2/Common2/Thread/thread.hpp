@@ -2,12 +2,11 @@
 
 using thread_t
 #ifdef _WIN32
-= HANDLE
+    = HANDLE
 #elif __linux__
-= pthread_t
+    = pthread_t
 #endif // _WIN32
-;
-
+    ;
 
 struct Thread
 {
@@ -33,6 +32,5 @@ inline void Thread::wait(const uimax p_time_in_ms)
 {
     usleep(p_time_in_ms * 1000);
 };
-
 
 #endif
