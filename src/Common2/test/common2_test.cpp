@@ -1540,12 +1540,12 @@ inline void database_test()
 
         SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
         l_binder.bind_sqlitepreparedquery(l_insersion_query, l_connection);
-        l_binder.bind_int64(10);
-        l_binder.bind_int64(20);
-        l_binder.bind_text(slice_int8_build_rawstr("test"));
+        l_binder.bind_int64(10, l_connection);
+        l_binder.bind_int64(20, l_connection);
+        l_binder.bind_text(slice_int8_build_rawstr("test"), l_connection);
 
         uimax l_value = 30;
-        l_binder.bind_blob(Slice<uimax>::build_asint8_memory_singleelement(&l_value));
+        l_binder.bind_blob(Slice<uimax>::build_asint8_memory_singleelement(&l_value), l_connection);
 
         SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []() {});
 
@@ -1561,7 +1561,7 @@ inline void database_test()
 
         l_binder = SQLiteQueryBinder::build_default();
         l_binder.bind_sqlitepreparedquery(l_select_query, l_connection);
-        l_binder.bind_int64(10);
+        l_binder.bind_int64(10, l_connection);
 
         int64 l_retrieved_id = 0;
         Span<int8> l_retrieved_str = Span<int8>::build_default();

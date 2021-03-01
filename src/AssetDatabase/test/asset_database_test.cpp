@@ -5,7 +5,7 @@
 
 namespace v2
 {
-inline void asset_blob_insert_read()
+inline void asset_blob_insert_read_write()
 {
     String l_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_path.to_slice());
@@ -14,6 +14,23 @@ inline void asset_blob_insert_read()
         Slice<int8> l_path = slice_int8_build_rawstr("pathtest");
         Slice<uimax> l_data = SliceN<uimax, 3>{0, 1, 2}.to_slice();
         hash_t l_inserted_id = l_asset_database.insert_asset_blob(l_path, l_data.build_asint8());
+        Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_inserted_id);
+        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        l_retrieved_data.free();
+
+        //insert_or_update_asset_blob -> doing update
+        l_data = SliceN<uimax, 3>{3, 4, 5}.to_slice();
+        l_inserted_id =  l_asset_database.insert_or_update_asset_blob(l_path, l_data.build_asint8());
+        l_retrieved_data = l_asset_database.get_asset_blob(l_inserted_id);
+        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        l_retrieved_data.free();
+    }
+
+    //insert_or_update_asset_blob -> doing insert
+    {
+        Slice<int8> l_path = slice_int8_build_rawstr("pathtest2");
+        Slice<uimax> l_data = SliceN<uimax, 3>{0, 1, 2}.to_slice();
+        hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_path, l_data.build_asint8());
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_inserted_id);
         assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
         l_retrieved_data.free();
@@ -26,5 +43,5 @@ inline void asset_blob_insert_read()
 
 int main()
 {
-    v2::asset_blob_insert_read();
+    v2::asset_blob_insert_read_write();
 }

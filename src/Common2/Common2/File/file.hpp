@@ -23,7 +23,7 @@ struct FileNative
 #if CONTAINER_BOUND_TEST
         assert_true(
 #endif
-            ReadFile(p_file_handle, in_out_buffer->Begin, in_out_buffer->Size, NULL, NULL)
+            ReadFile(p_file_handle, in_out_buffer->Begin, (DWORD)in_out_buffer->Size, NULL, NULL)
 #if CONTAINER_BOUND_TEST
         )
 #endif

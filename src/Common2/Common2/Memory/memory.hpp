@@ -56,6 +56,19 @@ inline void memleak_ckeck()
     {
         if (ptr_counter[i] != NULL)
         {
+            /*
+            for (loop(j, 0, MEM_LEAK_MAX_BACKTRACE))
+            {
+                LPVOID l_func_pointer = backtraces[i][j];
+                if (l_func_pointer)
+                {
+                    SYMBOL_INFO l_symbol;
+                    assert_true(SymFromAddr(GetCurrentProcess(), (DWORD64)l_func_pointer, 0, &l_symbol));
+                    printf(l_symbol.Name);
+                    printf("\n");
+                }
+            }
+            */
             abort();
         }
     }

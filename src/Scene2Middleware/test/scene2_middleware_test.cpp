@@ -1,7 +1,5 @@
-
-
 #include "Scene2Middleware/scene2_middleware.hpp"
-#include "shader_compiler.hpp"
+#include "AssetCompiler/asset_compiler.hpp"
 #include "asset_database_test_utils.hpp"
 
 namespace v2

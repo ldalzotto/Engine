@@ -3,6 +3,15 @@
 
 #ifdef GPU_DEBUG
 #define sc_handle_error(glslang_program_t_ptr, glslang_shader_s_ptr, Code) ShaderCompiler_ErrorHandler((glslang_shader_s_ptr), (glslang_program_t_ptr), (Code))
+
+#define sc_handle_error_silent(glslang_program_t_ptr, glslang_shader_s_ptr, Code)                                                                                                                      \
+    {                                                                                                                                                                                                  \
+        if (!ShaderCompiler_ErrorHandler_silent((glslang_shader_s_ptr), (glslang_program_t_ptr), (Code)))                                                                                              \
+        {                                                                                                                                                                                              \
+            return 0;                                                                                                                                                                                  \
+        }                                                                                                                                                                                              \
+    }
+
 #else
 #define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) Code
 #endif
@@ -143,6 +152,27 @@ inline static void ShaderCompiler_ErrorHandler(glslang_shader_s* p_shader, glsla
     }
 };
 
+inline static int8 ShaderCompiler_ErrorHandler_silent(glslang_shader_s* p_shader, glslang_program_t* p_program, const int32 p_return_code)
+{
+    if (!p_return_code)
+    {
+        if (p_shader)
+        {
+            printf(glslang_shader_get_info_log(p_shader));
+            printf(glslang_shader_get_info_debug_log(p_shader));
+        }
+        if (p_program)
+        {
+            // glslang_shader_get_info_log()
+            printf(glslang_program_get_info_log(p_program));
+            printf(glslang_program_get_info_debug_log(p_program));
+        }
+
+        return 0;
+    }
+    return 1;
+};
+
 /*
     The ShaderCompiled allows runtime shader compiliation from text.
     /!\ For the actual game engine, it is more performant to store the compiled version of the shader.
@@ -150,53 +180,6 @@ inline static void ShaderCompiler_ErrorHandler(glslang_shader_s* p_shader, glsla
 struct ShaderCompiled
 {
     glslang_program_t* program;
-
-    inline static ShaderCompiled compile(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
-    {
-        ShaderCompiled l_shader_compiled;
-        l_shader_compiled.program = NULL;
-
-        glslang_input_t input = {GLSLANG_SOURCE_GLSL,
-                                 GLSLANG_STAGE_VERTEX,
-                                 GLSLANG_CLIENT_VULKAN,
-                                 GLSLANG_TARGET_VULKAN_1_2,
-                                 GLSLANG_TARGET_SPV,
-                                 GLSLANG_TARGET_SPV_1_0,
-                                 p_shader_string.Begin,
-                                 450,
-                                 GLSLANG_NO_PROFILE,
-                                 0,
-                                 0,
-                                 GLSLANG_MSG_DEFAULT_BIT,
-                                 (const glslang_resource_t*)&p_ressources};
-
-        if (p_stage == ShaderModuleStage::VERTEX)
-        {
-            input.stage = GLSLANG_STAGE_VERTEX;
-        }
-        else if (p_stage == ShaderModuleStage::FRAGMENT)
-        {
-            input.stage = GLSLANG_STAGE_FRAGMENT;
-        }
-
-        glslang_shader_s* l_shader = glslang_shader_create(&input);
-        sc_handle_error(l_shader_compiled.program, NULL, glslang_shader_preprocess(l_shader, &input));
-        sc_handle_error(l_shader_compiled.program, l_shader, glslang_shader_parse(l_shader, &input));
-
-        glslang_program_t* l_program = glslang_program_create();
-        glslang_program_add_shader(l_program, l_shader);
-        sc_handle_error(l_shader_compiled.program, l_shader, glslang_program_link(l_program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT));
-        glslang_program_SPIRV_generate(l_program, input.stage);
-        if (glslang_program_SPIRV_get_messages(l_program))
-        {
-            printf("%s", glslang_program_SPIRV_get_messages(l_program));
-        }
-
-        glslang_shader_delete(l_shader);
-
-        l_shader_compiled.program = l_program;
-        return l_shader_compiled;
-    };
 
     inline void free()
     {
@@ -209,6 +192,14 @@ struct ShaderCompiled
         return Slice<int8>::build_memory_elementnb((int8*)glslang_program_SPIRV_get_ptr(this->program), glslang_program_SPIRV_get_size(this->program) * sizeof(unsigned int));
     };
 };
+
+#define func_name ShaderCompiled_compile
+#define ShaderCompiled_handle_error_slot sc_handle_error
+#include "./shader_compiler_tt.hpp"
+
+#define func_name ShaderCompiled_compile_silent
+#define ShaderCompiled_handle_error_slot sc_handle_error_silent
+#include "./shader_compiler_tt.hpp"
 
 struct ShaderCompiler
 {
@@ -227,10 +218,18 @@ struct ShaderCompiler
 
     inline ShaderCompiled compile_shader(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
     {
-        return ShaderCompiled::compile(this->ressources, p_stage, p_shader_string);
+        ShaderCompiled l_shader_compiled;
+        ShaderCompiled_compile(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
+        return l_shader_compiled;
+    };
+
+    inline int8 compile_shader_silent(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+    {
+        return ShaderCompiled_compile_silent(this->ressources, p_stage, p_shader_string, out_shader_compiled);
     };
 };
 
 } // namespace v2
 
 #undef sc_handle_error
+#undef sc_handle_error_silent
