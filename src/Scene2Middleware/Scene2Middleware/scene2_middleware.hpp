@@ -3,11 +3,9 @@
 #include "Collision/collision.hpp"
 #include "Render/render.hpp"
 #include "Scene2/scene2.hpp"
-#include "AssetDatabase/assetdatabase.hpp"
+#include "AssetRessource/asset_ressource.hpp"
 
-#include "./Ressource/ressource.hpp"
 #include "./Middlewares/collision.hpp"
-#include "./Middlewares/render_ressources.hpp"
 #include "./Middlewares/render.hpp"
 
 namespace v2
@@ -25,9 +23,11 @@ struct SceneMiddleware
 
     static SceneMiddleware allocate_default();
 
-    void free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database);
+    void free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_asset_database);
 
-    void step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database);
+    void deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator);
+    void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_asset_database);
+    void step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context);
 };
 
 inline SceneMiddleware SceneMiddleware::allocate_default()
@@ -35,16 +35,27 @@ inline SceneMiddleware SceneMiddleware::allocate_default()
     return SceneMiddleware{CollisionMiddleware::allocate_default(), RenderMiddleWare::allocate()};
 };
 
-inline void SceneMiddleware::free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+inline void SceneMiddleware::free(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator,
+                                  AssetDatabase& p_asset_database)
 {
     this->collision_middleware.free(p_collision, p_scene);
-    this->render_middleware.free(p_renderer, p_gpu_context, p_asset_database, p_scene);
+    this->render_middleware.free(p_renderer, p_gpu_context, p_asset_database, p_render_ressource_allocator, p_scene);
 };
 
-void SceneMiddleware::step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+inline void SceneMiddleware::deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator)
+{
+    this->render_middleware.deallocation_step(p_renderer, p_gpu_context, p_render_ressource_allocator);
+};
+
+inline void SceneMiddleware::allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_asset_database)
+{
+    this->render_middleware.allocation_step(p_renderer, p_gpu_context, p_render_ressource_allocator, p_asset_database);
+};
+
+inline void SceneMiddleware::step(Scene* p_scene, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context)
 {
     this->collision_middleware.step(p_collision, p_scene);
-    this->render_middleware.step(p_renderer, p_gpu_context, p_asset_database, p_scene);
+    this->render_middleware.step(p_renderer, p_gpu_context, p_scene);
 };
 } // namespace v2
 

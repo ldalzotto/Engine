@@ -47,12 +47,12 @@ inline static NodeComponent construct_nodecomponent()
 
 inline static CameraComponent::Asset deconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, D3Renderer& p_renderer)
 {
-    return p_scene_middleware.render_middleware.allocator.camera_component.asset;
+    return p_scene_middleware.render_middleware.camera_component.asset;
 };
 
 inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
 {
-    p_render_middleware.allocator.free_camera();
+    p_render_middleware.free_camera();
 };
 
 }; // namespace CameraComponentAsset_SceneCommunication
@@ -64,14 +64,15 @@ inline static NodeComponent construct_nodecomponent(const Token(MeshRendererComp
     return NodeComponent{MeshRendererComponent::Type, tk_v(p_component)};
 };
 
-inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
+inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
-    RenderRessourceAllocator2Composition::free_meshrenderer_with_dependencies(p_render_middleware.allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
 // global
-inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context, const NodeComponent& p_node_component)
+inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context,
+                                      RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
     switch (p_node_component.type)
     {
@@ -83,7 +84,7 @@ inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Colli
     break;
     case v2::MeshRendererComponent::Type:
     {
-        MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_node_component);
+        MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_render_ressource_allocator, p_node_component);
     }
     break;
     case v2::CameraComponent::Type:

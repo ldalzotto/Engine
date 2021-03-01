@@ -55,7 +55,7 @@ struct RessourceComposition
     */
     template <class ShadowVector(RessourceAllocationEvent), class ShadowToken(Ressource), class AllocationEventFoundSlot_t>
     inline static void remove_reference_from_allocation_events_explicit(ShadowVector(RessourceAllocationEvent) & p_allocation_events, const ShadowToken(Ressource) p_ressource,
-                                                                        const AllocationEventFoundSlot_t& p_allocation_event_found_slot)
+    const AllocationEventFoundSlot_t& p_allocation_event_found_slot)
     {
         for (loop_reverse(i, 0, p_allocation_events.sv_get_size()))
         {
@@ -79,44 +79,44 @@ struct RessourceComposition
 
     template <class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class RessourceBuilderFunc_t, class RessourceAllocationEventBuilderFunc_t>
     inline static auto allocate_ressource_composition_explicit(ShadowPoolHashedCounted(RessourceId, Ressource) & p_pool_hashed_counted,
-                                                               ShadowVector(RessourceAllocationEvent) & p_ressource_allocation_events, hash_t p_ressource_id,
-                                                               const RessourceBuilderFunc_t& p_ressource_builder_func,
-                                                               const RessourceAllocationEventBuilderFunc_t& p_ressource_allocation_event_builder_func)
-        -> Token(decltype(p_pool_hashed_counted.sp_reflection_ElementType()))
+    ShadowVector(RessourceAllocationEvent) & p_ressource_allocation_events, hash_t p_ressource_id,
+    const RessourceBuilderFunc_t& p_ressource_builder_func,
+    const RessourceAllocationEventBuilderFunc_t& p_ressource_allocation_event_builder_func)
+    -> Token(decltype(p_pool_hashed_counted.sp_reflection_ElementType()))
     {
         return p_pool_hashed_counted.increment_or_allocate_explicit(p_ressource_id, p_ressource_builder_func,
-                                                                    [&p_ressource_allocation_events, &p_ressource_allocation_event_builder_func](auto p_allocated_ressource) {
-                                                                        p_ressource_allocation_events.sv_push_back_element(p_ressource_allocation_event_builder_func(p_allocated_ressource));
-                                                                    });
+            [&p_ressource_allocation_events, &p_ressource_allocation_event_builder_func](auto p_allocated_ressource) {
+              p_ressource_allocation_events.sv_push_back_element(p_ressource_allocation_event_builder_func(p_allocated_ressource));
+            });
     };
 
     /*
         The entry point of Ressource deallocation execution flow.
     */
     template <class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class ShadowVector(RessourceFreeEvent), class RessourceFreeEventBuilderFunc_t,
-              class AllocationEventFoundSlot_t>
+    class AllocationEventFoundSlot_t>
     inline static int8 free_ressource_composition_explicit(
         ShadowPoolHashedCounted(RessourceId, Ressource) & p_pool_hashed_counted, ShadowVector(RessourceAllocationEvent) & p_ressource_allocation_events,
-        ShadowVector(RessourceFreeEvent) & p_ressource_free_events, const RessourceIdentifiedHeader& p_ressource_header,
-        const RessourceFreeEventBuilderFunc_t& p_free_event_builder,    // Builds the RessourceFreeEvent if an event has to be pushed
-        const AllocationEventFoundSlot_t& p_allocation_event_found_slot // Slot executed when an existing RessourceAllocationEvent with Ressource reference has been found
+    ShadowVector(RessourceFreeEvent) & p_ressource_free_events, const RessourceIdentifiedHeader& p_ressource_header,
+    const RessourceFreeEventBuilderFunc_t& p_free_event_builder,    // Builds the RessourceFreeEvent if an event has to be pushed
+    const AllocationEventFoundSlot_t& p_allocation_event_found_slot // Slot executed when an existing RessourceAllocationEvent with Ressource reference has been found
     )
     {
         int8 l_return = 0;
         if (p_ressource_header.allocated)
         {
             p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(p_ressource_header.id, [&l_return, &p_ressource_free_events, &p_free_event_builder](auto p_deallocated_token) {
-                p_ressource_free_events.sv_push_back_element(p_free_event_builder(p_deallocated_token));
-                l_return = 1;
+              p_ressource_free_events.sv_push_back_element(p_free_event_builder(p_deallocated_token));
+              l_return = 1;
             });
         }
         else
         {
             p_pool_hashed_counted.decrement_and_deallocate_pool_not_modified_explicit(
                 p_ressource_header.id, [&l_return, &p_ressource_allocation_events, &p_pool_hashed_counted, &p_allocation_event_found_slot](auto p_deallocated_token) {
-                    RessourceComposition::remove_reference_from_allocation_events_explicit(p_ressource_allocation_events, p_deallocated_token, p_allocation_event_found_slot);
-                    p_pool_hashed_counted.pool.sp_release_element(p_deallocated_token);
-                    l_return = 1;
+                  RessourceComposition::remove_reference_from_allocation_events_explicit(p_ressource_allocation_events, p_deallocated_token, p_allocation_event_found_slot);
+                  p_pool_hashed_counted.pool.sp_release_element(p_deallocated_token);
+                  l_return = 1;
                 });
         }
         return l_return;
@@ -127,17 +127,17 @@ struct RessourceComposition
     */
     template <class ShadowPoolHashedCounted(RessourceId, Ressource), class ShadowVector(RessourceAllocationEvent), class ShadowVector(RessourceFreeEvent), class RessourceFreeEventBuilder>
     inline static int8 free_ressource_composition(ShadowPoolHashedCounted(RessourceId, Ressource) & p_pool_hashed_counted, ShadowVector(RessourceAllocationEvent) & p_ressource_allocation_events,
-                                                  ShadowVector(RessourceFreeEvent) & p_ressource_free_events, const RessourceIdentifiedHeader& p_ressource_header,
-                                                  const RessourceFreeEventBuilder& p_free_event_builder)
+    ShadowVector(RessourceFreeEvent) & p_ressource_free_events, const RessourceIdentifiedHeader& p_ressource_header,
+    const RessourceFreeEventBuilder& p_free_event_builder)
     {
         return RessourceComposition::free_ressource_composition_explicit(p_pool_hashed_counted, p_ressource_allocation_events, p_ressource_free_events, p_ressource_header, p_free_event_builder,
-                                                                         AllocationEventFoundSlot::Nil{});
+            AllocationEventFoundSlot::Nil{});
     };
 
     template <class ShadowPoolHashedCounted(RessourceId, InitialRessource), class ShadowPool(DynamicDepenency), class DynamicDependencyTokenAllocationSlot_t>
     inline static auto allocate_dynamic_dependencies(ShadowPoolHashedCounted(RessourceId, InitialRessource) & p_source_pool_hashed_counted, ShadowPool(DynamicDepenency) & p_dynamic_dependency_pool,
-                                                     const hash_t p_initial_ressource_id, const DynamicDependencyTokenAllocationSlot_t& p_dynamic_depenedency_allocation_slot)
-        -> Token(decltype(p_dynamic_dependency_pool.sp_reflection_ElementType()))
+    const hash_t p_initial_ressource_id, const DynamicDependencyTokenAllocationSlot_t& p_dynamic_depenedency_allocation_slot)
+    -> Token(decltype(p_dynamic_dependency_pool.sp_reflection_ElementType()))
     {
         typedef decltype(p_dynamic_dependency_pool.sp_reflection_ElementType()) ReturnTokenElementType;
 

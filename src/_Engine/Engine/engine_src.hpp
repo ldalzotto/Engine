@@ -16,6 +16,8 @@ struct Engine
     v2::GPUContext gpu_context;
     v2::D3Renderer renderer;
 
+    v2::RenderRessourceAllocator2 renderer_ressource_allocator;
+
     v2::Scene scene;
     v2::SceneMiddleware scene_middleware;
 
@@ -58,7 +60,7 @@ struct Engine
 
 inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, const v2::NodeEntry& p_node, const v2::NodeComponent& p_component)
 {
-    on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, p_component);
+    on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator, p_component);
 };
 
 inline Engine Engine::allocate(const EngineConfiguration& p_configuration)
@@ -71,6 +73,7 @@ inline Engine Engine::allocate(const EngineConfiguration& p_configuration)
                   Collision2::allocate(),
                   l_gpu_context,
                   l_renderer,
+                  v2::RenderRessourceAllocator2::allocate(),
                   v2::Scene::allocate_default(),
                   v2::SceneMiddleware::allocate_default(),
                   AssetDatabase::allocate(p_configuration.asset_database_path)};
@@ -80,9 +83,10 @@ inline void Engine::free()
 {
     ComponentReleaser l_component_releaser = ComponentReleaser{*this};
     this->scene.consume_component_events_stateful(l_component_releaser);
-    this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->asset_database);
+    this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
     this->asset_database.free();
     this->collision.free();
+    this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
     this->renderer.free(this->gpu_context);
     this->gpu_context.free();
     this->scene.free();
@@ -130,7 +134,12 @@ template <class ExternalCallbacksFn> inline void Engine::LoopCallbacks<ExternalC
     this->external_callbacks.after_collision(this->engine);
     this->external_callbacks.before_update(this->engine);
 
-    this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.asset_database);
+    this->engine.scene_middleware.deallocation_step(this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator);
+    this->engine.renderer_ressource_allocator.deallocation_step(this->engine.renderer, this->engine.gpu_context);
+    this->engine.renderer_ressource_allocator.allocation_step(this->engine.renderer, this->engine.gpu_context, this->engine.asset_database);
+    this->engine.scene_middleware.allocation_step(this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator, this->engine.asset_database);
+
+    this->engine.scene_middleware.step(&this->engine.scene, this->engine.collision, this->engine.renderer, this->engine.gpu_context);
 };
 
 template <class ExternalCallbacksFn> inline void Engine::LoopCallbacks<ExternalCallbacksFn>::render()

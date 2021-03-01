@@ -62,6 +62,11 @@ add_library(Render INTERFACE)
 target_include_directories(Render INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Render)
 target_link_libraries(Render INTERFACE GPU)
 
+add_library(AssetRessource INTERFACE)
+target_include_directories(AssetRessource INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetRessource)
+target_link_libraries(AssetRessource INTERFACE Render)
+target_link_libraries(AssetRessource INTERFACE AssetDatabase)
+
 add_library(Scene2 INTERFACE)
 target_include_directories(Scene2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2)
 target_link_libraries(Scene2 INTERFACE Math2)
@@ -71,12 +76,11 @@ target_include_directories(Scene2Middleware INTERFACE ${CMAKE_CURRENT_SOURCE_DIR
 target_link_libraries(Scene2Middleware INTERFACE Scene2)
 target_link_libraries(Scene2Middleware INTERFACE Collision)
 target_link_libraries(Scene2Middleware INTERFACE Render)
-target_link_libraries(Scene2Middleware INTERFACE AssetDatabase)
+target_link_libraries(Scene2Middleware INTERFACE AssetRessource)
 
 add_library(Engine INTERFACE)
 target_include_directories(Engine INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/_Engine)
 target_link_libraries(Engine INTERFACE Scene2Middleware)
-
 
 add_library(Test_Renderdoc INTERFACE)
 target_include_directories(Test_Renderdoc INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Test/Renderdoc)
@@ -110,6 +114,17 @@ target_link_libraries(Math2Test PUBLIC Math2)
 add_executable(CollisionTest ${CMAKE_CURRENT_SOURCE_DIR}/Collision/test/collision2_test.cpp)
 target_link_libraries(CollisionTest PUBLIC Collision)
 
+add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
+target_link_libraries(RenderTest PUBLIC Render)
+target_link_libraries(RenderTest PUBLIC Test_Renderdoc)
+target_link_libraries(RenderTest PUBLIC Test_ShaderCompile)
+
+add_executable(AssetRessourceTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetRessource/test/asset_ressource_test.cpp)
+target_link_libraries(AssetRessourceTest PUBLIC AssetRessource)
+target_link_libraries(AssetRessourceTest PUBLIC Test_ShaderCompile)
+target_link_libraries(AssetRessourceTest PUBLIC Test_AssetDatabase)
+target_compile_definitions(AssetRessourceTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetRessource/test/.asset/")
+
 add_executable(Scene2Test ${CMAKE_CURRENT_SOURCE_DIR}/Scene2/test/scene2_test.cpp)
 target_link_libraries(Scene2Test PUBLIC Scene2)
 
@@ -118,11 +133,6 @@ target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Test_ShaderCompile)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Test_AssetDatabase)
 target_compile_definitions(Scene2MiddlewareTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/.asset/")
-
-add_executable(RenderTest ${CMAKE_CURRENT_SOURCE_DIR}/Render/test/render_test.cpp)
-target_link_libraries(RenderTest PUBLIC Render)
-target_link_libraries(RenderTest PUBLIC Test_Renderdoc)
-target_link_libraries(RenderTest PUBLIC Test_ShaderCompile)
 
 add_executable(WindowTest ${CMAKE_CURRENT_SOURCE_DIR}/Window/test/window_test.cpp)
 target_link_libraries(WindowTest PUBLIC Window)
@@ -139,6 +149,7 @@ add_custom_target(
         COMMAND WindowTest
         COMMAND CollisionTest
         COMMAND RenderTest
+        COMMAND AssetRessourceTest
         COMMAND Scene2Test
         COMMAND GPUTest
         COMMAND Scene2MiddlewareTest
