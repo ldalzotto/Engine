@@ -4,7 +4,9 @@
 
 namespace AssetDatabase_Const
 {
-static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asset(id integer PRIMARY KEY, path text, value blob));
+
+static const int8* DB_ASSET_TABLE_INITIALIZATION = MULTILINE(create table if not exists asset(id integer PRIMARY KEY, path text, value blob););
+static const int8* DB_ASSET_RESSOURCE_TABLE_INITIALIZATION = MULTILINE(create table if not exists asset_dependencies(id integer PRIMARY KEY, dependencies blob););
 
     static const int8* ASSET_BLOB_SELECT_QUERY = MULTILINE(
 			select value from asset where asset.id = ?;
@@ -22,6 +24,14 @@ static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asse
 			update asset set value = ? where asset.id = ?;
 	);
 
+    static const int8* ASSET_DEPENDENCIES_BLOB_SELECT_QUERY = MULTILINE(
+        select dependencies from asset_dependencies where asset_dependencies.id = ?;
+    );
+
+    static const int8* ASSET_DEPENDENCIES_BLOB_INSERT_QUERY = MULTILINE(
+        insert into asset_dependencies(id, dependencies) values( ?, ?);
+    );
+
     } // namespace AssetDatabase_Const
 
     /*
@@ -36,12 +46,22 @@ static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asse
         SQLitePreparedQuery asset_insert_query;
         SQLitePreparedQuery asset_update_query;
 
+        SQLitePreparedQuery asset_dependencies_blob_select_query;
+        SQLitePreparedQuery asset_dependencies_insert_query;
+
         inline static void initialize_database(const Slice<int8>& p_database_file_path)
         {
             DatabaseConnection l_connection = DatabaseConnection::allocate(p_database_file_path);
-            SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(AssetDatabase_Const::DB_INITIALIZATION));
-            SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {});
-            l_query.free(l_connection);
+            {
+                SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(AssetDatabase_Const::DB_ASSET_TABLE_INITIALIZATION));
+                SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {});
+                l_query.free(l_connection);
+            }
+            {
+                SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(AssetDatabase_Const::DB_ASSET_RESSOURCE_TABLE_INITIALIZATION));
+                SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {});
+                l_query.free(l_connection);
+            }
             l_connection.free();
         };
 
@@ -65,6 +85,18 @@ static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asse
                                                                                 SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slicen(
                                                                                     SliceN<SQLiteQueryPrimitiveTypes, 2>{SQLiteQueryPrimitiveTypes::BLOB, SQLiteQueryPrimitiveTypes::INT64})),
                                                                                 SQLiteQueryLayout::build_default());
+
+            l_asset_database.asset_dependencies_blob_select_query = SQLitePreparedQuery::allocate(
+                l_asset_database.connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_SELECT_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slicen(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64})),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slicen(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::BLOB})));
+
+            l_asset_database.asset_dependencies_insert_query =
+                SQLitePreparedQuery::allocate(l_asset_database.connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_INSERT_QUERY),
+                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slicen(
+                                                  SliceN<SQLiteQueryPrimitiveTypes, 2>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB})),
+                                              SQLiteQueryLayout::build_default());
+
             return l_asset_database;
         };
 
@@ -74,6 +106,8 @@ static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asse
             this->asset_update_query.free_with_parameterlayout(this->connection);
             this->asset_insert_query.free_with_parameterlayout(this->connection);
             this->asset_blob_select_query.free_with_parameterlayout_and_returnlayout(this->connection);
+            this->asset_dependencies_blob_select_query.free_with_parameterlayout_and_returnlayout(this->connection);
+            this->asset_dependencies_insert_query.free_with_parameterlayout(this->connection);
             this->connection.free();
         };
 
@@ -141,6 +175,34 @@ static const int8* DB_INITIALIZATION = MULTILINE(create table if not exists asse
 
                 SQliteQueryExecution::execute_sync(this->connection, l_binder.binded_statement, []() {});
             }
+
+            return l_id;
+        };
+
+        inline Span<int8> get_asset_dependencies_blob(const hash_t p_asset_id)
+        {
+            SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
+            l_binder.bind_sqlitepreparedquery(this->asset_dependencies_blob_select_query, this->connection);
+            l_binder.bind_int64(p_asset_id, this->connection);
+
+            Span<int8> l_asset_dependencies_blob = Span<int8>::build_default();
+            SQLiteResultSet l_asset_rs = SQLiteResultSet::build_from_prepared_query(this->asset_dependencies_blob_select_query);
+            SQliteQueryExecution::execute_sync(this->connection, this->asset_dependencies_blob_select_query.statement,
+                                               [&l_asset_rs, &l_asset_dependencies_blob]() { l_asset_dependencies_blob = l_asset_rs.get_blob(0); });
+
+            return l_asset_dependencies_blob;
+        };
+
+        inline hash_t insert_asset_dependencies_blob(const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
+        {
+            hash_t l_id = HashSlice(p_asset_path);
+
+            SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
+            l_binder.bind_sqlitepreparedquery(this->asset_dependencies_insert_query, this->connection);
+            l_binder.bind_int64(l_id, this->connection);
+            l_binder.bind_blob(p_blob, this->connection);
+
+            SQliteQueryExecution::execute_sync(this->connection, l_binder.binded_statement, []() {});
 
             return l_id;
         };

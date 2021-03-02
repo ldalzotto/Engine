@@ -193,13 +193,16 @@ struct ShaderCompiled
     };
 };
 
-#define func_name ShaderCompiled_compile
+#define func_name def
 #define ShaderCompiled_handle_error_slot sc_handle_error
 #include "./shader_compiler_tt.hpp"
 
-#define func_name ShaderCompiled_compile_silent
+#define func_name silent
 #define ShaderCompiled_handle_error_slot sc_handle_error_silent
 #include "./shader_compiler_tt.hpp"
+
+#define ShaderCompile_compile_def ShaderCompile_compile(def)
+#define ShaderCompile_compile_silent ShaderCompile_compile(silent)
 
 struct ShaderCompiler
 {
@@ -219,13 +222,13 @@ struct ShaderCompiler
     inline ShaderCompiled compile_shader(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
     {
         ShaderCompiled l_shader_compiled;
-        ShaderCompiled_compile(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
+        ShaderCompile_compile_def(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
         return l_shader_compiled;
     };
 
     inline int8 compile_shader_silent(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
     {
-        return ShaderCompiled_compile_silent(this->ressources, p_stage, p_shader_string, out_shader_compiled);
+        return ShaderCompile_compile_silent(this->ressources, p_stage, p_shader_string, out_shader_compiled);
     };
 };
 

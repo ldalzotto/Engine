@@ -4,6 +4,7 @@
 #define SEMICOLON ;
 #define STR(V1) #V1
 #define CONCAT_2(V1, V2) V1##V2
+#define CONCAT_3(V1, V2, V3) V1##V2##V3
 
 #define LINE_RETURN \n
 #define MULTILINE(...) #__VA_ARGS__

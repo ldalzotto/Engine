@@ -491,6 +491,29 @@ struct RenderRessourceAllocator2Composition
         return p_render_ressource_allocator.allocate_material_database(p_material, MaterialRessource::Dependencies{l_shader_ressource, l_material_parameters});
     };
 
+    inline static Token(MaterialRessource) allocate_material_database_with_asset_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const hash_t p_id,
+                                                                                              const MaterialRessource::AssetDependencies& p_material_asset_dependencies)
+    {
+        MaterialRessource::AssetDependencies::Value l_material_asset_dependencies_value = MaterialRessource::AssetDependencies::Value::build_from_asset(p_material_asset_dependencies);
+        return allocate_material_database_with_dependencies(
+            p_render_ressource_allocator,
+            MaterialRessource::DatabaseAllocationInput{p_id, slice_cast<TextureRessource::DatabaseRessourceInput>(l_material_asset_dependencies_value.textures.build_asint8())},
+            ShaderModuleRessource::DatabaseAllocationInput{l_material_asset_dependencies_value.shader_dependencies.vertex_module},
+            ShaderModuleRessource::DatabaseAllocationInput{l_material_asset_dependencies_value.shader_dependencies.fragment_module},
+            ShaderRessource::DatabaseAllocationInput{l_material_asset_dependencies_value.shader});
+    };
+
+    inline static Token(MaterialRessource)
+        allcoate_material_database_and_load_asset_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_asset_database, const hash_t p_id)
+    {
+        // TODO -> we are potentially doing a database request for nothing. If the ressource is already allocated, then the asset dependencies will be allocated for nothing.
+        // because there is no need to reallocate
+        Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_id);
+        Token(MaterialRessource) l_ressource = allocate_material_database_with_asset_dependencies(p_render_ressource_allocator, p_id, MaterialRessource::AssetDependencies{l_asset_dependencies});
+        l_asset_dependencies.free();
+        return l_ressource;
+    };
+
     inline static void free_shader_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const Token(ShaderRessource) p_shader_ressource)
     {
         ShaderRessource& l_shader_ressource = p_render_ressource_allocator.heap.shaders_v3.pool.get(p_shader_ressource);

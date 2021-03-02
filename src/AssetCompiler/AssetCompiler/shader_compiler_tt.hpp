@@ -7,7 +7,14 @@
 #error ShaderCompiled_handle_error_slot
 #endif
 
-inline int8 func_name(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+#ifndef shader_compiler_tt
+
+#define ShaderCompile_compile(Prefix) CONCAT_3(ShaderCompile_compile, _, Prefix)
+
+#define shader_compiler_tt
+#endif
+
+inline int8 ShaderCompile_compile(func_name)(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
 {
     out_shader_compiled->program = NULL;
 

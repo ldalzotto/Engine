@@ -6,6 +6,7 @@
 
 using namespace v2;
 
+// TODO -> handling errors by using the shader compiler silent :)
 inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file)
 {
     Slice<int8> l_asset_path = p_asset_file.path_slice;
