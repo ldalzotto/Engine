@@ -1,10 +1,5 @@
 #pragma once
 
-namespace PoolHashedCounted_Const
-{
-template <class ElementType> const auto TokenCb_Nil = [](Token(ElementType) p_token) {};
-}
-
 template <class KeyType, class ElementType> struct PoolHashedCounted
 {
     struct CountElement
@@ -66,6 +61,11 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return l_allocated_token;
     };
 
+    inline ElementType& get(const KeyType& p_key)
+    {
+        return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
+    };
+
     template <class AllocatedElementBuilderFunc, class OnAllocatedFunc>
     inline Token(ElementType) increment_or_allocate_explicit(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func, const OnAllocatedFunc& p_on_allocated_func)
     {
@@ -83,25 +83,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 
     template <class AllocatedElementBuilderFunc> inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func)
     {
-        return this->increment_or_allocate_explicit(p_key, p_allocated_element_builder_func, PoolHashedCounted_Const::TokenCb_Nil<ElementType>);
-    };
-
-    // /!\ Deallocation is not complete, as the token is not removed from the pool
-    // This is to be able to retrieve the value for deferred operations
-    template <class DeallocationSlot_t> inline void decrement_and_deallocate_pool_not_modified_explicit(const KeyType& p_key, const DeallocationSlot_t& p_deallocation_slot)
-    {
-        CountElement* l_counted_element = this->decrement(p_key);
-        if (l_counted_element->counter == 0)
-        {
-            this->CountMap.erase_key_nothashed(p_key);
-            p_deallocation_slot(l_counted_element->token);
-        }
-    };
-
-    inline void decrement_and_deallocate_pool_not_modified(const KeyType& p_key)
-    {
-        this->decrement_and_deallocate_pool_not_modified_explicit(p_key, PoolHashedCounted_Const::TokenCb_Nil<ElementType>);
+        return this->increment_or_allocate_explicit(p_key, p_allocated_element_builder_func, [](auto) {
+        });
     };
 };
-
-#define ShadowPoolHashedCounted(KeyType, ElementType) ShadowPoolHashedCounted_##KeyType_##ElementType

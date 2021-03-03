@@ -798,10 +798,6 @@ inline void pool_hashed_counted_test()
         l_count_element = l_pool_hashed_counted.decrement(10);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
         assert_true(l_count_element->counter == 1);
-
-        l_pool_hashed_counted.decrement_and_deallocate_pool_not_modified(10);
-        assert_true(!l_pool_hashed_counted.CountMap.has_key_nothashed(10));
-        assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
     }
     l_pool_hashed_counted.free();
 };

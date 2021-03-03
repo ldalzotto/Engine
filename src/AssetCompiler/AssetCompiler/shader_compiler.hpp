@@ -193,16 +193,6 @@ struct ShaderCompiled
     };
 };
 
-#define func_name def
-#define ShaderCompiled_handle_error_slot sc_handle_error
-#include "./shader_compiler_tt.hpp"
-
-#define func_name silent
-#define ShaderCompiled_handle_error_slot sc_handle_error_silent
-#include "./shader_compiler_tt.hpp"
-
-#define ShaderCompile_compile_def ShaderCompile_compile(def)
-#define ShaderCompile_compile_silent ShaderCompile_compile(silent)
 
 struct ShaderCompiler
 {
@@ -222,13 +212,91 @@ struct ShaderCompiler
     inline ShaderCompiled compile_shader(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
     {
         ShaderCompiled l_shader_compiled;
-        ShaderCompile_compile_def(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
+        ShaderCompile_compile(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
         return l_shader_compiled;
     };
 
     inline int8 compile_shader_silent(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
     {
         return ShaderCompile_compile_silent(this->ressources, p_stage, p_shader_string, out_shader_compiled);
+    };
+
+  private:
+    inline glslang_input_t generate_compiler_input(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
+    {
+        glslang_input_t input = {GLSLANG_SOURCE_GLSL,
+                                 GLSLANG_STAGE_VERTEX,
+                                 GLSLANG_CLIENT_VULKAN,
+                                 GLSLANG_TARGET_VULKAN_1_2,
+                                 GLSLANG_TARGET_SPV,
+                                 GLSLANG_TARGET_SPV_1_0,
+                                 p_shader_string.Begin,
+                                 450,
+                                 GLSLANG_NO_PROFILE,
+                                 0,
+                                 0,
+                                 GLSLANG_MSG_DEFAULT_BIT,
+                                 (const glslang_resource_t*)&p_ressources};
+
+        if (p_stage == ShaderModuleStage::VERTEX)
+        {
+            input.stage = GLSLANG_STAGE_VERTEX;
+        }
+        else if (p_stage == ShaderModuleStage::FRAGMENT)
+        {
+            input.stage = GLSLANG_STAGE_FRAGMENT;
+        }
+
+        return input;
+    };
+
+    inline void ShaderCompile_compile(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+    {
+        out_shader_compiled->program = NULL;
+
+        glslang_input_t input = generate_compiler_input(p_ressources, p_stage, p_shader_string);
+
+        glslang_shader_s* l_shader = glslang_shader_create(&input);
+        sc_handle_error(out_shader_compiled->program, NULL, glslang_shader_preprocess(l_shader, &input));
+        sc_handle_error(out_shader_compiled->program, l_shader, glslang_shader_parse(l_shader, &input));
+
+        glslang_program_t* l_program = glslang_program_create();
+        glslang_program_add_shader(l_program, l_shader);
+        sc_handle_error(out_shader_compiled->program, l_shader, glslang_program_link(l_program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT));
+        glslang_program_SPIRV_generate(l_program, input.stage);
+        if (glslang_program_SPIRV_get_messages(l_program))
+        {
+            printf("%s", glslang_program_SPIRV_get_messages(l_program));
+        }
+
+        glslang_shader_delete(l_shader);
+
+        out_shader_compiled->program = l_program;
+    };
+
+    inline int8 ShaderCompile_compile_silent(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+    {
+        out_shader_compiled->program = NULL;
+
+        glslang_input_t input = generate_compiler_input(p_ressources, p_stage, p_shader_string);
+
+        glslang_shader_s* l_shader = glslang_shader_create(&input);
+        sc_handle_error_silent(out_shader_compiled->program, NULL, glslang_shader_preprocess(l_shader, &input));
+        sc_handle_error_silent(out_shader_compiled->program, l_shader, glslang_shader_parse(l_shader, &input));
+
+        glslang_program_t* l_program = glslang_program_create();
+        glslang_program_add_shader(l_program, l_shader);
+        sc_handle_error_silent(out_shader_compiled->program, l_shader, glslang_program_link(l_program, GLSLANG_MSG_SPV_RULES_BIT | GLSLANG_MSG_VULKAN_RULES_BIT));
+        glslang_program_SPIRV_generate(l_program, input.stage);
+        if (glslang_program_SPIRV_get_messages(l_program))
+        {
+            printf("%s", glslang_program_SPIRV_get_messages(l_program));
+        }
+
+        glslang_shader_delete(l_shader);
+
+        out_shader_compiled->program = l_program;
+        return 1;
     };
 };
 

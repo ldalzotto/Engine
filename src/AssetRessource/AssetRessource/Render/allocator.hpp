@@ -511,6 +511,7 @@ struct RenderRessourceAllocator2Composition
         Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_id);
         Token(MaterialRessource) l_ressource = allocate_material_database_with_asset_dependencies(p_render_ressource_allocator, p_id, MaterialRessource::AssetDependencies{l_asset_dependencies});
         l_asset_dependencies.free();
+
         return l_ressource;
     };
 
