@@ -61,6 +61,12 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return l_allocated_token;
     };
 
+    inline void remove_element(const KeyType& p_key, const Token(ElementType) p_element)
+    {
+        this->pool.release_element(p_element);
+        this->CountMap.erase_key_nothashed(p_key);
+    };
+
     inline ElementType& get(const KeyType& p_key)
     {
         return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
@@ -85,5 +91,89 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
     {
         return this->increment_or_allocate_explicit(p_key, p_allocated_element_builder_func, [](auto) {
         });
+    };
+
+    struct IncrementOrAllocate2Return
+    {
+        enum class Op
+        {
+            UNKNOWN = 0,
+            INCREMENTED = 1,
+            ALLOCATED = 2
+        } op;
+        Token(ElementType) allocated_token;
+    };
+
+    struct IncrementOrAllocateStateMachine
+    {
+        PoolHashedCounted<KeyType, ElementType>* thiz;
+        enum class State
+        {
+            START = 0,
+            INCREMENT = 1,
+            ALLOCATE = 2,
+            END = 3
+        } state;
+        Token(ElementType) allocated_token;
+
+        inline static IncrementOrAllocateStateMachine build(PoolHashedCounted<KeyType, ElementType>& thiz)
+        {
+            return IncrementOrAllocateStateMachine{&thiz, State::START, tk_bd(ElementType)};
+        };
+
+        inline void start(const KeyType& p_key)
+        {
+            if (thiz->has_key_nothashed(p_key))
+            {
+                this->state = State::INCREMENT;
+                this->increment(p_key);
+                return;
+            }
+            else
+            {
+                this->state = State::ALLOCATE;
+                return;
+            }
+        }
+
+        inline void allocate(const KeyType& p_key, const ElementType& p_value)
+        {
+#if CONTAINER_BOUND_TEST
+            assert_true(this->state == State::ALLOCATE);
+#endif
+            this->allocated_token = thiz->push_back_element(p_key, p_value);
+            this->state = State::END;
+        };
+
+        inline void assert_ended()
+        {
+#if CONTAINER_BOUND_TEST
+            assert_true(this->state == State::END);
+#endif
+        };
+
+      private:
+        inline void increment(const KeyType& p_key)
+        {
+#if CONTAINER_BOUND_TEST
+            assert_true(this->state == State::INCREMENT);
+#endif
+            this->allocated_token = thiz->increment(p_key);
+            this->state = State::END;
+        };
+    };
+
+    inline IncrementOrAllocate2Return increment_or_allocate_2(const KeyType& p_key)
+    {
+        if (this->has_key_nothashed(p_key))
+        {
+            return IncrementOrAllocate2Return{IncrementOrAllocate2Return::Op::INCREMENTED, this->increment(p_key)};
+        }
+        else
+        {
+            Token(ElementType) l_token = this->push_back_element(p_key, p_allocated_element_builder_func(p_key));
+            return IncrementOrAllocate2Return{IncrementOrAllocate2Return::Op::ALLOCATED, l_token};
+            return l_token;
+        }
     };
 };

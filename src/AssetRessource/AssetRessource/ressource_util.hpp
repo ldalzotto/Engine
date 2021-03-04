@@ -156,6 +156,46 @@ struct RessourceComposition
                                                                          AllocationEventFoundSlot::Nil{});
     };
 
+    template <class t_RessourceType, class t_RessourceAllocationEventType, class t_RessourceFreeEventType>
+    inline static int8 free_ressource_composition_2(PoolHashedCounted<hash_t, t_RessourceType>& p_pool_hashed_counted, Vector<t_RessourceFreeEventType>& p_ressource_free_events,
+                                                    Vector<t_RessourceAllocationEventType>& p_ressource_allocation_events, const t_RessourceType& p_material)
+    {
+        hash_t l_key = p_material.header.id;
+
+        if (p_material.header.allocated)
+        {
+            auto* l_counted_element = p_pool_hashed_counted.decrement(l_key);
+            if (l_counted_element->counter == 0)
+            {
+                p_ressource_free_events.push_back_element(t_RessourceFreeEventType{l_counted_element->token});
+                // We don't remove the pool because it handles by the free event
+                p_pool_hashed_counted.CountMap.erase_key_nothashed(l_key);
+                return 1;
+            }
+        }
+        else
+        {
+            auto* l_counted_element = p_pool_hashed_counted.decrement(l_key);
+            if (l_counted_element->counter == 0)
+            {
+                for (loop_reverse(i, 0, p_ressource_allocation_events.Size))
+                {
+                    auto& l_event = p_ressource_allocation_events.get(i);
+                    if (tk_eq(l_event.allocated_ressource, l_counted_element->token))
+                    {
+                        l_event.asset.free();
+                        p_ressource_allocation_events.erase_element_at_always(i);
+                    }
+                }
+
+                p_pool_hashed_counted.remove_element(l_key, l_counted_element->token);
+                return 1;
+            }
+        }
+
+        return 0;
+    };
+
     template <class t_RessourceIdType, class t_RessourceType, class t_DynamicDependency, class DynamicDependencyTokenAllocationSlot_t>
     inline static Token(Slice<t_DynamicDependency>)
         allocate_dynamic_dependencies(PoolHashedCounted<t_RessourceIdType, t_RessourceType>& p_source_pool_hashed_counted, PoolOfVector<t_DynamicDependency>& p_dynamic_dependency_pool,

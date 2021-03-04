@@ -284,6 +284,25 @@ struct RenderRessourceAllocator2
                                                                              });
     };
 
+    inline Token(ShaderModuleRessource) increment_shadermodule_id(const hash_t p_shader_module_id)
+    {
+        typedef PoolHashedCounted<hash_t, ShaderModuleRessource> ShaderModuleRessourceMap;
+
+        ShaderModuleRessourceMap::IncrementOrAllocateStateMachine l_shadermodule_increment_or_allocate = ShaderModuleRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.shader_modules_v2);
+        l_shadermodule_increment_or_allocate.start(p_shader_module_id);
+
+#if CONTAINER_BOUND_TEST
+        l_shadermodule_increment_or_allocate.assert_ended();
+#endif
+
+        return l_shadermodule_increment_or_allocate.allocated_token;
+    };
+
+    inline void increment_shadermodule_token(const Token(ShaderModuleRessource) p_shader_module)
+    {
+        this->increment_shadermodule_id(this->heap.shader_modules_v2.pool.get(p_shader_module).header.id);
+    }
+
     inline Token(ShaderModuleRessource) allocate_shadermodule_database(const ShaderModuleRessource::DatabaseAllocationInput& p_shader_module)
     {
         return RessourceComposition::allocate_ressource_composition_explicit(this->heap.shader_modules_v2, this->shadermodule_allocation_events, p_shader_module.id,
@@ -310,6 +329,25 @@ struct RenderRessourceAllocator2
                 return ShaderRessource::AllocationEvent{p_shader.asset, p_allocated_ressource};
             });
     };
+
+    inline Token(ShaderRessource) increment_shader_id(const hash_t p_shader_id)
+    {
+        typedef PoolHashedCounted<hash_t, ShaderRessource> ShaderRessourceMap;
+
+        ShaderRessourceMap::IncrementOrAllocateStateMachine l_shader_increment_or_allocate = ShaderRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.shaders_v3);
+        l_shader_increment_or_allocate.start(p_shader_id);
+
+#if CONTAINER_BOUND_TEST
+        l_shader_increment_or_allocate.assert_ended();
+#endif
+
+        return l_shader_increment_or_allocate.allocated_token;
+    };
+
+    inline void increment_shader_token(const Token(ShaderRessource) p_shader)
+    {
+        this->increment_shader_id(this->heap.shaders_v3.pool.get(p_shader).header.id);
+    }
 
     inline Token(ShaderRessource) allocate_shader_v2_database(const ShaderRessource::DatabaseAllocationInput& p_shader, const ShaderRessource::Dependencies& p_dependencies)
     {
@@ -355,16 +393,41 @@ struct RenderRessourceAllocator2
     inline Token(TextureRessource) allocate_texture_inline(const TextureRessource::InlineRessourceInput& p_texture_ressource)
     {
         return RessourceComposition::allocate_ressource_composition_explicit(
-            this->heap.textures, this->texture_allocation_events, p_texture_ressource.id, [](const hash_t p_id) { return TextureRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id)}; },
+            this->heap.textures, this->texture_allocation_events, p_texture_ressource.id,
+            [](const hash_t p_id) {
+                return TextureRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id)};
+            },
             [&p_texture_ressource](const Token(TextureRessource) p_allocated_ressource) {
                 return TextureRessource::AllocationEvent{p_texture_ressource.asset, p_allocated_ressource};
             });
     };
 
+    inline Token(TextureRessource) increment_texture_id(const hash_t p_texture_id)
+    {
+        typedef PoolHashedCounted<hash_t, TextureRessource> TextureRessourceMap;
+
+        TextureRessourceMap::IncrementOrAllocateStateMachine l_texture_increment_or_allocate = TextureRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.textures);
+        l_texture_increment_or_allocate.start(p_texture_id);
+
+#if CONTAINER_BOUND_TEST
+        l_texture_increment_or_allocate.assert_ended();
+#endif
+
+        return l_texture_increment_or_allocate.allocated_token;
+    };
+
+    inline void increment_texture_token(const Token(TextureRessource) p_texture)
+    {
+        this->increment_texture_id(this->heap.textures.pool.get(p_texture).header.id);
+    };
+
     inline Token(TextureRessource) allocate_texture_database(const TextureRessource::DatabaseRessourceInput& p_texture_ressource)
     {
         return RessourceComposition::allocate_ressource_composition_explicit(
-            this->heap.textures, this->texture_allocation_events, p_texture_ressource.id, [](const hash_t p_id) { return TextureRessource{RessourceIdentifiedHeader::build_database_with_id(p_id)}; },
+            this->heap.textures, this->texture_allocation_events, p_texture_ressource.id,
+            [](const hash_t p_id) {
+                return TextureRessource{RessourceIdentifiedHeader::build_database_with_id(p_id)};
+            },
             [](const Token(TextureRessource) p_allocated_ressource) {
                 return TextureRessource::AllocationEvent{TextureRessource::Asset{}, p_allocated_ressource};
             });
@@ -389,6 +452,16 @@ struct RenderRessourceAllocator2
             l_material_texture_ressources.free();
             return l_parameters;
         });
+    };
+
+    inline Token(Slice<MaterialRessource::DynamicDependency>) allocate_material_parameter_dependencies_token(const Token(MaterialRessource) p_material)
+    {
+        Slice<MaterialRessource::DynamicDependency> l_material_dependencies = this->heap.material_dynamic_dependencies.get_vector(tk_bf(Slice<MaterialRessource::DynamicDependency>, p_material));
+        for (loop(i, 0, l_material_dependencies.Size))
+        {
+            this->increment_texture_token(l_material_dependencies.get(i).dependency);
+        }
+        return tk_bf(Slice<MaterialRessource::DynamicDependency>, p_material);
     };
 
     inline Token(Slice<MaterialRessource::DynamicDependency>) allocate_material_parameter_dependencies_database(const MaterialRessource::DatabaseAllocationInput& p_material_ressource)
@@ -417,33 +490,61 @@ struct RenderRessourceAllocator2
 
     inline Token(MaterialRessource) allocate_material_inline(const MaterialRessource::InlineAllocationInput& p_material_ressource, const MaterialRessource::Dependencies& p_dependencies)
     {
-        return RessourceComposition::allocate_ressource_composition_explicit(
-            this->heap.materials, this->material_allocation_events, p_material_ressource.id,
-            [&p_dependencies](const hash_t p_id) {
-                return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Material), p_dependencies};
-            },
-            [&p_material_ressource](const Token(MaterialRessource) p_allocated_ressource) {
-                return MaterialRessource::AllocationEvent{p_material_ressource.asset, p_allocated_ressource};
-            });
+        typedef PoolHashedCounted<hash_t, MaterialRessource> MaterialRessourceMap;
+
+        MaterialRessourceMap::IncrementOrAllocateStateMachine l_material_increment_or_allocate = MaterialRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.materials);
+        l_material_increment_or_allocate.start(p_material_ressource.id);
+        if (l_material_increment_or_allocate.state == MaterialRessourceMap::IncrementOrAllocateStateMachine::State::ALLOCATE)
+        {
+            l_material_increment_or_allocate.allocate(p_material_ressource.id,
+                                                      MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_material_ressource.id), tk_bd(Material), p_dependencies});
+            this->material_allocation_events.push_back_element(MaterialRessource::AllocationEvent{p_material_ressource.asset, l_material_increment_or_allocate.allocated_token});
+        }
+
+#if CONTAINER_BOUND_TEST
+        l_material_increment_or_allocate.assert_ended();
+#endif
+
+        return l_material_increment_or_allocate.allocated_token;
+    };
+
+    inline Token(MaterialRessource) increment_material_id(const hash_t p_material_id)
+    {
+        typedef PoolHashedCounted<hash_t, MaterialRessource> MaterialRessourceMap;
+
+        MaterialRessourceMap::IncrementOrAllocateStateMachine l_material_increment_or_allocate = MaterialRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.materials);
+        l_material_increment_or_allocate.start(p_material_id);
+
+#if CONTAINER_BOUND_TEST
+        l_material_increment_or_allocate.assert_ended();
+#endif
+
+        return l_material_increment_or_allocate.allocated_token;
     };
 
     inline Token(MaterialRessource) allocate_material_database(const MaterialRessource::DatabaseAllocationInput& p_material_ressource, const MaterialRessource::Dependencies& p_dependencies)
     {
-        return RessourceComposition::allocate_ressource_composition_explicit(
-            this->heap.materials, this->material_allocation_events, p_material_ressource.id,
-            [&p_dependencies](const hash_t p_id) {
-                return MaterialRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(Material), p_dependencies};
-            },
-            [](const Token(MaterialRessource) p_allocated_ressource) {
-                return MaterialRessource::AllocationEvent{MaterialRessource::Asset{}, p_allocated_ressource};
-            });
+        typedef PoolHashedCounted<hash_t, MaterialRessource> MaterialRessourceMap;
+
+        MaterialRessourceMap::IncrementOrAllocateStateMachine l_material_increment_or_allocate = MaterialRessourceMap::IncrementOrAllocateStateMachine::build(this->heap.materials);
+        l_material_increment_or_allocate.start(p_material_ressource.id);
+        if (l_material_increment_or_allocate.state == MaterialRessourceMap::IncrementOrAllocateStateMachine::State::ALLOCATE)
+        {
+            l_material_increment_or_allocate.allocate(p_material_ressource.id,
+                                                      MaterialRessource{RessourceIdentifiedHeader::build_database_with_id(p_material_ressource.id), tk_bd(Material), p_dependencies});
+            this->material_allocation_events.push_back_element(MaterialRessource::AllocationEvent{MaterialRessource::Asset{}, l_material_increment_or_allocate.allocated_token});
+        }
+
+#if CONTAINER_BOUND_TEST
+        l_material_increment_or_allocate.assert_ended();
+#endif
+
+        return l_material_increment_or_allocate.allocated_token;
     };
 
     inline int8 free_material(const MaterialRessource& p_material)
     {
-        return RessourceComposition::free_ressource_composition_explicit(
-            this->heap.materials, this->material_allocation_events, this->material_free_events, p_material.header,
-            [](Token(MaterialRessource) p_removed_token) { return MaterialRessource::FreeEvent{p_removed_token}; }, RessourceComposition::AllocationEventFoundSlot::FreeAsset{});
+        return RessourceComposition::free_ressource_composition_2(this->heap.materials, this->material_free_events, this->material_allocation_events, p_material);
     };
 };
 
@@ -457,6 +558,22 @@ struct RenderRessourceAllocator2Composition
         l_shader_dependencies.vertex_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_vertex_shader);
         l_shader_dependencies.fragment_shader = p_render_ressource_allocator.allocate_shadermodule_inline(p_fragment_shader);
         return p_render_ressource_allocator.allocate_shader_v2_inline(p_shader, l_shader_dependencies);
+    };
+
+    inline static void increment_shader_v2_token_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const Token(ShaderRessource) p_shader)
+    {
+        p_render_ressource_allocator.increment_shader_token(p_shader);
+        ShaderRessource::Dependencies l_shader_dependencies = p_render_ressource_allocator.heap.shaders_v3.pool.get(p_shader).dependencies;
+        p_render_ressource_allocator.increment_shadermodule_token(l_shader_dependencies.vertex_shader);
+        p_render_ressource_allocator.increment_shadermodule_token(l_shader_dependencies.fragment_shader);
+    };
+
+    inline static void allocate_shader_v2_token_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const Token(ShaderRessource) p_shader)
+    {
+        p_render_ressource_allocator.increment_shader_token(p_shader);
+        ShaderRessource::Dependencies l_shader_dependencies = p_render_ressource_allocator.heap.shaders_v3.pool.get(p_shader).dependencies;
+        p_render_ressource_allocator.increment_shadermodule_token(l_shader_dependencies.fragment_shader);
+        p_render_ressource_allocator.increment_shadermodule_token(l_shader_dependencies.vertex_shader);
     };
 
     inline static Token(ShaderRessource)
@@ -478,6 +595,14 @@ struct RenderRessourceAllocator2Composition
             RenderRessourceAllocator2Composition::allocate_shader_v2_inline_with_dependencies(p_render_ressource_allocator, p_shader, p_vertex_shader, p_fragment_shader);
         Token(Slice<MaterialRessource::DynamicDependency>) l_material_parameters = p_render_ressource_allocator.allocate_material_parameter_dependencies_inline(p_material);
         return p_render_ressource_allocator.allocate_material_inline(p_material, MaterialRessource::Dependencies{l_shader_ressource, l_material_parameters});
+    };
+
+    inline static Token(MaterialRessource) increment_material_id_with_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, const hash_t p_material_id)
+    {
+        Token(MaterialRessource) l_ressource = p_render_ressource_allocator.increment_material_id(p_material_id);
+        MaterialRessource::Dependencies l_material_dependencies = p_render_ressource_allocator.heap.materials.pool.get(l_ressource).dependencies;
+        increment_shader_v2_token_with_dependencies(p_render_ressource_allocator, l_material_dependencies.shader);
+        return l_ressource;
     };
 
     inline static Token(MaterialRessource)
@@ -506,11 +631,19 @@ struct RenderRessourceAllocator2Composition
     inline static Token(MaterialRessource)
         allcoate_material_database_and_load_asset_dependencies(RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_asset_database, const hash_t p_id)
     {
-        // TODO -> we are potentially doing a database request for nothing. If the ressource is already allocated, then the asset dependencies will be allocated for nothing.
-        // because there is no need to reallocate
-        Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_id);
-        Token(MaterialRessource) l_ressource = allocate_material_database_with_asset_dependencies(p_render_ressource_allocator, p_id, MaterialRessource::AssetDependencies{l_asset_dependencies});
-        l_asset_dependencies.free();
+
+        Token(MaterialRessource) l_ressource;
+        if (p_render_ressource_allocator.heap.materials.CountMap.has_key_nothashed(p_id))
+        {
+            // TODO -> adding test for this
+            l_ressource = increment_material_id_with_dependencies(p_render_ressource_allocator, p_id);
+        }
+        else
+        {
+            Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_id);
+            l_ressource = allocate_material_database_with_asset_dependencies(p_render_ressource_allocator, p_id, MaterialRessource::AssetDependencies{l_asset_dependencies});
+            l_asset_dependencies.free();
+        }
 
         return l_ressource;
     };

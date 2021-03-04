@@ -197,6 +197,14 @@ struct AssetRessourceTestContext
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
     };
+
+    inline void reset_database()
+    {
+        this->asset_database.free();
+        String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+        this->asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+        l_asset_database_path.free();
+    };
 };
 
 inline void render_middleware_inline_allocation()
@@ -747,6 +755,149 @@ inline void render_middleware_get_dependencies_from_database()
     l_shader_compiler.free();
 }
 
+// When we try to allocate multiple time the same ressource, no database request is performed
+inline void render_middleware_multiple_database_allocation()
+{
+    AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
+
+    // TODO -> move this initialization to a util function ?
+    const Slice<int8> l_vertex_shader_path = slice_int8_build_rawstr("shader/v.vert");
+    const Slice<int8> l_fragment_shader_path = slice_int8_build_rawstr("shader/f.frag");
+    const Slice<int8> l_shader_path = slice_int8_build_rawstr("shader");
+    const Slice<int8> l_texture_path = slice_int8_build_rawstr("texture");
+    const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
+    const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
+
+    {
+        const int8* p_vertex_litteral =
+            MULTILINE(\
+                #version 450 \n
+
+        layout(location = 0) in vec3 pos; \n
+        layout(location = 1) in vec2 uv; \n
+
+        struct Camera \n
+            { \n
+            mat4 view; \n
+            mat4 projection; \n
+            }; \n
+
+        layout(set = 0, binding = 0) uniform camera { Camera cam; }; \n
+        layout(set = 1, binding = 0) uniform model { mat4 mod; }; \n
+
+        void main()\n
+        { \n
+                gl_Position = cam.projection * (cam.view * (mod * vec4(pos.xyz, 1.0f)));\n
+        }\n
+        );
+
+        const int8* p_fragment_litteral =
+            MULTILINE(\
+                #version 450\n
+
+        layout(location = 0) out vec4 outColor;\n
+
+        void main()\n
+        { \n
+                outColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);\n
+        }\n
+        );
+
+        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+
+        ShaderRessource::Asset l_shader_asset = ShaderRessource::Asset::allocate_from_values(
+            ShaderRessource::Asset::Value{SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice(), 0,
+                                          ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
+
+        Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
+        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        l_material_texture_span.free();
+
+        MaterialRessource::Asset l_material_asset;
+        {
+            Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
+            auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
+            auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
+            VaryingVector l_varying_vector = VaryingVector::allocate_default();
+            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), SliceN<hash_t, 1>{HashSlice(l_texture_path)}.to_slice().build_asint8());
+            l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
+            l_varying_vector.free();
+            l_material_parameter_temp.free();
+        }
+
+        MeshRessource::Asset l_mesh_asset;
+        {
+            Vertex l_vertices[14] = {};
+            uint32 l_indices[14 * 3] = {};
+
+            Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
+            Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
+
+            l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
+        }
+
+        l_ctx.asset_database.insert_asset_blob(l_vertex_shader_path, l_vertex_shader_compiled.get_compiled_binary());
+        l_ctx.asset_database.insert_asset_blob(l_fragment_shader_path, l_fragment_shader_compiled.get_compiled_binary());
+        l_ctx.asset_database.insert_asset_blob(l_shader_path, l_shader_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_texture_path, l_texture_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_material_path, l_material_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_mesh_path, l_mesh_asset.allocated_binary.slice);
+
+        MaterialRessource::AssetDependencies l_material_asset_dependencies = MaterialRessource::AssetDependencies::allocate_from_values(
+            MaterialRessource::AssetDependencies::Value{HashSlice(l_shader_path), ShaderRessource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)},
+                                                        SliceN<hash_t, 1>{HashSlice(l_texture_path)}.to_slice()});
+
+        l_ctx.asset_database.insert_asset_dependencies_blob(l_material_path, l_material_asset_dependencies.allocated_binary.slice);
+
+        l_material_asset_dependencies.free();
+
+        l_vertex_shader_compiled.free();
+        l_fragment_shader_compiled.free();
+        l_shader_asset.free();
+        l_texture_asset.free();
+        l_material_asset.free();
+        l_mesh_asset.free();
+    }
+
+    Token(MaterialRessource) l_material;
+    {
+        l_material = RenderRessourceAllocator2Composition::allcoate_material_database_and_load_asset_dependencies(l_ctx.render_ressource_allocator, l_ctx.asset_database, HashSlice(l_material_path));
+        l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+    }
+
+    // We reset the database to be sure that data cannot be requested
+    l_ctx.reset_database();
+
+    {
+        Token(MaterialRessource) l_material_2 =
+            RenderRessourceAllocator2Composition::allcoate_material_database_and_load_asset_dependencies(l_ctx.render_ressource_allocator, l_ctx.asset_database, HashSlice(l_material_path));
+
+        assert_true(tk_eq(l_material_2, l_material));
+
+        assert_true(l_ctx.render_ressource_allocator.material_allocation_events.Size == 0);
+        assert_true(l_ctx.render_ressource_allocator.shader_allocation_events.Size == 0);
+        assert_true(l_ctx.render_ressource_allocator.shadermodule_allocation_events.Size == 0);
+
+        l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+
+        assert_true(l_ctx.render_ressource_allocator.heap.materials.CountMap.get_value_nothashed(HashSlice(l_material_path))->counter == 2);
+    }
+    {
+        RenderRessourceAllocator2Composition::free_material_with_dependencies(l_ctx.render_ressource_allocator, l_material);
+        RenderRessourceAllocator2Composition::free_material_with_dependencies(l_ctx.render_ressource_allocator, l_material);
+        l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+    }
+
+    l_ctx.free();
+    l_shader_compiler.free();
+};
+
 } // namespace v2
 
 int main()
@@ -757,6 +908,7 @@ int main()
     v2::render_middleware_inline_alloc_dealloc_same_frame();
     v2::render_middleware_database_allocation();
     v2::render_middleware_get_dependencies_from_database();
+    v2::render_middleware_multiple_database_allocation();
 
     memleak_ckeck();
 }
