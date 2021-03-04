@@ -156,8 +156,15 @@ struct RessourceComposition
                                                                          AllocationEventFoundSlot::Nil{});
     };
 
+    enum class FreeRessourceCompositionReturnCode
+    {
+        DECREMENTED = 0,
+        FREE_EVENT_PUSHED = 1,
+        POOL_DEALLOCATION_AWAITING = 2
+    };
+
     template <class t_RessourceType, class t_RessourceAllocationEventType, class t_RessourceFreeEventType>
-    inline static int8 free_ressource_composition_2(PoolHashedCounted<hash_t, t_RessourceType>& p_pool_hashed_counted, Vector<t_RessourceFreeEventType>& p_ressource_free_events,
+    inline static FreeRessourceCompositionReturnCode free_ressource_composition_2(PoolHashedCounted<hash_t, t_RessourceType>& p_pool_hashed_counted, Vector<t_RessourceFreeEventType>& p_ressource_free_events,
                                                     Vector<t_RessourceAllocationEventType>& p_ressource_allocation_events, const t_RessourceType& p_material)
     {
         hash_t l_key = p_material.header.id;
@@ -170,7 +177,7 @@ struct RessourceComposition
                 p_ressource_free_events.push_back_element(t_RessourceFreeEventType{l_counted_element->token});
                 // We don't remove the pool because it handles by the free event
                 p_pool_hashed_counted.CountMap.erase_key_nothashed(l_key);
-                return 1;
+                return FreeRessourceCompositionReturnCode::FREE_EVENT_PUSHED;
             }
         }
         else
@@ -188,12 +195,13 @@ struct RessourceComposition
                     }
                 }
 
-                p_pool_hashed_counted.remove_element(l_key, l_counted_element->token);
-                return 1;
+                p_pool_hashed_counted.CountMap.erase_key_nothashed(l_key);
+                // p_pool_hashed_counted.remove_element(l_key, l_counted_element->token);
+                return FreeRessourceCompositionReturnCode::POOL_DEALLOCATION_AWAITING;
             }
         }
 
-        return 0;
+        return FreeRessourceCompositionReturnCode::DECREMENTED;
     };
 
     template <class t_RessourceIdType, class t_RessourceType, class t_DynamicDependency, class DynamicDependencyTokenAllocationSlot_t>

@@ -72,6 +72,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
     };
 
+    // TODO -> delete use IncrementOrAllocateStateMachine
     template <class AllocatedElementBuilderFunc, class OnAllocatedFunc>
     inline Token(ElementType) increment_or_allocate_explicit(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func, const OnAllocatedFunc& p_on_allocated_func)
     {
@@ -87,21 +88,11 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         }
     };
 
+    // TODO -> delete use IncrementOrAllocateStateMachine
     template <class AllocatedElementBuilderFunc> inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func)
     {
         return this->increment_or_allocate_explicit(p_key, p_allocated_element_builder_func, [](auto) {
         });
-    };
-
-    struct IncrementOrAllocate2Return
-    {
-        enum class Op
-        {
-            UNKNOWN = 0,
-            INCREMENTED = 1,
-            ALLOCATED = 2
-        } op;
-        Token(ElementType) allocated_token;
     };
 
     struct IncrementOrAllocateStateMachine
@@ -161,19 +152,5 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
             this->allocated_token = thiz->increment(p_key);
             this->state = State::END;
         };
-    };
-
-    inline IncrementOrAllocate2Return increment_or_allocate_2(const KeyType& p_key)
-    {
-        if (this->has_key_nothashed(p_key))
-        {
-            return IncrementOrAllocate2Return{IncrementOrAllocate2Return::Op::INCREMENTED, this->increment(p_key)};
-        }
-        else
-        {
-            Token(ElementType) l_token = this->push_back_element(p_key, p_allocated_element_builder_func(p_key));
-            return IncrementOrAllocate2Return{IncrementOrAllocate2Return::Op::ALLOCATED, l_token};
-            return l_token;
-        }
     };
 };

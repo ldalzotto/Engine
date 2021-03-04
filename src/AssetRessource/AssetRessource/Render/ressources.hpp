@@ -296,13 +296,13 @@ struct TextureRessource
         };
     };
 
-    struct InlineRessourceInput
+    struct InlineAllocationInput
     {
         hash_t id;
         Asset asset;
     };
 
-    struct DatabaseRessourceInput
+    struct DatabaseAllocationInput
     {
         hash_t id;
     };
@@ -423,13 +423,13 @@ struct MaterialRessource
     {
         hash_t id;
         Asset asset;
-        Slice<TextureRessource::InlineRessourceInput> texture_dependencies_input;
+        Slice<TextureRessource::InlineAllocationInput> texture_dependencies_input;
     };
 
     struct DatabaseAllocationInput
     {
         hash_t id;
-        Slice<TextureRessource::DatabaseRessourceInput> texture_dependencies_input;
+        Slice<TextureRessource::DatabaseAllocationInput> texture_dependencies_input;
     };
 
     struct AllocationEvent
