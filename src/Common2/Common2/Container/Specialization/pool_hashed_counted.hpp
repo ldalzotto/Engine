@@ -72,9 +72,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
     };
 
-    // TODO -> delete use IncrementOrAllocateStateMachine
-    template <class AllocatedElementBuilderFunc, class OnAllocatedFunc>
-    inline Token(ElementType) increment_or_allocate_explicit(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func, const OnAllocatedFunc& p_on_allocated_func)
+    inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const ElementType& p_element)
     {
         if (this->has_key_nothashed(p_key))
         {
@@ -82,17 +80,8 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         }
         else
         {
-            Token(ElementType) l_token = this->push_back_element(p_key, p_allocated_element_builder_func(p_key));
-            p_on_allocated_func(l_token);
-            return l_token;
+            return this->push_back_element(p_key, p_element);
         }
-    };
-
-    // TODO -> delete use IncrementOrAllocateStateMachine
-    template <class AllocatedElementBuilderFunc> inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const AllocatedElementBuilderFunc& p_allocated_element_builder_func)
-    {
-        return this->increment_or_allocate_explicit(p_key, p_allocated_element_builder_func, [](auto) {
-        });
     };
 
     struct IncrementOrAllocateStateMachine

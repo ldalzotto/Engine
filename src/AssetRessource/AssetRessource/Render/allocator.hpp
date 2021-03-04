@@ -18,6 +18,7 @@ struct ShaderModuleRessourceUnit
     inline void free()
     {
 #if RENDER_BOUND_TEST
+        assert_true(this->shader_modules_allocation_events.empty());
         assert_true(this->shader_modules_free_events.empty());
         assert_true(this->shader_modules.empty());
 #endif
@@ -105,7 +106,9 @@ struct ShaderModuleRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.shader_modules.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -118,7 +121,9 @@ struct ShaderModuleRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.shader_modules.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -143,6 +148,7 @@ struct TextureRessourceUnit
     inline void free()
     {
 #if RENDER_BOUND_TEST
+        assert_true(this->textures_allocation_events.empty());
         assert_true(this->textures_free_events.empty());
         assert_true(this->textures.empty());
 #endif
@@ -236,7 +242,9 @@ struct TextureRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.textures.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -249,12 +257,143 @@ struct TextureRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.textures.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
         {
             return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::ASSET_DATABASE, TextureRessource::Asset{});
+        }
+    };
+};
+
+struct MeshRessourceUnit
+{
+    PoolHashedCounted<hash_t, MeshRessource> meshes;
+    Vector<MeshRessource::AllocationEvent> meshes_allocation_events;
+    Vector<MeshRessource::FreeEvent> meshes_free_events;
+
+    inline static MeshRessourceUnit allocate()
+    {
+        return MeshRessourceUnit{PoolHashedCounted<hash_t, MeshRessource>::allocate_default(), Vector<MeshRessource::AllocationEvent>::allocate(0), Vector<MeshRessource::FreeEvent>::allocate(0)};
+    };
+
+    inline void free()
+    {
+#if RENDER_BOUND_TEST
+        assert_true(this->meshes_allocation_events.empty());
+        assert_true(this->meshes_free_events.empty());
+        assert_true(this->meshes.empty());
+#endif
+        this->meshes_free_events.free();
+        this->meshes_allocation_events.free();
+        this->meshes.free();
+    };
+
+    inline void assert_no_allocation_events()
+    {
+#if RENDER_BOUND_TEST
+        assert_true(this->meshes_allocation_events.empty());
+#endif
+    };
+
+    inline void deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context)
+    {
+        for (loop_reverse(i, 0, this->meshes_free_events.Size))
+        {
+            auto& l_event = this->meshes_free_events.get(i);
+            MeshRessource& l_ressource = this->meshes.pool.get(l_event.ressource);
+            D3RendererAllocatorComposition::free_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_ressource.mesh);
+            this->meshes.pool.release_element(l_event.ressource);
+            this->meshes_free_events.pop_back();
+        }
+    };
+
+    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    {
+        for (loop_reverse(i, 0, this->meshes_allocation_events.Size))
+        {
+            auto& l_event = this->meshes_allocation_events.get(i);
+
+            MeshRessource& l_ressource = this->meshes.pool.get(l_event.allocated_ressource);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+
+            MeshRessource::Asset::Value l_value = MeshRessource::Asset::Value::build_from_asset(l_event.asset);
+            l_ressource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_value.initial_vertices, l_value.initial_indices);
+            l_ressource.header.allocated = 1;
+            l_event.asset.free();
+            this->meshes_allocation_events.pop_back();
+        }
+    };
+
+    inline Token(MeshRessource) allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const MeshRessource::Asset& p_asset)
+    {
+        Token(MeshRessource) l_mesh_ressource = this->meshes.push_back_element(p_id, MeshRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}});
+        this->meshes_allocation_events.push_back_element(MeshRessource::AllocationEvent{p_asset, l_mesh_ressource});
+        return l_mesh_ressource;
+    };
+
+    inline Token(MeshRessource) increment_ressource(const hash_t p_id)
+    {
+        return this->meshes.increment(p_id);
+    };
+
+    inline void increment_ressource_from_token(const Token(MeshRessource) p_mesh_ressource)
+    {
+        this->increment_ressource(this->meshes.pool.get(p_mesh_ressource).header.id);
+    };
+
+    inline void release_ressource(const Token(MeshRessource) p_mesh_ressource)
+    {
+        auto l_free_return_code = RessourceComposition::free_ressource_composition_2(this->meshes, this->meshes_free_events, this->meshes_allocation_events, this->meshes.pool.get(p_mesh_ressource));
+        if (l_free_return_code == RessourceComposition::FreeRessourceCompositionReturnCode::POOL_DEALLOCATION_AWAITING)
+        {
+            this->meshes.pool.release_element(p_mesh_ressource);
+        }
+    };
+
+    inline void decrement_ressource(const hash_t p_id)
+    {
+        this->meshes.decrement(p_id);
+    };
+
+    inline int8 is_ressource_id_allocated(const hash_t p_id)
+    {
+        return this->meshes.has_key_nothashed(p_id);
+    };
+};
+
+struct MeshRessourceComposition
+{
+    inline static Token(MeshRessource) allocate_or_increment_inline(MeshRessourceUnit& p_unit, const MeshRessource::InlineAllocationInput& p_inline_input)
+    {
+        if (p_unit.is_ressource_id_allocated(p_inline_input.id))
+        {
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.meshes.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
+#endif
+            return p_unit.increment_ressource(p_inline_input.id);
+        }
+        else
+        {
+            return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::INLINE, p_inline_input.asset);
+        }
+    };
+
+    inline static Token(MeshRessource) allocate_or_increment_database(MeshRessourceUnit& p_unit, const MeshRessource::DatabaseAllocationInput& p_inline_input)
+    {
+        if (p_unit.is_ressource_id_allocated(p_inline_input.id))
+        {
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.meshes.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+#endif
+            return p_unit.increment_ressource(p_inline_input.id);
+        }
+        else
+        {
+            return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::ASSET_DATABASE, MeshRessource::Asset{});
         }
     };
 };
@@ -274,6 +413,7 @@ struct ShaderRessourceUnit
     inline void free()
     {
 #if RENDER_BOUND_TEST
+        assert_true(this->shaders_allocation_events.empty());
         assert_true(this->shaders_free_events.empty());
         assert_true(this->shaders.empty());
 #endif
@@ -367,7 +507,9 @@ struct ShaderRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.shaders.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -385,7 +527,9 @@ struct ShaderRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.shaders.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -564,7 +708,9 @@ struct MaterialRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.materials.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -608,7 +754,9 @@ struct MaterialRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-            // TODO -> adding a chek on ressource allocation type
+#if RENDER_BOUND_TEST
+            assert_true(p_unit.materials.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+#endif
             return p_unit.increment_ressource(p_inline_input.id);
         }
         else
@@ -623,7 +771,6 @@ struct MaterialRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_id))
         {
-            // TODO -> adding test for this
             return p_unit.increment_ressource(p_id);
         }
         else
@@ -681,25 +828,6 @@ struct MaterialRessourceComposition
         }
     };
 };
-
-struct RenderRessourceHeap
-{
-    PoolHashedCounted<hash_t, MeshRessource> mesh_v2;
-
-    inline static RenderRessourceHeap allocate()
-    {
-        return RenderRessourceHeap{PoolHashedCounted<hash_t, MeshRessource>::allocate_default()};
-    };
-
-    inline void free()
-    {
-#if RENDER_BOUND_TEST
-        assert_true(this->mesh_v2.empty());
-#endif
-        this->mesh_v2.free();
-    };
-};
-
 /*
     The RenderRessourceAllocator2 is resposible of allocating "AssetRessources" for the Render system.
     AssetRessources are internal data that can either be retrieved from the AssetDatabase or by providing an inline blob.
@@ -709,35 +837,23 @@ struct RenderRessourceHeap
 */
 struct RenderRessourceAllocator2
 {
-    RenderRessourceHeap heap;
-
     ShaderModuleRessourceUnit shader_module_unit;
     TextureRessourceUnit texture_unit;
+    MeshRessourceUnit mesh_unit;
     ShaderRessourceUnit shader_unit;
     MaterialRessourceUnit material_unit;
 
-    Vector<MeshRessource::AllocationEvent> mesh_allocation_events;
-
-    Vector<MeshRessource::FreeEvent> mesh_free_events;
-
     inline static RenderRessourceAllocator2 allocate()
     {
-        return RenderRessourceAllocator2{
-            RenderRessourceHeap::allocate(),
-            ShaderModuleRessourceUnit::allocate(),
-            TextureRessourceUnit::allocate(),
-            ShaderRessourceUnit::allocate(),
-            MaterialRessourceUnit::allocate(),
-            Vector<MeshRessource::AllocationEvent>::allocate(0),
-            Vector<MeshRessource::FreeEvent>::allocate(0),
-        };
+        return RenderRessourceAllocator2{ShaderModuleRessourceUnit::allocate(), TextureRessourceUnit::allocate(), MeshRessourceUnit::allocate(), ShaderRessourceUnit::allocate(),
+                                         MaterialRessourceUnit::allocate()};
     };
 
     inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context)
     {
 #if RENDER_BOUND_TEST
         this->shader_module_unit.assert_no_allocation_events();
-        assert_true(this->mesh_allocation_events.empty());
+        this->mesh_unit.assert_no_allocation_events();
         this->texture_unit.assert_no_allocation_events();
         this->shader_unit.assert_no_allocation_events();
         this->material_unit.assert_no_allocation_events();
@@ -745,19 +861,11 @@ struct RenderRessourceAllocator2
 
         this->deallocation_step(p_renderer, p_gpu_context);
 
-        this->heap.free();
-
         this->shader_module_unit.free();
         this->shader_unit.free();
         this->texture_unit.free();
+        this->mesh_unit.free();
         this->material_unit.free();
-
-#if RENDER_BOUND_TEST
-        assert_true(this->mesh_free_events.empty());
-#endif
-
-        this->mesh_allocation_events.free();
-        this->mesh_free_events.free();
     };
 
     inline void deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context)
@@ -765,63 +873,17 @@ struct RenderRessourceAllocator2
         this->material_unit.deallocation_step(this->shader_unit, p_renderer, p_gpu_context);
         this->texture_unit.deallocation_step(p_gpu_context);
         this->shader_unit.deallocation_step(p_renderer, p_gpu_context);
-
-        for (loop_reverse(i, 0, this->mesh_free_events.Size))
-        {
-            auto& l_event = this->mesh_free_events.get(i);
-            MeshRessource& l_ressource = this->heap.mesh_v2.pool.get(l_event.ressource);
-            D3RendererAllocatorComposition::free_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_ressource.mesh);
-            this->heap.mesh_v2.pool.release_element(l_event.ressource);
-            this->mesh_free_events.pop_back();
-        }
-
+        this->mesh_unit.deallocation_step(p_renderer, p_gpu_context);
         this->shader_module_unit.deallocation_step(p_gpu_context);
     };
 
     inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
     {
         this->shader_module_unit.allocation_step(p_gpu_context, p_asset_database);
-
-        for (loop_reverse(i, 0, this->mesh_allocation_events.Size))
-        {
-            auto& l_event = this->mesh_allocation_events.get(i);
-
-            MeshRessource& l_ressource = this->heap.mesh_v2.pool.get(l_event.allocated_ressource);
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
-
-            MeshRessource::Asset::Value l_value = MeshRessource::Asset::Value::build_from_asset(l_event.asset);
-            l_ressource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_value.initial_vertices, l_value.initial_indices);
-            l_ressource.header.allocated = 1;
-            l_event.asset.free();
-            this->mesh_allocation_events.pop_back();
-        }
-
+        this->mesh_unit.allocation_step(p_renderer, p_gpu_context, p_asset_database);
         this->shader_unit.allocation_step(this->shader_module_unit, p_renderer, p_gpu_context, p_asset_database);
         this->texture_unit.allocation_step(p_gpu_context, p_asset_database);
         this->material_unit.allocation_step(this->shader_unit, this->texture_unit, p_renderer, p_gpu_context, p_asset_database);
-    };
-
-
-    inline Token(MeshRessource) allocate_mesh_inline(const MeshRessource::InlineAllocationInput& p_mesh)
-    {
-        return RessourceComposition::allocate_ressource_composition_explicit(this->heap.mesh_v2, this->mesh_allocation_events, p_mesh.id, MeshRessource::build_inline_from_id,
-                                                                             [&p_mesh](const Token(MeshRessource) p_allocated_ressource) {
-                                                                                 return MeshRessource::AllocationEvent{p_mesh.asset, p_allocated_ressource};
-                                                                             });
-    };
-
-    inline Token(MeshRessource) allocate_mesh_database(const MeshRessource::DatabaseAllocationInput& p_mesh)
-    {
-        return RessourceComposition::allocate_ressource_composition_explicit(this->heap.mesh_v2, this->mesh_allocation_events, p_mesh.id, MeshRessource::build_database_from_id,
-                                                                             [](const Token(MeshRessource) p_allocated_ressource) {
-                                                                                 return MeshRessource::AllocationEvent{MeshRessource::Asset{}, p_allocated_ressource};
-                                                                             });
-    };
-
-    inline void free_mesh(const MeshRessource& p_mesh)
-    {
-        RessourceComposition::free_ressource_composition_explicit(this->heap.mesh_v2, this->mesh_allocation_events, this->mesh_free_events, p_mesh.header, MeshRessource::FreeEvent::build_from_token,
-                                                                  RessourceComposition::AllocationEventFoundSlot::FreeAsset{});
     };
 };
 

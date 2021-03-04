@@ -431,8 +431,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 
         {
             assert_true(!l_ctx.scene_middleware.render_middleware.mesh_renderers.has_allocated_elements());
-            assert_true(l_ctx.render_ressource_allocator.heap.materials.empty());
-            assert_true(!l_ctx.render_ressource_allocator.heap.material_dynamic_dependencies.has_allocated_elements());
+            assert_true(l_ctx.render_ressource_allocator.material_unit.materials.empty());
+            assert_true(!l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies.has_allocated_elements());
         }
     }
     l_ctx.free(component_releaser);

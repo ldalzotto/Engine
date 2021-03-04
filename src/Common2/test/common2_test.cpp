@@ -783,13 +783,12 @@ inline void pool_hashed_counted_test()
 {
     PoolHashedCounted<uimax, uimax> l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
     {
-        auto l_return_cb = [](auto) { return 100; };
-        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate(10, l_return_cb);
+        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate(10, 100);
 
         assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
 
-        l_pool_hashed_counted.increment_or_allocate(10, l_return_cb);
+        l_pool_hashed_counted.increment_or_allocate(10, 100);
 
         PoolHashedCounted<uimax, uimax>::CountElement* l_count_element = l_pool_hashed_counted.CountMap.get_value_nothashed(10);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
@@ -799,6 +798,48 @@ inline void pool_hashed_counted_test()
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
         assert_true(l_count_element->counter == 1);
     }
+
+    l_pool_hashed_counted.free();
+    l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
+
+    // increment or allocate stateful
+    {
+        PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine l_increment_or_allocate_sm = PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::build(l_pool_hashed_counted);
+        l_increment_or_allocate_sm.start(10);
+        while (l_increment_or_allocate_sm.state != PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::END)
+        {
+            if (l_increment_or_allocate_sm.state == PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::ALLOCATE)
+            {
+                l_increment_or_allocate_sm.allocate(10, 100);
+            }
+        }
+        l_increment_or_allocate_sm.assert_ended();
+
+        Token(uimax) l_value_token = l_increment_or_allocate_sm.allocated_token;
+
+        assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
+        assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+
+        l_increment_or_allocate_sm = PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::build(l_pool_hashed_counted);
+        l_increment_or_allocate_sm.start(10);
+        while (l_increment_or_allocate_sm.state != PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::END)
+        {
+            if (l_increment_or_allocate_sm.state == PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::ALLOCATE)
+            {
+                l_increment_or_allocate_sm.allocate(10, 100);
+            }
+        }
+        l_increment_or_allocate_sm.assert_ended();
+
+        PoolHashedCounted<uimax, uimax>::CountElement* l_count_element = l_pool_hashed_counted.CountMap.get_value_nothashed(10);
+        assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+        assert_true(l_count_element->counter == 2);
+
+        l_count_element = l_pool_hashed_counted.decrement(10);
+        assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
+        assert_true(l_count_element->counter == 1);
+    }
+
     l_pool_hashed_counted.free();
 };
 

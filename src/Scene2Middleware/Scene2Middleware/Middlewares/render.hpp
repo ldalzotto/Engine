@@ -98,7 +98,7 @@ struct RenderMiddleWare
         {
             auto& l_event = this->meshrenderer_free_events.get(i);
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.component);
-            MaterialRessource& l_linked_material = p_render_ressource_allocator.heap.materials.pool.get(l_mesh_renderer.dependencies.material);
+            MaterialRessource& l_linked_material = p_render_ressource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material);
             p_renderer.allocator.heap.unlink_material_with_renderable_object(l_linked_material.material, l_mesh_renderer.renderable_object);
             D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_mesh_renderer.renderable_object);
             this->mesh_renderers.release_element(l_event.component);
@@ -114,8 +114,8 @@ struct RenderMiddleWare
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.allocated_ressource);
 
             l_mesh_renderer.renderable_object = D3RendererAllocatorComposition::allocate_renderable_object_with_buffers(
-                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_ressource_allocator.heap.mesh_v2.pool.get(l_mesh_renderer.dependencies.mesh).mesh);
-            p_renderer.allocator.heap.link_material_with_renderable_object(p_render_ressource_allocator.heap.materials.pool.get(l_mesh_renderer.dependencies.material).material,
+                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_ressource_allocator.mesh_unit.meshes.pool.get(l_mesh_renderer.dependencies.mesh).mesh);
+            p_renderer.allocator.heap.link_material_with_renderable_object(p_render_ressource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material).material,
                                                                            l_mesh_renderer.renderable_object);
             l_mesh_renderer.allocated = 1;
 
@@ -185,9 +185,10 @@ struct RenderMiddleWare_AllocationComposition
                                                        const ShaderRessource::InlineAllocationInput& p_shader, const MaterialRessource::InlineAllocationInput& p_material,
                                                        const MeshRessource::InlineAllocationInput& p_mesh, const Token(Node) p_scene_node)
     {
-        Token(MaterialRessource) l_material_ressource =
-            RenderRessourceAllocator2Composition::allocate_material_inline_with_dependencies(p_render_ressource_allocator, p_material, p_vertex_shader, p_fragment_shader, p_shader);
-        Token(MeshRessource) l_mesh_ressource = p_render_ressource_allocator.allocate_mesh_inline(p_mesh);
+        Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_inline(
+            p_render_ressource_allocator.material_unit, p_render_ressource_allocator.shader_unit, p_render_ressource_allocator.shader_module_unit, p_render_ressource_allocator.texture_unit,
+            p_material, p_shader, p_vertex_shader, p_fragment_shader);
+        Token(MeshRessource) l_mesh_ressource = MeshRessourceComposition::allocate_or_increment_inline(p_render_ressource_allocator.mesh_unit, p_mesh);
         return p_render_middleware.allocate_meshrenderer(MeshRendererComponent::Dependencies{l_material_ressource, l_mesh_ressource}, p_scene_node);
     };
 
@@ -197,9 +198,10 @@ struct RenderMiddleWare_AllocationComposition
                                                          const ShaderRessource::DatabaseAllocationInput& p_shader, const MaterialRessource::DatabaseAllocationInput& p_material,
                                                          const MeshRessource::DatabaseAllocationInput& p_mesh, const Token(Node) p_scene_node)
     {
-        Token(MaterialRessource) l_material_ressource =
-            RenderRessourceAllocator2Composition::allocate_material_database_with_dependencies(p_render_ressource_allocator, p_material, p_vertex_shader, p_fragment_shader, p_shader);
-        Token(MeshRessource) l_mesh_ressource = p_render_ressource_allocator.allocate_mesh_database(p_mesh);
+        Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_database(
+            p_render_ressource_allocator.material_unit, p_render_ressource_allocator.shader_unit, p_render_ressource_allocator.shader_module_unit, p_render_ressource_allocator.texture_unit,
+            p_material, p_shader, p_vertex_shader, p_fragment_shader);
+        Token(MeshRessource) l_mesh_ressource = MeshRessourceComposition::allocate_or_increment_database(p_render_ressource_allocator.mesh_unit, p_mesh);
         return p_render_middleware.allocate_meshrenderer(MeshRendererComponent::Dependencies{l_material_ressource, l_mesh_ressource}, p_scene_node);
     };
 
@@ -215,12 +217,21 @@ struct RenderMiddleWare_AllocationComposition
         }
         else
         {
-            RessourceComposition::remove_reference_from_allocation_events(p_render_middleware.mesh_renderer_allocation_events, p_mesh_renderer);
+            for (loop(i, 0, p_render_middleware.mesh_renderer_allocation_events.Size))
+            {
+                auto& l_event = p_render_middleware.mesh_renderer_allocation_events.get(i);
+                if (tk_eq(l_event.allocated_ressource, p_mesh_renderer))
+                {
+                    p_render_middleware.mesh_renderer_allocation_events.erase_element_at_always(i);
+                    break;
+                }
+            }
             p_render_middleware.mesh_renderers.release_element(p_mesh_renderer);
         }
 
-        p_render_ressource_allocator.free_mesh(p_render_ressource_allocator.heap.mesh_v2.pool.get(l_mesh_renderer.dependencies.mesh));
-        RenderRessourceAllocator2Composition::free_material_with_dependencies(p_render_ressource_allocator, l_mesh_renderer.dependencies.material);
+        p_render_ressource_allocator.mesh_unit.release_ressource(l_mesh_renderer.dependencies.mesh);
+        MaterialRessourceComposition::decrement_or_release(p_render_ressource_allocator.material_unit, p_render_ressource_allocator.shader_unit, p_render_ressource_allocator.shader_module_unit,
+                                                           p_render_ressource_allocator.texture_unit, l_mesh_renderer.dependencies.material);
     };
 };
 

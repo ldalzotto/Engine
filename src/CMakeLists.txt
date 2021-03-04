@@ -113,6 +113,7 @@ add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)
 target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/.asset/")
 
+
 add_custom_target(
         Test_ALL
         COMMAND Common2Test
@@ -126,4 +127,5 @@ add_custom_target(
         COMMAND GPUTest
         COMMAND Scene2MiddlewareTest
         COMMAND Sandbox
+        COMMAND AssetCompilerTest
 )
