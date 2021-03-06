@@ -28,7 +28,9 @@ struct Math
 
     inline static int16 sign(const float32 p_value);
 
-    inline static float32 clamp(const float32 p_value, const float32 p_left, const float32 p_right);
+    inline static float32 clamp_f32(const float32 p_value, const float32 p_left, const float32 p_right);
+
+    inline static uint32 clamp_ui32(const uint32 p_value, const uint32 p_left, const uint32 p_right);
 
     inline static uint8 sRGB_to_linear_uint8(const uint8 p_sRGB);
 

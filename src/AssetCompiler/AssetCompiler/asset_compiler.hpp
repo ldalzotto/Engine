@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AssetRessource/asset_ressource.hpp"
-
 #include "./shader_compiler.hpp"
 
 using namespace v2;

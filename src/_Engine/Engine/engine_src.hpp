@@ -65,7 +65,7 @@ inline void Engine::ComponentReleaser::on_component_removed(v2::Scene* p_scene, 
 
 inline Engine Engine::allocate(const EngineConfiguration& p_configuration)
 {
-    v2::GPUContext l_gpu_context = v2::GPUContext::allocate();
+    v2::GPUContext l_gpu_context = v2::GPUContext::allocate(Slice<v2::GPUExtension>::build_default());
     v2::D3Renderer l_renderer = v2::D3Renderer::allocate(l_gpu_context, v2::ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0});
     return Engine{0,
                   Clock::allocate_default(),

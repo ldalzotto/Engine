@@ -7,5 +7,3 @@ IndentWidth: 4
 BreakBeforeBraces: Allman
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortLambdasOnASingleLine: None
-BraceWrapping:
-  BeforeLambdaBody: true

@@ -16,12 +16,12 @@ namespace v2
 {
 inline void gpu_buffer_allocation()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
 
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     const uimax l_tested_uimax_array[3] = {10, 20, 30};
@@ -88,7 +88,7 @@ inline void gpu_buffer_allocation()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
@@ -96,11 +96,11 @@ inline void gpu_buffer_allocation()
 
 inline void gpu_image_allocation()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     const uimax l_pixels_count = 16 * 16;
@@ -184,7 +184,7 @@ inline void gpu_image_allocation()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
@@ -196,12 +196,12 @@ inline void gpu_image_allocation()
 */
 inline void gpu_renderpass_clear()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     SliceN<RenderPassAttachment, 2> l_attachments = {
@@ -243,7 +243,7 @@ inline void gpu_renderpass_clear()
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
@@ -265,13 +265,13 @@ inline void gpu_renderpass_clear()
 */
 inline void gpu_draw()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     {
@@ -494,7 +494,7 @@ inline void gpu_draw()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
@@ -514,13 +514,13 @@ inline void gpu_draw()
 */
 inline void gpu_depth_compare_test()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     {
@@ -723,7 +723,7 @@ inline void gpu_depth_compare_test()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
@@ -742,12 +742,12 @@ inline void gpu_depth_compare_test()
 */
 inline void gpu_draw_indexed()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     {
@@ -895,7 +895,7 @@ inline void gpu_draw_indexed()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
@@ -914,13 +914,13 @@ inline void gpu_draw_indexed()
 */
 inline void gpu_texture_mapping()
 {
-    GPUContext l_gpu_context = GPUContext::allocate();
+    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->StartFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     {
@@ -1087,12 +1087,104 @@ inline void gpu_texture_mapping()
     }
 
 #ifdef RENDER_DOC_DEBUG
-    rdoc_api->EndFrameCapture(l_buffer_allocator.device.device, NULL);
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     l_gpu_context.free();
     l_shader_compiler.free();
 };
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+inline void gpu_present()
+{
+    WNDCLASS wc = {};
+    const char* CLASS_NAME = "Sample Window Class";
+
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = GetModuleHandle(NULL);
+    wc.lpszClassName = CLASS_NAME;
+
+    RegisterClass(&wc);
+
+    GPUContext l_gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
+
+#ifdef RENDER_DOC_DEBUG
+    rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
+#endif
+
+    v3ui l_render_target_size = {4, 4, 1};
+
+    Token(TextureGPU) l_render_target_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
+        l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
+        ImageFormat::build_color_2d(l_render_target_size, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
+
+    v3ui l_window_size = v3ui{100, 100, 1};
+    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Learn to Program Windows", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, l_window_size.x, l_window_size.y, NULL, NULL, GetModuleHandle(NULL), NULL);
+    // ShowWindow(hwnd, SW_NORMAL);
+    GPUPresent l_gpu_present =
+        GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, (GPUPresentWindowHandle)hwnd, l_window_size, l_render_target_texture);
+    BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
+    GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+
+    {
+
+        Span<color> l_render_target_color = Span<color>::allocate(l_render_target_size.x * l_render_target_size.y);
+        for (loop(i, 0, l_render_target_color.Capacity))
+        {
+            l_render_target_color.get(i) = color{UINT8_MAX, 0, 0};
+        }
+        Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
+        BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
+                                           l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
+        l_render_target_color.free();
+
+        l_gpu_context.buffer_step_and_submit();
+        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
+        l_binder.start();
+        l_gpu_present.graphics_step(l_binder);
+        l_binder.end();
+        l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
+        l_gpu_present.present(l_gpu_context.end_semaphore);
+        l_gpu_context.wait_for_completion();
+    }
+    {
+        Span<color> l_render_target_color = Span<color>::allocate(l_render_target_size.x * l_render_target_size.y);
+        for (loop(i, 0, l_render_target_color.Capacity))
+        {
+            l_render_target_color.get(i) = color{0, 0, UINT8_MAX};
+        }
+
+        Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
+        BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
+            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
+
+        l_render_target_color.free();
+
+        l_gpu_context.buffer_step_and_submit();
+        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
+        l_binder.start();
+        l_gpu_present.graphics_step(l_binder);
+        l_binder.end();
+        l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
+        l_gpu_present.present(l_gpu_context.end_semaphore);
+        l_gpu_context.wait_for_completion();
+    }
+
+#ifdef RENDER_DOC_DEBUG
+    rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
+#endif
+
+    l_gpu_present.free(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
+    GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_render_target_texture);
+    l_gpu_context.free();
+
+    DestroyWindow(hwnd);
+};
+
 } // namespace v2
 
 int main()
@@ -1112,6 +1204,7 @@ int main()
     v2::gpu_depth_compare_test();
     v2::gpu_draw_indexed();
     v2::gpu_texture_mapping();
+    v2::gpu_present();
 
     memleak_ckeck();
 };

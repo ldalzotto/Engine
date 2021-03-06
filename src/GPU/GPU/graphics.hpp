@@ -101,7 +101,8 @@ typedef VkRenderPass RenderPass_t;
 enum class AttachmentType
 {
     COLOR,
-    DEPTH
+    DEPTH,
+    KHR
 };
 
 /*
@@ -577,7 +578,15 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
         l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
         l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
         l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-        l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments.get(i).image_format.imageUsage);
+
+        if (p_attachments.get(i).type == AttachmentType::KHR)
+        {
+            l_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
+        else
+        {
+            l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments.get(i).image_format.imageUsage);
+        }
 
         switch (p_attachments.get(i).type)
         {
@@ -586,6 +595,14 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
             VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
             l_attachment_reference.attachment = (uint32)i;
             l_attachment_reference.layout = l_attachment_description.finalLayout;
+            l_color_attachments_ref_count += 1;
+        }
+        break;
+        case AttachmentType::KHR:
+        {
+            VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
+            l_attachment_reference.attachment = (uint32)i;
+            l_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
             l_color_attachments_ref_count += 1;
         }
         break;
@@ -642,8 +659,8 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
     l_framebuffer_create.attachmentCount = AttachmentCount;
     l_framebuffer_create.pAttachments = p_attachment_image_views;
     l_framebuffer_create.layers = 1;
-    l_framebuffer_create.height = p_render_pass_attachments.get(0).image_format.extent.x;
-    l_framebuffer_create.width = p_render_pass_attachments.get(0).image_format.extent.y;
+    l_framebuffer_create.width = p_render_pass_attachments.get(0).image_format.extent.x;
+    l_framebuffer_create.height = p_render_pass_attachments.get(0).image_format.extent.y;
     l_framebuffer_create.renderPass = l_render_pass.render_pass;
 
     GraphicsPass l_graphics_pass;

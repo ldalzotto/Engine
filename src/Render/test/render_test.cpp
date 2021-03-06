@@ -17,7 +17,7 @@ namespace v2
 
 inline void bufferstep_test()
 {
-    GPUContext l_ctx = GPUContext::allocate();
+    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}});
 
     Vertex l_test_vertices_raw[2];
@@ -59,7 +59,7 @@ inline void bufferstep_test()
 
 inline void draw_test()
 {
-    GPUContext l_ctx = GPUContext::allocate();
+    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 

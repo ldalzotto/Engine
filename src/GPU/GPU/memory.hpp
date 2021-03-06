@@ -419,9 +419,6 @@ struct BufferCommandUtils
 
     static void cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ImageGPU& p_gpu, const BufferHost& p_host);
 
-    static void cmd_image_layout_transition(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_image_format, const VkImageLayout p_source_image_layout,
-                                            const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration);
-
     template <class ShadowImage(_)>
     static void cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(_) & p_image,
                                                const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage);
@@ -898,6 +895,13 @@ inline ImageLayoutTransitionBarriers ImageLayoutTransitionBarriers::allocate()
                                                   VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
     const ImageLayoutTransitionBarrierConfiguration undefined_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
         VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+    const ImageLayoutTransitionBarrierConfiguration colorattachement_to_shader_readonly =
+        ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                                  VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+    const ImageLayoutTransitionBarrierConfiguration shader_readonly_to_colorattachement =
+        ImageLayoutTransitionBarrierConfiguration{
+        VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     ImageLayoutTransitionBarriers l_barriers = ImageLayoutTransitionBarriers{
         Span<ImageLayoutTransitionBarrierConfiguration>::callocate(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount)};
@@ -921,12 +925,14 @@ inline ImageLayoutTransitionBarriers ImageLayoutTransitionBarriers::allocate()
 
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 1) = undefined_to_transfert_src;
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 2) = undefined_to_transfert_dst;
+    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 5) = colorattachement_to_shader_readonly;
 
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 1) = undefined_to_transfert_src;
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 2) = undefined_to_transfert_dst;
 
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 1) = undefined_to_transfert_src;
     l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 2) = undefined_to_transfert_dst;
+    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 3) = shader_readonly_to_colorattachement;
 
     return l_barriers;
 };
@@ -938,6 +944,7 @@ inline ImageLayoutTransitionBarrierConfiguration ImageLayoutTransitionBarriers::
 
 inline VkImageLayout ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(const ImageUsageFlag p_flag)
 {
+    // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
     {
         return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -1487,24 +1494,6 @@ inline void BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(const CommandB
     vkCmdCopyImageToBuffer(p_command_buffer.command_buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, p_host.buffer, 1, &l_buffer_image_copy);
 
     BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
-};
-
-inline void BufferCommandUtils::cmd_image_layout_transition(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_image_format, const VkImageLayout p_source_image_layout,
-                                                            const VkImageLayout p_target_image_layout, const ImageLayoutTransitionBarrierConfiguration& p_lyaout_transition_configuration)
-{
-    VkImageMemoryBarrier l_image_memory_barrier{};
-    l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    l_image_memory_barrier.oldLayout = p_source_image_layout;
-    l_image_memory_barrier.newLayout = p_target_image_layout;
-    l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    l_image_memory_barrier.image = p_image;
-    l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{p_image_format.imageAspect, 0, (uint32_t)p_image_format.arrayLayers, 0, (uint32_t)p_image_format.arrayLayers};
-
-    l_image_memory_barrier.srcAccessMask = p_lyaout_transition_configuration.src_access_mask;
-    l_image_memory_barrier.dstAccessMask = p_lyaout_transition_configuration.dst_access_mask;
-
-    vkCmdPipelineBarrier(p_command_buffer.command_buffer, p_lyaout_transition_configuration.src_stage, p_lyaout_transition_configuration.dst_stage, 0, 0, NULL, 0, NULL, 1, &l_image_memory_barrier);
 };
 
 template <class ShadowImage(_)>

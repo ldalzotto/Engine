@@ -33,7 +33,7 @@ struct Scene2MiddlewareContext
     {
         Scene l_scene = Scene::allocate_default();
         Collision2 l_collision = Collision2::allocate();
-        GPUContext l_gpu_ctx = GPUContext::allocate();
+        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
         D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
         AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());

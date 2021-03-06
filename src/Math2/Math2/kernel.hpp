@@ -44,13 +44,26 @@ inline int16 Math::sign(const float32 p_value)
     }
 };
 
-inline float32 Math::clamp(const float32 p_value, const float32 p_left, const float32 p_right)
+inline float32 Math::clamp_f32(const float32 p_value, const float32 p_left, const float32 p_right)
 {
     if (p_value >= (p_right + Limits::tol_f))
     {
         return p_right;
     }
     else if (p_value <= (p_left + Limits::tol_f))
+    {
+        return p_left;
+    }
+    return p_value;
+};
+
+inline uint32 Math::clamp_ui32(const uint32 p_value, const uint32 p_left, const uint32 p_right)
+{
+    if (p_value >= p_right)
+    {
+        return p_right;
+    }
+    else if (p_value <= p_left)
     {
         return p_left;
     }
@@ -496,7 +509,7 @@ inline v3f quat::euler() const
     }
 
     // yaw
-    l_return.Points[1] = asinf(v2::Math::clamp(-2.0f * (this->x * this->z - this->w * this->y), -1.0f, 1.0f));
+    l_return.Points[1] = asinf(v2::Math::clamp_f32(-2.0f * (this->x * this->z - this->w * this->y), -1.0f, 1.0f));
 
     // roll
     l_return.Points[2] = atan2f(2.0f * (this->x * this->y + this->w * this->z), this->w * this->w + this->x * this->x - this->y * this->y - this->z * this->z);

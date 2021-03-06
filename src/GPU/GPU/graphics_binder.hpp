@@ -34,6 +34,11 @@ struct GraphicsBinder
         this->graphics_allocator.graphics_device.command_buffer.submit_after(p_wait_for, p_wait_stage);
     };
 
+    inline void submit_after_and_notify(const Semafore p_wait_for, const VkPipelineStageFlags p_wait_stage, const Semafore p_notify)
+    {
+        this->graphics_allocator.graphics_device.command_buffer.submit_after_and_notify(p_wait_for, p_wait_stage, p_notify);
+    };
+
     inline void begin_render_pass(GraphicsPass& p_graphics_pass, const Slice<v4f>& p_clear_values)
     {
 #if GPU_DEBUG
@@ -99,6 +104,20 @@ struct GraphicsBinder
     };
 
     inline void pop_shaderbufferhost_parameter()
+    {
+        this->material_set_count -= 1;
+#if GPU_DEBUG
+        assert_true(this->material_set_count <= 10000);
+#endif
+    };
+
+    inline void bind_shadertexturegpu_parameter(const ShaderTextureGPUParameter& p_parameter)
+    {
+        _cmd_bind_shader_texture_gpu_parameter(*this->binded_shader_layout, p_parameter, this->material_set_count);
+        this->material_set_count += 1;
+    };
+
+    inline void pop_shadertexturegpu_parameter()
     {
         this->material_set_count -= 1;
 #if GPU_DEBUG

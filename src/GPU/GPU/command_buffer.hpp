@@ -24,6 +24,7 @@ struct CommandBuffer
     void submit();
     void submit_and_notity(const Semafore p_notify);
     void submit_after(const Semafore p_wait_for, const VkPipelineStageFlags p_wait_stage);
+    void submit_after_and_notify(const Semafore p_wait_for, const VkPipelineStageFlags p_wait_stage, const Semafore p_notify);
     void wait_for_completion();
     void flush();
 
@@ -122,6 +123,20 @@ inline void CommandBuffer::submit_after(const Semafore p_wait_for, const VkPipel
     l_wait_for_end_submit.waitSemaphoreCount = 1;
     l_wait_for_end_submit.pWaitSemaphores = &p_wait_for.semaphore;
     l_wait_for_end_submit.pWaitDstStageMask = &p_wait_stage;
+    vk_handle_result(vkQueueSubmit(this->queue, 1, &l_wait_for_end_submit, NULL));
+};
+
+inline void CommandBuffer::submit_after_and_notify(const Semafore p_wait_for, const VkPipelineStageFlags p_wait_stage, const Semafore p_notify){
+    this->end();
+    VkSubmitInfo l_wait_for_end_submit{};
+    l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    l_wait_for_end_submit.commandBufferCount = 1;
+    l_wait_for_end_submit.pCommandBuffers = &this->command_buffer;
+    l_wait_for_end_submit.waitSemaphoreCount = 1;
+    l_wait_for_end_submit.pWaitSemaphores = &p_wait_for.semaphore;
+    l_wait_for_end_submit.pWaitDstStageMask = &p_wait_stage;
+    l_wait_for_end_submit.signalSemaphoreCount = 1;
+    l_wait_for_end_submit.pSignalSemaphores = &p_notify.semaphore;
     vk_handle_result(vkQueueSubmit(this->queue, 1, &l_wait_for_end_submit, NULL));
 };
 

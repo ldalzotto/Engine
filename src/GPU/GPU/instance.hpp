@@ -16,6 +16,11 @@ struct GraphicsCard
     uint32 get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const;
 };
 
+enum class GPUExtension
+{
+    WINDOW_PRESENT = 0
+};
+
 /*
     The GPUInstance is the root of all GPU related operations.
     When instanciated, it detects compatible GraphicsCard devices.
@@ -29,7 +34,7 @@ struct GPUInstance
     GraphicsCard graphics_card;
     gc_t logical_device;
 
-    static GPUInstance allocate(const Slice<int8*>& p_required_extensions);
+    static GPUInstance allocate(const Slice<GPUExtension>& p_required_extensions);
     void free();
 };
 } // namespace v2
@@ -65,6 +70,36 @@ inline Span<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties(cons
     vkGetPhysicalDeviceQueueFamilyProperties(p_physical_device, (uint32_t*)&l_array.Capacity, l_array.Memory);
     return l_array;
 };
+
+inline Span<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModesKHR(const VkPhysicalDevice p_physical_device, const VkSurfaceKHR p_surface)
+{
+    uint32_t l_size;
+    vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, &l_size, NULL));
+    Span<VkPresentModeKHR> l_array = Span<VkPresentModeKHR>::allocate(l_size);
+    vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
+    return l_array;
+};
+
+inline Span<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormatsKHR(const VkPhysicalDevice p_physical_device, const VkSurfaceKHR p_surface)
+{
+    uint32_t l_size;
+    vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, &l_size, NULL));
+    Span<VkSurfaceFormatKHR> l_array = Span<VkSurfaceFormatKHR>::allocate(l_size);
+    vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
+    return l_array;
+};
+
+inline Span<VkImage> getSwapchainImagesKHR(const VkDevice p_device, const VkSwapchainKHR p_swap_chain)
+{
+    uint32_t l_size;
+    vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, &l_size, NULL));
+    Span<VkImage> l_array = Span<VkImage>::allocate(l_size);
+    vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, (uint32_t*)&l_array.Capacity, l_array.Memory));
+    return l_array;
+};
+
+
+
 }; // namespace vk
 
 inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const
@@ -86,7 +121,7 @@ inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_
     return -1;
 };
 
-inline GPUInstance GPUInstance::allocate(const Slice<int8*>& p_required_instance_extensions)
+inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_instance_extensions)
 {
     GPUInstance l_gpu;
 
@@ -129,22 +164,30 @@ inline GPUInstance GPUInstance::allocate(const Slice<int8*>& p_required_instance
     l_instance_create_info.enabledLayerCount = 0;
 #endif
 
-    Span<int8*> l_extensions;
+    int8 l_window_present_enabled = 0;
+
+    Vector<int8*> l_extensions = Vector<int8*>::allocate(0);
+
+    for (loop(i, 0, p_required_instance_extensions.Size))
+    {
+        switch (p_required_instance_extensions.get(i))
+        {
+        case GPUExtension::WINDOW_PRESENT:
+            l_window_present_enabled = 1; 
+            l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
+#ifdef _WIN32
+            l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#endif
+            break;
+        }
+    }
 
 #if GPU_DEBUG
-    l_extensions = Span<int8*>::allocate(p_required_instance_extensions.Size + 1);
-#else
-    l_extensions = Span<int8*>::allocate(p_required_instance_extensions.Size);
+    l_extensions.push_back_element(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
-    l_extensions.slice.copy_memory(0, p_required_instance_extensions);
-
-#if GPU_DEBUG
-    l_extensions.get(l_extensions.Capacity - 1) = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-#endif
-
-    l_instance_create_info.enabledExtensionCount = (uint32)l_extensions.Capacity;
-    l_instance_create_info.ppEnabledExtensionNames = l_extensions.Memory;
+    l_instance_create_info.enabledExtensionCount = (uint32)l_extensions.Size;
+    l_instance_create_info.ppEnabledExtensionNames = l_extensions.get_memory();
 
     vk_handle_result(vkCreateInstance(&l_instance_create_info, NULL, &l_gpu.instance));
 
@@ -224,6 +267,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<int8*>& p_required_instance
     l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
     l_device_create_info.queueCreateInfoCount = 1;
+    
 
 #if GPU_DEBUG
 
@@ -231,7 +275,12 @@ inline GPUInstance GPUInstance::allocate(const Slice<int8*>& p_required_instance
     l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
 #endif
 
-    l_device_create_info.enabledExtensionCount = 0;
+   int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    if (l_window_present_enabled)
+    {
+        l_device_create_info.enabledExtensionCount = 1;
+        l_device_create_info.ppEnabledExtensionNames = &l_swap_chain_extension;
+    }
 
     vk_handle_result(vkCreateDevice(l_gpu.graphics_card.device, &l_device_create_info, NULL, &l_gpu.logical_device));
 

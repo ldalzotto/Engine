@@ -2,6 +2,9 @@
 
 // #include "Common2/common2.hpp"
 #include "Math2/math.hpp"
+#ifdef _WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
 #include "vulkan/vulkan.h"
 
 namespace v2
@@ -84,6 +87,7 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
 #include "./graphics.hpp"
 #include "./material.hpp"
 #include "./graphics_binder.hpp"
+#include "./present.hpp"
 
 namespace v2
 {
@@ -94,20 +98,25 @@ struct GPUContext
     GraphicsAllocator2 graphics_allocator;
 
     Semafore execution_semaphore;
+    Semafore end_semaphore;
 
-    inline static GPUContext allocate()
+    inline static GPUContext allocate(const Slice<GPUExtension>& p_gpu_extensions)
     {
         GPUContext l_context;
-        l_context.instance = GPUInstance::allocate(Slice<int8*>::build_default());
+        l_context.instance = GPUInstance::allocate(p_gpu_extensions);
         l_context.buffer_memory = BufferMemory::allocate(l_context.instance);
         l_context.graphics_allocator = GraphicsAllocator2::allocate_default(l_context.instance);
         l_context.execution_semaphore = Semafore::allocate(l_context.instance.logical_device);
+        l_context.end_semaphore = Semafore::allocate(l_context.instance.logical_device);
         return l_context;
     };
+
+    // inline static GPUContext allocate_
 
     inline void free()
     {
         this->execution_semaphore.free(this->instance.logical_device);
+        this->end_semaphore.free(this->instance.logical_device);
         this->graphics_allocator.free();
         this->buffer_memory.free();
         this->instance.free();
@@ -130,6 +139,12 @@ struct GPUContext
     {
         p_binder.end();
         p_binder.submit_after(this->execution_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT);
+    };
+
+    inline void submit_graphics_binder_and_notity_end(GraphicsBinder& p_binder)
+    {
+        p_binder.end();
+        p_binder.submit_after_and_notify(this->execution_semaphore, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, this->end_semaphore);
     };
 
     inline void wait_for_completion()

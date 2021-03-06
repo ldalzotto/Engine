@@ -1,5 +1,6 @@
 #include "AssetCompiler/asset_compiler.hpp"
 
+#if 1
 int main(int32 argc, int8** argv)
 {
     if (argc > 1)
@@ -26,3 +27,16 @@ int main(int32 argc, int8** argv)
 
     memleak_ckeck();
 }
+#endif
+
+#if 0
+int main()
+{
+    ShaderCompiler l_shader_compiled = ShaderCompiler::allocate();
+    File l_asset_file = File::open(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/.tmp/QuadDraw.vert"));
+    Span<int8> l_sp = AssetCompiler_compile_single_file(l_shader_compiled, l_asset_file);
+
+    File l_target = File::create_or_open(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/.tmp/QuadDrawVert.out"));
+    l_target.write_file(l_sp.slice);
+}
+#endif
