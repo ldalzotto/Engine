@@ -1625,6 +1625,48 @@ inline void database_test()
     l_database_path.free();
 };
 
+inline void native_window()
+{
+    Token(Window) l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    Window& l_allocated_window = WindowAllocator::get_window(l_window);
+    assert_true(!l_allocated_window.is_closing);
+
+    {
+        uint32 l_native_width, l_native_height;
+        WindowNative::get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
+        assert_true(l_native_width == l_allocated_window.client_width);
+        assert_true(l_native_height == l_allocated_window.client_height);
+
+        assert_true(l_allocated_window.client_width == 300);
+        assert_true(l_allocated_window.client_height == 300);
+    }
+
+    Window l_old_window = l_allocated_window;
+
+    WindowNative::simulate_resize_appevent(l_allocated_window.handle, 400, 400);
+
+    assert_true(l_allocated_window.resize_event.ask);
+    assert_true(l_allocated_window.resize_event.new_frame_width == 400);
+    assert_true(l_allocated_window.resize_event.new_frame_height == 400);
+
+    l_allocated_window.consume_resize_event();
+
+    assert_true(l_allocated_window.resize_event.ask == 0);
+    assert_true(l_old_window.client_width != l_allocated_window.client_width);
+    assert_true(l_old_window.client_height != l_allocated_window.client_height);
+
+    {
+        uint32 l_native_width, l_native_height;
+        WindowNative::get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
+        assert_true(l_native_width == l_allocated_window.client_width);
+        assert_true(l_native_height == l_allocated_window.client_height);
+    }
+
+    WindowAllocator::get_window(l_window).close();
+    assert_true(WindowAllocator::get_window(l_window).is_closing);
+    WindowAllocator::free(l_window);
+};
+
 int main(int argc, int8** argv)
 {
     slice_span_test();
@@ -1648,6 +1690,7 @@ int main(int argc, int8** argv)
     serialize_deserialize_binary_test();
     file_test();
     database_test();
+    native_window();
 
     memleak_ckeck();
 };

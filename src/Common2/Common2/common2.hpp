@@ -56,3 +56,6 @@
 #include "./Functional/container_iteration.hpp"
 
 #include "./Database/database.hpp"
+
+#include "./AppNativeEvent/app_native_event.hpp"
+#include "./Window/window.hpp"

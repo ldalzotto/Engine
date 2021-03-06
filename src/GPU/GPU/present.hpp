@@ -3,7 +3,6 @@
 namespace v2
 {
 
-typedef int8* GPUPresentWindowHandle;
 
 typedef VkSurfaceKHR gcsurface_t;
 
@@ -17,7 +16,7 @@ struct GPUPresentDevice
     gcqueue_t present_queue;
     VkPresentModeKHR present_mode;
 
-    inline static GPUPresentDevice allocate(const GPUInstance& p_instance, const GPUPresentWindowHandle p_window_handle)
+    inline static GPUPresentDevice allocate(const GPUInstance& p_instance, const WindowHandle p_window_handle)
     {
         GPUPresentDevice l_present_device;
         l_present_device.graphics_card = p_instance.graphics_card;
@@ -291,7 +290,7 @@ struct GPUPresent
     uint32 current_swapchain_image_index;
     GPUPresent_2DQuad d2_quad;
 
-    inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const GPUPresentWindowHandle p_window_handle,
+    inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const WindowHandle p_window_handle,
                                       const v3ui p_window_size, Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         GPUPresent l_gpu_present;

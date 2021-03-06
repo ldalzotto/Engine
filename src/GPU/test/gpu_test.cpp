@@ -1094,30 +1094,11 @@ inline void gpu_texture_mapping()
     l_shader_compiler.free();
 };
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
-}
-
-inline HWND create_window(const v3ui& p_window_size)
-{
-    WNDCLASS wc = {};
-    const char* CLASS_NAME = "Sample Window Class";
-
-    wc.lpfnWndProc = WindowProc;
-    wc.hInstance = GetModuleHandle(NULL);
-    wc.lpszClassName = CLASS_NAME;
-
-    RegisterClass(&wc);
-    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Learn to Program Windows", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, p_window_size.x, p_window_size.y, NULL, NULL, GetModuleHandle(NULL), NULL);
-    return hwnd;
-};
-
 inline void gpu_present()
 {
     v3ui l_window_size = v3ui{100, 100, 1};
-    HWND hwnd = create_window(l_window_size);
-    ShowWindow(hwnd, 1);
+    Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
+    Window& l_window = WindowAllocator::get_window(l_window_token);
 
     GPUContext l_gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -1158,8 +1139,12 @@ inline void gpu_present()
                                                                            (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
 
     // ShowWindow(hwnd, SW_NORMAL);
-    GPUPresent l_gpu_present = GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, (GPUPresentWindowHandle)hwnd, l_window_size,
-                                                    l_render_target_texture, l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
+    GPUPresent l_gpu_present = GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_window.handle, v3ui{l_window.client_width, l_window.client_height, 1}, l_render_target_texture,
+                                                    l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
+
+    assert_true(l_gpu_present.device.surface_capacilities.currentExtent.width == l_window.client_width);
+    assert_true(l_gpu_present.device.surface_capacilities.currentExtent.height == l_window.client_height);
+
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
@@ -1208,13 +1193,15 @@ inline void gpu_present()
     }
 
     // resize
-    l_window_size = v3ui{200, 200, 1};
-    assert_true(MoveWindow(hwnd, 0, 0, l_window_size.x, l_window_size.y, false));
-    
+    WindowNative::simulate_resize_appevent(l_window.handle, 200, 200);
+    l_window.consume_resize_event();
+
     v3ui l_size_before = v3ui{l_gpu_present.device.surface_capacilities.currentExtent.width, l_gpu_present.device.surface_capacilities.currentExtent.height, 1};
-    l_gpu_present.resize(l_window_size, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
+    l_gpu_present.resize(v3ui{l_window.client_width, l_window.client_height, 1}, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
     v3ui l_size_after = v3ui{l_gpu_present.device.surface_capacilities.currentExtent.width, l_gpu_present.device.surface_capacilities.currentExtent.height, 1};
 
+    assert_true(l_size_after.x == l_window.client_width);
+    assert_true(l_size_after.y == l_window.client_height);
     assert_true(l_size_before != l_size_after);
 
     {
@@ -1240,7 +1227,7 @@ inline void gpu_present()
     GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_render_target_texture);
     l_gpu_context.free();
 
-    DestroyWindow(hwnd);
+    WindowAllocator::free(l_window_token);
 };
 
 } // namespace v2
