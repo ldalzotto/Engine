@@ -1099,7 +1099,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-inline void gpu_present()
+inline HWND create_window(const v3ui& p_window_size)
 {
     WNDCLASS wc = {};
     const char* CLASS_NAME = "Sample Window Class";
@@ -1109,8 +1109,42 @@ inline void gpu_present()
     wc.lpszClassName = CLASS_NAME;
 
     RegisterClass(&wc);
+    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Learn to Program Windows", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, p_window_size.x, p_window_size.y, NULL, NULL, GetModuleHandle(NULL), NULL);
+    return hwnd;
+};
+
+inline void gpu_present()
+{
+    v3ui l_window_size = v3ui{100, 100, 1};
+    HWND hwnd = create_window(l_window_size);
+    ShowWindow(hwnd, 1);
 
     GPUContext l_gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
+    ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
+
+    const int8* p_vertex_litteral = MULTILINE(#version 450 \n
+
+                                              layout(location = 0) in vec3 pos; \n
+                                              layout(location = 1) in vec2 uv; \n
+
+                                              layout(location = 0) out vec2 out_uv; \n
+
+                                              void main() { \n
+                                                  gl_Position = vec4(pos.x, pos.y, 0.0, 1.0f); \n
+                                                  out_uv = uv; \n
+                                              } \n );
+
+    const int8* p_fragment_litteral = MULTILINE(#version 450 \n
+
+                                                layout(location = 0) in vec2 uv; \n
+
+                                                layout(set = 0, binding = 0) uniform sampler2D texSampler; \n
+
+                                                layout(location = 0) out vec4 outColor; \n
+
+                                                void main() { outColor = texture(texSampler, uv); } \n );
+    ShaderCompiled l_vertex_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
+    ShaderCompiled l_fragment_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
@@ -1120,13 +1154,12 @@ inline void gpu_present()
 
     Token(TextureGPU) l_render_target_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
         l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
-        ImageFormat::build_color_2d(l_render_target_size, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
+        ImageFormat::build_color_2d(l_render_target_size, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER |
+                                                                           (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
 
-    v3ui l_window_size = v3ui{100, 100, 1};
-    HWND hwnd = CreateWindowEx(0, CLASS_NAME, "Learn to Program Windows", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, l_window_size.x, l_window_size.y, NULL, NULL, GetModuleHandle(NULL), NULL);
     // ShowWindow(hwnd, SW_NORMAL);
-    GPUPresent l_gpu_present =
-        GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, (GPUPresentWindowHandle)hwnd, l_window_size, l_render_target_texture);
+    GPUPresent l_gpu_present = GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, (GPUPresentWindowHandle)hwnd, l_window_size,
+                                                    l_render_target_texture, l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
@@ -1148,7 +1181,7 @@ inline void gpu_present()
         l_gpu_present.graphics_step(l_binder);
         l_binder.end();
         l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
-        l_gpu_present.present(l_gpu_context.end_semaphore);
+        l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
         l_gpu_context.wait_for_completion();
     }
     {
@@ -1170,13 +1203,38 @@ inline void gpu_present()
         l_gpu_present.graphics_step(l_binder);
         l_binder.end();
         l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
-        l_gpu_present.present(l_gpu_context.end_semaphore);
+        l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
+        l_gpu_context.wait_for_completion();
+    }
+
+    // resize
+    l_window_size = v3ui{200, 200, 1};
+    assert_true(MoveWindow(hwnd, 0, 0, l_window_size.x, l_window_size.y, false));
+    
+    v3ui l_size_before = v3ui{l_gpu_present.device.surface_capacilities.currentExtent.width, l_gpu_present.device.surface_capacilities.currentExtent.height, 1};
+    l_gpu_present.resize(l_window_size, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
+    v3ui l_size_after = v3ui{l_gpu_present.device.surface_capacilities.currentExtent.width, l_gpu_present.device.surface_capacilities.currentExtent.height, 1};
+
+    assert_true(l_size_before != l_size_after);
+
+    {
+        l_gpu_context.buffer_step_and_submit();
+        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
+        l_binder.start();
+        l_gpu_present.graphics_step(l_binder);
+        l_binder.end();
+        l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
+        l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
         l_gpu_context.wait_for_completion();
     }
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
+
+    l_vertex_compilder.free();
+    l_fragment_compilder.free();
+    l_shader_compiler.free();
 
     l_gpu_present.free(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
     GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_render_target_texture);
