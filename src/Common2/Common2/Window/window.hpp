@@ -14,6 +14,7 @@ struct WindowNative
     inline static void resize_window_no_appevent(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height);
     inline static void get_window_client_dimensions(const WindowHandle p_window_handle, uint32* out_client_width, uint32* out_client_height);
     inline static void simulate_resize_appevent(const WindowHandle p_window, const uint32 p_width, const uint32 p_height);
+    inline static void simulate_close_appevent(const WindowHandle p_window);
 };
 
 #ifdef _WIN32
@@ -77,6 +78,11 @@ inline void WindowNative::simulate_resize_appevent(const WindowHandle p_window, 
     LPARAM l_new_size = MAKELPARAM(p_client_width, p_client_height);
     WindowNative::resize_window_no_appevent(p_window, p_client_width, p_client_height);
     WindowProc((HWND)p_window, WM_SIZE, 0, l_new_size);
+};
+
+inline void WindowNative::simulate_close_appevent(const WindowHandle p_window){
+    // WindowNative::destroy_window(p_window);
+    WindowProc((HWND)p_window, WM_CLOSE, 0, 0);
 };
 
 #endif

@@ -21,4 +21,14 @@ struct SandboxEngineRunner
 
         this->engine.free();
     };
+
+    template <class SandboxEngineCallbacks> inline void main_loop_headless(SandboxEngineCallbacks& p_callbacks)
+    {
+        while (!this->engine.abort_condition)
+        {
+            this->engine.single_frame_forced_delta_headless(this->simulated_delta_time, p_callbacks);
+        }
+
+        this->engine.free_headless();
+    };
 };

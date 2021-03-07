@@ -70,9 +70,8 @@ inline static void on_node_component_removed(RenderMiddleWare& p_render_middlewa
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
-// global
-inline void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context,
-                                      RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
+inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context,
+                                        RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
     switch (p_node_component.type)
     {

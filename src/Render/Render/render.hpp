@@ -123,6 +123,7 @@ struct ColorStep
     {
         v3ui render_target_dimensions;
         int8 attachment_host_read;
+        int8 color_attachment_sample;
     };
 
     static ColorStep allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info);
@@ -500,6 +501,12 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
     {
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
     }
+    if(p_allocate_info.color_attachment_sample)
+    {
+        l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+    }
+
+
 
     SliceN<RenderPassAttachment, 2> l_attachments = {
         RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |

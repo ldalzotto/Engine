@@ -1662,6 +1662,10 @@ inline void native_window()
         assert_true(l_native_height == l_allocated_window.client_height);
     }
 
+    assert_true(!l_allocated_window.is_closing);
+    WindowNative::simulate_close_appevent(l_allocated_window.handle);
+    assert_true(l_allocated_window.is_closing);
+
     WindowAllocator::get_window(l_window).close();
     assert_true(WindowAllocator::get_window(l_window).is_closing);
     WindowAllocator::free(l_window);

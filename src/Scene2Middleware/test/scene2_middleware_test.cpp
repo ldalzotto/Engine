@@ -15,7 +15,7 @@ struct ComponentReleaser2
 
     inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
     {
-        on_node_component_removed(this->scene_middleware, this->collision, this->renderer, this->gpu_ctx, this->render_ressource_allocator, p_component);
+        g_on_node_component_removed(this->scene_middleware, this->collision, this->renderer, this->gpu_ctx, this->render_ressource_allocator, p_component);
     };
 };
 

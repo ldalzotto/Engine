@@ -15,7 +15,7 @@ struct EngineLoop
         return EngineLoop{p_timebetweenupdates_mics, 0, clock_currenttime_mics()};
     };
 
-    template <class EngineLoopCallbacksFunc> inline void update(EngineLoopCallbacksFunc& p_callback)
+    inline int8 update(float32* out_delta)
     {
         time_t l_currentTime = clock_currenttime_mics();
         time_t l_elapsed = l_currentTime - this->previousUpdateTime_mics;
@@ -31,35 +31,25 @@ struct EngineLoop
         if (this->accumulatedelapsedtime_mics >= this->timebetweenupdates_mics)
         {
 
-            this->update_internal(this->timebetweenupdates_mics * 0.000001f, p_callback);
+            *out_delta = this->timebetweenupdates_mics * 0.000001f;
+            // this->update_internal(this->timebetweenupdates_mics * 0.000001f, p_callback);
+
+            // TODO -> having a more precise loop (while delta < max  {} delta -= max) but preventing some piece of code to run twice.
+            this->accumulatedelapsedtime_mics = 0;
+            return 1;
         }
         else
         {
             Thread::wait((uimax)((this->timebetweenupdates_mics - this->accumulatedelapsedtime_mics) * 0.0009999));
         }
+        return 0;
     };
 
-    template <class EngineLoopCallbacksFunc> inline void update_forced_delta(const float32 p_delta, EngineLoopCallbacksFunc& p_callback)
+    inline int8 update_forced_delta(const float32 p_delta)
     {
         time_t l_currentTime = clock_currenttime_mics();
         this->previousUpdateTime_mics = l_currentTime;
         this->accumulatedelapsedtime_mics += (time_t)p_delta;
-
-        this->update_internal(p_delta, p_callback);
+        return 1;
     };
-
-  private:
-    template <class EngineLoopCallbacksFunc> inline void update_internal(const float32 p_delta, EngineLoopCallbacksFunc& p_callback)
-    {
-        p_callback.newframe();
-
-        p_callback.update(p_delta);
-
-        p_callback.render();
-
-        // TODO -> having a more precise loop (while delta < max  {} delta -= max) but preventing some piece of code to run twice.
-        this->accumulatedelapsedtime_mics = 0;
-
-        p_callback.endofframe();
-    }
 };

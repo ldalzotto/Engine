@@ -68,6 +68,18 @@ struct alignas(sizeof(float32)) v2f
     int8 operator==(const v2f& p_other);
 };
 
+struct alignas(sizeof(uint32)) v2ui
+{
+    union
+    {
+        uint32 Points[2];
+        struct
+        {
+            uint32 x, y;
+        };
+    };
+};
+
 struct alignas(sizeof(float32)) v3f
 {
     union

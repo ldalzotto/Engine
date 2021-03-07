@@ -105,18 +105,22 @@ inline void boxcollision()
     String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
     l_database_path.append(slice_int8_build_rawstr("/asset.db"));
     {
+        /*
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase_with_slicepath();
         AssetDatabase::initialize_database(l_database_path.to_slice());
+         */
     }
-    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_database_path.to_slice()}, 1.0f / 60.0f);
+    EngineConfiguration l_condfiguration;
+    l_condfiguration.asset_database_path = l_database_path.to_slice();
+    l_condfiguration.headless = 1;
+    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(l_condfiguration, 1.0f / 60.0f);
     l_database_path.free();
 
     BoxCollisionSandboxEnvironment l_sandbox_environment = BoxCollisionSandboxEnvironment::build_default();
-    l_runner.main_loop(l_sandbox_environment);
+    l_runner.main_loop_headless(l_sandbox_environment);
 };
 
-/*
 struct D3RendererSandboxEnvironment
 {
     inline static D3RendererSandboxEnvironment build_default()
@@ -139,18 +143,26 @@ struct D3RendererSandboxEnvironment
         }
         else if (p_engine.clock.framecount == 10)
         {
-            p_engine.close();
+            //  p_engine.close();
         }
     };
 };
 
 inline void d3renderer()
 {
-    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(slice_int8_build_rawstr(""), 1.0f / 60.0f);
+    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(slice_int8_build_rawstr("/asset.db"));
+    {
+    }
+    EngineConfiguration l_configuration{};
+    l_configuration.asset_database_path = l_database_path.to_slice();
+    l_configuration.render_size = v2ui{800, 600};
+    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
+    l_database_path.free();
+
     D3RendererSandboxEnvironment l_sandbox_environment = D3RendererSandboxEnvironment::build_default();
     l_runner.main_loop(l_sandbox_environment);
 }
-*/
 
 int main()
 {
