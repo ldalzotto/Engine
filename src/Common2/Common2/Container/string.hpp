@@ -22,6 +22,15 @@ struct String
         return l_string;
     };
 
+    inline static String build_from_raw_span(Span<int8>& p_raw_span)
+    {
+        Vector<int8> l_memory = {p_raw_span.Capacity, p_raw_span};
+        String l_string = String{l_memory};
+        l_string.Memory.push_back_element((int8)NULL);
+        p_raw_span = Span<int8>::build_default();
+        return l_string;
+    };
+
     inline void free()
     {
         this->Memory.free();

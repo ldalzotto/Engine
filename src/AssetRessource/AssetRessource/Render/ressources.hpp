@@ -250,6 +250,19 @@ struct ShaderRessource
             hash_t vertex_module;
             hash_t fragment_module;
         };
+
+        inline static AssetDependencies allocate_from_values(const Value& p_values)
+        {
+            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            BinarySerializer::type(&l_binary, p_values.vertex_module);
+            BinarySerializer::type(&l_binary, p_values.fragment_module);
+            return AssetDependencies{l_binary.Memory};
+        };
+
+        inline void free()
+        {
+            this->allocated_binary.free();
+        };
     };
 
     struct InlineAllocationInput

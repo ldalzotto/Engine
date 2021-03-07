@@ -115,6 +115,7 @@ struct JSONDeserializer
         FieldNode l_field_node;
         if (find_next_json_field(l_compared_slice, l_field_name_json.to_slice(), '{', '}', &l_field_node.whole_field, &l_field_node.value))
         {
+            l_field_node.value.slide(1); //for '{'
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
             this->stack_fields.push_back_element(l_field_node);

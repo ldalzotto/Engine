@@ -36,33 +36,29 @@ struct FromString
                     return l_return;
                 }
             }
-            /*
-            else
-            {
-                if (p_string.get(0) == '-')
-                {
-                    float32 l_return = 0.0f;
-                    for (loop_reverse(i, p_string.Size - 1, (uimax)-1))
-                    {
-                        l_return += (float32)((p_string.get(i) - '0') * (pow(10, p_string.Size - 1 - (double)i)));
-                    }
-                    return l_return;
-                }
-                else
-                {
-                    float32 l_return = 0.0f;
-                    for (loop_reverse(i, p_string.Size - 1, (uimax)0))
-                    {
-                        l_return += (float32)((p_string.get(i) - '0') * (pow(10, p_string.Size - 1 - (double)i)));
-                    }
-                    return -1.0f * l_return;
-                }
-
-            };
-            */
         }
 
         return 0.0f;
+    };
+
+    inline static uimax auimax(const Slice<int8>& p_string)
+    {
+        uimax l_value = 0;
+        for (loop(i, 0, p_string.Size))
+        {
+            l_value += (uimax)((p_string.get(i) - '0') * (uimax)pow(10, (p_string.Size - 1) - i));
+        }
+        return l_value;
+    };
+
+    inline static uint8 auint8(const Slice<int8>& p_string)
+    {
+        uint8 l_value = 0;
+        for (loop(i, 0, p_string.Size))
+        {
+            l_value += (uint8)((p_string.get(i) - '0') * (uint8)pow(10, (p_string.Size - 1) - i));
+        }
+        return l_value;
     };
 };
 

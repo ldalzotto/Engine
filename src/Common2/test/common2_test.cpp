@@ -1211,41 +1211,16 @@ inline void fromstring_test()
     assert_true(FromString::afloat32(slice_int8_build_rawstr("-245689.0")) == -245689.f);
 };
 
-inline void deserialize_json_test(){{const int8* l_json = "{"
-                                                          "\"local_position\":{"
-                                                          "\"x\":  \"16.550000\","
-                                                          "\"y\" : \"16.650000\","
-                                                          "\"z\" : \"16.750000\""
-                                                          "},"
-                                                          "\"local_position2\":{"
-                                                          "\"x\":\"  17.550000\","
-                                                          "\"y\" : \"17.650000\","
-                                                          "\"z\" : \"17.750000\""
-                                                          "},"
-                                                          "\"nodes\" : ["
-                                                          "{"
-                                                          "\"local_position\":{"
-                                                          "\"x\":\"  10.550000\","
-                                                          "\"y\" : \"10.650000\","
-                                                          "\"z\" : \"10.750000\""
-                                                          "}"
-                                                          "},"
-                                                          "{"
-                                                          "\"local_position\":{"
-                                                          "\"x\":\"  11.550000\","
-                                                          "\"y\" : \"11.650000\","
-                                                          "\"z\" : \"11.750000\""
-                                                          "}"
-                                                          "},"
-                                                          "{"
-                                                          "\"local_position\":{"
-                                                          "\"x\":\"  12.550000\","
-                                                          "\"y\" : \"12.650000\","
-                                                          "\"z\" : \"12.750000\""
-                                                          "}"
-                                                          "}"
-                                                          "]"
-                                                          "}";
+inline void deserialize_json_test(){{
+
+    const int8* l_json = MULTILINE({
+        "local_position" : {"x" : "16.550000", "y" : "16.650000", "z" : "16.750000"},
+        "local_position2" : {"x" : "  17.550000", "y" : "17.650000", "z" : "17.750000"},
+        "nodes" : [
+            {"local_position" : {"x" : "  10.550000", "y" : "10.650000", "z" : "10.750000"}}, {"local_position" : {"x" : "  11.550000", "y" : "11.650000", "z" : "11.750000"}},
+            {"local_position" : {"x" : "  12.550000", "y" : "12.650000", "z" : "12.750000"}}
+        ]
+    });
 
 String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
 JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
@@ -1385,6 +1360,39 @@ l_json_str.free();
     l_deserialized.free();
     l_array.free();
     l_array_object.free();
+    l_json_str.free();
+}
+
+// field - nested objects (uimax)
+{
+    const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2": {"f1": "16", "f2": "17"}});
+
+    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+
+    assert_true(l_deserialized.next_field("field"));
+    assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
+
+    JSONDeserializer l_obj_deserializer = JSONDeserializer::allocate_default();
+    assert_true(l_deserialized.next_object("obj", &l_obj_deserializer));
+    {
+        assert_true(l_obj_deserializer.next_field("f1"));
+        assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 14);
+        assert_true(l_obj_deserializer.next_field("f2"));
+        assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 15);
+
+        JSONDeserializer l_obj2_deserializer = JSONDeserializer::allocate_default();
+        assert_true(l_obj_deserializer.next_object("obj2", &l_obj2_deserializer));
+        {
+            assert_true(l_obj2_deserializer.next_field("f1"));
+            assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 16);
+            assert_true(l_obj2_deserializer.next_field("f2"));
+            assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 17);
+        }
+        l_obj2_deserializer.free();
+    }
+    l_obj_deserializer.free();
+    l_deserialized.free();
     l_json_str.free();
 }
 }

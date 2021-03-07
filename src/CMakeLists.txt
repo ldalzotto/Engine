@@ -69,6 +69,8 @@ target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_C
 
 add_executable(AssetCompilerTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/test/asset_compiler_test.cpp)
 target_link_libraries(AssetCompilerTest PUBLIC AssetCompiler)
+target_link_libraries(AssetCompilerTest PUBLIC Test_AssetDatabase)
+target_compile_definitions(AssetCompilerTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/test/.asset/")
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)
