@@ -36,7 +36,6 @@ struct Engine
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
         l_engine.gpu_context = v2::GPUContext::allocate(SliceN<v2::GPUExtension, 1>{v2::GPUExtension::WINDOW_PRESENT}.to_slice());
-        l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, v2::ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0, 1});
         l_engine.renderer_ressource_allocator = v2::RenderRessourceAllocator2::allocate();
         l_engine.scene = v2::Scene::allocate_default();
         l_engine.scene_middleware = v2::SceneMiddleware::allocate_default();
@@ -44,9 +43,10 @@ struct Engine
 
         if (!p_configuration.headless)
         {
+            l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, v2::ColorStep::AllocateInfo{v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1}, 0, 1});
             l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, slice_int8_build_rawstr(""));
-            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("~internal/quad_blit.vert")));
-            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("~internal/quad_blit.frag")));
+            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
+            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
             l_engine.present = v2::GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
                                                         WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
                                                         l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
@@ -58,6 +58,7 @@ struct Engine
         }
         else
         {
+            l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, v2::ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0, 1});
             l_engine.window = tk_bd(Window);
             l_engine.present = {0};
         }

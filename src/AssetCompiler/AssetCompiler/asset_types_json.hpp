@@ -60,6 +60,14 @@ struct ShaderAssetJSON
         {
             return v2::ShaderLayoutParameterType::TEXTURE_FRAGMENT;
         }
+        else if(p_slice.compare(slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX")))
+        {
+            return v2::ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
+        }
+        else if(p_slice.compare(slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX_FRAGMENT")))
+        {
+            return v2::ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+        }
         else
         {
             abort();
@@ -71,6 +79,30 @@ struct ShaderAssetJSON
         if (p_slice.compare(slice_int8_build_rawstr("Always")))
         {
             return v2::ShaderConfiguration::CompareOp::Always;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("LessOrEqual")))
+        {
+            return v2::ShaderConfiguration::CompareOp::LessOrEqual;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("Greater")))
+        {
+            return v2::ShaderConfiguration::CompareOp::Greater;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("NotEqual")))
+        {
+            return v2::ShaderConfiguration::CompareOp::NotEqual;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("GreaterOrEqual")))
+        {
+            return v2::ShaderConfiguration::CompareOp::GreaterOrEqual;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("Always")))
+        {
+            return v2::ShaderConfiguration::CompareOp::Always;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("Invalid")))
+        {
+            return v2::ShaderConfiguration::CompareOp::Invalid;
         }
         else
         {

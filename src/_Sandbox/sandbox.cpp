@@ -123,30 +123,44 @@ inline void boxcollision()
 
 struct D3RendererCubeSandboxEnvironment
 {
+    Token(v2::Node) camera_node;
+    Token(v2::Node) cube_node;
+
     inline static D3RendererCubeSandboxEnvironment build_default()
     {
         return D3RendererCubeSandboxEnvironment{};
     };
 
-    inline void before_collision(Engine& p_engine)
-    {
-    };
+    inline void before_collision(Engine& p_engine){};
 
-    inline void after_collision(Engine& p_engine)
-    {
-    };
+    inline void after_collision(Engine& p_engine){};
 
     inline void before_update(Engine& p_engine)
     {
         if (p_engine.clock.framecount == 1)
         {
+            this->camera_node = p_engine.scene.add_node(transform{v3f{5.0f, 5.0f, 5.0f}, quat{-0.106073f, 0.867209f, -0.283699f, -0.395236f}, v3f_const::ONE}, v2::Scene_const::root_node);
+            p_engine.scene_middleware.render_middleware.allocate_camera_inline(v2::CameraComponent::Asset{1.0f, 30.0f, 45.0f}, camera_node);
+            p_engine.scene.add_node_component_by_value(camera_node, v2::CameraComponentAsset_SceneCommunication::construct_nodecomponent());
 
+            this->cube_node = p_engine.scene.add_node(transform_const::ORIGIN, v2::Scene_const::root_node);
+            Token(v2::MeshRendererComponent) l_mesh_renderer = v2::RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
+                p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.asset_database,
+                v2::MeshRendererComponent::AssetDependencies{HashSlice(slice_int8_build_rawstr("material_asset_test.json")), HashSlice(slice_int8_build_rawstr("cube.obj"))}, this->cube_node);
+            p_engine.scene.add_node_component_by_value(this->cube_node, v2::MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
         }
-        else if (p_engine.clock.framecount == 10)
+        else if (p_engine.clock.framecount == 60)
         {
-            //  p_engine.close();
+            p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
+            p_engine.scene.remove_node(p_engine.scene.get_node(this->cube_node));
+            p_engine.close();
         }
-
+        else
+        {
+            NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->cube_node);
+            p_engine.scene.tree.set_worldrotation(l_node,
+                                                  p_engine.scene.tree.get_worldrotation(l_node) * quat::rotate_around(v3f_const::UP, 45.0f * v2::Math_const::DEG_TO_RAD * p_engine.clock.deltatime));
+        }
     };
 };
 
@@ -158,7 +172,7 @@ inline void d3renderer_cube()
     }
     EngineConfiguration l_configuration{};
     l_configuration.asset_database_path = l_database_path.to_slice();
-    l_configuration.render_size = v2ui{800, 600};
+    l_configuration.render_size = v2ui{128, 128};
     SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
     l_database_path.free();
 

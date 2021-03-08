@@ -182,7 +182,7 @@ struct GPUPresent_SwapChain
         Span<ShaderLayout::VertexInputParameter> l_vertex_parameter = Span<ShaderLayout::VertexInputParameter>::allocate_slice(SliceN<ShaderLayout::VertexInputParameter, 2>{
             ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
             ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2,
-                                               offsetof(GPUPresent_2DQuad::_vertex, pos)}}.to_slice());
+                                               offsetof(GPUPresent_2DQuad::_vertex, uv)}}.to_slice());
         p_swap_chain.image_copy_shader_layout = p_graphics_allocator.allocate_shader_layout(l_shader_parameter_layout, l_vertex_parameter, sizeof(GPUPresent_2DQuad::_vertex));
 
         p_swap_chain.image_copy_shader_vertex = p_graphics_allocator.allocate_shader_module(p_compiled_vertex_shader);
