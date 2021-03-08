@@ -119,7 +119,7 @@ inline static Token(MeshRendererComponent)
     MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
 
     Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-    TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+    TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
     l_material_texture_span.free();
 
     MaterialRessource::Asset l_material_asset_1;
@@ -298,7 +298,7 @@ inline void render_middleware_inline_allocation()
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset_1;
@@ -402,7 +402,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset_1;

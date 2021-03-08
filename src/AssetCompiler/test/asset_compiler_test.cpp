@@ -136,6 +136,37 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
     l_asset_database_path.free();
 };
 
+inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
+{
+    String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("texture.png"));
+    {
+        Span<int8> l_texture_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("texture.png")));
+
+        v2::TextureRessource::Asset::Value l_texture_value = v2::TextureRessource::Asset::Value::build_from_asset(v2::TextureRessource::Asset{l_texture_ressource_compiled});
+        assert_true(l_texture_value.size == v3ui{4, 4, 1});
+        assert_true(l_texture_value.channel_nb == 4);
+        Slice<color> l_pixels = slice_cast<color>(l_texture_value.pixels);
+        assert_true(l_pixels.Size == 16);
+        Slice<color> l_awaited_pixels = SliceN<color, 16>{color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}}
+                                            .to_slice();
+
+        assert_true(l_pixels.compare(l_awaited_pixels));
+        l_texture_ressource_compiled.free();
+    }
+
+    l_asset_root_path.free();
+    l_asset_database.free();
+    l_asset_database_path.free();
+}
+
 int main()
 {
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -144,7 +175,8 @@ int main()
     shader_asset_compilation(l_shader_compiler);
     material_asset_compilation(l_shader_compiler);
     mesh_asset_compilation(l_shader_compiler);
-
+    texture_asset_compilation(l_shader_compiler);
+    
     l_shader_compiler.free();
 
     memleak_ckeck();

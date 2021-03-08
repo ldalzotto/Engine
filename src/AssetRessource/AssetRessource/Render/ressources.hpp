@@ -319,6 +319,7 @@ struct TextureRessource
         struct Value
         {
             v3ui size;
+            int8 channel_nb;
             Slice<int8> pixels;
 
             inline static Value build_from_asset(const Asset& p_asset)
@@ -326,6 +327,7 @@ struct TextureRessource
                 Value l_value;
                 BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
                 l_value.size = *l_deserializer.type<v3ui>();
+                l_value.channel_nb = *l_deserializer.type<int8>();
                 l_value.pixels = l_deserializer.slice();
                 return l_value;
             };
@@ -340,6 +342,7 @@ struct TextureRessource
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
             BinarySerializer::type(&l_binary, p_value.size);
+            BinarySerializer::type(&l_binary, p_value.channel_nb);
             BinarySerializer::slice(&l_binary, p_value.pixels);
             return build_from_binary(l_binary.Memory);
         };

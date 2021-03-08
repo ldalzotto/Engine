@@ -38,10 +38,11 @@ inline void render_asset_binary_serialization_deserialization_test()
         l_mesh.free();
     }
     {
-        TextureRessource::Asset::Value l_value = TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_slice_int8};
+        TextureRessource::Asset::Value l_value = TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_slice_int8};
         TextureRessource::Asset l_texture = TextureRessource::Asset::allocate_from_values(l_value);
         TextureRessource::Asset::Value l_deserialized_value = TextureRessource::Asset::Value::build_from_asset(l_texture);
         assert_true(l_deserialized_value.size == l_value.size);
+        assert_true(l_deserialized_value.channel_nb == 4);
         assert_true(l_deserialized_value.pixels.compare(l_value.pixels));
         l_texture.free();
     }
@@ -268,7 +269,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset_1;
@@ -474,7 +475,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset_1;
@@ -559,7 +560,7 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
                                           ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset;
@@ -663,7 +664,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
                                           ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset;
@@ -764,7 +765,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
                                           ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, l_material_texture_span.slice});
+        TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
         MaterialRessource::Asset l_material_asset;

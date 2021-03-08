@@ -146,15 +146,17 @@ struct D3RendererCubeSandboxEnvironment
             this->cube_node = p_engine.scene.add_node(transform_const::ORIGIN, v2::Scene_const::root_node);
             Token(v2::MeshRendererComponent) l_mesh_renderer = v2::RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
                 p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.asset_database,
-                v2::MeshRendererComponent::AssetDependencies{HashSlice(slice_int8_build_rawstr("material_asset_test.json")), HashSlice(slice_int8_build_rawstr("cube.obj"))}, this->cube_node);
+                v2::MeshRendererComponent::AssetDependencies{HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1_material.json")), HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1.obj"))}, this->cube_node);
             p_engine.scene.add_node_component_by_value(this->cube_node, v2::MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
         }
+        /*
         else if (p_engine.clock.framecount == 60)
         {
             p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
             p_engine.scene.remove_node(p_engine.scene.get_node(this->cube_node));
             p_engine.close();
         }
+         */
         else
         {
             NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->cube_node);

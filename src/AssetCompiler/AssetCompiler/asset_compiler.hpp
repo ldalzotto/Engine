@@ -3,11 +3,11 @@
 #include "AssetRessource/asset_ressource.hpp"
 #include "./asset_types_json.hpp"
 #include "./obj_compiler.hpp"
+#include "./img_compiler.hpp"
 #include "./shader_compiler.hpp"
 
 using namespace v2;
 
-// TODO we want to handle texture and models
 // TODO -> handling errors by using the shader compiler silent :)
 inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file)
 {
@@ -54,6 +54,21 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
             l_indices.free();
             l_buffer.free();
             return l_mesh_asset.allocated_binary;
+        }
+        else if (l_asset_path.compare(slice_int8_build_rawstr("jpg")) || l_asset_path.compare(slice_int8_build_rawstr("png")))
+        {
+            Span<int8> l_buffer = p_asset_file.read_file_allocate();
+
+            v3ui l_size;
+            int8 l_channel_nb;
+            Span<int8> l_pixels;
+            ImgCompiler::compile(l_buffer.slice, &l_size, &l_channel_nb, &l_pixels);
+
+            TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{l_size, l_channel_nb, l_pixels.slice});
+
+            l_pixels.free();
+            l_buffer.free();
+            return l_texture_asset.allocated_binary;
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("json")))
         {

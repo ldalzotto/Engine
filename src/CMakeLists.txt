@@ -34,6 +34,7 @@ add_library(AssetCompiler INTERFACE)
 target_include_directories(AssetCompiler INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler)
 target_link_libraries(AssetCompiler INTERFACE AssetRessource)
 target_link_libraries(AssetCompiler INTERFACE GLSLANG)
+target_link_libraries(AssetCompiler INTERFACE STB_IMAGE)
 
 add_library(Scene2 INTERFACE)
 target_include_directories(Scene2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Scene2)
