@@ -249,13 +249,27 @@ struct ShaderRessource
         {
             hash_t vertex_module;
             hash_t fragment_module;
+
+            inline static Value build_from_asset(const AssetDependencies& p_dependencies)
+            {
+                Value l_return;
+                BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_dependencies.allocated_binary.slice);
+                l_return.vertex_module = *l_deserializer.type<hash_t>();
+                l_return.fragment_module = *l_deserializer.type<hash_t>();
+                return l_return;
+            };
+
+            inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
+            {
+                BinarySerializer::type(in_out_buffer, this->vertex_module);
+                BinarySerializer::type(in_out_buffer, this->fragment_module);
+            };
         };
 
         inline static AssetDependencies allocate_from_values(const Value& p_values)
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
-            BinarySerializer::type(&l_binary, p_values.vertex_module);
-            BinarySerializer::type(&l_binary, p_values.fragment_module);
+            p_values.push_to_binary_buffer(&l_binary);
             return AssetDependencies{l_binary.Memory};
         };
 
@@ -437,6 +451,13 @@ struct MaterialRessource
                 l_value.textures = slice_cast<hash_t>(l_deserializer.slice());
                 return l_value;
             };
+
+            inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
+            {
+                BinarySerializer::type(in_out_buffer, this->shader);
+                BinarySerializer::type(in_out_buffer, this->shader_dependencies);
+                BinarySerializer::slice(in_out_buffer, this->textures.build_asint8());
+            };
         };
 
         inline void free()
@@ -452,9 +473,7 @@ struct MaterialRessource
         inline static AssetDependencies allocate_from_values(const Value& p_value)
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
-            BinarySerializer::type(&l_binary, p_value.shader);
-            BinarySerializer::type(&l_binary, p_value.shader_dependencies);
-            BinarySerializer::slice(&l_binary, p_value.textures.build_asint8());
+            p_value.push_to_binary_buffer(&l_binary);
             return build_from_binary(l_binary.Memory);
         };
     };

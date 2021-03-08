@@ -121,11 +121,11 @@ inline void boxcollision()
     l_runner.main_loop_headless(l_sandbox_environment);
 };
 
-struct D3RendererSandboxEnvironment
+struct D3RendererCubeSandboxEnvironment
 {
-    inline static D3RendererSandboxEnvironment build_default()
+    inline static D3RendererCubeSandboxEnvironment build_default()
     {
-        return D3RendererSandboxEnvironment{};
+        return D3RendererCubeSandboxEnvironment{};
     };
 
     inline void before_collision(Engine& p_engine)
@@ -140,15 +140,17 @@ struct D3RendererSandboxEnvironment
     {
         if (p_engine.clock.framecount == 1)
         {
+
         }
         else if (p_engine.clock.framecount == 10)
         {
             //  p_engine.close();
         }
+
     };
 };
 
-inline void d3renderer()
+inline void d3renderer_cube()
 {
     String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
     l_database_path.append(slice_int8_build_rawstr("/asset.db"));
@@ -160,14 +162,14 @@ inline void d3renderer()
     SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
     l_database_path.free();
 
-    D3RendererSandboxEnvironment l_sandbox_environment = D3RendererSandboxEnvironment::build_default();
+    D3RendererCubeSandboxEnvironment l_sandbox_environment = D3RendererCubeSandboxEnvironment::build_default();
     l_runner.main_loop(l_sandbox_environment);
 }
 
 int main()
 {
     boxcollision();
-    // d3renderer();
+    // d3renderer_cube();
 
     memleak_ckeck();
 };

@@ -6,8 +6,7 @@
 
 using namespace v2;
 
-// TODO -> inserting asset dependencies
-
+// TODO we want to handle texture and models
 // TODO -> handling errors by using the shader compiler silent :)
 inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file)
 {
@@ -47,21 +46,28 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             String l_str = String::build_from_raw_span(l_buffer);
             JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_str);
+            JSONDeserializer l_json_value_deserializer;
 
-            l_json_deserializer.next_field("type");
-            if (l_json_deserializer.get_currentfield().value.compare(slice_int8_build_rawstr("SHADER")))
+            switch (AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer))
             {
-                JSONDeserializer l_json_obj_deserializer = JSONDeserializer::allocate_default();
-                l_json_deserializer.next_object("val", &l_json_obj_deserializer);
-
-                l_compiled_asset = ShaderAssetJSON::allocate_asset_from_json(&l_json_obj_deserializer);
-                l_json_obj_deserializer.free();
+            case AssetJSONTypes::SHADER:
+            {
+                l_compiled_asset = ShaderAssetJSON::allocate_asset_from_json(&l_json_value_deserializer);
+            }
+            break;
+            case AssetJSONTypes::MATERIAL:
+            {
+                l_compiled_asset = MaterialAssetJSON::allocate_asset_from_json(&l_json_value_deserializer);
+            }
+            break;
+            default:
+                abort();
             }
 
+            l_json_value_deserializer.free();
             l_json_deserializer.free();
             l_str.free();
             return l_compiled_asset;
-            // TODO we want to handle json asset files, texture and models
         }
     }
 
@@ -88,16 +94,24 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
             String l_str = String::build_from_raw_span(l_buffer);
             JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_str);
 
-            l_json_deserializer.next_field("type");
-            if (l_json_deserializer.get_currentfield().value.compare(slice_int8_build_rawstr("SHADER")))
+            JSONDeserializer l_json_value_deserializer;
+            switch (AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer))
             {
-                JSONDeserializer l_json_obj_deserializer = JSONDeserializer::allocate_default();
-                l_json_deserializer.next_object("val", &l_json_obj_deserializer);
-
-                l_compiled_dependencies = ShaderAssetJSON::allocate_dependencies_from_json(&l_json_obj_deserializer);
-                l_json_obj_deserializer.free();
+            case AssetJSONTypes::SHADER:
+            {
+                l_compiled_dependencies = ShaderAssetJSON::allocate_dependencies_from_json(&l_json_value_deserializer).allocated_binary;
+            }
+            break;
+            case AssetJSONTypes::MATERIAL:
+            {
+                l_compiled_dependencies = MaterialAssetJSON::allocate_dependencies_from_json(&l_json_value_deserializer, p_root_path).allocated_binary;
+            }
+            break;
+            default:
+                abort();
             }
 
+            l_json_value_deserializer.free();
             l_json_deserializer.free();
             l_str.free();
             return l_compiled_dependencies;
@@ -110,8 +124,7 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
 inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, AssetDatabase& p_asset_database, const Slice<int8>& p_root_path,
                                                                    const Slice<int8>& p_relative_asset_path)
 {
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice<int8>::build("\0", 0, 1));
-    File l_asset_file = File::open(l_asset_full_path.slice);
+    File l_asset_file = AssetCompiler_open_asset_file(p_root_path, p_relative_asset_path);
     Span<int8> l_compiled_asset = AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file);
     if (l_compiled_asset.Memory)
     {
@@ -121,10 +134,9 @@ inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
     Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
     if (l_compiled_dependencies.Memory)
     {
-        p_asset_database.insert_asset_dependencies_blob(l_asset_full_path.slice, l_compiled_dependencies.slice);
+        p_asset_database.insert_asset_dependencies_blob(p_relative_asset_path, l_compiled_dependencies.slice);
         l_compiled_dependencies.free();
     }
 
-    l_asset_file.free();
-    l_asset_full_path.free();
+    l_asset_file.free_with_path();
 };

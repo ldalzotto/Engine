@@ -1,7 +1,83 @@
 #pragma once
 
+inline File AssetCompiler_open_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
+{
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build("\0", 0, 1));
+    File l_asset_file = File::open(l_asset_full_path.slice);
+    return l_asset_file;
+};
+
+inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
+{
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build("\0", 0, 1));
+    File l_asset_file = File::open(l_asset_full_path.slice);
+    Span<int8> l_asset_file_content = l_asset_file.read_file_allocate();
+    l_asset_full_path.free();
+    l_asset_file.free();
+    return l_asset_file_content;
+};
+
+enum class AssetJSONTypes
+{
+    UNDEFINED = 0,
+    SHADER = UNDEFINED + 1,
+    MATERIAL = SHADER + 1
+};
+
+struct AssetJSON
+{
+    inline static AssetJSONTypes get_value_of_asset_json(JSONDeserializer* p_json_deserializer, JSONDeserializer* out_val_deserializer)
+    {
+        p_json_deserializer->next_field("type");
+        AssetJSONTypes l_type = AssetJSONTypes::UNDEFINED;
+        if (p_json_deserializer->get_currentfield().value.compare(slice_int8_build_rawstr("SHADER")))
+        {
+            l_type = AssetJSONTypes::SHADER;
+        }
+        else if (p_json_deserializer->get_currentfield().value.compare(slice_int8_build_rawstr("MATERIAL")))
+        {
+            l_type = AssetJSONTypes::MATERIAL;
+        }
+
+        *out_val_deserializer = JSONDeserializer::allocate_default();
+        p_json_deserializer->next_object("val", out_val_deserializer);
+        return l_type;
+    };
+
+    inline static void move_json_deserializer_to_value(JSONDeserializer* p_json_deserializer, JSONDeserializer* out_value_json_deserializer)
+    {
+        p_json_deserializer->next_field("type");
+        *out_value_json_deserializer = JSONDeserializer::allocate_default();
+        p_json_deserializer->next_object("val", out_value_json_deserializer);
+    };
+};
+
 struct ShaderAssetJSON
 {
+    inline static v2::ShaderLayoutParameterType slice_to_shaderlayoutparamtertype(const Slice<int8>& p_slice)
+    {
+        if (p_slice.compare(slice_int8_build_rawstr("TEXTURE_FRAGMENT")))
+        {
+            return v2::ShaderLayoutParameterType::TEXTURE_FRAGMENT;
+        }
+        else
+        {
+            abort();
+        }
+    };
+
+    inline static v2::ShaderConfiguration::CompareOp slice_to_compareop(const Slice<int8>& p_slice)
+    {
+        if (p_slice.compare(slice_int8_build_rawstr("Always")))
+        {
+            return v2::ShaderConfiguration::CompareOp::Always;
+        }
+        else
+        {
+            abort();
+        }
+    };
+
     inline static Span<int8> allocate_asset_from_json(JSONDeserializer* p_json_deserializer)
     {
         v2::ShaderRessource::Asset::Value l_shader_ressource_value{};
@@ -25,12 +101,7 @@ struct ShaderAssetJSON
                 {
                     if (l_layout_parameter_deserializer.next_field("type"))
                     {
-                        Slice<int8> l_type_slice = l_layout_parameter_deserializer.get_currentfield().value;
-                        if (l_type_slice.compare(slice_int8_build_rawstr("TEXTURE_FRAGMENT")))
-                        {
-                            l_shader_layout_parameter_types_deserialized.push_back_element(v2::ShaderLayoutParameterType::TEXTURE_FRAGMENT);
-                        }
-                        // TODO map to enum
+                        l_shader_layout_parameter_types_deserialized.push_back_element(slice_to_shaderlayoutparamtertype(l_layout_parameter_deserializer.get_currentfield().value));
                     };
                 }
                 l_layout_parameter_deserializer.free();
@@ -41,12 +112,7 @@ struct ShaderAssetJSON
 
         if (p_json_deserializer->next_field("ztest"))
         {
-            Slice<int8> l_z_test_string = p_json_deserializer->get_currentfield().value;
-            if (l_z_test_string.compare(slice_int8_build_rawstr("Always")))
-            {
-                l_shader_ressource_value.shader_configuration.ztest = v2::ShaderConfiguration::CompareOp::Always;
-            }
-            // TODO -> others
+            l_shader_ressource_value.shader_configuration.ztest = slice_to_compareop(p_json_deserializer->get_currentfield().value);
         }
 
         p_json_deserializer->next_field("zwrite");
@@ -60,7 +126,7 @@ struct ShaderAssetJSON
         return l_asset.allocated_binary;
     };
 
-    inline static v2::ShaderRessource::AssetDependencies::Value build_dependencies_from_json(JSONDeserializer* p_json_deserializer)
+    inline static void push_dependencies_from_json_to_buffer(JSONDeserializer* p_json_deserializer, Vector<int8>* in_out_buffer)
     {
         v2::ShaderRessource::AssetDependencies::Value l_shader_dependencies_value{};
 
@@ -70,25 +136,95 @@ struct ShaderAssetJSON
         p_json_deserializer->next_field("fragment");
         l_shader_dependencies_value.fragment_module = HashSlice(p_json_deserializer->get_currentfield().value);
 
-        return l_shader_dependencies_value;
+        l_shader_dependencies_value.push_to_binary_buffer(in_out_buffer);
     };
 
-    inline static Span<int8> allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
+    inline static v2::ShaderRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
     {
-        return v2::ShaderRessource::AssetDependencies::allocate_from_values(build_dependencies_from_json(p_json_deserializer)).allocated_binary;
+        Vector<int8> l_binary = Vector<int8>::allocate(0);
+        push_dependencies_from_json_to_buffer(p_json_deserializer, &l_binary);
+        return v2::ShaderRessource::AssetDependencies{l_binary.Memory};
     };
 };
 
-/*
-    "execution_order": "1001",
-    "vertex": "/shad.vert",
-    "fragment": "/shad.frag",
-    "layout": {
-      "parameters": [
-        { "type": "TEXTURE_FRAGMENT" }
-      ]
-    },
-    "ztest": "Always",
-    "zwrite": "false"
+struct MaterialAssetJSON
+{
+    inline static Span<int8> allocate_asset_from_json(JSONDeserializer* p_json_deserializer)
+    {
+        VaryingVector l_material_parameters = VaryingVector::allocate_default();
+        p_json_deserializer->next_field("shader");
 
- */
+        JSONDeserializer l_parameter_array_deserializer = JSONDeserializer::allocate_default();
+        if (p_json_deserializer->next_array("parameters", &l_parameter_array_deserializer))
+        {
+            JSONDeserializer l_parameter_deserializer = JSONDeserializer::allocate_default();
+            while (l_parameter_array_deserializer.next_array_object(&l_parameter_deserializer))
+            {
+                l_parameter_deserializer.next_field("type");
+                Slice<int8> l_material_parameter_type = l_parameter_deserializer.get_currentfield().value;
+                if (l_material_parameter_type.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
+                {
+                    l_parameter_deserializer.next_field("val");
+                    hash_t l_texture_hash = HashSlice(l_parameter_deserializer.get_currentfield().value);
+                    // TODO -> Having a better way to work with MaterialRessource parameters
+                    l_material_parameters.push_back_2(SliceN<v2::ShaderParameter::Type, 1>{v2::ShaderParameter::Type::TEXTURE_GPU}.to_slice().build_asint8(),
+                                                      Slice<uimax>::build_asint8_memory_singleelement(&l_texture_hash));
+                }
+            }
+            l_parameter_deserializer.free();
+        }
+
+        Span<int8> l_asset_allocated_binary = v2::MaterialRessource::Asset::allocate_from_values(v2::MaterialRessource::Asset::Value{l_material_parameters.to_varying_slice()}).allocated_binary;
+
+        l_parameter_array_deserializer.free();
+        l_material_parameters.free();
+
+        return l_asset_allocated_binary;
+    };
+
+    inline static v2::MaterialRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer, const Slice<int8>& p_root_path)
+    {
+        Vector<int8> l_binary = Vector<int8>::allocate(0);
+
+        p_json_deserializer->next_field("shader");
+        BinarySerializer::type(&l_binary, HashSlice(p_json_deserializer->get_currentfield().value));
+
+        {
+            Span<int8> l_shader_file_content = AssetCompiler_open_and_read_asset_file(p_root_path, p_json_deserializer->get_currentfield().value);
+            String l_shader_file_str = String::build_from_raw_span(l_shader_file_content);
+            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::start(l_shader_file_str);
+            JSONDeserializer l_shader_asset_value_deserializer;
+            AssetJSON::move_json_deserializer_to_value(&l_shader_asset_deserializer, &l_shader_asset_value_deserializer);
+            ShaderAssetJSON::push_dependencies_from_json_to_buffer(&l_shader_asset_value_deserializer, &l_binary);
+
+            l_shader_asset_deserializer.free();
+            l_shader_asset_value_deserializer.free();
+            l_shader_file_str.free();
+        }
+
+        Vector<hash_t> l_textures = Vector<hash_t>::allocate(0);
+        JSONDeserializer l_parameter_array_deserializer = JSONDeserializer::allocate_default();
+        if (p_json_deserializer->next_array("parameters", &l_parameter_array_deserializer))
+        {
+            JSONDeserializer l_parameter_deserializer = JSONDeserializer::allocate_default();
+            while (l_parameter_array_deserializer.next_array_object(&l_parameter_deserializer))
+            {
+                l_parameter_deserializer.next_field("type");
+                Slice<int8> l_material_parameter_type = l_parameter_deserializer.get_currentfield().value;
+                if (l_material_parameter_type.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
+                {
+                    l_parameter_deserializer.next_field("val");
+                    l_textures.push_back_element(HashSlice(l_parameter_deserializer.get_currentfield().value));
+                }
+            }
+            l_parameter_deserializer.free();
+        }
+        l_parameter_array_deserializer.free();
+
+        BinarySerializer::slice(&l_binary, l_textures.Memory.slice.build_asint8());
+
+        l_textures.free();
+
+        return v2::MaterialRessource::AssetDependencies{l_binary.Memory};
+    };
+};

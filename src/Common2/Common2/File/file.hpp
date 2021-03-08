@@ -180,6 +180,12 @@ struct File
         this->native_handle = NULL;
     };
 
+    inline void free_with_path()
+    {
+        this->free();
+        this->path_allocated.free();
+    }
+
     inline void erase_with_slicepath()
     {
         this->free();
