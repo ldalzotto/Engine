@@ -79,13 +79,9 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
         Span<int8> l_material_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
         v2::MaterialRessource::Asset::Value l_material_value = v2::MaterialRessource::Asset::Value::build_from_asset(v2::MaterialRessource::Asset::build_from_binary(l_material_ressource_compiled));
 
-        assert_true(l_material_value.parameters.get_size() == 1);
-        Slice<int8> l_parameter = l_material_value.parameters.get_element(0);
-        assert_true(*(ShaderParameter::Type*)l_parameter.Begin == ShaderParameter::Type::TEXTURE_GPU);
-        l_parameter.slide(sizeof(ShaderParameter::Type));
+        assert_true(l_material_value.parameters.parameters.get_size() == 1);
         hash_t l_texture_hash = HashSlice(slice_int8_build_rawstr("link_to_png.png"));
-        assert_true(l_parameter.compare(Slice<hash_t>::build_asint8_memory_singleelement(&l_texture_hash)));
-
+        assert_true(l_texture_hash == *l_material_value.parameters.get_parameter_texture_gpu_value(0));
         l_material_ressource_compiled.free();
     }
     {

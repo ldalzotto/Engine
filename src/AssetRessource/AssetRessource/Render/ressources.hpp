@@ -401,13 +401,45 @@ struct MaterialRessource
 
         struct Value
         {
-            VaryingSlice parameters; // TODO -> implementing a "header" version of the VaryingSlice.
+            struct Parameters
+            {
+                VaryingSlice parameters;
+
+                inline ShaderParameter::Type get_parameter_type(const uimax p_index)
+                {
+                    return *(ShaderParameter::Type*)this->parameters.get_element(p_index).Begin;
+                };
+
+                inline hash_t* get_parameter_texture_gpu_value(const uimax p_index)
+                {
+#if RENDER_BOUND_TEST
+                    assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::TEXTURE_GPU);
+#endif
+                    return slice_cast<hash_t>(this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type))).Begin;
+                };
+
+                inline Slice<int8> get_parameter_uniform_host_value(const uimax p_index)
+                {
+#if RENDER_BOUND_TEST
+                    assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::UNIFORM_HOST);
+#endif
+                    return this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type));
+                };
+
+                inline static void add_parameter_texture(VaryingVector& p_parameters, const hash_t p_texture_hash)
+                {
+                    ShaderParameter::Type l_type = ShaderParameter::Type::TEXTURE_GPU;
+                    p_parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_type), Slice<hash_t>::build_asint8_memory_singleelement(&p_texture_hash));
+                };
+            };
+
+            Parameters parameters;
 
             inline static Value build_from_asset(const Asset& p_asset)
             {
                 Value l_value;
                 BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
-                l_value.parameters = l_deserializer.varying_slice();
+                l_value.parameters.parameters = l_deserializer.varying_slice();
                 return l_value;
             };
         };
@@ -425,7 +457,7 @@ struct MaterialRessource
         inline static Asset allocate_from_values(const Value& p_value)
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
-            BinarySerializer::varying_slice(&l_binary, p_value.parameters);
+            BinarySerializer::varying_slice(&l_binary, p_value.parameters.parameters);
             return build_from_binary(l_binary.Memory);
         };
     };

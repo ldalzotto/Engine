@@ -46,7 +46,7 @@ struct FromString
         uimax l_value = 0;
         for (loop(i, 0, p_string.Size))
         {
-            l_value += (uimax)((p_string.get(i) - '0') * (uimax)pow(10, (p_string.Size - 1) - i));
+            l_value += (uimax)((p_string.get(i) - '0') * (uimax)pow(10, ((double)p_string.Size - 1) - i));
         }
         return l_value;
     };
@@ -56,7 +56,7 @@ struct FromString
         uint8 l_value = 0;
         for (loop(i, 0, p_string.Size))
         {
-            l_value += (uint8)((p_string.get(i) - '0') * (uint8)pow(10, (p_string.Size - 1) - i));
+            l_value += (uint8)((p_string.get(i) - '0') * (uint8)pow(10, ((double)p_string.Size - 1) - i));
         }
         return l_value;
     };

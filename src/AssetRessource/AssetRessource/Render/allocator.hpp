@@ -629,23 +629,21 @@ struct MaterialRessourceUnit
             MaterialRessource::Asset::Value l_value = MaterialRessource::Asset::Value::build_from_asset(l_event.asset);
             Material l_material_value = Material::allocate_empty(p_gpu_context.graphics_allocator, 1);
 
-            for (loop(j, 0, l_value.parameters.get_size()))
+            for (loop(j, 0, l_value.parameters.parameters.get_size()))
             {
-                Slice<int8> l_element = l_value.parameters.get_element(j);
-                switch (*(ShaderParameter::Type*)l_element.Begin)
+                switch (l_value.parameters.get_parameter_type(j))
                 {
                 case ShaderParameter::Type::UNIFORM_HOST:
                 {
-                    l_element.slide(sizeof(ShaderParameter::Type));
+                    Slice<int8> l_element = l_value.parameters.get_parameter_uniform_host_value(j);
                     l_material_value.add_and_allocate_buffer_host_parameter(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
                                                                             p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_element);
                 }
                 break;
                 case ShaderParameter::Type::TEXTURE_GPU:
                 {
-                    l_element.slide(sizeof(ShaderParameter::Type));
-                    hash_t l_texture_id = slice_cast<hash_t>(l_element).get(0);
-                    Token(TextureGPU) l_texture = p_texture_unit.textures.pool.get(p_texture_unit.textures.CountMap.get_value_nothashed(l_texture_id)->token).texture;
+                    hash_t* l_texture_id = l_value.parameters.get_parameter_texture_gpu_value(j);
+                    Token(TextureGPU) l_texture = p_texture_unit.textures.pool.get(p_texture_unit.textures.CountMap.get_value_nothashed(*l_texture_id)->token).texture;
                     l_material_value.add_texture_gpu_parameter(p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_texture,
                                                                p_gpu_context.graphics_allocator.heap.textures_gpu.get(l_texture));
                 }

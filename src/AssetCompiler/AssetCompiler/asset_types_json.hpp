@@ -165,10 +165,7 @@ struct MaterialAssetJSON
                 if (l_material_parameter_type.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
                 {
                     l_parameter_deserializer.next_field("val");
-                    hash_t l_texture_hash = HashSlice(l_parameter_deserializer.get_currentfield().value);
-                    // TODO -> Having a better way to work with MaterialRessource parameters
-                    l_material_parameters.push_back_2(SliceN<v2::ShaderParameter::Type, 1>{v2::ShaderParameter::Type::TEXTURE_GPU}.to_slice().build_asint8(),
-                                                      Slice<uimax>::build_asint8_memory_singleelement(&l_texture_hash));
+                    v2::MaterialRessource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
                 }
             }
             l_parameter_deserializer.free();

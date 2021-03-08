@@ -54,8 +54,8 @@ inline void render_asset_binary_serialization_deserialization_test()
         MaterialRessource::Asset::Value l_value = MaterialRessource::Asset::Value{l_material_parameters_varying};
         MaterialRessource::Asset l_material = MaterialRessource::Asset::allocate_from_values(l_value);
         MaterialRessource::Asset::Value l_deserialized_value = MaterialRessource::Asset::Value::build_from_asset(l_material);
-        assert_true(l_deserialized_value.parameters.memory.compare(l_material_parameters_varying.memory));
-        assert_true(l_deserialized_value.parameters.chunks.compare(l_material_parameters_varying.chunks));
+        assert_true(l_deserialized_value.parameters.parameters.memory.compare(l_material_parameters_varying.memory));
+        assert_true(l_deserialized_value.parameters.parameters.chunks.compare(l_material_parameters_varying.chunks));
         l_material.free();
     }
 };
