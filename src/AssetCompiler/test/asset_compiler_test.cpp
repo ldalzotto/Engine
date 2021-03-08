@@ -101,6 +101,26 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
     l_asset_database_path.free();
 };
 
+inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
+{
+    String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("cube.obj"));
+    {
+        Span<int8> l_mesh_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("cube.obj")));
+        v2::MeshRessource::Asset::Value l_mesh_value = v2::MeshRessource::Asset::Value::build_from_asset(v2::MeshRessource::Asset::build_from_binary(l_mesh_ressource_compiled));
+
+        // TODO -> we will have successfully displayed a cube, we can lock these values
+    }
+
+    l_asset_root_path.free();
+    l_asset_database.free();
+    l_asset_database_path.free();
+};
+
 int main()
 {
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -108,6 +128,7 @@ int main()
     shader_module_compilation(l_shader_compiler);
     shader_asset_compilation(l_shader_compiler);
     material_asset_compilation(l_shader_compiler);
+    mesh_asset_compilation(l_shader_compiler);
 
     l_shader_compiler.free();
 

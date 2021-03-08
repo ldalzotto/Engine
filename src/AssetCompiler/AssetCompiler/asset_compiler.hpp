@@ -2,6 +2,7 @@
 
 #include "AssetRessource/asset_ressource.hpp"
 #include "./asset_types_json.hpp"
+#include "./obj_compiler.hpp"
 #include "./shader_compiler.hpp"
 
 using namespace v2;
@@ -39,6 +40,20 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
             l_compiled_shader.free();
             l_buffer.free();
             return l_compiled_buffer;
+        }
+        else if (l_asset_path.compare(slice_int8_build_rawstr("obj")))
+        {
+            Span<int8> l_buffer = p_asset_file.read_file_allocate();
+            Vector<v2::Vertex> l_vertices = Vector<v2::Vertex>::allocate(0);
+            Vector<uint32> l_indices = Vector<uint32>::allocate(0);
+            ObjCompiler::ReadObj(l_buffer.slice, l_vertices, l_indices);
+
+            MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices.to_slice(), l_indices.to_slice()});
+
+            l_vertices.free();
+            l_indices.free();
+            l_buffer.free();
+            return l_mesh_asset.allocated_binary;
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("json")))
         {
