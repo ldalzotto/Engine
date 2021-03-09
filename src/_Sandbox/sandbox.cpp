@@ -147,14 +147,12 @@ struct D3RendererCubeSandboxEnvironment
                 v2::MeshRendererComponent::AssetDependencies{HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1_material.json")), HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1.obj"))}, this->cube_node);
             p_engine.scene.add_node_component_by_value(this->cube_node, v2::MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
         }
-        /*
         else if (p_engine.clock.framecount == 60)
         {
             p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
             p_engine.scene.remove_node(p_engine.scene.get_node(this->cube_node));
             p_engine.close();
         }
-         */
         else
         {
             NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->cube_node);
@@ -172,7 +170,7 @@ inline void d3renderer_cube()
     }
     EngineConfiguration l_configuration{};
     l_configuration.asset_database_path = l_database_path.to_slice();
-    l_configuration.render_size = v2ui{128, 128};
+    l_configuration.render_size = v2ui{800, 800};
     SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
     l_database_path.free();
 
@@ -183,7 +181,7 @@ inline void d3renderer_cube()
 int main()
 {
     boxcollision();
-    // d3renderer_cube();
+    d3renderer_cube();
 
     memleak_ckeck();
 };

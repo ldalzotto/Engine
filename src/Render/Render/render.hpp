@@ -298,8 +298,8 @@ inline void D3RendererAllocator::free_shader(const Token(ShaderIndex) p_shader)
             break;
         }
     }
-
-    this->heap.shaders_to_materials.release_vector(tk_bf(Slice<Token(Material)>, l_shader.shader_index));
+    
+    this->heap.shaders_to_materials.release_vector(tk_bf(Slice<Token(Material)>, p_shader));
     this->heap.shaders.release_element(p_shader);
 };
 

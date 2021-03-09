@@ -181,6 +181,26 @@ struct ShaderAssetJSON
 
 struct MaterialAssetJSON
 {
+    inline static v2::ShaderParameter::Type slice_to_shaderparametertype(const Slice<int8>& p_slice)
+    {
+        if (p_slice.compare(slice_int8_build_rawstr("UNIFORM_HOST")))
+        {
+            return v2::ShaderParameter::Type::UNIFORM_HOST;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("UNIFORM_GPU")))
+        {
+            return v2::ShaderParameter::Type::UNIFORM_GPU;
+        }
+        else if (p_slice.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
+        {
+            return v2::ShaderParameter::Type::TEXTURE_GPU;
+        }
+        else
+        {
+            abort();
+        }
+    };
+
     inline static Span<int8> allocate_asset_from_json(JSONDeserializer* p_json_deserializer)
     {
         VaryingVector l_material_parameters = VaryingVector::allocate_default();
@@ -194,10 +214,16 @@ struct MaterialAssetJSON
             {
                 l_parameter_deserializer.next_field("type");
                 Slice<int8> l_material_parameter_type = l_parameter_deserializer.get_currentfield().value;
-                if (l_material_parameter_type.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
+                switch (slice_to_shaderparametertype(l_material_parameter_type))
+                {
+                case v2::ShaderParameter::Type::TEXTURE_GPU:
                 {
                     l_parameter_deserializer.next_field("val");
                     v2::MaterialRessource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
+                }
+                break;
+                default:
+                    abort();
                 }
             }
             l_parameter_deserializer.free();

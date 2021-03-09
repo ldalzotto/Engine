@@ -57,6 +57,34 @@ inline void bufferstep_test()
     l_ctx.free();
 };
 
+inline void shader_linkto_material_allocation_test()
+{
+    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
+
+    {
+        // When ShaderIndex are freed, the token value of the ShaderIndex is taken to also delete the link between ShaderIndex and Material.
+        ShaderIndex l_shader_index_executed_after = {5, tk_bd(Shader), tk_bd(ShaderLayout)};
+        Token(ShaderIndex) l_shader_index_executed_after_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_after);
+
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 1);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
+
+        ShaderIndex l_shader_index_executed_before = {1, tk_bd(Shader), tk_bd(ShaderLayout)};
+        Token(ShaderIndex) l_shader_index_executed_before_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_before);
+
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 2);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_before_token)).Size == 0);
+
+        l_renderer.allocator.free_shader(l_shader_index_executed_after_token);
+        l_renderer.allocator.free_shader(l_shader_index_executed_before_token);
+    }
+
+    l_renderer.free(l_ctx);
+    l_ctx.free();
+};
+
 inline void draw_test()
 {
     GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -335,6 +363,7 @@ int main()
 #endif
 
     v2::bufferstep_test();
+    v2::shader_linkto_material_allocation_test();
     v2::draw_test();
 
     memleak_ckeck();
