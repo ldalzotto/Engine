@@ -17,6 +17,7 @@ ThirdParty
 ThirdParty2
 
 .asset/
+_asset/asset
 
 Assets/**/*.db
 Assets/**/*.json

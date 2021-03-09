@@ -6,7 +6,7 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
-    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shad.frag"));
 
@@ -35,7 +35,7 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
 
-    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shader_asset_test.json"));
 
@@ -71,7 +71,7 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
 
-    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
 
@@ -106,7 +106,7 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
 
-    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("cube.obj"));
     {
@@ -141,7 +141,7 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
 
-    Span<int8> l_asset_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset/"));
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("texture.png"));
     {

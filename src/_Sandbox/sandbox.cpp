@@ -103,13 +103,11 @@ struct BoxCollisionSandboxEnvironment
 inline void boxcollision()
 {
     String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/asset.db"));
+    l_database_path.append(slice_int8_build_rawstr("/boxcollision/asset.db"));
     {
-        /*
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase_with_slicepath();
         AssetDatabase::initialize_database(l_database_path.to_slice());
-         */
     }
     EngineConfiguration l_condfiguration;
     l_condfiguration.asset_database_path = l_database_path.to_slice();
@@ -169,7 +167,7 @@ struct D3RendererCubeSandboxEnvironment
 inline void d3renderer_cube()
 {
     String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/asset.db"));
+    l_database_path.append(slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
     {
     }
     EngineConfiguration l_configuration{};

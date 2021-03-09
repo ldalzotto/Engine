@@ -1,4 +1,6 @@
 
+set(ASSET_FOLDER_VAR "${CMAKE_CURRENT_SOURCE_DIR}/../_asset/asset")
+
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
 target_link_libraries(Common2 INTERFACE SQLite)
@@ -60,18 +62,18 @@ target_include_directories(Test_AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_D
 
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
-target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/.asset/")
+target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/Common2/")
 
 
 add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
 target_link_libraries(AssetDatabaseTest PUBLIC Test_AssetDatabase)
-target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/.asset/")
+target_compile_definitions(AssetDatabaseTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/AssetDatabase/")
 
 add_executable(AssetCompilerTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/test/asset_compiler_test.cpp)
 target_link_libraries(AssetCompilerTest PUBLIC AssetCompiler)
 target_link_libraries(AssetCompilerTest PUBLIC Test_AssetDatabase)
-target_compile_definitions(AssetCompilerTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/test/.asset/")
+target_compile_definitions(AssetCompilerTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/AssetCompiler/")
 
 add_executable(GPUTest ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
 target_link_libraries(GPUTest PUBLIC GPU)
@@ -93,7 +95,7 @@ add_executable(AssetRessourceTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetRessource/tes
 target_link_libraries(AssetRessourceTest PUBLIC AssetRessource)
 target_link_libraries(AssetRessourceTest PUBLIC AssetCompiler)
 target_link_libraries(AssetRessourceTest PUBLIC Test_AssetDatabase)
-target_compile_definitions(AssetRessourceTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/AssetRessource/test/.asset/")
+target_compile_definitions(AssetRessourceTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/AssetRessource/")
 
 add_executable(Scene2Test ${CMAKE_CURRENT_SOURCE_DIR}/Scene2/test/scene2_test.cpp)
 target_link_libraries(Scene2Test PUBLIC Scene2)
@@ -102,11 +104,11 @@ add_executable(Scene2MiddlewareTest ${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware
 target_link_libraries(Scene2MiddlewareTest PUBLIC Scene2Middleware)
 target_link_libraries(Scene2MiddlewareTest PUBLIC AssetCompiler)
 target_link_libraries(Scene2MiddlewareTest PUBLIC Test_AssetDatabase)
-target_compile_definitions(Scene2MiddlewareTest PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/Scene2Middleware/test/.asset/")
+target_compile_definitions(Scene2MiddlewareTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/Scene2Middleware/")
 
 add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)
-target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/.asset/")
+target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/sandbox/")
 
 
 add_custom_target(
