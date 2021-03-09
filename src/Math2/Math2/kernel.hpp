@@ -602,6 +602,26 @@ inline v3f& m33f::operator[](const uint8 p_index)
     return this->Points2D[p_index];
 };
 
+inline m33f m33f::lookat(const v3f& p_origin, const v3f& p_target, const v3f& p_up)
+{
+    return m33f::looat_normalized(p_origin, p_target, p_up.normalize());
+};
+
+inline m33f m33f::looat_normalized(const v3f& p_origin, const v3f& p_target, const v3f& p_up_normalized)
+{
+#if MATH_NORMALIZATION_TEST
+    v3f_assert_is_normalized(p_up_normalized);
+#endif
+
+    m33f l_return = m33f_const::IDENTITY;
+
+    l_return.Forward = (p_target - p_origin).normalize();
+    l_return.Right = p_up_normalized.cross(l_return.Forward).normalize(); // (Up x Forward  is Right)
+    l_return.Up = l_return.Forward.cross(l_return.Right).normalize();     // (Forward x Right is Up)
+
+    return l_return;
+};
+
 inline float32 m44f::mul_line_column(const m44f& p_left, const m44f& p_right, const uint8 p_column_index, const uint8 p_line_index)
 {
     float32 l_return = 0;
@@ -771,19 +791,8 @@ inline m44f m44f::lookat_rotation(const v3f& p_origin, const v3f& p_target, cons
     m44f l_return = m44f_const::IDENTITY;
 
     l_return.Forward.Vec3 = (p_target - p_origin).normalize();
-    l_return.Right.Vec3 = l_return.Forward.Vec3.cross(p_up).normalize();
-    l_return.Up.Vec3 = l_return.Right.Vec3.cross(l_return.Forward.Vec3).normalize();
-
-    return l_return;
-};
-
-inline m44f m44f::lookat_rotation_inverted(const v3f& p_origin, const v3f& p_target, const v3f& p_up)
-{
-    m44f l_return = m44f_const::IDENTITY;
-
-    l_return.Forward.Vec3 = (p_target - p_origin).normalize();
-    l_return.Right.Vec3 = l_return.Forward.Vec3.cross(p_up).normalize() * -1.0f;
-    l_return.Up.Vec3 = l_return.Right.Vec3.cross(l_return.Forward.Vec3).normalize() * -1.0f;
+    l_return.Right.Vec3 = p_up.cross(l_return.Forward.Vec3).normalize();
+    l_return.Up.Vec3 = l_return.Forward.Vec3.cross(l_return.Right.Vec3).normalize();
 
     return l_return;
 };
@@ -801,7 +810,7 @@ inline m44f m44f::view_normalized(const v3f& p_world_position, const v3f& p_forw
     v3f l_target = p_forward;
     l_target = p_world_position + l_target;
     v3f l_up = p_up_normalized * -1.0f;
-    return m44f::trs(m44f::build_translation(p_world_position), m44f::lookat_rotation_inverted(p_world_position, l_target, l_up), m44f::build_scale(v3f_const::ONE)).inv();
+    return m44f::trs(m44f::build_translation(p_world_position), m44f::lookat_rotation(p_world_position, l_target, l_up), m44f::build_scale(v3f_const::ONE)).inv();
 };
 
 inline m44f m44f::perspective(const float32 p_fov, const float32 p_aspect, const float32 p_near, const float32 p_far)

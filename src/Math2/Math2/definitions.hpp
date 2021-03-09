@@ -316,6 +316,10 @@ struct alignas(sizeof(float32)) m33f
 
     v3f& operator[](const uint8 p_index);
 
+    static m33f lookat(const v3f& p_origin, const v3f& p_target, const v3f& p_up);
+
+    static m33f looat_normalized(const v3f& p_origin, const v3f& p_target, const v3f& p_up_normalized);
+
     quat to_rotation() const; // Converts a 3D axis matrix to rotation as quaternion
 };
 
@@ -385,10 +389,8 @@ struct alignas(sizeof(float32)) m44f
 
     static m44f trs(const v3f& p_translation, const m33f& p_axis, const v3f& p_scale);
 
+    // If p_up is already normalized, we can use the cheaper version : lookat_rotation_normalized
     static m44f lookat_rotation(const v3f& p_origin, const v3f& p_target, const v3f& p_up);
-
-    // If p_up is already normalized, we can use the cheaper version : lookat_rotation_inverted_normalized
-    static m44f lookat_rotation_inverted(const v3f& p_origin, const v3f& p_target, const v3f& p_up);
 
     // If p_up is already normalized, we can use the cheaper version : view_normalized
     static m44f view(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up);

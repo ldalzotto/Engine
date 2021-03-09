@@ -1,5 +1,6 @@
 
-#include "./Sandbox/engine_runner.hpp"
+
+#include "./Sandbox/sandbox.hpp"
 
 struct BoxCollisionSandboxEnvironment
 {
@@ -119,10 +120,17 @@ inline void boxcollision()
     l_runner.main_loop_headless(l_sandbox_environment);
 };
 
+namespace D3RendererCubeSandboxEnvironment_Const
+{
+const hash_t block_1x1_material = HashSlice(slice_int8_build_rawstr("block_1x1_material.json"));
+const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"));
+} // namespace D3RendererCubeSandboxEnvironment_Const
+
 struct D3RendererCubeSandboxEnvironment
 {
+
     Token(v2::Node) camera_node;
-    Token(v2::Node) cube_node;
+    Token(v2::Node) l_square_root_node;
 
     inline static D3RendererCubeSandboxEnvironment build_default()
     {
@@ -137,25 +145,69 @@ struct D3RendererCubeSandboxEnvironment
     {
         if (p_engine.clock.framecount == 1)
         {
-            this->camera_node = p_engine.scene.add_node(transform{v3f{5.0f, 5.0f, 5.0f}, quat{-0.106073f, 0.867209f, -0.283699f, -0.395236f}, v3f_const::ONE}, v2::Scene_const::root_node);
+            quat l_rot = m33f::lookat(v3f{7.0f, 7.0f, 7.0f}, v3f{0.0f, 0.0f, 0.0f}, v3f_const::UP).to_rotation();
+            v3f l_euler = l_rot.euler();
+            this->camera_node = p_engine.scene.add_node(transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE}, v2::Scene_const::root_node);
             p_engine.scene_middleware.render_middleware.allocate_camera_inline(v2::CameraComponent::Asset{1.0f, 30.0f, 45.0f}, camera_node);
             p_engine.scene.add_node_component_by_value(camera_node, v2::CameraComponentAsset_SceneCommunication::construct_nodecomponent());
 
-            this->cube_node = p_engine.scene.add_node(transform_const::ORIGIN, v2::Scene_const::root_node);
-            Token(v2::MeshRendererComponent) l_mesh_renderer = v2::RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
-                p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.asset_database,
-                v2::MeshRendererComponent::AssetDependencies{HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1_material.json")), HashSlice(slice_int8_build_rawstr("block_1x1_ALT_1.obj"))}, this->cube_node);
-            p_engine.scene.add_node_component_by_value(this->cube_node, v2::MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
+            {
+                {
+                    this->l_square_root_node = p_engine.scene.add_node(transform_const::ORIGIN, v2::Scene_const::root_node);
+                }
+                {
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                    {
+                        Token(v2::Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
+                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+                    }
+                }
+            }
         }
         else if (p_engine.clock.framecount == 60)
         {
             p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
-            p_engine.scene.remove_node(p_engine.scene.get_node(this->cube_node));
+            p_engine.scene.remove_node(p_engine.scene.get_node(this->l_square_root_node));
             p_engine.close();
         }
         else
         {
-            NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->cube_node);
+            NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->l_square_root_node);
             p_engine.scene.tree.set_worldrotation(l_node,
                                                   p_engine.scene.tree.get_worldrotation(l_node) * quat::rotate_around(v3f_const::UP, 45.0f * v2::Math_const::DEG_TO_RAD * p_engine.clock.deltatime));
         }

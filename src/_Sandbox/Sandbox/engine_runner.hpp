@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Engine/engine.hpp"
-
 struct SandboxEngineRunner
 {
     Engine engine;
