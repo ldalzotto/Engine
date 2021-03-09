@@ -94,6 +94,11 @@ struct String
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size - 1);
     };
 
+    inline Slice<int8> to_slice_with_null_termination()
+    {
+        return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);
+    };
+
     inline void remove_int8s(const int8 p_int8)
     {
         for (vector_loop_reverse(&this->Memory, i))

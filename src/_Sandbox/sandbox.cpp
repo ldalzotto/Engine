@@ -1,6 +1,7 @@
 
 
 #include "./Sandbox/sandbox.hpp"
+#include "AssetCompiler/asset_compiler.hpp"
 
 struct BoxCollisionSandboxEnvironment
 {
@@ -98,6 +99,10 @@ struct BoxCollisionSandboxEnvironment
 
             p_engine.close();
         }
+    };
+
+    inline void end_of_frame(Engine& p_engine){
+
     };
 };
 
@@ -201,6 +206,7 @@ struct D3RendererCubeSandboxEnvironment
         }
         else if (p_engine.clock.framecount == 60)
         {
+
             p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
             p_engine.scene.remove_node(p_engine.scene.get_node(this->l_square_root_node));
             p_engine.close();
@@ -210,6 +216,38 @@ struct D3RendererCubeSandboxEnvironment
             NTree<v2::Node>::Resolve l_node = p_engine.scene.get_node(this->l_square_root_node);
             p_engine.scene.tree.set_worldrotation(l_node,
                                                   p_engine.scene.tree.get_worldrotation(l_node) * quat::rotate_around(v3f_const::UP, 45.0f * v2::Math_const::DEG_TO_RAD * p_engine.clock.deltatime));
+        }
+    };
+
+    inline void end_of_frame(Engine& p_engine)
+    {
+        if (p_engine.clock.framecount == 20 || p_engine.clock.framecount == 40)
+        {
+            ImageFormat l_rendertarget_texture_format;
+            Token(v2::BufferHost) l_rendertarget_texture = v2::GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+                p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
+                &l_rendertarget_texture_format);
+
+            p_engine.gpu_context.buffer_step_and_wait_for_completion();
+            Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
+
+            String l_image_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+            l_image_path.append(slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
+            ToString::auimax_append(p_engine.clock.framecount, l_image_path);
+            l_image_path.append(slice_int8_build_rawstr(".jpg"));
+
+#if 0
+            ImgCompiler::write_to_image(l_image_path.to_slice_wuth_null_termination(), l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4,
+                                        l_rendertarget_texture_value);
+#endif
+
+            Span<int8> l_image = ImgCompiler::read_image(l_image_path.to_slice_with_null_termination());
+            assert_true(l_rendertarget_texture_value.compare(l_image.slice));
+            l_image.free();
+            l_image_path.free();
+
+            v2::BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
+                                                                                         l_rendertarget_texture);
         }
     };
 };
@@ -222,7 +260,8 @@ inline void d3renderer_cube()
     }
     EngineConfiguration l_configuration{};
     l_configuration.asset_database_path = l_database_path.to_slice();
-    l_configuration.render_size = v2ui{800, 800};
+    l_configuration.render_size = v2ui{800, 600};
+    l_configuration.render_target_host_readable = 1;
     SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
     l_database_path.free();
 

@@ -65,6 +65,7 @@ struct FromString
 struct ToString
 {
     static constexpr uimax float32str_size = ((CHAR_BIT * sizeof(Limits::tol_f) / 3) + 3);
+    static constexpr uimax uimaxstr_size = ((CHAR_BIT * sizeof(uimax) / 3) + 3);
 
     inline static Slice<int8> afloat32(const float32 p_value, const Slice<int8>& out)
     {
@@ -93,5 +94,32 @@ struct ToString
         // l_char_nb += sprintf(out.Begin + l_char_nb, "%i", l_right);
 
         return Slice<int8>::build_memory_elementnb(out.Begin, l_char_nb);
+    };
+
+    inline static Slice<int8> auimax(const uimax p_value, const Slice<int8>& out)
+    {
+#if CONTAINER_BOUND_TEST
+        if (out.Size < uimaxstr_size)
+        {
+            abort();
+        };
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
+        int32 l_char_nb = sprintf(out.Begin, uimax_string_format_str, p_value);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+        return Slice<int8>::build_memory_elementnb(out.Begin, l_char_nb);
+    };
+
+    inline static void auimax_append(const uimax p_value, String& p_str)
+    {
+        Slice<int8> l_uimax_str_buffer = SliceN<int8, uimaxstr_size>{}.to_slice();
+        p_str.append(auimax(p_value, l_uimax_str_buffer));
     };
 };

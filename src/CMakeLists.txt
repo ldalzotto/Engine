@@ -109,6 +109,7 @@ target_compile_definitions(Scene2MiddlewareTest PUBLIC ASSET_FOLDER_PATH="${ASSE
 add_executable(Sandbox ${CMAKE_CURRENT_SOURCE_DIR}/_Sandbox/sandbox.cpp)
 target_link_libraries(Sandbox PUBLIC Engine)
 target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/sandbox/")
+target_link_libraries(Sandbox PUBLIC AssetCompiler)
 
 
 add_custom_target(

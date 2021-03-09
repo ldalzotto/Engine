@@ -112,7 +112,7 @@ SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN
 struct ColorStep
 {
     v3ui render_target_dimensions;
-    ;
+
     Token(GraphicsPass) pass;
     Span<v4f> clear_values;
 
@@ -515,7 +515,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))}};
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 0.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}});
+    l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}});
     l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 

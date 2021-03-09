@@ -128,6 +128,13 @@ struct GPUContext
         this->buffer_memory.allocator.device.command_buffer.submit_and_notity(this->buffer_end_semaphore);
     };
 
+    inline void buffer_step_and_wait_for_completion()
+    {
+        BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
+        this->buffer_memory.allocator.device.command_buffer.submit();
+        this->buffer_memory.allocator.device.command_buffer.wait_for_completion();
+    };
+
     inline GraphicsBinder creates_graphics_binder()
     {
         GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_memory.allocator, this->graphics_allocator);

@@ -181,11 +181,24 @@ template <class ElementType> struct Slice
         }
 #endif
     };
+
+    inline void assert_null_terminated() const
+    {
+#if CONTAINER_BOUND_TEST
+        assert_true(sizeof(ElementType) == sizeof(int8));
+        assert_true(this->get(this->Size - 1) == '\0');
+#endif
+    };
 };
 
 inline Slice<int8> slice_int8_build_rawstr(const int8* p_str)
 {
     return Slice<int8>::build_memory_elementnb((int8*)p_str, strlen(p_str));
+};
+
+inline Slice<int8> slice_int8_build_rawstr_with_null_termination(const int8* p_str)
+{
+    return Slice<int8>::build_memory_elementnb((int8*)p_str, strlen(p_str) + 1);
 };
 
 template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8>& p_slice)

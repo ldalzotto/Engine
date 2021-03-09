@@ -1244,5 +1244,12 @@ struct GraphicsPassReader
         TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));
         return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
     };
+    inline static Token(BufferHost) read_graphics_pass_attachment_to_bufferhost_with_imageformat(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+                                                                                                 const GraphicsPass& p_graphics_pass, const uimax p_index, ImageFormat* out_image_format)
+    {
+        TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));
+        *out_image_format = p_buffer_memory.allocator.gpu_images.get(l_attachment.Image).format;
+        return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
+    };
 };
 }; // namespace v2

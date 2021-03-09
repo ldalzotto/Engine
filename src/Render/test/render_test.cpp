@@ -233,33 +233,33 @@ inline void draw_test()
         int l_index = 0;
         for (; l_index <= 7; l_index++)
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
         }
         {
             for (loop(i, 0, 2))
             {
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
-                l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
                 assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
                 assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+                assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                l_index += 1;
+                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
             }
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
             assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
@@ -269,37 +269,37 @@ inline void draw_test()
             l_index += 1;
             assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
-            l_index += 1;
-        }
-        {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+        }
+        {
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
             assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
             l_index += 1;
@@ -307,30 +307,30 @@ inline void draw_test()
             l_index += 1;
             assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
             assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         for (loop(i, 0, 7))
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, 0});
+            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
     }

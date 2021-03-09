@@ -5,6 +5,7 @@ struct EngineConfiguration
     Slice<int8> asset_database_path;
     int8 headless;
     v2ui render_size;
+    int8 render_target_host_readable;
 };
 
 struct Engine
@@ -41,9 +42,23 @@ struct Engine
         l_engine.scene_middleware = v2::SceneMiddleware::allocate_default();
         l_engine.asset_database = AssetDatabase::allocate(p_configuration.asset_database_path);
 
+        v2::ColorStep::AllocateInfo l_colorstep_allocate_info{};
+        l_colorstep_allocate_info.attachment_host_read = p_configuration.render_target_host_readable;
         if (!p_configuration.headless)
         {
-            l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, v2::ColorStep::AllocateInfo{v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1}, 0, 1});
+            l_colorstep_allocate_info.render_target_dimensions = v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1};
+            l_colorstep_allocate_info.color_attachment_sample = 1;
+        }
+        else
+        {
+            l_colorstep_allocate_info.render_target_dimensions = v3ui{8, 8, 1};
+            l_colorstep_allocate_info.color_attachment_sample = 0;
+        }
+
+        l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, l_colorstep_allocate_info);
+
+        if (!p_configuration.headless)
+        {
             l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, slice_int8_build_rawstr(""));
             Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
             Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
@@ -58,7 +73,6 @@ struct Engine
         }
         else
         {
-            l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, v2::ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0, 1});
             l_engine.window = tk_bd(Window);
             l_engine.present = {0};
         }
@@ -200,11 +214,12 @@ struct EngineLoopFunctions
         p_engine.gpu_context.wait_for_completion();
     };
 
-    inline static void end_of_frame(Engine& p_engine)
+    template <class ExternalCallbacksFn> inline static void end_of_frame(Engine& p_engine, ExternalCallbacksFn& p_external_callbacks)
     {
         Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{p_engine};
         p_engine.scene.consume_component_events_stateful(l_component_releaser);
         p_engine.scene.step();
+        p_external_callbacks.end_of_frame(p_engine);
     };
 };
 
@@ -216,7 +231,7 @@ template <class ExternalCallbacksFn> inline void Engine::single_frame_forced_del
         EngineLoopFunctions::new_frame(*this);
         EngineLoopFunctions::update(*this, p_delta, p_callbacks);
         EngineLoopFunctions::render(*this);
-        EngineLoopFunctions::end_of_frame(*this);
+        EngineLoopFunctions::end_of_frame(*this, p_callbacks);
     }
 };
 
@@ -228,7 +243,7 @@ template <class ExternalCallbacksFn> inline void Engine::single_frame_forced_del
         EngineLoopFunctions::new_frame_headless(*this);
         EngineLoopFunctions::update(*this, p_delta, p_callbacks);
         EngineLoopFunctions::render_headless(*this);
-        EngineLoopFunctions::end_of_frame(*this);
+        EngineLoopFunctions::end_of_frame(*this, p_callbacks);
     }
 };
 

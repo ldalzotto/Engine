@@ -128,6 +128,10 @@ struct BufferHost
 
     void push(const Slice<int8>& p_from);
 
+    // TODO
+    // /!\ WARNING - The mapped memory slice is the slice of the WHOLE allocated GPU memory.
+    // Depending on GPU device, effectively allocated GPU memory may be higher that the initial requested Size.
+    // This, casting on the returned slice may cause crash.
     Slice<int8>& get_mapped_memory();
 
   private:
