@@ -19,7 +19,7 @@ struct Engine
     v2::GPUContext gpu_context;
     v2::D3Renderer renderer;
 
-    Token(Window) window;
+    TokenT(Window) window;
     v2::GPUPresent present;
 
     v2::RenderRessourceAllocator2 renderer_ressource_allocator;
@@ -33,7 +33,7 @@ struct Engine
     {
         Engine l_engine;
         l_engine.abort_condition = 0;
-        l_engine.clock = Clock::allocate_default();
+        l_engine.clock = Clock_build_default();
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
         l_engine.gpu_context = v2::GPUContext::allocate(SliceN<v2::GPUExtension, 1>{v2::GPUExtension::WINDOW_PRESENT}.to_slice());
@@ -73,7 +73,7 @@ struct Engine
         }
         else
         {
-            l_engine.window = tk_bd(Window);
+            l_engine.window = tk_bdT(Window);
             l_engine.present = {0};
         }
 
@@ -149,7 +149,7 @@ struct EngineLoopFunctions
 {
     inline static void new_frame(Engine& p_engine)
     {
-        p_engine.clock.newframe();
+        Clock_newframe(&p_engine.clock);
 
         Window& l_window = WindowAllocator::get_window(p_engine.window);
         if (l_window.resize_event.ask)
@@ -168,12 +168,12 @@ struct EngineLoopFunctions
 
     inline static void new_frame_headless(Engine& p_engine)
     {
-        p_engine.clock.newframe();
+        Clock_newframe(&p_engine.clock);
     };
 
     template <class ExternalCallbacksFn> inline static void update(Engine& p_engine, const float32 p_delta, ExternalCallbacksFn& p_external_callbacks)
     {
-        p_engine.clock.newupdate(p_delta);
+        Clock_newupdate(&p_engine.clock, p_delta);
 
         p_external_callbacks.before_collision(p_engine);
 

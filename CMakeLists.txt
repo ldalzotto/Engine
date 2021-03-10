@@ -4,7 +4,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(EngineCPP VERSION 0.0.1)
 
-enable_language(CXX)
+enable_language(C CXX)
+
+add_compile_options(/std:c++latest)
 
 
 # get_cmake_property(_variableNames VARIABLES)

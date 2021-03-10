@@ -87,8 +87,8 @@ inline int8 obb::overlap(const obb& p_other) const
 {
     v3f p_left_points_arr[8];
     v3f p_right_points_arr[8];
-    Slice<v3f> p_left_points = Slice<v3f>::build_memory_elementnb(p_left_points_arr, 8);
-    Slice<v3f> p_right_points = Slice<v3f>::build_memory_elementnb(p_right_points_arr, 8);
+    Slice<v3f> p_left_points = Slice<v3f>::build(p_left_points_arr, 8);
+    Slice<v3f> p_right_points = Slice<v3f>::build(p_right_points_arr, 8);
 
     this->extract_vertices(&p_left_points);
     p_other.extract_vertices(&p_right_points);
@@ -156,7 +156,7 @@ inline int8 obb::overlap2(const obb& p_other) const
         for (uint8 j = 0; j < 3; j++)
         {
             l_radii.Points2D[i].Points[j] = this->axis.Points2D[i].dot(p_other.axis.Points2D[j]);
-            l_radii_abs.Points2D[i].Points[j] = fabsf(l_radii.Points2D[i].Points[j]) + (float32)Limits::tol_f;
+            l_radii_abs.Points2D[i].Points[j] = fabsf(l_radii.Points2D[i].Points[j]) + (float32)Limits_tolerance_float64;
         }
     }
 

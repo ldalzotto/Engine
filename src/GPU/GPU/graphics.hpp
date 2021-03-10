@@ -88,7 +88,7 @@ typedef VkImageView ImageView_t;
 */
 struct TextureGPU
 {
-    Token(ImageGPU) Image;
+    TokenT(ImageGPU) Image;
     ImageView_t ImageView;
 
     static TextureGPU allocate(BufferMemory& p_buffer_memory, const ImageFormat& p_image_format);
@@ -138,11 +138,11 @@ struct GraphicsPass
     Span<RenderPassAttachment> attachement_layout;
 #endif
     RenderPass render_pass;
-    Token(Slice<Token(TextureGPU)>) attachment_textures;
+    TokenT(Slice<TokenT(TextureGPU)>) attachment_textures;
     FrameBuffer_t frame_buffer;
 
     template <uint32 AttachmentCount>
-    static GraphicsPass allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
+    static GraphicsPass allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const TokenT(Slice<TokenT(TextureGPU)>) p_allocated_attachment_textures,
                                  const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views);
 
     void free(const GraphicsDevice& p_graphics_device);
@@ -248,15 +248,15 @@ namespace ShadowShaderUniformBufferParameter
 {
 template <class ShadowShaderUniformBufferParameter_t(_), class ShadowBuffer_t(_)>
 static ShadowShaderUniformBufferParameter_t(_) allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                        const Token(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory);
+                                                        const TokenT(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory);
 };
 
 struct ShaderUniformBufferHostParameter
 {
     VkDescriptorSet ShadowShaderUniformBufferParameter_member_descriptor_set;
-    Token(BufferHost) ShadowShaderUniformBufferParameter_member_memory;
+    TokenT(BufferHost) ShadowShaderUniformBufferParameter_member_memory;
 
-    static ShaderUniformBufferHostParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory_token,
+    static ShaderUniformBufferHostParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const TokenT(BufferHost) p_buffer_memory_token,
                                                      const BufferHost& p_buffer_memory);
 
     void ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device);
@@ -265,9 +265,9 @@ struct ShaderUniformBufferHostParameter
 struct ShaderUniformBufferGPUParameter
 {
     VkDescriptorSet ShadowShaderUniformBufferParameter_member_descriptor_set;
-    Token(BufferGPU) ShadowShaderUniformBufferParameter_member_memory;
+    TokenT(BufferGPU) ShadowShaderUniformBufferParameter_member_memory;
 
-    static ShaderUniformBufferGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferGPU) p_buffer_memory_token,
+    static ShaderUniformBufferGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const TokenT(BufferGPU) p_buffer_memory_token,
                                                     const BufferGPU& p_buffer_memory);
 
     void ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device);
@@ -276,9 +276,9 @@ struct ShaderUniformBufferGPUParameter
 struct ShaderTextureGPUParameter
 {
     VkDescriptorSet descriptor_set;
-    Token(TextureGPU) texture;
+    TokenT(TextureGPU) texture;
 
-    static ShaderTextureGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(TextureGPU) p_texture_token,
+    static ShaderTextureGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const TokenT(TextureGPU) p_texture_token,
                                               const TextureGPU& p_texture);
 
     void free(const GraphicsDevice& p_graphics_device);
@@ -296,16 +296,16 @@ struct ShaderParameter
 
     union
     {
-        Token(ShaderUniformBufferHostParameter) uniform_host;
-        Token(ShaderUniformBufferGPUParameter) uniform_gpu;
-        Token(ShaderTextureGPUParameter) texture_gpu;
+        TokenT(ShaderUniformBufferHostParameter) uniform_host;
+        TokenT(ShaderUniformBufferGPUParameter) uniform_gpu;
+        TokenT(ShaderTextureGPUParameter) texture_gpu;
     };
 };
 
 struct GraphicsHeap2
 {
     Pool<TextureGPU> textures_gpu;
-    PoolOfVector<Token(TextureGPU)> renderpass_attachment_textures;
+    PoolOfVector<TokenT(TextureGPU)> renderpass_attachment_textures;
     Pool<GraphicsPass> graphics_pass;
     Pool<ShaderLayout> shader_layouts;
     Pool<ShaderModule> shader_modules;
@@ -320,7 +320,7 @@ struct GraphicsHeap2
     inline static GraphicsHeap2 allocate_default()
     {
         return GraphicsHeap2{Pool<TextureGPU>::allocate(0),
-                             PoolOfVector<Token(TextureGPU)>::allocate_default(),
+                             PoolOfVector<TokenT(TextureGPU)>::allocate_default(),
                              Pool<GraphicsPass>::allocate(0),
                              Pool<ShaderLayout>::allocate(0),
                              Pool<ShaderModule>::allocate(0),
@@ -556,10 +556,10 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
 #endif
 
     VkAttachmentDescription l_attachments_raw[AttachmentCount];
-    Slice<VkAttachmentDescription> l_attachments = Slice<VkAttachmentDescription>::build_memory_elementnb(l_attachments_raw, AttachmentCount);
+    Slice<VkAttachmentDescription> l_attachments = Slice<VkAttachmentDescription>::build(l_attachments_raw, AttachmentCount);
 
     VkAttachmentReference l_color_attachments_ref_raw[AttachmentCount];
-    Slice<VkAttachmentReference> l_color_attachments_ref = Slice<VkAttachmentReference>::build_memory_elementnb(l_color_attachments_ref_raw, AttachmentCount);
+    Slice<VkAttachmentReference> l_color_attachments_ref = Slice<VkAttachmentReference>::build(l_color_attachments_ref_raw, AttachmentCount);
     uint8 l_color_attachments_ref_count = 0;
 
     VkAttachmentReference l_depth_attachment_reference;
@@ -640,7 +640,7 @@ inline void RenderPass::free(const GraphicsDevice& p_device)
 };
 
 template <uint32 AttachmentCount>
-inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
+inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const TokenT(Slice<TokenT(TextureGPU)>) p_allocated_attachment_textures,
                                            const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
 {
 
@@ -830,7 +830,7 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
 
     VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
-    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build(l_shader_stages, 0, 0);
+    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build_begin_end(l_shader_stages, 0, 0);
 
     if (p_shader_allocate_info.vertex_shader.module != NULL)
     {
@@ -899,7 +899,7 @@ inline VkFormat Shader::get_primitivetype_format(const PrimitiveSerializedTypes:
 
 template <class ShadowShaderUniformBufferParameter_t(_), class ShadowBuffer_t(_)>
 inline ShadowShaderUniformBufferParameter_t(_) ShadowShaderUniformBufferParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                            const Token(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory)
+                                                                                            const TokenT(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory)
 {
     ShadowShaderUniformBufferParameter_t(_) l_shader_unifor_buffer_parameter;
     VkDescriptorSetAllocateInfo l_allocate_info{};
@@ -929,7 +929,7 @@ inline ShadowShaderUniformBufferParameter_t(_) ShadowShaderUniformBufferParamete
 };
 
 inline ShaderUniformBufferHostParameter ShaderUniformBufferHostParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                   const Token(BufferHost) p_buffer_memory_token, const BufferHost& p_buffer_memory)
+                                                                                   const TokenT(BufferHost) p_buffer_memory_token, const BufferHost& p_buffer_memory)
 {
     return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferHostParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
 };
@@ -940,7 +940,7 @@ inline void ShaderUniformBufferHostParameter::ShadowShaderUniformBufferParameter
 };
 
 inline ShaderUniformBufferGPUParameter ShaderUniformBufferGPUParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                 const Token(BufferGPU) p_buffer_memory_token, const BufferGPU& p_buffer_memory)
+                                                                                 const TokenT(BufferGPU) p_buffer_memory_token, const BufferGPU& p_buffer_memory)
 {
     return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferGPUParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
 };
@@ -951,7 +951,7 @@ inline void ShaderUniformBufferGPUParameter::ShadowShaderUniformBufferParameter_
 };
 
 inline ShaderTextureGPUParameter ShaderTextureGPUParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                     const Token(TextureGPU) p_texture_token, const TextureGPU& p_texture)
+                                                                     const TokenT(TextureGPU) p_texture_token, const TextureGPU& p_texture)
 {
     ShaderTextureGPUParameter l_shader_texture_gpu_parameter;
     VkDescriptorSetAllocateInfo l_allocate_info{};
@@ -1001,7 +1001,7 @@ struct GraphicsAllocator2
         this->graphics_device.free();
     };
 
-    inline Token(TextureGPU) allocate_texturegpu(const TransferDevice& p_transfer_device, const Token(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu, const ImageFormat& p_image_format)
+    inline TokenT(TextureGPU) allocate_texturegpu(const TransferDevice& p_transfer_device, const TokenT(ImageGPU) p_image_gpu_token, const ImageGPU& p_image_gpu, const ImageFormat& p_image_format)
     {
         TextureGPU l_texture_gpu;
         l_texture_gpu.Image = p_image_gpu_token;
@@ -1025,7 +1025,7 @@ struct GraphicsAllocator2
         return this->heap.textures_gpu.alloc_element(l_texture_gpu);
     };
 
-    inline void free_texturegpu(const TransferDevice& p_transfer_device, const Token(TextureGPU) p_texture_gpu)
+    inline void free_texturegpu(const TransferDevice& p_transfer_device, const TokenT(TextureGPU) p_texture_gpu)
     {
         TextureGPU& l_texture_gpu = this->heap.textures_gpu.get(p_texture_gpu);
         vkDestroyImageView(p_transfer_device.device, l_texture_gpu.ImageView, NULL);
@@ -1034,17 +1034,17 @@ struct GraphicsAllocator2
     };
 
     template <uint8 AttachmentCount>
-    inline Token(GraphicsPass) allocate_graphicspass(const TransferDevice& p_transfer_device, const Token(ImageGPU) p_attachment_image_tokens[AttachmentCount],
+    inline TokenT(GraphicsPass) allocate_graphicspass(const TransferDevice& p_transfer_device, const TokenT(ImageGPU) p_attachment_image_tokens[AttachmentCount],
                                                      const ImageGPU p_attachment_images[AttachmentCount], const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
     {
         return this->heap.graphics_pass.alloc_element(_allocate_graphics_pass<AttachmentCount>(p_transfer_device, p_attachment_image_tokens, p_attachment_images, p_attachments));
     };
 
-    inline void free_graphicspass(const TransferDevice& p_transfer_device, const Token(GraphicsPass) p_graphics_pass)
+    inline void free_graphicspass(const TransferDevice& p_transfer_device, const TokenT(GraphicsPass) p_graphics_pass)
     {
         GraphicsPass& l_graphics_pass = this->heap.graphics_pass.get(p_graphics_pass);
 
-        Slice<Token(TextureGPU)> l_attached_textures = this->heap.renderpass_attachment_textures.get_vector(l_graphics_pass.attachment_textures);
+        Slice<TokenT(TextureGPU)> l_attached_textures = this->heap.renderpass_attachment_textures.get_vector(l_graphics_pass.attachment_textures);
         for (loop(i, 0, l_attached_textures.Size))
         {
             this->free_texturegpu(p_transfer_device, l_attached_textures.get(i));
@@ -1056,46 +1056,46 @@ struct GraphicsAllocator2
         this->heap.graphics_pass.release_element(p_graphics_pass);
     };
 
-    inline Token(ShaderLayout)
+    inline TokenT(ShaderLayout)
         allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size)
     {
         return this->heap.shader_layouts.alloc_element(
             ShaderLayout::allocate(this->graphics_device, in_shaderlayout_parameter_types.move_to_value(), in_vertex_input_layout.move_to_value(), in_vertex_element_size));
     };
 
-    inline void free_shader_layout(const Token(ShaderLayout) p_shader_layout)
+    inline void free_shader_layout(const TokenT(ShaderLayout) p_shader_layout)
     {
         ShaderLayout& l_shader_layout = this->heap.shader_layouts.get(p_shader_layout);
         l_shader_layout.free(this->graphics_device);
         this->heap.shader_layouts.release_element(p_shader_layout);
     };
 
-    inline Token(ShaderModule) allocate_shader_module(const Slice<int8>& p_shader_compiled_str)
+    inline TokenT(ShaderModule) allocate_shader_module(const Slice<int8>& p_shader_compiled_str)
     {
         return this->heap.shader_modules.alloc_element(ShaderModule::allocate(this->graphics_device, p_shader_compiled_str));
     };
 
-    inline void free_shader_module(const Token(ShaderModule) p_shader_module)
+    inline void free_shader_module(const TokenT(ShaderModule) p_shader_module)
     {
         ShaderModule& l_shader_module = this->heap.shader_modules.get(p_shader_module);
         l_shader_module.free(this->graphics_device);
         this->heap.shader_modules.release_element(p_shader_module);
     };
 
-    inline Token(Shader) allocate_shader(const ShaderAllocateInfo& p_shader_allocate_info)
+    inline TokenT(Shader) allocate_shader(const ShaderAllocateInfo& p_shader_allocate_info)
     {
         return this->heap.shaders.alloc_element(Shader::allocate(this->graphics_device, p_shader_allocate_info));
     };
 
-    inline void free_shader(const Token(Shader) p_shader)
+    inline void free_shader(const TokenT(Shader) p_shader)
     {
         Shader& l_shader = this->heap.shaders.get(p_shader);
         l_shader.free(this->graphics_device);
         this->heap.shaders.release_element(p_shader);
     };
 
-    inline Token(ShaderUniformBufferHostParameter)
-        allocate_shaderuniformbufferhost_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const Token(BufferHost) p_memory_token, const BufferHost& p_memory)
+    inline TokenT(ShaderUniformBufferHostParameter)
+        allocate_shaderuniformbufferhost_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const TokenT(BufferHost) p_memory_token, const BufferHost& p_memory)
     {
         ShaderUniformBufferHostParameter l_shader_uniform_buffer_parameter = ShaderUniformBufferHostParameter::allocate(
             this->graphics_device, this->graphics_device.shaderlayout_parameters.get_descriptorset_layout(p_shaderlayout_parameter_type), p_memory_token, p_memory);
@@ -1103,15 +1103,15 @@ struct GraphicsAllocator2
         return this->heap.shader_uniform_buffer_host_parameters.alloc_element(l_shader_uniform_buffer_parameter);
     };
 
-    inline void free_shaderuniformbufferhost_parameter(const Token(ShaderUniformBufferHostParameter) p_parameter)
+    inline void free_shaderuniformbufferhost_parameter(const TokenT(ShaderUniformBufferHostParameter) p_parameter)
     {
         ShaderUniformBufferHostParameter& l_parameter = this->heap.shader_uniform_buffer_host_parameters.get(p_parameter);
         l_parameter.free(this->graphics_device);
         this->heap.shader_uniform_buffer_host_parameters.release_element(p_parameter);
     };
 
-    inline Token(ShaderUniformBufferGPUParameter)
-        allocate_shaderuniformbuffergpu_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const Token(BufferGPU) p_memory_token, const BufferGPU& p_memory)
+    inline TokenT(ShaderUniformBufferGPUParameter)
+        allocate_shaderuniformbuffergpu_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const TokenT(BufferGPU) p_memory_token, const BufferGPU& p_memory)
     {
         ShaderUniformBufferGPUParameter l_shader_uniform_buffer_paramter = ShaderUniformBufferGPUParameter::allocate(
             this->graphics_device, this->graphics_device.shaderlayout_parameters.get_descriptorset_layout(p_shaderlayout_parameter_type), p_memory_token, p_memory);
@@ -1119,15 +1119,15 @@ struct GraphicsAllocator2
         return this->heap.shader_uniform_buffer_gpu_parameters.alloc_element(l_shader_uniform_buffer_paramter);
     };
 
-    inline void free_shaderuniformbuffergpu_parameter(const Token(ShaderUniformBufferGPUParameter) p_parameter)
+    inline void free_shaderuniformbuffergpu_parameter(const TokenT(ShaderUniformBufferGPUParameter) p_parameter)
     {
         ShaderUniformBufferGPUParameter& l_parameter = this->heap.shader_uniform_buffer_gpu_parameters.get(p_parameter);
         l_parameter.free(this->graphics_device);
         this->heap.shader_uniform_buffer_gpu_parameters.release_element(p_parameter);
     };
 
-    inline Token(ShaderTextureGPUParameter)
-        allocate_shadertexturegpu_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const Token(TextureGPU) p_texture_token, const TextureGPU& p_texture)
+    inline TokenT(ShaderTextureGPUParameter)
+        allocate_shadertexturegpu_parameter(const ShaderLayoutParameterType p_shaderlayout_parameter_type, const TokenT(TextureGPU) p_texture_token, const TextureGPU& p_texture)
     {
         ShaderTextureGPUParameter l_shader_texture_gpu_parameter = ShaderTextureGPUParameter::allocate(
             this->graphics_device, this->graphics_device.shaderlayout_parameters.get_descriptorset_layout(p_shaderlayout_parameter_type), p_texture_token, p_texture);
@@ -1135,36 +1135,36 @@ struct GraphicsAllocator2
         return this->heap.shader_texture_gpu_parameters.alloc_element(l_shader_texture_gpu_parameter);
     };
 
-    inline void free_shadertexturegpu_parameter(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
+    inline void free_shadertexturegpu_parameter(const TransferDevice& p_transfer_device, const TokenT(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
     {
         p_parameter.free(this->graphics_device);
         this->heap.shader_texture_gpu_parameters.release_element(p_parameter_token);
     };
 
-    inline void free_shadertexturegpu_parameter_with_texture(const TransferDevice& p_transfer_device, const Token(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
+    inline void free_shadertexturegpu_parameter_with_texture(const TransferDevice& p_transfer_device, const TokenT(ShaderTextureGPUParameter) p_parameter_token, ShaderTextureGPUParameter& p_parameter)
     {
         this->free_texturegpu(p_transfer_device, p_parameter.texture);
         this->free_shadertexturegpu_parameter(p_transfer_device, p_parameter_token, p_parameter);
     };
 
-    inline Token(Slice<ShaderParameter>) allocate_material_parameters()
+    inline TokenT(Slice<ShaderParameter>) allocate_material_parameters()
     {
         return this->heap.material_parameters.alloc_vector();
     };
 
-    inline void free_material_parameters(const Token(Slice<ShaderParameter>) p_material_parameters)
+    inline void free_material_parameters(const TokenT(Slice<ShaderParameter>) p_material_parameters)
     {
         this->heap.material_parameters.release_vector(p_material_parameters);
     };
 
   private:
     template <uint8 AttachmentCount>
-    inline GraphicsPass _allocate_graphics_pass(const TransferDevice& p_transfer_device, const Token(ImageGPU) p_attachment_image_tokens[AttachmentCount],
+    inline GraphicsPass _allocate_graphics_pass(const TransferDevice& p_transfer_device, const TokenT(ImageGPU) p_attachment_image_tokens[AttachmentCount],
                                                 const ImageGPU p_attachment_images[AttachmentCount], const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
     {
         TextureGPU l_attachment_textures[AttachmentCount];
         ImageView_t l_attachment_image_views[AttachmentCount];
-        Token(TextureGPU) l_tokenized_textures[AttachmentCount];
+        TokenT(TextureGPU) l_tokenized_textures[AttachmentCount];
         for (loop(i, 0, AttachmentCount))
         {
             l_tokenized_textures[i] = this->allocate_texturegpu(p_transfer_device, p_attachment_image_tokens[i], p_attachment_images[i], p_attachments.get(i).image_format);
@@ -1174,7 +1174,7 @@ struct GraphicsAllocator2
 
         return GraphicsPass::allocate<AttachmentCount>(
             p_transfer_device, this->graphics_device,
-            this->heap.renderpass_attachment_textures.alloc_vector_with_values(Slice<Token(TextureGPU)>::build_memory_elementnb(l_tokenized_textures, AttachmentCount)), p_attachments,
+            this->heap.renderpass_attachment_textures.alloc_vector_with_values(Slice<TokenT(TextureGPU)>::build(l_tokenized_textures, AttachmentCount)), p_attachments,
             l_attachment_image_views);
     };
 };
@@ -1186,10 +1186,10 @@ struct GraphicsAllocatorComposition
 {
 
     template <uint8 AttachmentCount>
-    inline static Token(GraphicsPass)
+    inline static TokenT(GraphicsPass)
         allocate_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
     {
-        Token(ImageGPU) l_tokenized_images[AttachmentCount];
+        TokenT(ImageGPU) l_tokenized_images[AttachmentCount];
         ImageGPU l_images[AttachmentCount];
 
         for (loop(i, 0, AttachmentCount))
@@ -1201,10 +1201,10 @@ struct GraphicsAllocatorComposition
         return p_graphics_allocator.allocate_graphicspass<AttachmentCount>(p_buffer_memory.allocator.device, l_tokenized_images, l_images, p_attachments);
     };
 
-    inline static void free_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Token(GraphicsPass) p_graphics_pass)
+    inline static void free_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const TokenT(GraphicsPass) p_graphics_pass)
     {
         GraphicsPass& l_graphics_pass = p_graphics_allocator.heap.graphics_pass.get(p_graphics_pass);
-        Slice<Token(TextureGPU)> l_attachment_textures = p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(l_graphics_pass.attachment_textures);
+        Slice<TokenT(TextureGPU)> l_attachment_textures = p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(l_graphics_pass.attachment_textures);
         for (loop(i, 0, l_attachment_textures.Size))
         {
             BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events,
@@ -1214,13 +1214,13 @@ struct GraphicsAllocatorComposition
         p_graphics_allocator.free_graphicspass(p_buffer_memory.allocator.device, p_graphics_pass);
     };
 
-    inline static Token(TextureGPU) allocate_texturegpu_with_imagegpu(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const ImageFormat& p_image_format)
+    inline static TokenT(TextureGPU) allocate_texturegpu_with_imagegpu(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const ImageFormat& p_image_format)
     {
-        Token(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, p_image_format);
+        TokenT(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, p_image_format);
         return p_graphics_allocator.allocate_texturegpu(p_buffer_memory.allocator.device, l_image_gpu, p_buffer_memory.allocator.gpu_images.get(l_image_gpu), p_image_format);
     };
 
-    inline static void free_texturegpu_with_imagegpu(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Token(TextureGPU) p_texture_gpu)
+    inline static void free_texturegpu_with_imagegpu(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const TokenT(TextureGPU) p_texture_gpu)
     {
         TextureGPU& p_texture = p_graphics_allocator.heap.textures_gpu.get(p_texture_gpu);
         BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, p_texture.Image);
@@ -1228,7 +1228,7 @@ struct GraphicsAllocatorComposition
     };
 
     inline static void free_shaderparameter_uniformbufferhost_with_buffer(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                                          const Token(ShaderUniformBufferHostParameter) p_parameter)
+                                                                          const TokenT(ShaderUniformBufferHostParameter) p_parameter)
     {
         ShaderUniformBufferHostParameter& l_parameter = p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(p_parameter);
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, l_parameter.memory);
@@ -1238,13 +1238,13 @@ struct GraphicsAllocatorComposition
 
 struct GraphicsPassReader
 {
-    inline static Token(BufferHost)
+    inline static TokenT(BufferHost)
         read_graphics_pass_attachment_to_bufferhost(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const GraphicsPass& p_graphics_pass, const uimax p_index)
     {
         TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));
         return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
     };
-    inline static Token(BufferHost) read_graphics_pass_attachment_to_bufferhost_with_imageformat(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+    inline static TokenT(BufferHost) read_graphics_pass_attachment_to_bufferhost_with_imageformat(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
                                                                                                  const GraphicsPass& p_graphics_pass, const uimax p_index, ImageFormat* out_image_format)
     {
         TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));

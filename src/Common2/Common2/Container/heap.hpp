@@ -19,10 +19,10 @@ struct HeapA
 
     struct AllocatedElementReturn
     {
-        Token(SliceIndex) token;
+        TokenT(SliceIndex) token;
         uimax Offset;
 
-        inline static AllocatedElementReturn build(const Token(SliceIndex) p_token, const uimax p_offset)
+        inline static AllocatedElementReturn build(const TokenT(SliceIndex) p_token, const uimax p_offset)
         {
             return AllocatedElementReturn{p_token, p_offset};
         };
@@ -67,15 +67,15 @@ struct Heap
     HeapA::AllocationState allocate_element(const uimax p_size, HeapA::AllocatedElementReturn* out_chunk);
     HeapA::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, HeapA::AllocatedElementReturn* out_chunk);
     HeapA::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, HeapA::AllocatedElementReturn* out_chunk);
-    SliceIndex* get(const Token(SliceIndex) p_chunk);
-    void release_element(const Token(SliceIndex) p_chunk);
-    HeapA::AllocationState reallocate_element(const Token(SliceIndex) p_chunk, const uimax p_new_size, HeapA::AllocatedElementReturn* out_chunk);
+    SliceIndex* get(const TokenT(SliceIndex) p_chunk);
+    void release_element(const TokenT(SliceIndex) p_chunk);
+    HeapA::AllocationState reallocate_element(const TokenT(SliceIndex) p_chunk, const uimax p_new_size, HeapA::AllocatedElementReturn* out_chunk);
 };
 
 struct HeapPagedToken
 {
     uimax PageIndex;
-    Token(SliceIndex) token;
+    TokenT(SliceIndex) token;
 };
 
 /*
@@ -395,18 +395,18 @@ inline HeapA::AllocationState Heap::allocate_element_norealloc_with_modulo_offse
     return HeapA::allocate_element_norealloc_with_modulo_offset(*this, p_size, p_modulo_offset, out_chunk);
 }
 
-inline SliceIndex* Heap::get(const Token(SliceIndex) p_chunk)
+inline SliceIndex* Heap::get(const TokenT(SliceIndex) p_chunk)
 {
     return &this->AllocatedChunks.get(p_chunk);
 }
 
-inline void Heap::release_element(const Token(SliceIndex) p_chunk)
+inline void Heap::release_element(const TokenT(SliceIndex) p_chunk)
 {
     this->FreeChunks.push_back_element(this->AllocatedChunks.get(p_chunk));
     this->AllocatedChunks.release_element(p_chunk);
 }
 
-inline HeapA::AllocationState Heap::reallocate_element(const Token(SliceIndex) p_chunk, const uimax p_new_size, HeapA::AllocatedElementReturn* out_chunk)
+inline HeapA::AllocationState Heap::reallocate_element(const TokenT(SliceIndex) p_chunk, const uimax p_new_size, HeapA::AllocatedElementReturn* out_chunk)
 {
     HeapA::AllocationState l_allocation = this->allocate_element(p_new_size, out_chunk);
     if ((HeapA::AllocationState_t)l_allocation & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED)
@@ -474,5 +474,5 @@ inline SliceIndex* HeapPaged::get_sliceindex_only(const HeapPagedToken& p_token)
 inline void HeapPaged::create_new_page()
 {
     SliceIndex l_chunk_slice = SliceIndex::build(0, this->PageSize);
-    this->FreeChunks.push_back_element(Slice<SliceIndex>::build_memory_elementnb(&l_chunk_slice, 1));
+    this->FreeChunks.push_back_element(Slice<SliceIndex>::build(&l_chunk_slice, 1));
 }

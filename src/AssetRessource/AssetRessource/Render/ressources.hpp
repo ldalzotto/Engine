@@ -32,16 +32,16 @@ struct RessourceIdentifiedHeader
 struct ShaderModuleRessource
 {
     RessourceIdentifiedHeader header;
-    Token(ShaderModule) shader_module;
+    TokenT(ShaderModule) shader_module;
 
     inline static ShaderModuleRessource build_inline_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(ShaderModule)};
+        return ShaderModuleRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bdT(ShaderModule)};
     };
 
     inline static ShaderModuleRessource build_database_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(ShaderModule)};
+        return ShaderModuleRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bdT(ShaderModule)};
     };
 
     struct Asset
@@ -88,14 +88,14 @@ struct ShaderModuleRessource
     struct AllocationEvent
     {
         Asset RessourceAllocationEvent_member_asset;
-        Token(ShaderModuleRessource) RessourceAllocationEvent_member_allocated_ressource;
+        TokenT(ShaderModuleRessource) RessourceAllocationEvent_member_allocated_ressource;
     };
 
     struct FreeEvent
     {
-        Token(ShaderModuleRessource) ressource;
+        TokenT(ShaderModuleRessource) ressource;
 
-        inline static FreeEvent build_from_token(const Token(ShaderModuleRessource) p_token)
+        inline static FreeEvent build_from_token(const TokenT(ShaderModuleRessource) p_token)
         {
             return FreeEvent{p_token};
         };
@@ -105,16 +105,16 @@ struct ShaderModuleRessource
 struct MeshRessource
 {
     RessourceIdentifiedHeader header;
-    Token(Mesh) mesh;
+    TokenT(Mesh) mesh;
 
     inline static MeshRessource build_inline_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Mesh)};
+        return MeshRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bdT(Mesh)};
     };
 
     inline static MeshRessource build_database_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(Mesh)};
+        return MeshRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bdT(Mesh)};
     };
 
     struct Asset
@@ -169,14 +169,14 @@ struct MeshRessource
     struct AllocationEvent
     {
         MeshRessource::Asset RessourceAllocationEvent_member_asset;
-        Token(MeshRessource) RessourceAllocationEvent_member_allocated_ressource;
+        TokenT(MeshRessource) RessourceAllocationEvent_member_allocated_ressource;
     };
 
     struct FreeEvent
     {
-        Token(MeshRessource) ressource;
+        TokenT(MeshRessource) ressource;
 
-        inline static FreeEvent build_from_token(const Token(MeshRessource) p_ressource)
+        inline static FreeEvent build_from_token(const TokenT(MeshRessource) p_ressource)
         {
             return FreeEvent{p_ressource};
         };
@@ -187,17 +187,17 @@ struct ShaderRessource
 {
     struct Dependencies
     {
-        Token(ShaderModuleRessource) vertex_shader;
-        Token(ShaderModuleRessource) fragment_shader;
+        TokenT(ShaderModuleRessource) vertex_shader;
+        TokenT(ShaderModuleRessource) fragment_shader;
     };
 
     RessourceIdentifiedHeader header;
-    Token(ShaderIndex) shader;
+    TokenT(ShaderIndex) shader;
     Dependencies dependencies;
 
     inline static ShaderRessource build_from_id(const hash_t p_id)
     {
-        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(ShaderIndex), Dependencies{tk_bd(ShaderModuleRessource), tk_bd(ShaderModuleRessource)}};
+        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bdT(ShaderIndex), Dependencies{tk_bdT(ShaderModuleRessource), tk_bdT(ShaderModuleRessource)}};
     };
 
     struct Asset
@@ -293,14 +293,14 @@ struct ShaderRessource
     struct AllocationEvent
     {
         ShaderRessource::Asset RessourceAllocationEvent_member_asset;
-        Token(ShaderRessource) RessourceAllocationEvent_member_allocated_ressource;
+        TokenT(ShaderRessource) RessourceAllocationEvent_member_allocated_ressource;
     };
 
     struct FreeEvent
     {
-        Token(ShaderRessource) ressource;
+        TokenT(ShaderRessource) ressource;
 
-        inline static ShaderRessource::FreeEvent build_from_token(const Token(ShaderRessource) p_token)
+        inline static ShaderRessource::FreeEvent build_from_token(const TokenT(ShaderRessource) p_token)
         {
             return ShaderRessource::FreeEvent{p_token};
         };
@@ -310,7 +310,7 @@ struct ShaderRessource
 struct TextureRessource
 {
     RessourceIdentifiedHeader header;
-    Token(TextureGPU) texture;
+    TokenT(TextureGPU) texture;
 
     struct Asset
     {
@@ -367,12 +367,12 @@ struct TextureRessource
     struct AllocationEvent
     {
         Asset RessourceAllocationEvent_member_asset;
-        Token(TextureRessource) RessourceAllocationEvent_member_allocated_ressource;
+        TokenT(TextureRessource) RessourceAllocationEvent_member_allocated_ressource;
     };
 
     struct FreeEvent
     {
-        Token(TextureRessource) ressource;
+        TokenT(TextureRessource) ressource;
     };
 };
 
@@ -380,22 +380,22 @@ struct MaterialRessource
 {
     struct DynamicDependency
     {
-        Token(TextureRessource) dependency;
+        TokenT(TextureRessource) dependency;
     };
 
     struct Dependencies
     {
-        Token(ShaderRessource) shader;
-        Token(Slice<MaterialRessource::DynamicDependency>) dynamic_dependencies;
+        TokenT(ShaderRessource) shader;
+        TokenT(Slice<MaterialRessource::DynamicDependency>) dynamic_dependencies;
     };
 
     RessourceIdentifiedHeader header;
-    Token(Material) material;
+    TokenT(Material) material;
     Dependencies dependencies;
 
     static MaterialRessource build_from_id(const hash_t p_id)
     {
-        return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Material)};
+        return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bdT(Material)};
     };
 
     struct Asset
@@ -535,12 +535,12 @@ struct MaterialRessource
     struct AllocationEvent
     {
         Asset RessourceAllocationEvent_member_asset;
-        Token(MaterialRessource) RessourceAllocationEvent_member_allocated_ressource;
+        TokenT(MaterialRessource) RessourceAllocationEvent_member_allocated_ressource;
     };
 
     struct FreeEvent
     {
-        Token(MaterialRessource) ressource;
+        TokenT(MaterialRessource) ressource;
     };
 };
 

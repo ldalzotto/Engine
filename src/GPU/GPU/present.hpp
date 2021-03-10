@@ -93,8 +93,8 @@ struct GPUPresent_2DQuad
         v2f uv;
     };
 
-    Token(BufferGPU) d2_quad_vertices;
-    Token(BufferGPU) d2_quad_indices_image_indices;
+    TokenT(BufferGPU) d2_quad_vertices;
+    TokenT(BufferGPU) d2_quad_indices_image_indices;
 
     inline static GPUPresent_2DQuad allocate(BufferMemory& p_buffer_memory)
     {
@@ -140,17 +140,17 @@ struct GPUPresent_SwapChain
     Semafore swap_chain_next_image_semaphore;
 
     v3ui swap_chain_dimensions;
-    Span<Token(ImageGPU)> swap_chain_images;
-    Span<Token(GraphicsPass)> rendertarget_copy_pass;
-    Span<Token(Shader)> image_copy_shaders;
+    Span<TokenT(ImageGPU)> swap_chain_images;
+    Span<TokenT(GraphicsPass)> rendertarget_copy_pass;
+    Span<TokenT(Shader)> image_copy_shaders;
 
-    Token(ShaderLayout) image_copy_shader_layout;
-    Token(ShaderModule) image_copy_shader_vertex;
-    Token(ShaderModule) image_copy_shader_fragment;
-    Token(ShaderTextureGPUParameter) shader_parameter_texture;
+    TokenT(ShaderLayout) image_copy_shader_layout;
+    TokenT(ShaderModule) image_copy_shader_vertex;
+    TokenT(ShaderModule) image_copy_shader_fragment;
+    TokenT(ShaderTextureGPUParameter) shader_parameter_texture;
 
     inline static GPUPresent_SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                const Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader,
+                                                const TokenT(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader,
                                                 const v3ui p_window_handle_dimensions)
     {
         GPUPresent_SwapChain l_swap_chain;
@@ -173,7 +173,7 @@ struct GPUPresent_SwapChain
 
   private:
     inline static void allocate_swap_chain_texture_independant(GPUPresent_SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, GraphicsAllocator2& p_graphics_allocator,
-                                                               const Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
+                                                               const TokenT(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(p_present_device.device);
 
@@ -234,9 +234,9 @@ struct GPUPresent_SwapChain
         // l_present_device.present_mode =  VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
         Span<VkImage> l_images = vk::getSwapchainImagesKHR(p_present_device.device, p_swap_chain.swap_chain);
-        p_swap_chain.swap_chain_images = Span<Token(ImageGPU)>::allocate(l_images.Capacity);
-        p_swap_chain.rendertarget_copy_pass = Span<Token(GraphicsPass)>::allocate(l_images.Capacity);
-        p_swap_chain.image_copy_shaders = Span<Token(Shader)>::allocate(l_images.Capacity);
+        p_swap_chain.swap_chain_images = Span<TokenT(ImageGPU)>::allocate(l_images.Capacity);
+        p_swap_chain.rendertarget_copy_pass = Span<TokenT(GraphicsPass)>::allocate(l_images.Capacity);
+        p_swap_chain.image_copy_shaders = Span<TokenT(Shader)>::allocate(l_images.Capacity);
 
         for (loop(i, 0, l_images.Capacity))
         {
@@ -291,7 +291,7 @@ struct GPUPresent
     GPUPresent_2DQuad d2_quad;
 
     inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const WindowHandle p_window_handle,
-                                      const v3ui p_window_size, Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
+                                      const v3ui p_window_size, TokenT(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         GPUPresent l_gpu_present;
         l_gpu_present.device = GPUPresentDevice::allocate(p_gpu_instance, p_window_handle);

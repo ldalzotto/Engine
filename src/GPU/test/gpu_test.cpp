@@ -25,12 +25,12 @@ inline void gpu_buffer_allocation()
 #endif
 
     const uimax l_tested_uimax_array[3] = {10, 20, 30};
-    Slice<uimax> l_tested_uimax_slice = Slice<uimax>::build_memory_elementnb((uimax*)l_tested_uimax_array, 3);
+    Slice<uimax> l_tested_uimax_slice = Slice<uimax>::build((uimax*)l_tested_uimax_array, 3);
 
     // allocating and releasing a BufferHost
     {
         uimax l_value = 20;
-        Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(l_tested_uimax_slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+        TokenT(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(l_tested_uimax_slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
         assert_true(l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().compare(l_tested_uimax_slice.build_asint8()));
         // We can write manually
         l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().get(1) = 25;
@@ -39,7 +39,7 @@ inline void gpu_buffer_allocation()
 
     // allocating and releasing a BufferGPU
     {
-        Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(
             l_tested_uimax_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
 
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice.build_asint8());
@@ -50,7 +50,7 @@ inline void gpu_buffer_allocation()
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
-        Token(BufferHost) l_read_buffer =
+        TokenT(BufferHost) l_read_buffer =
             BufferReadWrite::read_from_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_buffer_memory.allocator.gpu_buffers.get(l_buffer_gpu));
 
         // it creates an gpu read event that will be consumed the next step
@@ -73,7 +73,7 @@ inline void gpu_buffer_allocation()
     {
         assert_true(l_buffer_memory.events.write_buffer_host_to_buffer_gpu_events.Size == 0);
 
-        Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size, BufferUsageFlag::TRANSFER_WRITE);
+        TokenT(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size, BufferUsageFlag::TRANSFER_WRITE);
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice.build_asint8());
 
         // it creates an gpu write event that will be consumed the next step
@@ -105,7 +105,7 @@ inline void gpu_image_allocation()
 
     const uimax l_pixels_count = 16 * 16;
     color l_pixels[l_pixels_count];
-    Slice<color> l_pixels_slize = Slice<color>::build_memory_elementnb(l_pixels, l_pixels_count);
+    Slice<color> l_pixels_slize = Slice<color>::build(l_pixels, l_pixels_count);
     for (loop(i, 1, l_pixels_slize.Size))
     {
         l_pixels_slize.get(i) = color{(uint8)i, (uint8)i, (uint8)i, (uint8)i};
@@ -123,7 +123,7 @@ inline void gpu_image_allocation()
     // allocating and releasing a ImageHost
     {
         l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_READ;
-        Token(ImageHost) l_image_host_token =
+        TokenT(ImageHost) l_image_host_token =
             BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_pixels_slize.build_asint8(), l_imageformat);
         ImageHost& l_image_host = l_buffer_memory.allocator.host_images.get(l_image_host_token);
 
@@ -135,7 +135,7 @@ inline void gpu_image_allocation()
     // allocating and releasing a ImageGPU
     {
         l_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE);
-        Token(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
+        TokenT(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
 
         BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), l_pixels_slize.build_asint8());
 
@@ -145,7 +145,7 @@ inline void gpu_image_allocation()
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
 
-        Token(BufferHost) l_read_buffer =
+        TokenT(BufferHost) l_read_buffer =
             BufferReadWrite::read_from_imagegpu_to_buffer(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu));
 
         // it creates an gpu read event that will be consumed the next step
@@ -169,7 +169,7 @@ inline void gpu_image_allocation()
         assert_true(l_buffer_memory.events.write_buffer_host_to_image_gpu_events.Size == 0);
 
         l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_WRITE;
-        Token(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
+        TokenT(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
         BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), l_pixels_slize.build_asint8());
 
         // it creates an gpu write event that will be consumed the next
@@ -208,7 +208,7 @@ inline void gpu_renderpass_clear()
         RenderPassAttachment{AttachmentType::COLOR,
                              ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
         RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-    Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+    TokenT(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
 
@@ -220,14 +220,14 @@ inline void gpu_renderpass_clear()
         l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
         GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
-        l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+        l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build(l_clear_values, 2));
         l_graphics_binder.end_render_pass();
 
         l_gpu_context.submit_graphics_binder(l_graphics_binder);
         l_gpu_context.wait_for_completion();
     }
 
-    Token(BufferHost) l_color_attachment_value =
+    TokenT(BufferHost) l_color_attachment_value =
         GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
 
     BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
@@ -279,7 +279,7 @@ inline void gpu_draw()
             RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
                                                                                                                     (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
             RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        TokenT(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
@@ -289,16 +289,16 @@ inline void gpu_draw()
         SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
                                                  vertex_position{v3f{0.0f, 0.5f, 0.0f}},  vertex_position{v3f{0.5f, 0.0f, 0.0f}},  vertex_position{v3f{0.0f, 0.0f, 0.0f}}};
 
-        Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             l_vertices.to_slice().build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
-        Token(Shader) l_first_shader;
-        Token(ShaderLayout) l_first_shader_layout;
-        Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+        TokenT(Shader) l_first_shader;
+        TokenT(ShaderLayout) l_first_shader_layout;
+        TokenT(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
             Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
             l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
@@ -358,7 +358,7 @@ inline void gpu_draw()
             l_first_shader = l_graphics_allocator.allocate_shader(l_shader_allocate_info);
         }
 
-        Token(ShaderLayout) l_global_shader_layout;
+        TokenT(ShaderLayout) l_global_shader_layout;
         {
             Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
             l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
@@ -417,7 +417,7 @@ inline void gpu_draw()
 
             l_graphics_binder.bind_material(l_global_material);
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -442,7 +442,7 @@ inline void gpu_draw()
             l_gpu_context.wait_for_completion();
         }
 
-        Token(BufferHost) l_color_attachment_value =
+        TokenT(BufferHost) l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
             BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
@@ -529,7 +529,7 @@ inline void gpu_depth_compare_test()
                                                                                                                     (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
             RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
                                                                                                                     (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT))}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        TokenT(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
@@ -539,16 +539,16 @@ inline void gpu_depth_compare_test()
         SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
                                                  vertex_position{v3f{0.0f, 0.5f, 0.1f}},  vertex_position{v3f{0.5f, 0.0f, 0.1f}},  vertex_position{v3f{-0.5f, -0.5f, 0.1f}}};
 
-        Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             l_vertices.to_slice().build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
-        Token(Shader) l_first_shader;
-        Token(ShaderLayout) l_first_shader_layout;
-        Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+        TokenT(Shader) l_first_shader;
+        TokenT(ShaderLayout) l_first_shader_layout;
+        TokenT(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
             Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
             l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
@@ -623,7 +623,7 @@ inline void gpu_depth_compare_test()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -646,9 +646,9 @@ inline void gpu_depth_compare_test()
             l_gpu_context.wait_for_completion();
         }
 
-        Token(BufferHost) l_color_attachment_value =
+        TokenT(BufferHost) l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
-        Token(BufferHost) l_depth_attachment_value =
+        TokenT(BufferHost) l_depth_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 1);
         {
             BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
@@ -755,7 +755,7 @@ inline void gpu_draw_indexed()
             RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
                                                                                                                     (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
             RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        TokenT(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
@@ -766,18 +766,18 @@ inline void gpu_draw_indexed()
                                                  vertex_position{v3f{0.5f, 0.5f, 0.0f}}};
         SliceN<uint32, 6> l_indices = {0, 1, 2, 0, 3, 1};
 
-        Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             l_vertices.to_slice().build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
 
-        Token(BufferGPU) l_indices_buffer = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_indices_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             l_indices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::INDEX));
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_indices_buffer, l_indices.to_slice().build_asint8());
 
-        Token(Shader) l_first_shader;
-        Token(ShaderLayout) l_first_shader_layout;
-        Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+        TokenT(Shader) l_first_shader;
+        TokenT(ShaderLayout) l_first_shader_layout;
+        TokenT(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
             Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
             l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
@@ -832,7 +832,7 @@ inline void gpu_draw_indexed()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -849,7 +849,7 @@ inline void gpu_draw_indexed()
             l_gpu_context.wait_for_completion();
         }
 
-        Token(BufferHost) l_color_attachment_value =
+        TokenT(BufferHost) l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
             BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
@@ -930,7 +930,7 @@ inline void gpu_texture_mapping()
             RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
                                                                                                                        (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
             RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        TokenT(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex
         {
@@ -941,7 +941,7 @@ inline void gpu_texture_mapping()
         SliceN<vertex, 6> l_vertices = {vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}, vertex{v3f{-0.5f, -0.5f, 0.0f}, v2f{0.0f, 0.0f}},
                                         vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, 0.5f, 0.0f}, v2f{1.0f, 1.0f}},  vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}};
 
-        Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
+        TokenT(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             l_vertices.to_slice().build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
@@ -963,9 +963,9 @@ inline void gpu_texture_mapping()
 
         // l_buffer_allocator.write_to_imagegpu(l_texture_image, l_buffer_allocator.get_imagegpu(l_texture_image), l_texture_pixels.slice.build_asint8());
 
-        Token(Shader) l_first_shader;
-        Token(ShaderLayout) l_first_shader_layout;
-        Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
+        TokenT(Shader) l_first_shader;
+        TokenT(ShaderLayout) l_first_shader_layout;
+        TokenT(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
             Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(
                 SliceN<ShaderLayout::VertexInputParameter, 2>{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
@@ -1039,7 +1039,7 @@ inline void gpu_texture_mapping()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -1059,7 +1059,7 @@ inline void gpu_texture_mapping()
             l_gpu_context.wait_for_completion();
         }
 
-        Token(BufferHost) l_color_attachment_value =
+        TokenT(BufferHost) l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
             BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
@@ -1097,7 +1097,7 @@ inline void gpu_texture_mapping()
 inline void gpu_present()
 {
     v3ui l_window_size = v3ui{100, 100, 1};
-    Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
+    TokenT(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
     Window& l_window = WindowAllocator::get_window(l_window_token);
 
     GPUContext l_gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
@@ -1133,7 +1133,7 @@ inline void gpu_present()
 
     v3ui l_render_target_size = {4, 4, 1};
 
-    Token(TextureGPU) l_render_target_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
+    TokenT(TextureGPU) l_render_target_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
         l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
         ImageFormat::build_color_2d(l_render_target_size, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER |
                                                                            (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
@@ -1155,7 +1155,7 @@ inline void gpu_present()
         {
             l_render_target_color.get(i) = color{UINT8_MAX, 0, 0};
         }
-        Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
+        TokenT(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
                                            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
         l_render_target_color.free();
@@ -1176,7 +1176,7 @@ inline void gpu_present()
             l_render_target_color.get(i) = color{0, 0, UINT8_MAX};
         }
 
-        Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
+        TokenT(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
             l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
 

@@ -65,6 +65,10 @@ target_link_libraries(Common2Test PUBLIC Common2)
 target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/Common2/")
 
 
+add_executable(Common2cTest ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test_c.c)
+target_link_libraries(Common2cTest PUBLIC Common2)
+target_compile_definitions(Common2cTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/Common2/")
+
 add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)
 target_link_libraries(AssetDatabaseTest PUBLIC Test_AssetDatabase)

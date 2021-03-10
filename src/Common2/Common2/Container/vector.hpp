@@ -38,7 +38,7 @@ template <class ElementType> struct Vector
 
     inline Slice<ElementType> to_slice() const
     {
-        return Slice<ElementType>::build_memory_elementnb(this->Memory.Memory, this->Size);
+        return Slice<ElementType>::build(this->Memory.Memory, this->Size);
     };
 
     inline void free()

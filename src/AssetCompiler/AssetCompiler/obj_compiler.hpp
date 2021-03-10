@@ -42,8 +42,8 @@ struct ObjCompiler
                     l_line.slide_rv(l_first_space).find(slice_int8_build_rawstr(" "), &l_second_space);
                     l_second_space += l_first_space + 1;
 
-                    l_uv.x = FromString::afloat32(Slice<int8>::build(l_line.Begin, l_first_space, l_second_space - 1));
-                    l_uv.y = 1.0f - FromString::afloat32(Slice<int8>::build(l_line.Begin, l_second_space, l_line.Size));
+                    l_uv.x = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1));
+                    l_uv.y = 1.0f - FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_line.Size));
 
                     l_uvs.push_back_element(l_uv);
                 }
@@ -58,9 +58,9 @@ struct ObjCompiler
                     l_line.slide_rv(l_second_space).find(slice_int8_build_rawstr(" "), &l_third_space);
                     l_third_space += l_second_space + 1;
 
-                    l_local_position.x = FromString::afloat32(Slice<int8>::build(l_line.Begin, l_first_space, l_second_space - 1));
-                    l_local_position.y = FromString::afloat32(Slice<int8>::build(l_line.Begin, l_second_space, l_third_space - 1));
-                    l_local_position.z = FromString::afloat32(Slice<int8>::build(l_line.Begin, l_third_space, l_line.Size));
+                    l_local_position.x = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1));
+                    l_local_position.y = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_third_space - 1));
+                    l_local_position.z = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_third_space, l_line.Size));
 
                     l_positions.push_back_element(l_local_position);
                 }
@@ -75,9 +75,9 @@ struct ObjCompiler
                     l_line.slide_rv(l_second_space).find(slice_int8_build_rawstr(" "), &l_third_space);
                     l_third_space += l_second_space + 1;
 
-                    process_obj_face(Slice<int8>::build(l_line.Begin, l_first_space, l_second_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
-                    process_obj_face(Slice<int8>::build(l_line.Begin, l_second_space, l_third_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
-                    process_obj_face(Slice<int8>::build(l_line.Begin, l_third_space, l_line.Size), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_third_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_third_space, l_line.Size), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
 
                     // l_line.substr(l_first_space, l_second_space - l_first_space).
                 }
@@ -100,8 +100,8 @@ struct ObjCompiler
         p_face.slide_rv(l_first_slash).find(slice_int8_build_rawstr("/"), &l_second_slash);
         l_second_slash += l_first_slash + 1;
 
-        uimax l_position_index = FromString::auimax(Slice<int8>::build(p_face.Begin, 0, l_first_slash - 1)) - 1;
-        uimax l_uv_index = FromString::auimax(Slice<int8>::build(p_face.Begin, l_first_slash, l_second_slash - 1)) - 1;
+        uimax l_position_index = FromString::auimax(Slice<int8>::build_begin_end(p_face.Begin, 0, l_first_slash - 1)) - 1;
+        uimax l_uv_index = FromString::auimax(Slice<int8>::build_begin_end(p_face.Begin, l_first_slash, l_second_slash - 1)) - 1;
 
         VertexKey l_key;
         l_key.position_index = l_position_index;

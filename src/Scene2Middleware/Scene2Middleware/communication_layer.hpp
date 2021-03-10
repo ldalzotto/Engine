@@ -21,19 +21,19 @@ inline static void to_json(const BoxColliderComponentAsset& p_component, JSONSer
     in_out_json_serializer->end_object();
 };
 
-inline static NodeComponent construct_nodecomponent(const Token(BoxColliderComponent) p_ressource)
+inline static NodeComponent construct_nodecomponent(const TokenT(BoxColliderComponent) p_ressource)
 {
     return NodeComponent{BoxColliderComponent::Type, tk_v(p_ressource)};
 };
 
 inline static BoxColliderComponentAsset desconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
 {
-    return BoxColliderComponentAsset{p_scene_middleware.collision_middleware.allocator.box_collider_get_world_half_extend(p_collision, tk_b(BoxColliderComponent, p_node_component.resource))};
+    return BoxColliderComponentAsset{p_scene_middleware.collision_middleware.allocator.box_collider_get_world_half_extend(p_collision, tk_bT(BoxColliderComponent, p_node_component.resource))};
 };
 
 inline static void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
 {
-    p_scene_middleware->collision_middleware.allocator.free_box_collider_component(p_collision, tk_b(BoxColliderComponent, p_node_component.resource));
+    p_scene_middleware->collision_middleware.allocator.free_box_collider_component(p_collision, tk_bT(BoxColliderComponent, p_node_component.resource));
 };
 }; // namespace BoxColliderComponentAsset_SceneCommunication
 
@@ -59,14 +59,14 @@ inline static void on_node_component_removed(RenderMiddleWare& p_render_middlewa
 
 namespace MeshRendererComponentAsset_SceneCommunication
 {
-inline static NodeComponent construct_nodecomponent(const Token(MeshRendererComponent) p_component)
+inline static NodeComponent construct_nodecomponent(const TokenT(MeshRendererComponent) p_component)
 {
     return NodeComponent{MeshRendererComponent::Type, tk_v(p_component)};
 };
 
 inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
-    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, tk_bT(v2::MeshRendererComponent, p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 

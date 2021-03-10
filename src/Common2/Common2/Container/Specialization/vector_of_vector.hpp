@@ -44,7 +44,7 @@ struct VectorOfVector_VectorHeader
 
     template <class ElementType> inline Slice<ElementType> get_vector_to_capacity() const
     {
-        return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, cast(int8*, this) + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
+        return Slice<ElementType>::build(cast(ElementType*, cast(int8*, this) + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
     };
 };
 
@@ -99,7 +99,7 @@ template <class ElementType> struct VectorOfVector
     {
         Slice<int8> l_element = this->varying_vector.get_element(p_index);
         VectorOfVector_VectorHeader* l_header = cast(VectorOfVector_VectorHeader*, l_element.Begin);
-        return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin), l_header->Size);
+        return Slice<ElementType>::build(cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin), l_header->Size);
     };
 
     inline VectorOfVector_VectorHeader* get_vectorheader(const uimax p_index)
@@ -144,7 +144,7 @@ template <class ElementType> struct VectorOfVector
             uimax l_write_element_nb = l_vector_header->Capacity - l_vector_header->Size;
             uimax l_expand_element_nb = p_elements.Size - l_write_element_nb;
 
-            this->element_write_array(p_nested_vector_index, l_vector_header->Size, Slice<ElementType>::build_memory_elementnb(p_elements.Begin, l_write_element_nb));
+            this->element_write_array(p_nested_vector_index, l_vector_header->Size, Slice<ElementType>::build(p_elements.Begin, l_write_element_nb));
 
             this->varying_vector.element_expand_with_value(p_nested_vector_index, Slice<ElementType>::build_asint8_memory_elementnb(p_elements.Begin + l_write_element_nb, l_expand_element_nb));
 

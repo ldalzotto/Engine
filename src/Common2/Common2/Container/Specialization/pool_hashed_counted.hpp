@@ -4,7 +4,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 {
     struct CountElement
     {
-        Token(ElementType) token;
+        TokenT(ElementType) token;
         uimax counter;
     };
 
@@ -37,7 +37,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->CountMap.has_key_nothashed(p_key);
     };
 
-    inline Token(ElementType) increment(const KeyType& p_key)
+    inline TokenT(ElementType) increment(const KeyType& p_key)
     {
         CountElement* l_counted_element = this->CountMap.get_value_nothashed(p_key);
         l_counted_element->counter += 1;
@@ -54,14 +54,14 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return l_counted_element;
     };
 
-    inline Token(ElementType) push_back_element(const KeyType& p_key, const ElementType& p_element)
+    inline TokenT(ElementType) push_back_element(const KeyType& p_key, const ElementType& p_element)
     {
-        Token(ElementType) l_allocated_token = this->pool.alloc_element(p_element);
+        TokenT(ElementType) l_allocated_token = this->pool.alloc_element(p_element);
         this->CountMap.push_key_value_nothashed(p_key, CountElement{l_allocated_token, 1});
         return l_allocated_token;
     };
 
-    inline void remove_element(const KeyType& p_key, const Token(ElementType) p_element)
+    inline void remove_element(const KeyType& p_key, const TokenT(ElementType) p_element)
     {
         this->pool.release_element(p_element);
         this->CountMap.erase_key_nothashed(p_key);
@@ -72,7 +72,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
     };
 
-    inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const ElementType& p_element)
+    inline TokenT(ElementType) increment_or_allocate(const KeyType& p_key, const ElementType& p_element)
     {
         if (this->has_key_nothashed(p_key))
         {
@@ -94,11 +94,11 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
             ALLOCATE = 2,
             END = 3
         } state;
-        Token(ElementType) allocated_token;
+        TokenT(ElementType) allocated_token;
 
         inline static IncrementOrAllocateStateMachine build(PoolHashedCounted<KeyType, ElementType>& thiz)
         {
-            return IncrementOrAllocateStateMachine{&thiz, State::START, tk_bd(ElementType)};
+            return IncrementOrAllocateStateMachine{&thiz, State::START, tk_bdT(ElementType)};
         };
 
         inline void start(const KeyType& p_key)

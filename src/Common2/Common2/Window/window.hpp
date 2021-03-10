@@ -118,7 +118,7 @@ Pool<Window> g_app_windows;
 struct NativeWindow_to_Window
 {
     WindowHandle native_window;
-    Token(Window) window;
+    TokenT(Window) window;
 };
 
 Vector<NativeWindow_to_Window> g_native_to_window;
@@ -128,11 +128,11 @@ struct WindowAllocator
     static void initialize();
     static void finalize();
 
-    static Token(Window) allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
-    static void free(const Token(Window) p_window);
-    static void free_headless(const Token(Window) p_window);
+    static TokenT(Window) allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
+    static void free(const TokenT(Window) p_window);
+    static void free_headless(const TokenT(Window) p_window);
 
-    static Window& get_window(const Token(Window) p_window);
+    static Window& get_window(const TokenT(Window) p_window);
 
     static void on_appevent(WindowHandle p_window_handle, AppEventType* p_appevent);
 };
@@ -186,7 +186,7 @@ inline void WindowAllocator::finalize()
     g_native_to_window.free();
 };
 
-inline Token(Window) WindowAllocator::allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name)
+inline TokenT(Window) WindowAllocator::allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name)
 {
     if (g_appevent_listeners.Size == 0)
     {
@@ -203,13 +203,13 @@ inline Token(Window) WindowAllocator::allocate(const uint32 p_client_width, cons
 
     uint32 l_native_client_width, l_native_client_height;
     WindowNative::get_window_client_dimensions(l_window, &l_native_client_width, &l_native_client_height);
-    Token(Window) l_allocated_window = g_app_windows.alloc_element(Window::build(l_window, l_native_client_width, l_native_client_height));
+    TokenT(Window) l_allocated_window = g_app_windows.alloc_element(Window::build(l_window, l_native_client_width, l_native_client_height));
     g_native_to_window.push_back_element(NativeWindow_to_Window{l_window, l_allocated_window});
 
     return l_allocated_window;
 };
 
-inline void WindowAllocator::free(const Token(Window) p_window)
+inline void WindowAllocator::free(const TokenT(Window) p_window)
 {
     free_headless(p_window);
 
@@ -230,7 +230,7 @@ inline void WindowAllocator::free(const Token(Window) p_window)
     };
 };
 
-inline void WindowAllocator::free_headless(const Token(Window) p_window)
+inline void WindowAllocator::free_headless(const TokenT(Window) p_window)
 {
     g_app_windows.release_element(p_window);
 
@@ -240,7 +240,7 @@ inline void WindowAllocator::free_headless(const Token(Window) p_window)
     };
 };
 
-inline Window& WindowAllocator::get_window(const Token(Window) p_window)
+inline Window& WindowAllocator::get_window(const TokenT(Window) p_window)
 {
     return g_app_windows.get(p_window);
 };

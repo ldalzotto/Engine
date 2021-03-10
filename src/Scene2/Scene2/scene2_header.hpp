@@ -60,11 +60,11 @@ struct SceneTree
     static SceneTree allocate_default();
     void free();
 
-    Token(Node) add_node(const transform& p_initial_local_transform, const Token(Node) p_parent);
-    NodeEntry get_node(const Token(Node) p_node);
+    TokenT(Node) add_node(const transform& p_initial_local_transform, const TokenT(Node) p_parent);
+    NodeEntry get_node(const TokenT(Node) p_node);
     NodeEntry get_node_parent(const NodeEntry& p_node);
 
-    Slice<Token(Node)> get_node_childs(const NodeEntry& p_node);
+    Slice<TokenT(Node)> get_node_childs(const NodeEntry& p_node);
 
     void add_child(const NodeEntry& p_parent, const NodeEntry& p_child);
 
@@ -90,8 +90,8 @@ struct SceneTree
     void clear_nodes_state();
 
   private:
-    Token(Node) allocate_node(const transform& p_initial_local_transform, const Token(Node) p_parent);
-    Token(Node) allocate_root_node();
+    TokenT(Node) allocate_node(const transform& p_initial_local_transform, const TokenT(Node) p_parent);
+    TokenT(Node) allocate_root_node();
     void mark_node_for_recalculation_recursive(const NodeEntry& p_node);
     void updatematrices_if_necessary(const NodeEntry& p_node);
 
@@ -100,7 +100,7 @@ struct SceneTree
 
 namespace Scene_const
 {
-const Token(Node) root_node = tk_b(Node, 0);
+const TokenT(Node) root_node = tk_bT(Node, 0);
 };
 
 /*
@@ -119,18 +119,18 @@ struct Scene
     */
     struct ComponentRemovedEvent
     {
-        Token(Node) node;
+        TokenT(Node) node;
         // The component has already been detached. So we copy it's value;
         NodeComponent value;
 
-        static ComponentRemovedEvent build(const Token(Node) p_node, const NodeComponent& p_component_value);
+        static ComponentRemovedEvent build(const TokenT(Node) p_node, const NodeComponent& p_component_value);
     };
 
     SceneTree tree;
     PoolOfVector<NodeComponent> node_to_components;
 
-    Vector<Token(Node)> orphan_nodes;
-    Vector<Token(Node)> node_that_will_be_destroyed;
+    Vector<TokenT(Node)> orphan_nodes;
+    Vector<TokenT(Node)> node_that_will_be_destroyed;
     Vector<ComponentRemovedEvent> component_removed_events;
 
     static Scene allocate_default();
@@ -145,29 +145,29 @@ struct Scene
 
     void step();
 
-    Token(Node) add_node(const transform& p_initial_local_transform, const Token(Node) p_parent);
+    TokenT(Node) add_node(const transform& p_initial_local_transform, const TokenT(Node) p_parent);
 
-    NodeEntry get_node(const Token(Node) p_node);
+    NodeEntry get_node(const TokenT(Node) p_node);
     NodeEntry get_node_parent(const NodeEntry& p_node);
-    Slice<Token(Node)> get_node_childs(const NodeEntry& p_node);
+    Slice<TokenT(Node)> get_node_childs(const NodeEntry& p_node);
     void remove_node(const NodeEntry& p_node);
 
-    void add_node_component_by_value(const Token(Node) p_node, const NodeComponent& p_component);
+    void add_node_component_by_value(const TokenT(Node) p_node, const NodeComponent& p_component);
 
-    template <class ComponentType> void add_node_component_typed(const Token(Node) p_node, const token_t p_component_ressource);
+    template <class ComponentType> void add_node_component_typed(const TokenT(Node) p_node, const token_t p_component_ressource);
 
-    NodeComponent* get_node_component_by_type(const Token(Node) p_node, const component_t p_type);
+    NodeComponent* get_node_component_by_type(const TokenT(Node) p_node, const component_t p_type);
 
-    template <class ComponentType> NodeComponent* get_node_component_typed(const Token(Node) p_node);
+    template <class ComponentType> NodeComponent* get_node_component_typed(const TokenT(Node) p_node);
 
-    Slice<NodeComponent> get_node_components(const Token(Node) p_node);
+    Slice<NodeComponent> get_node_components(const TokenT(Node) p_node);
 
-    void remove_node_component(const Token(Node) p_node, const component_t p_component_type);
+    void remove_node_component(const TokenT(Node) p_node, const component_t p_component_type);
 
-    template <class ComponentType> void remove_node_component_typed(const Token(Node) p_node);
+    template <class ComponentType> void remove_node_component_typed(const TokenT(Node) p_node);
 
   private:
-    int8 remove_node_component_by_type(const Token(Node) p_node, const component_t p_type, NodeComponent* out_component);
+    int8 remove_node_component_by_type(const TokenT(Node) p_node, const component_t p_type, NodeComponent* out_component);
 
     void step_destroy_resource_only();
     void destroy_orphan_nodes();

@@ -36,7 +36,7 @@ template <class ElementType> struct Span
     inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements.Size);
-        slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements.Begin, p_elements.Size));
+        slice_memcpy(l_span.slice, Slice<ElementType>::build((ElementType*)p_elements.Begin, p_elements.Size));
         return l_span;
     };
 
@@ -58,7 +58,7 @@ template <class ElementType> struct Span
     template <uint32 Size_t> inline static Span<ElementType> allocate_slicen(const SliceN<ElementType, Size_t>& p_elements)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(Size_t);
-        slice_memcpy(l_span.slice, Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements.Memory, Size_t));
+        slice_memcpy(l_span.slice, Slice<ElementType>::build((ElementType*)p_elements.Memory, Size_t));
         return l_span;
     };
 

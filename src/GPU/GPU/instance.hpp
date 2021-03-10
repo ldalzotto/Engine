@@ -136,7 +136,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     const int8* l_validation_layers_str[1] = {"VK_LAYER_KHRONOS_validation"};
     // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
-    Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb(l_validation_layers_str, 1);
+    Slice<const int8*> l_validation_layers = Slice<const int8*>::build(l_validation_layers_str, 1);
 
     Span<VkLayerProperties> l_available_layers = vk::enumerateInstanceLayerProperties();
     for (loop(i, 0, l_validation_layers.Size))
@@ -173,17 +173,17 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         switch (p_required_instance_extensions.get(i))
         {
         case GPUExtension::WINDOW_PRESENT:
-            l_window_present_enabled = 1; 
-            l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
+            l_window_present_enabled = 1;
+            l_extensions.push_back_element((int8*)VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
-            l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+            l_extensions.push_back_element((int8*)VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
             break;
         }
     }
 
 #if GPU_DEBUG
-    l_extensions.push_back_element(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    l_extensions.push_back_element((int8*)VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
     l_instance_create_info.enabledExtensionCount = (uint32)l_extensions.Size;
@@ -275,7 +275,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
 #endif
 
-   int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+   int8* l_swap_chain_extension = (int8*)VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     if (l_window_present_enabled)
     {
         l_device_create_info.enabledExtensionCount = 1;

@@ -4,7 +4,7 @@
 
 template <class ElementType> using PoolOfVectorMemory_t = VectorOfVector<ElementType>;
 
-template <class ElementType> using PoolOfVectorToken = Token(Slice<ElementType>);
+template <class ElementType> using PoolOfVectorToken = TokenT(Slice<ElementType>);
 
 template <class ElementType> using PoolOfVectorFreeBlocks_t = Vector<PoolOfVectorToken<ElementType>>;
 

@@ -137,14 +137,19 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
         v2f l_uvs[14] = {v2f{0.625f, 0.0f},  v2f{0.375f, 0.25f}, v2f{0.375f, 0.0f},  v2f{0.625f, 0.25f}, v2f{0.375f, 0.5f},  v2f{0.625f, 0.5f},  v2f{0.375f, 0.75f},
                          v2f{0.625f, 0.75f}, v2f{0.375f, 1.00f}, v2f{0.125f, 0.75f}, v2f{0.125f, 0.50f}, v2f{0.875f, 0.50f}, v2f{0.625f, 1.00f}, v2f{0.875f, 0.75f}};
 
+        for (loop(i, 0, 14))
+        {
+            l_uvs[i].y = 1.0f - l_uvs[i].y;
+        }
+
         Vertex l_vertices[14] = {Vertex{l_positions[1], l_uvs[0]},  Vertex{l_positions[2], l_uvs[1]}, Vertex{l_positions[0], l_uvs[2]},  Vertex{l_positions[3], l_uvs[3]},
                                  Vertex{l_positions[6], l_uvs[4]},  Vertex{l_positions[7], l_uvs[5]}, Vertex{l_positions[4], l_uvs[6]},  Vertex{l_positions[5], l_uvs[7]},
                                  Vertex{l_positions[0], l_uvs[8]},  Vertex{l_positions[0], l_uvs[9]}, Vertex{l_positions[2], l_uvs[10]}, Vertex{l_positions[3], l_uvs[11]},
                                  Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
-        uint32 l_indices[14 * 3] = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
+        uint32 l_indices[36] = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
 
-        assert_true(l_mesh_value.initial_vertices.compare(Slice<v2::Vertex>::build_memory_elementnb(l_vertices, 14)));
-        assert_true(l_mesh_value.initial_indices.compare(Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3)));
+        assert_true(l_mesh_value.initial_vertices.compare(Slice<v2::Vertex>::build(l_vertices, 14)));
+        assert_true(l_mesh_value.initial_indices.compare(Slice<uint32>::build(l_indices, 36)));
 
         l_mesh_ressource_compiled.free();
     }

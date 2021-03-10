@@ -1,26 +1,28 @@
 #pragma once
 
 #include <stdlib.h>
-#include <cstring>
-#include <cstdio>
-#include <climits>
+#include <string.h>
+#include <stdio.h>
+#include <limits.h>
 #include <math.h>
 
 #include "sqlite3.h"
 
-#include "./Types/types.hpp"
-#include "./Macros/macros.hpp"
-#include "./Memory/limits.hpp"
+#include "./Types/types.h"
+#include "./Macros/macros.h"
+#include "./Memory/limits.h"
 
-#include "./Include/platform_include.hpp"
+#include "./Include/platform_include.h"
 
-#include "./Clock/clock.hpp"
-#include "./Thread/thread.hpp"
+#include "./Clock/clock.h"
+#include "./Thread/thread.h"
 
-#include "./Functional/assert.hpp"
+#include "./Functional/assert.h"
 
-#include "./Memory/token.hpp"
-#include "./Memory/memory.hpp"
+#include "./Memory/token.h"
+#include "./Memory/tokenT.hpp"
+#include "./Memory/memory.h"
+#include "./Memory/slice.h"
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
 

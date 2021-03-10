@@ -10,10 +10,10 @@ inline BoxCollider BoxCollider::build_from_local_aabb(const int8 p_enabled, cons
 
 inline TriggerEvent TriggerEvent::build_default()
 {
-    return TriggerEvent{tk_bd(BoxCollider), Trigger::State::UNDEFINED};
+    return TriggerEvent{tk_bdT(BoxCollider), Trigger::State::UNDEFINED};
 };
 
-inline TriggerEvent TriggerEvent::build(const Token(BoxCollider) p_other, const Trigger::State p_state)
+inline TriggerEvent TriggerEvent::build(const TokenT(BoxCollider) p_other, const Trigger::State p_state)
 {
     return TriggerEvent{p_other, p_state};
 };
@@ -25,7 +25,7 @@ inline ColliderDetector ColliderDetector::build(const PoolOfVectorToken<TriggerE
 
 inline CollisionHeap2 CollisionHeap2::allocate_default()
 {
-    return CollisionHeap2{PoolIndexed<BoxCollider>::allocate_default(), Pool<Token(ColliderDetector)>::allocate(0), PoolIndexed<ColliderDetector>::allocate_default(),
+    return CollisionHeap2{PoolIndexed<BoxCollider>::allocate_default(), Pool<TokenT(ColliderDetector)>::allocate(0), PoolIndexed<ColliderDetector>::allocate_default(),
                           PoolOfVector<TriggerEvent>::allocate_default()};
 };
 
@@ -44,7 +44,7 @@ inline void CollisionHeap2::free()
     this->collider_detectors_events_2.free();
 };
 
-inline Token(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const Token(BoxCollider) p_box_collider)
+inline TokenT(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const TokenT(BoxCollider) p_box_collider)
 {
 
 #if COLLIDER_BOUND_TEST
@@ -53,12 +53,12 @@ inline Token(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const T
 #endif
 
     PoolOfVectorToken<TriggerEvent> l_trigger_events = this->collider_detectors_events_2.alloc_vector();
-    Token(ColliderDetector) l_collider_detector_token = this->collider_detectors.alloc_element(ColliderDetector::build(l_trigger_events));
+    TokenT(ColliderDetector) l_collider_detector_token = this->collider_detectors.alloc_element(ColliderDetector::build(l_trigger_events));
     this->get_colliderdetector_from_boxcollider(p_box_collider) = l_collider_detector_token;
     return l_collider_detector_token;
 };
 
-inline void CollisionHeap2::free_colliderdetector(const Token(BoxCollider) p_box_collider, const Token(ColliderDetector) p_collider_detector){
+inline void CollisionHeap2::free_colliderdetector(const TokenT(BoxCollider) p_box_collider, const TokenT(ColliderDetector) p_collider_detector){
 
     {ColliderDetector& l_collider_detector = this->collider_detectors.get(p_collider_detector);
 this->collider_detectors_events_2.release_vector(l_collider_detector.collision_events);
@@ -66,61 +66,61 @@ this->collider_detectors.release_element(p_collider_detector);
 }
 
 {
-    this->get_colliderdetector_from_boxcollider(p_box_collider) = tk_bd(ColliderDetector);
+    this->get_colliderdetector_from_boxcollider(p_box_collider) = tk_bdT(ColliderDetector);
     // this->box_colliders_to_collider_detector.release_element(token_cast_p(Token(ColliderDetector), p_box_collider));
 }
 }
 ;
 
-inline Token(BoxCollider) CollisionHeap2::allocate_boxcollider(const BoxCollider& p_box_collider)
+inline TokenT(BoxCollider) CollisionHeap2::allocate_boxcollider(const BoxCollider& p_box_collider)
 {
-    Token(BoxCollider) l_box_collider_index = this->box_colliders.alloc_element(p_box_collider);
-    this->box_colliders_to_collider_detector.alloc_element(tk_bd(ColliderDetector));
+    TokenT(BoxCollider) l_box_collider_index = this->box_colliders.alloc_element(p_box_collider);
+    this->box_colliders_to_collider_detector.alloc_element(tk_bdT(ColliderDetector));
     return l_box_collider_index;
 };
 
-inline void CollisionHeap2::push_boxcollider_transform(Token(BoxCollider) p_boxcollider, const transform_pa& p_world_transform)
+inline void CollisionHeap2::push_boxcollider_transform(TokenT(BoxCollider) p_boxcollider, const transform_pa& p_world_transform)
 {
     BoxCollider& l_boxcollider = this->box_colliders.get(p_boxcollider);
     l_boxcollider.transform = p_world_transform;
 };
 
-inline void CollisionHeap2::free_boxcollider(const Token(BoxCollider) p_box_collider)
+inline void CollisionHeap2::free_boxcollider(const TokenT(BoxCollider) p_box_collider)
 {
-    Token(ColliderDetector)& l_collider_detector = this->get_colliderdetector_from_boxcollider(p_box_collider);
-    if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
+    TokenT(ColliderDetector)& l_collider_detector = this->get_colliderdetector_from_boxcollider(p_box_collider);
+    if (tk_neq(l_collider_detector, tk_bT(ColliderDetector, -1)))
     {
         this->free_colliderdetector(p_box_collider, l_collider_detector);
     }
     this->box_colliders.release_element(p_box_collider);
-    this->box_colliders_to_collider_detector.release_element(tk_bf(Token(ColliderDetector), p_box_collider));
+    this->box_colliders_to_collider_detector.release_element(tk_bfT(TokenT(ColliderDetector), p_box_collider));
 };
 
-inline Token(ColliderDetector) & CollisionHeap2::get_colliderdetector_from_boxcollider(const Token(BoxCollider) p_box_collider)
+inline TokenT(ColliderDetector) & CollisionHeap2::get_colliderdetector_from_boxcollider(const TokenT(BoxCollider) p_box_collider)
 {
-    return this->box_colliders_to_collider_detector.get(tk_bf(Token(ColliderDetector), p_box_collider));
+    return this->box_colliders_to_collider_detector.get(tk_bfT(TokenT(ColliderDetector), p_box_collider));
 };
 
-inline Slice<TriggerEvent> CollisionHeap2::get_triggerevents_from_boxcollider(const Token(BoxCollider) p_box_collider)
+inline Slice<TriggerEvent> CollisionHeap2::get_triggerevents_from_boxcollider(const TokenT(BoxCollider) p_box_collider)
 {
     if (this->does_boxcollider_have_colliderdetector(p_box_collider))
     {
-        Token(ColliderDetector)& l_collider_detextor = this->get_colliderdetector_from_boxcollider(p_box_collider);
+        TokenT(ColliderDetector)& l_collider_detextor = this->get_colliderdetector_from_boxcollider(p_box_collider);
         return this->collider_detectors_events_2.get_vector(this->collider_detectors.get(l_collider_detextor).collision_events);
     }
     return Slice<TriggerEvent>::build_default();
 };
 
-inline Slice<TriggerEvent> CollisionHeap2::get_triggerevents_from_colliderdetector(const Token(ColliderDetector) p_collider_detector)
+inline Slice<TriggerEvent> CollisionHeap2::get_triggerevents_from_colliderdetector(const TokenT(ColliderDetector) p_collider_detector)
 {
     return this->collider_detectors_events_2.get_vector(this->collider_detectors.get(p_collider_detector).collision_events);
 };
 
-inline int8 CollisionHeap2::does_boxcollider_have_colliderdetector(const Token(BoxCollider) p_box_collider)
+inline int8 CollisionHeap2::does_boxcollider_have_colliderdetector(const TokenT(BoxCollider) p_box_collider)
 {
-    if (!this->box_colliders_to_collider_detector.is_element_free(tk_bf(Token(ColliderDetector), p_box_collider)))
+    if (!this->box_colliders_to_collider_detector.is_element_free(tk_bfT(TokenT(ColliderDetector), p_box_collider)))
     {
-        if (tk_neq(this->get_colliderdetector_from_boxcollider(p_box_collider), tk_b(ColliderDetector, -1)))
+        if (tk_neq(this->get_colliderdetector_from_boxcollider(p_box_collider), tk_bT(ColliderDetector, -1)))
         {
             return 1;
         }
@@ -128,7 +128,7 @@ inline int8 CollisionHeap2::does_boxcollider_have_colliderdetector(const Token(B
     return 0;
 };
 
-inline CollisionDetectionStep::IntersectionEvent CollisionDetectionStep::IntersectionEvent::build(const Token(ColliderDetector) p_detector, const Token(BoxCollider) p_other)
+inline CollisionDetectionStep::IntersectionEvent CollisionDetectionStep::IntersectionEvent::build(const TokenT(ColliderDetector) p_detector, const TokenT(BoxCollider) p_other)
 {
     return IntersectionEvent{p_detector, p_other};
 };
@@ -138,8 +138,8 @@ inline int8 CollisionDetectionStep::IntersectionEvent::equals_intersectionevent(
     return tk_eq(this->detector, p_other.detector) && tk_eq(this->other, p_other.other);
 };
 
-inline CollisionDetectionStep::CollisionDetectorDeletionEvent CollisionDetectionStep::CollisionDetectorDeletionEvent::build(const Token(BoxCollider) p_box_collider,
-                                                                                                                            const Token(ColliderDetector) p_collider_detector)
+inline CollisionDetectionStep::CollisionDetectorDeletionEvent CollisionDetectionStep::CollisionDetectorDeletionEvent::build(const TokenT(BoxCollider) p_box_collider,
+                                                                                                                            const TokenT(ColliderDetector) p_collider_detector)
 {
     return CollisionDetectorDeletionEvent{p_box_collider, p_collider_detector};
 };
@@ -147,7 +147,7 @@ inline CollisionDetectionStep::CollisionDetectorDeletionEvent CollisionDetection
 inline CollisionDetectionStep CollisionDetectionStep::allocate()
 {
     return CollisionDetectionStep{
-        Vector<Token(BoxCollider)>::allocate(0), Vector<Token(BoxCollider)>::allocate(0), Vector<Token(BoxCollider)>::allocate(0), Vector<CollisionDetectorDeletionEvent>::allocate(0),
+        Vector<TokenT(BoxCollider)>::allocate(0), Vector<TokenT(BoxCollider)>::allocate(0), Vector<TokenT(BoxCollider)>::allocate(0), Vector<CollisionDetectorDeletionEvent>::allocate(0),
         Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
         Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
     };
@@ -236,17 +236,17 @@ inline void CollisionDetectionStep::step(CollisionHeap2& p_collision_heap)
     this->free_deleted_colliders(p_collision_heap); // 9*
 };
 
-inline void CollisionDetectionStep::push_collider_for_process(const Token(BoxCollider) p_moved_collider)
+inline void CollisionDetectionStep::push_collider_for_process(const TokenT(BoxCollider) p_moved_collider)
 {
     this->in_colliders_processed.push_back_element(p_moved_collider);
 };
 
-inline void CollisionDetectionStep::push_collider_for_deletion(const Token(BoxCollider) p_collider)
+inline void CollisionDetectionStep::push_collider_for_deletion(const TokenT(BoxCollider) p_collider)
 {
     this->deleted_colliders_from_last_step.push_back_element(p_collider);
 };
 
-inline void CollisionDetectionStep::push_collider_detector_for_deletion(const Token(BoxCollider) p_collider, const Token(ColliderDetector) p_detector)
+inline void CollisionDetectionStep::push_collider_detector_for_deletion(const TokenT(BoxCollider) p_collider, const TokenT(ColliderDetector) p_detector)
 {
     this->deleted_collider_detectors_from_last_step.push_back_element(CollisionDetectorDeletionEvent::build(p_collider, p_detector));
 };
@@ -316,7 +316,7 @@ inline void CollisionDetectionStep::exit_collision(CollisionHeap2& p_collision_h
     }
 };
 
-inline void CollisionDetectionStep::remove_references_to_colliderdetector(CollisionHeap2& p_collision_heap, const Token(ColliderDetector) p_collider_detector)
+inline void CollisionDetectionStep::remove_references_to_colliderdetector(CollisionHeap2& p_collision_heap, const TokenT(ColliderDetector) p_collider_detector)
 {
     vector_erase_if_2_begin(&this->is_waitingfor_trigger_stay_detector, j, l_intsersrection_event) int8 l_erased = tk_eq(l_intsersrection_event.detector, p_collider_detector);
     vector_erase_if_2_end(&this->is_waitingfor_trigger_stay_detector, j, l_erased);
@@ -326,8 +326,8 @@ inline void CollisionDetectionStep::remove_references_to_colliderdetector(Collis
 
     vector_erase_if_2_begin(&this->in_colliders_processed, j, l_disabled_collider);
     int8 l_erased = false;
-    Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
-    if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
+    TokenT(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
+    if (tk_neq(l_collider_detector, tk_bT(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
     {
         l_erased = true;
     }
@@ -335,7 +335,7 @@ inline void CollisionDetectionStep::remove_references_to_colliderdetector(Collis
 };
 
 // /!\ Do not take care of the associated ColliderDetectors.
-inline void CollisionDetectionStep::remove_references_to_boxcollider(const Token(BoxCollider) p_box_collider)
+inline void CollisionDetectionStep::remove_references_to_boxcollider(const TokenT(BoxCollider) p_box_collider)
 {
     vector_erase_if_2_begin(&this->in_colliders_processed, j, l_collider) int8 l_erased = tk_eq(l_collider, p_box_collider);
     vector_erase_if_2_end(&this->in_colliders_processed, j, l_erased);
@@ -350,9 +350,9 @@ inline void CollisionDetectionStep::remove_references_to_boxcollider(const Token
 // Norify all ColliderDetectors with an exit_collision event.
 // TODO -> In the future, we want to partition the space to not notify the entire world
 inline void CollisionDetectionStep::generate_exit_collision_for_collider(CollisionHeap2& p_collision_heap,
-                                                                         const Token(BoxCollider) p_box_collider){poolindexed_foreach_token_2_begin(&p_collision_heap.box_colliders, j, l_box_collider){
-    if (p_collision_heap.box_colliders.get(l_box_collider).enabled){Token(ColliderDetector) & l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_box_collider);
-if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
+                                                                         const TokenT(BoxCollider) p_box_collider){poolindexed_foreach_token_2_begin(&p_collision_heap.box_colliders, j, l_box_collider){
+    if (p_collision_heap.box_colliders.get(l_box_collider).enabled){TokenT(ColliderDetector) & l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_box_collider);
+if (tk_neq(l_collider_detector, tk_bT(ColliderDetector, -1)))
 {
     this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_collider_detector, p_box_collider));
 }
@@ -378,9 +378,9 @@ inline void CollisionDetectionStep::process_deleted_colliders(CollisionHeap2& p_
     // dereferencing ColliderDetectors and Colliders.
     for (vector_loop(&this->deleted_colliders_from_last_step, i))
     {
-        Token(BoxCollider)& l_deleted_collider = this->deleted_colliders_from_last_step.get(i);
-        Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_deleted_collider);
-        if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
+        TokenT(BoxCollider)& l_deleted_collider = this->deleted_colliders_from_last_step.get(i);
+        TokenT(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_deleted_collider);
+        if (tk_neq(l_collider_detector, tk_bT(ColliderDetector, -1)))
         {
             this->remove_references_to_colliderdetector(p_collision_heap, l_collider_detector);
             p_collision_heap.free_colliderdetector(l_deleted_collider, l_collider_detector);
@@ -396,7 +396,7 @@ inline void CollisionDetectionStep::process_deleted_colliders(CollisionHeap2& p_
     // but that's not a problem as it will be ignored by the udpate_triggerstate_from_intersectionevents step.
     for (vector_loop(&this->deleted_colliders_from_last_step, i))
     {
-        Token(BoxCollider)& l_disabled_box_collider_token = this->deleted_colliders_from_last_step.get(i);
+        TokenT(BoxCollider)& l_disabled_box_collider_token = this->deleted_colliders_from_last_step.get(i);
         this->generate_exit_collision_for_collider(p_collision_heap, l_disabled_box_collider_token);
     }
 };
@@ -405,12 +405,12 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
 {
     for (loop(i, 0, this->in_colliders_processed.Size))
     {
-        Token(BoxCollider)& l_left_collider_token = this->in_colliders_processed.get(i);
-        Token(ColliderDetector)& l_left_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_left_collider_token);
+        TokenT(BoxCollider)& l_left_collider_token = this->in_colliders_processed.get(i);
+        TokenT(ColliderDetector)& l_left_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_left_collider_token);
 
         // If the processed collider have a collider detector, we calculate intersection with other BoxColliders
         // then push collision_event according to the intersection result
-        if (tk_neq(l_left_collider_detector, tk_b(ColliderDetector, -1)))
+        if (tk_neq(l_left_collider_detector, tk_bT(ColliderDetector, -1)))
         {
             BoxCollider& l_left_collider = p_collision_heap.box_colliders.get(l_left_collider_token);
             if (l_left_collider.enabled)
@@ -432,8 +432,8 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                         {
                             this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
 
-                            Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
-                            if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                            TokenT(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
+                            if (tk_neq(l_right_collider_detector, tk_bT(ColliderDetector, -1)))
                             {
                                 this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
                             }
@@ -442,8 +442,8 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                         {
                             this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
 
-                            Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
-                            if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                            TokenT(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
+                            if (tk_neq(l_right_collider_detector, tk_bT(ColliderDetector, -1)))
                             {
                                 this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
                             }
@@ -468,8 +468,8 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                     BoxCollider& l_right_collider = p_collision_heap.box_colliders.get(l_right_collider_token);
                     if (l_right_collider.enabled)
                     {
-                        Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
-                        if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                        TokenT(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
+                        if (tk_neq(l_right_collider_detector, tk_bT(ColliderDetector, -1)))
                         {
                             obb l_right_projected = l_left_collider.local_box.add_position_rotation(l_right_collider.transform);
 
@@ -535,8 +535,8 @@ inline void CollisionDetectionStep::clear_current_step_events()
     this->currentstep_exit_intersection_events.clear();
 };
 
-inline void CollisionDetectionStep::set_triggerstate_matchingWith_boxcollider(CollisionHeap2& p_collision_heap, const Token(ColliderDetector) p_collision_detector,
-                                                                              const Token(BoxCollider) p_matched_boxcollider, const Trigger::State p_trigger_state)
+inline void CollisionDetectionStep::set_triggerstate_matchingWith_boxcollider(CollisionHeap2& p_collision_heap, const TokenT(ColliderDetector) p_collision_detector,
+                                                                              const TokenT(BoxCollider) p_matched_boxcollider, const Trigger::State p_trigger_state)
 {
     ColliderDetector& l_collider_detector = p_collision_heap.collider_detectors.get(p_collision_detector);
     Slice<TriggerEvent> l_events = p_collision_heap.collider_detectors_events_2.get_vector(l_collider_detector.collision_events);
@@ -605,28 +605,28 @@ struct Collision2
         this->collision_detection_step.step(this->collision_heap);
     };
 
-    inline Token(BoxCollider) allocate_boxcollider(const aabb& p_local_box)
+    inline TokenT(BoxCollider) allocate_boxcollider(const aabb& p_local_box)
     {
         return this->collision_heap.allocate_boxcollider(BoxCollider::build_from_local_aabb(true, p_local_box));
     };
 
-    inline void on_collider_moved(const Token(BoxCollider) p_moved_collider, const transform_pa& p_world_transform)
+    inline void on_collider_moved(const TokenT(BoxCollider) p_moved_collider, const transform_pa& p_world_transform)
     {
         this->collision_heap.push_boxcollider_transform(p_moved_collider, p_world_transform);
         this->collision_detection_step.push_collider_for_process(p_moved_collider);
     };
 
-    inline void free_collider(const Token(BoxCollider) p_moved_collider)
+    inline void free_collider(const TokenT(BoxCollider) p_moved_collider)
     {
         this->collision_detection_step.push_collider_for_deletion(p_moved_collider);
     };
 
-    inline BoxCollider get_box_collider_copy(const Token(BoxCollider) p_box_collider)
+    inline BoxCollider get_box_collider_copy(const TokenT(BoxCollider) p_box_collider)
     {
         return this->collision_heap.box_colliders.get(p_box_collider);
     };
 
-    inline int8 is_collider_queued_for_detection(const Token(BoxCollider) p_box_collider)
+    inline int8 is_collider_queued_for_detection(const TokenT(BoxCollider) p_box_collider)
     {
         for (loop(i, 0, this->collision_detection_step.in_colliders_processed.Size))
         {
@@ -638,17 +638,17 @@ struct Collision2
         return 0;
     };
 
-    inline Slice<TriggerEvent> get_collision_events(const Token(ColliderDetector) p_collider_detector)
+    inline Slice<TriggerEvent> get_collision_events(const TokenT(ColliderDetector) p_collider_detector)
     {
         return this->collision_heap.get_triggerevents_from_colliderdetector(p_collider_detector);
     };
 
-    inline Token(ColliderDetector) allocate_colliderdetector(const Token(BoxCollider) p_box_collider)
+    inline TokenT(ColliderDetector) allocate_colliderdetector(const TokenT(BoxCollider) p_box_collider)
     {
         return this->collision_heap.allocate_colliderdetector(p_box_collider);
     };
 
-    inline void free_colliderdetector(const Token(BoxCollider) p_collider, const Token(ColliderDetector) p_collider_detector)
+    inline void free_colliderdetector(const TokenT(BoxCollider) p_collider, const TokenT(ColliderDetector) p_collider_detector)
     {
         this->collision_detection_step.push_collider_detector_for_deletion(p_collider, p_collider_detector);
     };

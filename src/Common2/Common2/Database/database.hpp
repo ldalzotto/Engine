@@ -263,7 +263,7 @@ struct SQLiteResultSet
         assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size));
+        return Span<int8>::allocate_slice(Slice<int8>::build((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size));
     };
 
     inline Span<int8> get_blob(const int8 p_index)
@@ -273,7 +273,7 @@ struct SQLiteResultSet
         assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size));
+        return Span<int8>::allocate_slice(Slice<int8>::build((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size));
     };
 };
 

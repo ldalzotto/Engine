@@ -2,14 +2,14 @@
 
 inline File AssetCompiler_open_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
 {
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build("\0", 0, 1));
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build_begin_end((int8*)"\0", 0, 1));
     File l_asset_file = File::open(l_asset_full_path.slice);
     return l_asset_file;
 };
 
 inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
 {
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build("\0", 0, 1));
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build_begin_end((int8*)"\0", 0, 1));
     File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_asset_file_content = l_asset_file.read_file_allocate();
     l_asset_full_path.free();

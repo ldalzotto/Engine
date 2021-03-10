@@ -2,8 +2,8 @@
 
 struct SandboxUtility
 {
-    inline static Token(v2::MeshRendererComponent) add_meshrenderer_component_to_node_with_database(Engine& p_engine, Token(v2::Node) p_node, const hash_t p_material_id, const hash_t p_mesh_id){
-        Token(v2::MeshRendererComponent) l_mesh_renderer = v2::RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
+    inline static TokenT(v2::MeshRendererComponent) add_meshrenderer_component_to_node_with_database(Engine& p_engine, TokenT(v2::Node) p_node, const hash_t p_material_id, const hash_t p_mesh_id){
+        TokenT(v2::MeshRendererComponent) l_mesh_renderer = v2::RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
             p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.asset_database,
             v2::MeshRendererComponent::AssetDependencies{p_material_id, p_mesh_id}, p_node);
         p_engine.scene.add_node_component_by_value(p_node, v2::MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
