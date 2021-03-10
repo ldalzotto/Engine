@@ -79,9 +79,27 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
         Span<int8> l_material_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
         v2::MaterialRessource::Asset::Value l_material_value = v2::MaterialRessource::Asset::Value::build_from_asset(v2::MaterialRessource::Asset::build_from_binary(l_material_ressource_compiled));
 
-        assert_true(l_material_value.parameters.parameters.get_size() == 1);
-        hash_t l_texture_hash = HashSlice(slice_int8_build_rawstr("link_to_png.png"));
-        assert_true(l_texture_hash == *l_material_value.parameters.get_parameter_texture_gpu_value(0));
+        assert_true(l_material_value.parameters.parameters.get_size() == 5);
+        {
+            hash_t l_texture_hash = HashSlice(slice_int8_build_rawstr("link_to_png.png"));
+            assert_true(l_texture_hash == *l_material_value.parameters.get_parameter_texture_gpu_value(0));
+        }
+        {
+            float32 l_param_value = slice_cast<float32>(l_material_value.parameters.get_parameter_uniform_host_value(1)).get(0);
+            assert_true(l_param_value == 1294.0f);
+        }
+        {
+            v2f l_param_value = slice_cast<v2f>(l_material_value.parameters.get_parameter_uniform_host_value(2)).get(0);
+            assert_true(l_param_value == v2f{1294.0f, 1295.0f});
+        }
+        {
+            v3f l_param_value = slice_cast<v3f>(l_material_value.parameters.get_parameter_uniform_host_value(3)).get(0);
+            assert_true(l_param_value == v3f{1294.0f, 1295.0f, 1296.0f});
+        }
+        {
+            v4f l_param_value = slice_cast<v4f>(l_material_value.parameters.get_parameter_uniform_host_value(4)).get(0);
+            assert_true(l_param_value == v4f{1294.0f, 1295.0f, 1296.0f, 1297.0f});
+        }
         l_material_ressource_compiled.free();
     }
     {

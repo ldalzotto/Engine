@@ -434,6 +434,12 @@ struct MaterialRessource
                     ShaderParameter::Type l_type = ShaderParameter::Type::TEXTURE_GPU;
                     p_parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_type), Slice<hash_t>::build_asint8_memory_singleelement(&p_texture_hash));
                 };
+
+                inline static void add_parameter_hostbuffer(VaryingVector& p_parameters, const Slice<int8>& p_buffer)
+                {
+                    ShaderParameter::Type l_type = ShaderParameter::Type::UNIFORM_HOST;
+                    p_parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_type), p_buffer);
+                };
             };
 
             Parameters parameters;

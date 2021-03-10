@@ -60,13 +60,13 @@ struct ShaderAssetJSON
         {
             return v2::ShaderLayoutParameterType::TEXTURE_FRAGMENT;
         }
-        else if(p_slice.compare(slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX")))
-        {
-            return v2::ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
-        }
         else if(p_slice.compare(slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX_FRAGMENT")))
         {
             return v2::ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+        }
+        else if(p_slice.compare(slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX")))
+        {
+            return v2::ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
         }
         else
         {
@@ -220,6 +220,58 @@ struct MaterialAssetJSON
                 {
                     l_parameter_deserializer.next_field("val");
                     v2::MaterialRessource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
+                }
+                break;
+                case v2::ShaderParameter::Type::UNIFORM_HOST:
+                {
+                    JSONDeserializer l_uniform_host_obj_deserializer = JSONDeserializer::allocate_default();
+                    if (l_parameter_deserializer.next_object("val", &l_uniform_host_obj_deserializer))
+                    {
+                        if (l_uniform_host_obj_deserializer.next_field("type"))
+                        {
+                            v2::PrimitiveSerializedTypes::Type l_parameter_type = v2::PrimitiveSerializedTypes::get_type_from_string(l_uniform_host_obj_deserializer.get_currentfield().value);
+                            switch (l_parameter_type)
+                            {
+                            case v2::PrimitiveSerializedTypes::Type::FLOAT32:
+                            {
+                                l_uniform_host_obj_deserializer.next_field("val");
+                                float32 l_value = FromString::afloat32(l_uniform_host_obj_deserializer.get_currentfield().value);
+                                v2::MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<float32>::build_asint8_memory_singleelement(&l_value));
+                            }
+                            break;
+                            case v2::PrimitiveSerializedTypes::Type::FLOAT32_2:
+                            {
+                                JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
+                                l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
+                                v2f l_value = v2::MathJSONDeserialization::_v2f(&l_value_deserializer);
+                                v2::MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v2f>::build_asint8_memory_singleelement(&l_value));
+                                l_value_deserializer.free();
+                            }
+                            break;
+                            case v2::PrimitiveSerializedTypes::Type::FLOAT32_3:
+                            {
+                                JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
+                                l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
+                                v3f l_value = v2::MathJSONDeserialization::_v3f(&l_value_deserializer);
+                                v2::MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v3f>::build_asint8_memory_singleelement(&l_value));
+                                l_value_deserializer.free();
+                            }
+                            break;
+                            case v2::PrimitiveSerializedTypes::Type::FLOAT32_4:
+                            {
+                                JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
+                                l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
+                                v4f l_value = v2::MathJSONDeserialization::_v4f(&l_value_deserializer);
+                                v2::MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v4f>::build_asint8_memory_singleelement(&l_value));
+                                l_value_deserializer.free();
+                            }
+                            break;
+                            default:
+                                abort();
+                            }
+                        }
+                    }
+                    l_uniform_host_obj_deserializer.free();
                 }
                 break;
                 default:

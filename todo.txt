@@ -1,5 +1,4 @@
-1/ Adding test for the spinnin cube transform.
-   -> rendered texture comparison
+1/ No dependencie on absolute path ?
 
 At this point the Engine is capable of reproducing the old version that was a code mess and not tested :feelsbadman:
 
