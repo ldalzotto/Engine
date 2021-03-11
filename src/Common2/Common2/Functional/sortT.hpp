@@ -5,20 +5,8 @@ struct Sort
     // TODO ->Implement Quick sort
     template <class ElementType, class CompareFunc> inline static void Linear2(Slice<ElementType>& p_slice, const uimax p_start_index)
     {
-        for (loop(i, p_start_index, p_slice.Size))
-        {
-            ElementType& l_left = p_slice.get(i);
-            for (loop(j, i, p_slice.Size))
-            {
-                ElementType& l_right = p_slice.get(j);
-                if (CompareFunc::compare(l_left, l_right))
-                {
-                    ElementType l_left_tmp = l_left;
-                    l_left = l_right;
-                    l_right = l_left_tmp;
-                }
-            }
-        }
+        Slice_* l_slice = &p_slice.slice;
+        Sort_Linear_inline(ElementType, l_slice, {l_comparison = CompareFunc::compare(*l_left, *l_right);} );
     };
 };
 

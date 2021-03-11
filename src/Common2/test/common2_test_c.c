@@ -25,6 +25,8 @@
 
 #include "Common2/Functional/hash.h"
 
+#include "Common2/Functional/sort.h"
+
 Token_declare(uimax);
 Slice_declare(uimax);
 Slice_declare_functions(uimax);
@@ -35,10 +37,15 @@ SliceN_declare_functions(uimax, 10);
 int main()
 {
     uimax l_arr[3] = {8, 23, 6};
-    SliceC(uimax) l_slice = SliceC_build(uimax)(10, l_arr);
+    SliceC(uimax) l_slice = SliceC_build(uimax)(3, l_arr);
+    /*
     SliceN_uimax_10 l_s = {14, 58};
     Slice_uimax l_slice_m = SliceN_uimax_10_to_slice(&l_s);
     uimax* l_val = Slice_uimax_get(&l_slice_m, 1);
     assert_true(*l_val == *SliceN_uimax_10_get(&l_s, 1));
     SliceN_uimax_10_get(&l_s, 9);
+    */
+
+    Sort_Linear_inline(uimax, (&l_slice.slice), { l_comparison = *l_left <= *l_right; });
+    int zd = 10;
 }

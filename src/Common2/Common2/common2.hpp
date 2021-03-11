@@ -30,8 +30,10 @@
 #include "./Functional/hash.h"
 #include "./Functional/hashT.hpp"
 
-#include "./Functional/sort.hpp"
+#include "./Functional/sort.h"
+#include "./Functional/sortT.hpp"
 
+#include "./Container/vector.h"
 #include "./Container/vector.hpp"
 #include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
