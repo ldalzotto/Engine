@@ -23,6 +23,8 @@
 #include "Common2/Memory/memory.h"
 #include "Common2/Memory/slice.h"
 
+#include "Common2/Functional/hash.h"
+
 Token_declare(uimax);
 Slice_declare(uimax);
 Slice_declare_functions(uimax);

@@ -27,7 +27,8 @@
 #include "./Memory/span.h"
 #include "./Memory/spanT.hpp"
 
-#include "./Functional/hash.hpp"
+#include "./Functional/hash.h"
+#include "./Functional/hashT.hpp"
 
 #include "./Functional/sort.hpp"
 

@@ -278,13 +278,13 @@ inline void math_hierarchy()
 
 struct CameraTestComponent
 {
-    inline static constexpr component_t Type = HASHRAW(STR(CameraTestComponent));
+    inline static const component_t Type = 4101623154351458465; // HashRaw("CameraTestComponent");
     float i0, i1;
 };
 
 struct MeshRendererTestComponent
 {
-    static constexpr component_t Type = HASHRAW(STR(MeshRendererTestComponent));
+    static const component_t Type = 18193941449186728636; // HashRaw("MeshRendererTestComponent");
     float i0, i1, i2;
 };
 

@@ -5,7 +5,7 @@ namespace v2
 
 struct CameraComponent
 {
-    static constexpr component_t Type = HASHRAW(STR(CameraComponent));
+    static constexpr component_t Type = 7635714168300145889; // HashRaw("CameraComponent")
 
     struct Asset
     {
@@ -33,7 +33,7 @@ struct MeshRendererComponent
         TokenT(MeshRessource) mesh;
     };
 
-    static constexpr component_t Type = HASHRAW(STR(MeshRendererComponent));
+    static const component_t Type = 14605248886225553788; // HashRaw("MeshRendererComponent");
     int8 allocated;
     int8 force_update;
     TokenT(Node) scene_node;

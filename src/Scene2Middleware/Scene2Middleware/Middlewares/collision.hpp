@@ -9,7 +9,7 @@ struct BoxColliderComponentAsset
 
 struct BoxColliderComponent
 {
-    static constexpr component_t Type = HASHRAW(STR(BoxColliderComponent));
+    static const component_t Type = 17968809677980084943; // HashRaw("BoxColliderComponent")
     int8 force_update;
 
     TokenT(Node) scene_node;
