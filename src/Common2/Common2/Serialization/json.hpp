@@ -54,7 +54,7 @@ struct JSONDeserializer
 
     inline JSONDeserializer clone()
     {
-        return JSONDeserializer{this->source, this->parent_cursor, Vector<FieldNode>::allocate_elements(this->stack_fields.to_slice()), this->current_field};
+        return JSONDeserializer{this->source, this->parent_cursor, Vector<FieldNode>::allocate_slice(this->stack_fields.to_slice()), this->current_field};
     };
 
     inline void free()

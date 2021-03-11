@@ -9,8 +9,14 @@
 */
 template <class ElementType> struct Vector
 {
-    uimax Size;
-    Span<ElementType> Memory;
+    union{
+        struct
+        {
+            uimax Size;
+            Span<ElementType> Memory;
+        };
+        Vector_ vector;
+    };
 
     inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
     {
@@ -19,17 +25,15 @@ template <class ElementType> struct Vector
 
     inline static Vector<ElementType> allocate(const uimax p_initial_capacity)
     {
-        return Vector<ElementType>{0, Span<ElementType>::allocate(p_initial_capacity)};
+        return Vector<ElementType>{.vector = Vector__allocate(p_initial_capacity, sizeof(ElementType))};
     };
 
-    inline static Vector<ElementType> allocate_elements(const Slice<ElementType>& p_initial_elements)
+    inline static Vector<ElementType> allocate_slice(const Slice<ElementType>& p_initial_elements)
     {
-        Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_initial_elements.Size);
-        l_vector.push_back_array(p_initial_elements);
-        return l_vector;
+        return Vector<ElementType>{.vector = Vector__allocate_slice(sizeof(ElementType), &p_initial_elements.slice)};
     };
 
-    inline static Vector<ElementType> allocate_capacity_elements(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements)
+    inline static Vector<ElementType> allocate_capacity_slice(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements)
     {
         Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_inital_capacity);
         l_vector.push_back_array(p_initial_elements);

@@ -31,11 +31,17 @@ Token_declare(uimax);
 Slice_declare(uimax);
 Slice_declare_functions(uimax);
 
+Slice_declare(int32);
+Slice_declare_functions(int32);
+
 SliceN_declare(uimax, 10);
 SliceN_declare_functions(uimax, 10);
 
 int main()
 {
+    int32 l_arr_int[10] = {0, 1, 2};
+    SliceC(int32) l_s = SliceC_build(int32)(10, l_arr_int);
+
     uimax l_arr[3] = {8, 23, 6};
     SliceC(uimax) l_slice = SliceC_build(uimax)(3, l_arr);
     /*

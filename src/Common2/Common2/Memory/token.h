@@ -27,7 +27,7 @@ typedef struct Token_
 #define Token(ElementType) Token_##ElementType
 
 #define Token_declare(ElementType)                                                                                                                                                                     \
-    typedef struct s_Token_##ElementType                                                                                                                                                             \
+    typedef struct s_Token_##ElementType                                                                                                                                                               \
     {                                                                                                                                                                                                  \
         union                                                                                                                                                                                          \
         {                                                                                                                                                                                              \

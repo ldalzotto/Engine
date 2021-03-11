@@ -12,12 +12,12 @@ struct String
     inline static String allocate(const uimax p_initial_capacity)
     {
         int8 l_null_int8 = (int8)NULL;
-        return String{Vector<int8>::allocate_capacity_elements(p_initial_capacity + 1, Slice<int8>::build_asint8_memory_elementnb(&l_null_int8, 1))};
+        return String{Vector<int8>::allocate_capacity_slice(p_initial_capacity + 1, Slice<int8>::build_asint8_memory_elementnb(&l_null_int8, 1))};
     };
 
     inline static String allocate_elements(const Slice<int8>& p_initial_elements)
     {
-        String l_string = String{Vector<int8>::allocate_capacity_elements(p_initial_elements.Size + 1, p_initial_elements)};
+        String l_string = String{Vector<int8>::allocate_capacity_slice(p_initial_elements.Size + 1, p_initial_elements)};
         l_string.Memory.push_back_element((int8)NULL);
         return l_string;
     };
