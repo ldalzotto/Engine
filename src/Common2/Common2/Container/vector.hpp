@@ -47,8 +47,7 @@ template <class ElementType> struct Vector
 
     inline void free()
     {
-        this->Memory.free();
-        *this = Vector<ElementType>::build_zero_size(NULL, 0);
+        Vector__free(&this->vector);
     };
 
     inline ElementType* get_memory()
@@ -68,16 +67,12 @@ template <class ElementType> struct Vector
 
     inline int8 empty()
     {
-        return this->Size == 0;
+        return Vector__empty(&this->vector);
     };
 
     inline ElementType& get(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-        this->bound_head_check(p_index);
-#endif
-        return this->Memory.Memory[p_index];
+        return *(ElementType*)Vector__get(&this->vector, sizeof(ElementType), p_index);
     };
 
     inline const ElementType& get(const uimax p_index) const
@@ -87,217 +82,113 @@ template <class ElementType> struct Vector
 
     inline void clear()
     {
-        this->Size = 0;
+        Vector__clear(&this->vector);
     };
 
     inline int8 insert_array_at(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-        this->bound_head_check(p_index); // cannot insert at head. Use vector_insert_array_at_always instead.
-#endif
-
-        return this->insert_array_at_unchecked(p_elements, p_index);
+        return Vector__insert_array_at(&this->vector, sizeof(ElementType), &p_elements.slice, p_index);
     };
 
     inline int8 insert_element_at(const ElementType& p_element, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-        this->bound_head_check(p_index); // cannot insert at head. Use vector_insert_element_at_always instead.
-#endif
-
-        return this->insert_element_at_unchecked(p_element, p_index);
+        return Vector__insert_element_at(&this->vector, sizeof(ElementType), (int8*)&p_element, p_index);
     };
 
     inline int8 push_back_array(const Slice<ElementType>& p_elements)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
-        this->Memory.slice.copy_memory(this->Size, p_elements);
-        this->Size += p_elements.Size;
-
-        return 1;
+        return Vector__push_back_array(&this->vector, sizeof(ElementType), &p_elements.slice);
     };
 
     inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
-        this->Memory.slice.copy_memory_2(this->Size, p_elements_0, p_elements_1);
-        this->Size += (p_elements_0.Size + p_elements_1.Size);
-
-        return 1;
+        return Vector__push_back_array_2(&this->vector, sizeof(ElementType), &p_elements_0.slice, &p_elements_1.slice);
     };
 
     inline int8 push_back_array_empty(const uimax p_array_size)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_array_size);
-        this->Size += p_array_size;
-        return 1;
+        return Vector__push_back_array_empty(&this->vector, sizeof(ElementType), p_array_size);
     };
 
     inline int8 push_back_element_empty()
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
-        this->Size += 1;
-        return 1;
+        return Vector__push_back_element_empty(&this->vector, sizeof(ElementType));
     };
 
     inline int8 push_back_element(const ElementType& p_element)
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
-        this->Memory.Memory[this->Size] = p_element;
-        this->Size += 1;
-
-        return 1;
+        return Vector__push_back_element(&this->vector, sizeof(ElementType), (int8*)&p_element);
     };
 
     inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-#endif
-        if (p_index == this->Size)
-        {
-            return this->push_back_array(p_elements);
-        }
-        else
-        {
-            return this->insert_array_at_unchecked(p_elements, p_index);
-        }
+        return Vector__insert_array_at_always(&this->vector, sizeof(ElementType), &p_elements.slice, p_index);
     };
 
     inline int8 insert_element_at_always(const ElementType& p_element, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-#endif
-
-        if (p_index == this->Size)
-        {
-            return this->push_back_element(p_element);
-        }
-        else
-        {
-            return this->insert_element_at_unchecked(p_element, p_index);
-        }
+        return Vector__insert_element_at_always(&this->vector, sizeof(ElementType), (int8*)&p_element, p_index);
     };
 
     inline int8 erase_array_at(const uimax p_index, const uimax p_element_nb)
     {
-
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-        this->bound_check(p_index + p_element_nb);
-        this->bound_lastelement_check(p_index); // use vector_pop_back_array
-#endif
-
-        this->move_memory_up(p_index + p_element_nb, p_element_nb);
-        this->Size -= p_element_nb;
-
-        return 1;
+        return Vector__erase_array_at(&this->vector, sizeof(ElementType), p_index, p_element_nb);
     };
 
     inline int8 erase_element_at(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-        this->bound_lastelement_check(p_index); // use vector_pop_back
-#endif
-
-        this->move_memory_up(p_index + 1, 1);
-        this->Size -= 1;
-
-        return 1;
+        return Vector__erase_element_at(&this->vector, sizeof(ElementType), p_index);
     };
 
     inline int8 pop_back_array(const uimax p_element_nb)
     {
-        this->Size -= p_element_nb;
-        return 1;
+        return Vector__pop_back_array(&this->vector, p_element_nb);
     };
 
     inline int8 pop_back()
     {
-        this->Size -= 1;
-        return 1;
+        return Vector__pop_back(&this->vector);
     };
 
     inline int8 erase_element_at_always(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        this->bound_check(p_index);
-#endif
-
-        if (p_index == this->Size - 1)
-        {
-            return this->pop_back();
-        }
-        else
-        {
-            return this->erase_element_at(p_index);
-        }
+        return Vector__erase_element_at_always(&this->vector, sizeof(ElementType), p_index);
     };
 
   private:
     inline void bound_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        if (p_index > this->Size)
-        {
-            abort();
-        }
-#endif
+        Vector__bound_check(&this->vector, p_index);
     };
 
     inline void bound_head_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        if (p_index == this->Size)
-        {
-            abort();
-        }
-#endif
+        Vector__bound_head_check(&this->vector, p_index);
     };
 
     inline void bound_lastelement_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        if (p_index == this->Size - 1)
-        {
-            abort();
-        }
-#endif
+        Vector__bound_lastelement_check(&this->vector, p_index);
     };
 
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {
-        this->Memory.slice.move_memory_down(this->Size - p_break_index, p_break_index, p_move_delta);
+        Vector__move_memory_down(&this->vector, sizeof(ElementType), p_break_index, p_move_delta);
     };
 
     inline void move_memory_up(const uimax p_break_index, const uimax p_move_delta)
     {
-        this->Memory.slice.move_memory_up(this->Size - p_break_index, p_break_index, p_move_delta);
+        Vector__move_memory_up(&this->vector, sizeof(ElementType), p_break_index, p_move_delta);
     };
 
     inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
-        this->move_memory_down(p_index, 1);
-        this->Memory.Memory[p_index] = p_element;
-        this->Size += 1;
-
-        return 1;
+        return Vector__insert_element_at_unchecked(&this->vector, sizeof(ElementType), (const int8*)&p_element, p_index);
     };
 
     inline int8 insert_array_at_unchecked(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
-        this->move_memory_down(p_index, p_elements.Size);
-        this->Memory.slice.copy_memory(p_index, p_elements);
-
-        this->Size += p_elements.Size;
-
-        return 1;
+        return Vector__insert_array_at_unchecked(&this->vector, sizeof(ElementType), &p_elements.slice, p_index);
     };
 
 #define ShadowVector(ElementType) ElementType##_##ShadowVector

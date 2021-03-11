@@ -22,10 +22,13 @@
 
 #include "Common2/Memory/memory.h"
 #include "Common2/Memory/slice.h"
+#include "Common2/Memory/span.h"
 
 #include "Common2/Functional/hash.h"
 
 #include "Common2/Functional/sort.h"
+
+#include "Common2/Container/vector.h"
 
 Token_declare(uimax);
 Slice_declare(uimax);
