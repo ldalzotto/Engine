@@ -231,7 +231,7 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
         if (l_free_chunk.Size > p_size)
         {
             SliceIndex l_new_allocated_chunk;
-            l_free_chunk.slice_two(l_free_chunk.Begin + p_size, &l_new_allocated_chunk, &l_free_chunk);
+            SliceIndex_slice_two(&l_free_chunk, l_free_chunk.Begin + p_size, &l_new_allocated_chunk, &l_free_chunk);
             *out_return = _push_chunk(p_heap, &l_new_allocated_chunk);
             return 1;
         }
@@ -265,7 +265,7 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
             {
                 // create one free chunk (after)
                 SliceIndex l_new_allocated_chunk;
-                l_free_chunk.slice_two(l_free_chunk.Begin + p_size, &l_new_allocated_chunk, &l_free_chunk);
+                SliceIndex_slice_two(&l_free_chunk, l_free_chunk.Begin + p_size, &l_new_allocated_chunk, &l_free_chunk);
                 *out_chunk = _push_chunk(p_heap, &l_new_allocated_chunk);
                 return 1;
             }
@@ -278,8 +278,8 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
                     // create two free chunk (before and after)
 
                     SliceIndex l_new_allocated_chunk, l_new_free_chunk, l_tmp_chunk;
-                    l_free_chunk.slice_two(l_free_chunk.Begin + l_chunk_offset_delta, &l_free_chunk, &l_tmp_chunk);
-                    l_tmp_chunk.slice_two(l_tmp_chunk.Begin + p_size, &l_new_allocated_chunk, &l_new_free_chunk);
+                    SliceIndex_slice_two(&l_free_chunk, l_free_chunk.Begin + l_chunk_offset_delta, &l_free_chunk, &l_tmp_chunk);
+                    SliceIndex_slice_two(&l_tmp_chunk, l_tmp_chunk.Begin + p_size, &l_new_allocated_chunk, &l_new_free_chunk);
                     *out_chunk = _push_chunk(p_heap, &l_new_allocated_chunk);
 
                     l_free_chunks.sv_push_back_element(l_new_free_chunk);
@@ -289,7 +289,7 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
                 else if (l_free_chunk.Size == (p_size + l_chunk_offset_delta)) // offsetted chunk end matches perfectly the end of the free chunk
                 {
                     SliceIndex l_new_allocated_chunk;
-                    l_free_chunk.slice_two(l_free_chunk.Begin + l_chunk_offset_delta, &l_free_chunk, &l_new_allocated_chunk);
+                    SliceIndex_slice_two(&l_free_chunk, l_free_chunk.Begin + l_chunk_offset_delta, &l_free_chunk, &l_new_allocated_chunk);
                     *out_chunk = _push_chunk(p_heap, &l_new_allocated_chunk);
 
                     return 1;
@@ -347,7 +347,7 @@ template <class ShadowHeap_t(s)> inline void HeapA::_defragment(ShadowHeap_t(s) 
 inline Heap Heap::allocate(const uimax p_heap_size)
 {
     Heap l_heap = Heap{Pool<SliceIndex>::allocate(0), Vector<SliceIndex>::allocate(1), p_heap_size};
-    l_heap.FreeChunks.push_back_element(SliceIndex::build(0, p_heap_size));
+    l_heap.FreeChunks.push_back_element(SliceIndex_build(0, p_heap_size));
     return l_heap;
 }
 
@@ -361,7 +361,7 @@ inline void Heap::free()
 inline void Heap::sh_resize(const uimax p_newsize)
 {
     uimax l_old_size = this->Size;
-    this->FreeChunks.push_back_element(SliceIndex::build(l_old_size, p_newsize - l_old_size));
+    this->FreeChunks.push_back_element(SliceIndex_build(l_old_size, p_newsize - l_old_size));
     this->Size = p_newsize;
 }
 
@@ -473,6 +473,6 @@ inline SliceIndex* HeapPaged::get_sliceindex_only(const HeapPagedToken& p_token)
 
 inline void HeapPaged::create_new_page()
 {
-    SliceIndex l_chunk_slice = SliceIndex::build(0, this->PageSize);
+    SliceIndex l_chunk_slice = SliceIndex_build(0, this->PageSize);
     this->FreeChunks.push_back_element(Slice<SliceIndex>::build(&l_chunk_slice, 1));
 }

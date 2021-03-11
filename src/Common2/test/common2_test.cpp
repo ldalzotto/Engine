@@ -326,8 +326,8 @@ inline void varyingslice_test()
 {
     Slice<uimax> l_varying_slice_memory = SliceN<uimax, 5>{0, 1, 2, 3, 4}.to_slice();
     Slice<SliceIndex> l_varying_slice_indices =
-        SliceN<SliceIndex, 5>{SliceIndex::build(0, sizeof(uimax)), SliceIndex::build(sizeof(uimax), sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 2, sizeof(uimax)),
-                              SliceIndex::build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 4, sizeof(uimax))}
+        SliceN<SliceIndex, 5>{SliceIndex_build(0, sizeof(uimax)), SliceIndex_build(sizeof(uimax), sizeof(uimax)), SliceIndex_build(sizeof(uimax) * 2, sizeof(uimax)),
+                              SliceIndex_build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex_build(sizeof(uimax) * 4, sizeof(uimax))}
             .to_slice();
 
     VaryingSlice l_varying_slice = VaryingSlice::build(l_varying_slice_memory.build_asint8(), l_varying_slice_indices);

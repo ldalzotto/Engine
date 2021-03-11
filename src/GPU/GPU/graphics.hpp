@@ -1060,7 +1060,7 @@ struct GraphicsAllocator2
         allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size)
     {
         return this->heap.shader_layouts.alloc_element(
-            ShaderLayout::allocate(this->graphics_device, in_shaderlayout_parameter_types.move_to_value(), in_vertex_input_layout.move_to_value(), in_vertex_element_size));
+            ShaderLayout::allocate(this->graphics_device, in_shaderlayout_parameter_types.move(), in_vertex_input_layout.move(), in_vertex_element_size));
     };
 
     inline void free_shader_layout(const TokenT(ShaderLayout) p_shader_layout)

@@ -26,11 +26,17 @@
 Token_declare(uimax);
 Slice_declare(uimax);
 Slice_declare_functions(uimax);
-// #include "Common2/common2c.h"
+
+SliceN_declare(uimax, 10);
+SliceN_declare_functions(uimax, 10);
 
 int main()
 {
-    uimax l_arr[3] = {8,23,6};
+    uimax l_arr[3] = {8, 23, 6};
     SliceC(uimax) l_slice = SliceC_build(uimax)(10, l_arr);
-    // Slice_ l_s = Slice__build(10);
+    SliceN_uimax_10 l_s = {14, 58};
+    Slice_uimax l_slice_m = SliceN_uimax_10_to_slice(&l_s);
+    uimax* l_val = Slice_uimax_get(&l_slice_m, 1);
+    assert_true(*l_val == *SliceN_uimax_10_get(&l_s, 1));
+    SliceN_uimax_10_get(&l_s, 9);
 }

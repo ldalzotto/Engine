@@ -23,8 +23,9 @@
 #include "./Memory/tokenT.hpp"
 #include "./Memory/memory.h"
 #include "./Memory/slice.h"
-#include "./Memory/slice.hpp"
-#include "./Memory/span.hpp"
+#include "./Memory/sliceT.hpp"
+#include "./Memory/span.h"
+#include "./Memory/spanT.hpp"
 
 #include "./Functional/hash.hpp"
 

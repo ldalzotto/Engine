@@ -124,35 +124,22 @@ template <class ElementType> struct Slice
 
 inline Slice<int8> slice_int8_build_rawstr(const int8* p_str)
 {
-    return Slice<int8>::build((int8*)p_str, strlen(p_str));
+    return Slice<int8>{.slice = Slice__build_rawstr(p_str)};
 };
 
 inline Slice<int8> slice_int8_build_rawstr_with_null_termination(const int8* p_str)
 {
-    return Slice<int8>::build((int8*)p_str, strlen(p_str) + 1);
+    return Slice<int8>{.slice = Slice__build_rawstr_with_null_termination(p_str)};
 };
 
 template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8>& p_slice)
 {
-#if CONTAINER_BOUND_TEST
-    if ((p_slice.Size % sizeof(CastedType)) != 0)
-    {
-        abort();
-    }
-#endif
-
-    return Slice<CastedType>{cast(uimax, p_slice.Size / sizeof(CastedType)), cast(CastedType*, p_slice.Begin)};
+    return Slice<CastedType>{.slice = Slice__cast(&p_slice.slice, sizeof(CastedType))};
 };
 
 template <class CastedType> inline CastedType* slice_cast_singleelement(const Slice<int8>& p_slice)
 {
-#if CONTAINER_BOUND_TEST
-    if (p_slice.Size < sizeof(CastedType))
-    {
-        abort();
-    }
-#endif
-    return cast(CastedType*, p_slice.Begin);
+    return (CastedType*)Slice__cast_singleelement(&p_slice.slice, sizeof(CastedType));
 };
 
 #if TOKEN_TYPE_SAFETY
@@ -186,12 +173,12 @@ template <class ElementType, uint32 Size_t> struct SliceN
 
     inline Slice<ElementType> to_slice()
     {
-        return Slice<ElementType>{Size_t, this->Memory};
+        return Slice<ElementType>{.slice = SliceN___to_slice((int8*)&this->Memory, Size_t)};
     };
 
     inline const Slice<ElementType> to_slice() const
     {
-        return ((SliceN<ElementType, Size_t>*)this)->to_slice();
+        return Slice<ElementType>{.slice = SliceN___to_slice((int8*)&this->Memory, Size_t)};
     };
 
     inline uimax Size()
@@ -201,10 +188,7 @@ template <class ElementType, uint32 Size_t> struct SliceN
 
     inline ElementType& get(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
-        assert_true(p_index < Size_t);
-#endif
-        return this->Memory[p_index];
+        return *(ElementType*)SliceN___get((int8*)&this->Memory, sizeof(ElementType), Size_t, p_index);
     };
 
     inline const ElementType& get(const uimax p_index) const
@@ -213,44 +197,25 @@ template <class ElementType, uint32 Size_t> struct SliceN
     }
 };
 
-/*
-    A SliceIndex is just a begin and end uimax
-*/
-struct SliceIndex
-{
-    uimax Begin;
-    uimax Size;
-
-    inline static SliceIndex build(const uimax p_begin, const uimax p_size)
-    {
-        return SliceIndex{p_begin, p_size};
-    };
-
-    inline static SliceIndex build_default()
-    {
-        return build(0, 0);
-    };
-
-    inline void slice_two(const uimax p_break_point, SliceIndex* out_left, SliceIndex* out_right) const
-    {
-        uimax l_source_initial_size = this->Size;
-        *out_left = SliceIndex::build(this->Begin, p_break_point - this->Begin);
-        *out_right = SliceIndex::build(p_break_point, l_source_initial_size - out_left->Size);
-    };
-};
-
 template <class ElementType> struct SliceOffset
 {
-    uimax Offset;
-    ElementType* Memory;
+    union
+    {
+        struct
+        {
+            uimax Offset;
+            ElementType* Memory;
+        };
+        SliceOffset_ slice_offset;
+    };
 
     inline static SliceOffset<ElementType> build(ElementType* p_memory, const uimax p_offset)
     {
-        return SliceOffset<ElementType>{p_offset, p_memory};
+        return SliceOffset<ElementType>{.slice_offset = SliceOffset__build((int8*)p_memory, p_offset)};
     };
 
     inline static SliceOffset<ElementType> build_from_sliceindex(ElementType* p_memory, const SliceIndex& p_slice_index)
     {
-        return SliceOffset<ElementType>{p_slice_index.Begin, p_memory};
+        return SliceOffset<ElementType>{.slice_offset = SliceOffset__build_from_sliceindex((int8*)p_memory, &p_slice_index)};
     };
 };

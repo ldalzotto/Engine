@@ -49,7 +49,7 @@ inline void render_asset_binary_serialization_deserialization_test()
 
     Slice<int8> l_material_parameters_memory = SliceN<ShaderParameter::Type, 2>{ShaderParameter::Type::TEXTURE_GPU, ShaderParameter::Type::UNIFORM_HOST}.to_slice().build_asint8();
     Slice<SliceIndex> l_chunkds =
-        SliceN<SliceIndex, 2>{SliceIndex::build(0, sizeof(ShaderParameter::Type)), SliceIndex::build(sizeof(ShaderParameter::Type), sizeof(ShaderParameter::Type))}.to_slice();
+        SliceN<SliceIndex, 2>{SliceIndex_build(0, sizeof(ShaderParameter::Type)), SliceIndex_build(sizeof(ShaderParameter::Type), sizeof(ShaderParameter::Type))}.to_slice();
     VaryingSlice l_material_parameters_varying = VaryingSlice::build(l_material_parameters_memory, l_chunkds);
     {
         MaterialRessource::Asset::Value l_value = MaterialRessource::Asset::Value{l_material_parameters_varying};

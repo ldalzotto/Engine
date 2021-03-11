@@ -443,7 +443,7 @@ struct D3RendererAllocatorComposition
     {
         Span<ShaderLayoutParameterType> l_span =
             Span<ShaderLayoutParameterType>::allocate_slice_3(ColorStep_const::shaderlayout_before.to_slice(), p_specific_parameters, ColorStep_const::shaderlayout_after.to_slice());
-        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(ColorStep_const::shaderlayout_vertex_input);
+        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slice(ColorStep_const::shaderlayout_vertex_input.to_slice());
 
         ShaderIndex l_shader_index;
         l_shader_index.execution_order = p_execution_order;
@@ -515,7 +515,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))}};
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}});
+    l_step.clear_values = Span<v4f>::allocate_slice(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}}.to_slice());
     l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
