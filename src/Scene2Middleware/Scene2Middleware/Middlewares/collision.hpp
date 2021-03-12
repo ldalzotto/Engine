@@ -31,6 +31,7 @@ struct CollisionAllocator
 
     Token(BoxColliderComponent) allocate_box_collider_component_deferred(const Token(Node) p_scene_node, const BoxColliderComponentAsset& p_asset);
 
+    // TODO -> this method must be removed because BoxCollidation add occur before the allocation step
     BoxColliderComponent& get_or_allocate_box_collider(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_token);
 
     BoxColliderComponent& get_box_collider_ressource_unsafe(const Token(BoxColliderComponent) p_box_collider_token); // unsafe

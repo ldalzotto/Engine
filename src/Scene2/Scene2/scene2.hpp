@@ -150,6 +150,11 @@ inline void SceneTree::set_worldrotation(const NodeEntry& p_node, const quat& p_
     }
 };
 
+inline void SceneTree::add_worldrotation(const NodeEntry& p_node, const quat& p_delta_world_rotation)
+{
+    this->set_worldrotation(p_node, this->get_worldrotation(p_node) * p_delta_world_rotation);
+};
+
 inline void SceneTree::set_worldscale(const NodeEntry& p_node, const v3f& p_world_scale)
 {
     if (!p_node.has_parent())

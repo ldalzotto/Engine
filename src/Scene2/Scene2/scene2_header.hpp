@@ -76,6 +76,7 @@ struct SceneTree
     void set_localscale(const NodeEntry& p_node, const v3f& p_local_scale);
     void set_worldposition(const NodeEntry& p_node, const v3f& p_world_position);
     void set_worldrotation(const NodeEntry& p_node, const quat& p_world_rotation);
+    void add_worldrotation(const NodeEntry& p_node, const quat& p_delta_world_rotation);
     void set_worldscale(const NodeEntry& p_node, const v3f& p_world_scale);
 
     v3f get_worldposition(const NodeEntry& p_node);

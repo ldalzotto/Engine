@@ -3,6 +3,45 @@
 #include "./Sandbox/sandbox.hpp"
 #include "AssetCompiler/asset_compiler.hpp"
 
+struct SandboxTestUtil
+{
+     inline static void render_texture_compare(Engine& p_engine, const Slice<int8>& p_compared_image_path)
+    {
+        ImageFormat l_rendertarget_texture_format;
+        Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+            p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
+            &l_rendertarget_texture_format);
+
+        p_engine.gpu_context.buffer_step_and_wait_for_completion();
+        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
+
+
+        Span<int8> l_image = ImgCompiler::read_image(p_compared_image_path);
+        assert_true(l_rendertarget_texture_value.compare(l_image.slice));
+        l_image.free();
+
+        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
+                                                                                 l_rendertarget_texture);
+    };
+
+    inline static void render_texture_screenshot(Engine& p_engine, const Slice<int8>& p_path)
+    {
+        ImageFormat l_rendertarget_texture_format;
+        Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+            p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
+            &l_rendertarget_texture_format);
+
+        p_engine.gpu_context.buffer_step_and_wait_for_completion();
+        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
+
+        ImgCompiler::write_to_image(p_path, l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4,
+                                    l_rendertarget_texture_value);
+
+        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
+                                                                                 l_rendertarget_texture);
+    };
+};
+
 struct BoxCollisionSandboxEnvironment
 {
     Token(Node) moving_node;
@@ -148,106 +187,72 @@ struct D3RendererCubeSandboxEnvironment
 
     inline void before_update(Engine& p_engine)
     {
-        if (p_engine.clock.framecount == 1)
+        switch (p_engine.clock.framecount)
+        {
+        case 1:
         {
             quat l_rot = m33f::lookat(v3f{7.0f, 7.0f, 7.0f}, v3f{0.0f, 0.0f, 0.0f}, v3f_const::UP).to_rotation();
-            v3f l_euler = l_rot.euler();
-            this->camera_node = p_engine.scene.add_node(transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE}, Scene_const::root_node);
-            p_engine.scene_middleware.render_middleware.allocate_camera_inline(CameraComponent::Asset{1.0f, 30.0f, 45.0f}, camera_node);
-            p_engine.scene.add_node_component_by_value(camera_node, CameraComponentAsset_SceneCommunication::construct_nodecomponent());
+            this->camera_node = CreateNode(p_engine, transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE});
+            NodeAddCamera(p_engine, camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
 
             {
-                {
-                    this->l_square_root_node = p_engine.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-                }
-                {
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    {
-                        Token(Node) l_node = p_engine.scene.add_node(transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
-                        SandboxUtility::add_meshrenderer_component_to_node_with_database(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material,
-                                                                                         D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                }
+                this->l_square_root_node = p_engine.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+
+                Token(Node) l_node = CreateNode(p_engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(p_engine, transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
             }
         }
-        else if (p_engine.clock.framecount == 60)
+            return;
+        case 60:
         {
-
-            p_engine.scene.remove_node(p_engine.scene.get_node(this->camera_node));
-            p_engine.scene.remove_node(p_engine.scene.get_node(this->l_square_root_node));
+            RemoveNode(p_engine, this->camera_node);
+            RemoveNode(p_engine, this->l_square_root_node);
             p_engine.close();
         }
-        else
-        {
-            NTree<Node>::Resolve l_node = p_engine.scene.get_node(this->l_square_root_node);
-            p_engine.scene.tree.set_worldrotation(l_node,
-                                                  p_engine.scene.tree.get_worldrotation(l_node) * quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * p_engine.clock.deltatime));
+            return;
         }
+
+        quat l_delta_rotation = quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * p_engine.clock.deltatime);
+        NodeAddWorldRotation(p_engine, this->l_square_root_node, l_delta_rotation);
     };
 
     inline void end_of_frame(Engine& p_engine)
     {
         if (p_engine.clock.framecount == 20 || p_engine.clock.framecount == 40)
         {
-            ImageFormat l_rendertarget_texture_format;
-            Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
-                p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
-                &l_rendertarget_texture_format);
-
-            p_engine.gpu_context.buffer_step_and_wait_for_completion();
-            Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
-
             String l_image_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
             l_image_path.append(slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
             ToString::auimax_append(p_engine.clock.framecount, l_image_path);
             l_image_path.append(slice_int8_build_rawstr(".jpg"));
 
+            SandboxTestUtil::render_texture_compare(p_engine, l_image_path.to_slice_with_null_termination());
+
 #if 0
-            ImgCompiler::write_to_image(l_image_path.to_slice_wuth_null_termination(), l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4,
-                                        l_rendertarget_texture_value);
+            SandboxTestUtil::render_texture_screenshot(p_engine, l_image_path.to_slice_with_null_termination());
 #endif
 
-            Span<int8> l_image = ImgCompiler::read_image(l_image_path.to_slice_with_null_termination());
-            assert_true(l_rendertarget_texture_value.compare(l_image.slice));
-            l_image.free();
             l_image_path.free();
-
-            BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
-                                                                                         l_rendertarget_texture);
         }
     };
 };

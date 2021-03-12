@@ -253,6 +253,11 @@ inline void math_hierarchy()
         l_scene.tree.set_worldrotation(l_node_3_val, v3f{-1.0f, -2.0f, 3.0f}.euler_to_quat());
         assert_true(l_scene.tree.get_localrotation(l_node_3_val) == quat{0.346717477f, -0.641801417f, 0.598375380f, 0.331398427f});
         assert_true(l_scene.tree.get_worldrotation(l_node_3_val) == quat{0.718287051f, -0.310622454f, 0.444435090f, 0.435952842f});
+
+        l_scene.tree.set_worldrotation(l_node_3_val, quat_const::IDENTITY);
+        l_scene.tree.add_worldrotation(l_node_3_val, quat{0.0f, 0.1f, 0.2f, 0.3f});
+        l_scene.tree.add_worldrotation(l_node_3_val, quat{0.0f, 0.2f, 0.4f, 0.3f});
+        assert_true(l_scene.tree.get_worldrotation(l_node_3_val) == (quat{0.0f, 0.1f, 0.2f, 0.3f} * quat{0.0f, 0.2f, 0.4f, 0.3f}));
     }
 
     // Scale
