@@ -30,7 +30,7 @@
         </Synthetic>
      </Expand>
   </Type>
-  <Type Name="v2::Vector&lt;*&gt;">
+  <Type Name="Vector&lt;*&gt;">
     <DisplayString>{{Size : {Size}; Capacity : {Memory.Capacity}; ptr : {Memory.Memory}}}</DisplayString>
     <Expand>
     <Item Name="Size">Size</Item>

@@ -1,8 +1,6 @@
 
 #include "Math2/math.hpp"
 
-using namespace v2;
-
 inline void math_tests()
 {
     assert_true((v3f{1.0f, 2.0f, 3.0f} + v3f{1.0f, 2.0f, 3.0f}) == v3f{2.0f, 4.0f, 6.0f});

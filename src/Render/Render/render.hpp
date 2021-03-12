@@ -2,8 +2,6 @@
 
 #include "GPU/gpu.hpp"
 
-namespace v2
-{
 struct Camera
 {
     m44f view;
@@ -643,4 +641,3 @@ inline void D3Renderer::graphics_step(GraphicsBinder& p_graphics_binder)
 
     p_graphics_binder.pop_material_bind(this->color_step.global_material);
 };
-}; // namespace v2

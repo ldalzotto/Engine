@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 
 /*
     The GraphicsCard is the hardware responsible of all GPU related operations.
@@ -37,10 +35,7 @@ struct GPUInstance
     static GPUInstance allocate(const Slice<GPUExtension>& p_required_extensions);
     void free();
 };
-} // namespace v2
 
-namespace v2
-{
 
 namespace vk
 {
@@ -300,5 +295,3 @@ inline void GPUInstance::free()
     vkDestroyDevice(this->logical_device, NULL);
     vkDestroyInstance(this->instance, NULL);
 };
-
-} // namespace v2

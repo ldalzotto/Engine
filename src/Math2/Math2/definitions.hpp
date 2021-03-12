@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 
 namespace Math_const
 {
@@ -40,7 +38,6 @@ struct Math
 
     inline static float32 linear_to_sRGB_float32(const float32 p_linear);
 };
-} // namespace v2
 
 struct v2f;
 struct v3f;

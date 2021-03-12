@@ -232,17 +232,17 @@ inline int8 obb::overlap2(const obb& p_other) const
 
 inline int8 SAT::mainaxis_x(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii)
 {
-    return (v2::Math::greater(fabsf(p_left_center.x - p_right_center.x), p_left_radii.x + p_right_radii.x));
+    return (Math::greater(fabsf(p_left_center.x - p_right_center.x), p_left_radii.x + p_right_radii.x));
 };
 
 inline int8 SAT::mainaxis_y(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii)
 {
-    return (v2::Math::greater(fabsf(p_left_center.y - p_right_center.y), p_left_radii.y + p_right_radii.y));
+    return (Math::greater(fabsf(p_left_center.y - p_right_center.y), p_left_radii.y + p_right_radii.y));
 };
 
 inline int8 SAT::mainaxis_z(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii)
 {
-    return (v2::Math::greater(fabsf(p_left_center.z - p_right_center.z), p_left_radii.z + p_right_radii.z));
+    return (Math::greater(fabsf(p_left_center.z - p_right_center.z), p_left_radii.z + p_right_radii.z));
 };
 
 inline int8 SAT::Loriented_Roriented(const Slice<v3f>& p_left_vertices, const m33f& p_left_rotation, const Slice<v3f>& p_right_vertices, const m33f& p_right_rotation, const v3f& p_tested_axis)
@@ -270,7 +270,7 @@ inline int8 SAT::symetricalshapes_Loriented_Roriented(const v3f& p_left_center, 
 
     float32 l_tl = fabsf(l_right_center_projected - l_left_center_projected);
 
-    return v2::Math::greater_eq(l_tl, l_left_radii_projected + l_right_radii_projected);
+    return Math::greater_eq(l_tl, l_left_radii_projected + l_right_radii_projected);
 };
 
 inline void GeometryUtil::collapse_points_to_axis_min_max(const v3f& p_axis, const Slice<v3f>& p_points, float32* out_min, float32* out_max)
@@ -281,11 +281,11 @@ inline void GeometryUtil::collapse_points_to_axis_min_max(const v3f& p_axis, con
     for (uimax i = 0; i < p_points.Size; i++)
     {
         float32 l_proj = p_points.get(i).dot(p_axis);
-        if (v2::Math::lower(l_proj, *out_min))
+        if (Math::lower(l_proj, *out_min))
         {
             *out_min = l_proj;
         }
-        if (v2::Math::greater(l_proj, *out_max))
+        if (Math::greater(l_proj, *out_max))
         {
             *out_max = l_proj;
         }

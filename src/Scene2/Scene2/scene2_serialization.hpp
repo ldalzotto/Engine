@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 
 struct SceneAssetComponent
 {
@@ -323,5 +321,3 @@ struct SceneJSON_TO_SceneAsset
         json_deser_iterate_array_end();
     };
 };
-
-}; // namespace v2

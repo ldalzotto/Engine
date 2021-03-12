@@ -128,9 +128,6 @@ static TBuiltInResource InitResources()
     return Resources;
 }
 
-namespace v2
-{
-
 inline static void ShaderCompiler_ErrorHandler(glslang_shader_s* p_shader, glslang_program_t* p_program, const int32 p_return_code)
 {
     if (!p_return_code)
@@ -299,8 +296,6 @@ struct ShaderCompiler
         return 1;
     };
 };
-
-} // namespace v2
 
 #undef sc_handle_error
 #undef sc_handle_error_silent

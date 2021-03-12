@@ -15,7 +15,7 @@ struct ObjCompiler
         }
     };
 
-    inline static void ReadObj(const Slice<int8>& p_obj_content, Vector<v2::Vertex>& out_vertices, Vector<uint32>& out_indices)
+    inline static void ReadObj(const Slice<int8>& p_obj_content, Vector<Vertex>& out_vertices, Vector<uint32>& out_indices)
     {
         Vector<VertexKey> l_vertices_indexed = Vector<VertexKey>::allocate(0);
         Vector<v3f> l_positions = Vector<v3f>::allocate(0);
@@ -91,7 +91,7 @@ struct ObjCompiler
         l_uvs.free();
     }
 
-    inline static void process_obj_face(const Slice<int8> p_face, Vector<VertexKey>& p_vertices_indexed, Vector<v3f>& p_positions, Vector<v2f>& p_uvs, Vector<v2::Vertex>& out_vertices,
+    inline static void process_obj_face(const Slice<int8> p_face, Vector<VertexKey>& p_vertices_indexed, Vector<v3f>& p_positions, Vector<v2f>& p_uvs, Vector<Vertex>& out_vertices,
                                         Vector<uint32>& out_indices)
     {
         uimax l_first_slash, l_second_slash;
@@ -123,7 +123,7 @@ struct ObjCompiler
         {
             l_key.computed_indice = p_vertices_indexed.Size;
             p_vertices_indexed.push_back_element(l_key);
-            v2::Vertex l_vertex;
+            Vertex l_vertex;
             l_vertex.position = p_positions.get(l_position_index);
             l_vertex.uv = p_uvs.get(l_uv_index);
             out_vertices.push_back_element(l_vertex);

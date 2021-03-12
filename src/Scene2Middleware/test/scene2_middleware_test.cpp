@@ -2,8 +2,6 @@
 #include "AssetCompiler/asset_compiler.hpp"
 #include "asset_database_test_utils.hpp"
 
-namespace v2
-{
 
 struct ComponentReleaser2
 {
@@ -463,14 +461,13 @@ inline void scene_object_movement()
     l_shader_compiler.free();
 };
 
-}; // namespace v2
 
 int main()
 {
-    v2::collision_middleware_component_allocation();
-    v2::collision_middleware_queuing_for_calculation();
-    v2::render_middleware_inline_allocation();
-    v2::render_middleware_inline_alloc_dealloc_same_frame();
-    v2::scene_object_movement();
+    collision_middleware_component_allocation();
+    collision_middleware_queuing_for_calculation();
+    render_middleware_inline_allocation();
+    render_middleware_inline_alloc_dealloc_same_frame();
+    scene_object_movement();
     memleak_ckeck();
 }

@@ -12,8 +12,6 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 #endif
 
-namespace v2
-{
 inline void gpu_buffer_allocation()
 {
     GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -1230,7 +1228,6 @@ inline void gpu_present()
     WindowAllocator::free(l_window_token);
 };
 
-} // namespace v2
 
 int main()
 {
@@ -1242,14 +1239,14 @@ int main()
     assert_true(ret == 1);
 #endif
 
-    v2::gpu_buffer_allocation();
-    v2::gpu_image_allocation();
-    v2::gpu_renderpass_clear();
-    v2::gpu_draw();
-    v2::gpu_depth_compare_test();
-    v2::gpu_draw_indexed();
-    v2::gpu_texture_mapping();
-    v2::gpu_present();
+    gpu_buffer_allocation();
+    gpu_image_allocation();
+    gpu_renderpass_clear();
+    gpu_draw();
+    gpu_depth_compare_test();
+    gpu_draw_indexed();
+    gpu_texture_mapping();
+    gpu_present();
 
     memleak_ckeck();
 };

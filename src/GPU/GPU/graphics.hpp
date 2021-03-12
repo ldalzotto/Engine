@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 enum class ShaderLayoutParameterType
 {
     UNDEFINED = 0,
@@ -237,6 +235,8 @@ struct Shader
   private:
     static VkFormat get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type);
 };
+
+// TODO -> name convention ? with getter/setter when necessary ?
 
 #define ShadowShaderUniformBufferParameter_t(Prefix) ShadowShaderUniformBufferParameter_##Prefix
 #define ShadowShaderUniformBufferParameter_member_descriptor_set descriptor_set
@@ -1252,4 +1252,3 @@ struct GraphicsPassReader
         return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
     };
 };
-}; // namespace v2

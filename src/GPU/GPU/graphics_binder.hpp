@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 /*
 A  GraphicsBinder is a convenient way to properly setup the graphics command buffer.
 */
@@ -242,4 +240,3 @@ struct GraphicsBinder
                                 &p_shader_parameter.descriptor_set, 0, NULL);
     };
 };
-} // namespace v2

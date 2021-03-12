@@ -3,8 +3,6 @@
 #include "AssetDatabase/assetdatabase.hpp"
 #include "asset_database_test_utils.hpp"
 
-namespace v2
-{
 inline void asset_blob_insert_read_write()
 {
     String l_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
@@ -57,10 +55,8 @@ inline void asset_dependencies_blob_read_write()
     l_database_path.free();
 };
 
-} // namespace v2
-
 int main()
 {
-    v2::asset_blob_insert_read_write();
-    v2::asset_dependencies_blob_read_write();
+    asset_blob_insert_read_write();
+    asset_dependencies_blob_read_write();
 }

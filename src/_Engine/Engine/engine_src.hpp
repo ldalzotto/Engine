@@ -16,16 +16,16 @@ struct Engine
     EngineLoop engine_loop;
 
     Collision2 collision;
-    v2::GPUContext gpu_context;
-    v2::D3Renderer renderer;
+    GPUContext gpu_context;
+    D3Renderer renderer;
 
     Token(Window) window;
-    v2::GPUPresent present;
+    GPUPresent present;
 
-    v2::RenderRessourceAllocator2 renderer_ressource_allocator;
+    RenderRessourceAllocator2 renderer_ressource_allocator;
 
-    v2::Scene scene;
-    v2::SceneMiddleware scene_middleware;
+    Scene scene;
+    SceneMiddleware scene_middleware;
 
     AssetDatabase asset_database;
 
@@ -36,13 +36,13 @@ struct Engine
         l_engine.clock = Clock::allocate_default();
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
-        l_engine.gpu_context = v2::GPUContext::allocate(SliceN<v2::GPUExtension, 1>{v2::GPUExtension::WINDOW_PRESENT}.to_slice());
-        l_engine.renderer_ressource_allocator = v2::RenderRessourceAllocator2::allocate();
-        l_engine.scene = v2::Scene::allocate_default();
-        l_engine.scene_middleware = v2::SceneMiddleware::allocate_default();
+        l_engine.gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
+        l_engine.renderer_ressource_allocator = RenderRessourceAllocator2::allocate();
+        l_engine.scene = Scene::allocate_default();
+        l_engine.scene_middleware = SceneMiddleware::allocate_default();
         l_engine.asset_database = AssetDatabase::allocate(p_configuration.asset_database_path);
 
-        v2::ColorStep::AllocateInfo l_colorstep_allocate_info{};
+        ColorStep::AllocateInfo l_colorstep_allocate_info{};
         l_colorstep_allocate_info.attachment_host_read = p_configuration.render_target_host_readable;
         if (!p_configuration.headless)
         {
@@ -55,14 +55,14 @@ struct Engine
             l_colorstep_allocate_info.color_attachment_sample = 0;
         }
 
-        l_engine.renderer = v2::D3Renderer::allocate(l_engine.gpu_context, l_colorstep_allocate_info);
+        l_engine.renderer = D3Renderer::allocate(l_engine.gpu_context, l_colorstep_allocate_info);
 
         if (!p_configuration.headless)
         {
             l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, slice_int8_build_rawstr(""));
             Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
             Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
-            l_engine.present = v2::GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
+            l_engine.present = GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
                                                         WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
                                                         l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
                                                             .get_vector(l_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(l_engine.renderer.color_step.pass).attachment_textures)
@@ -102,7 +102,7 @@ struct Engine_ComponentReleaser
 {
     Engine& engine;
 
-    inline void on_component_removed(v2::Scene* p_scene, const v2::NodeEntry& p_node, const v2::NodeComponent& p_component)
+    inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
     {
         g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator, p_component);
     };
@@ -194,7 +194,7 @@ struct EngineLoopFunctions
     {
         p_engine.renderer.buffer_step(p_engine.gpu_context);
         p_engine.gpu_context.buffer_step_and_submit();
-        v2::GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
+        GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
         l_graphics_binder.start();
         p_engine.renderer.graphics_step(l_graphics_binder);
         p_engine.present.graphics_step(l_graphics_binder);
@@ -208,7 +208,7 @@ struct EngineLoopFunctions
     {
         p_engine.renderer.buffer_step(p_engine.gpu_context);
         p_engine.gpu_context.buffer_step_and_submit();
-        v2::GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
+        GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
         p_engine.renderer.graphics_step(l_graphics_binder);
         p_engine.gpu_context.submit_graphics_binder(l_graphics_binder);
         p_engine.gpu_context.wait_for_completion();

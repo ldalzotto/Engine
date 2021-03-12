@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 struct PrimitiveSerializedTypes
 {
     enum class Type
@@ -54,5 +52,3 @@ struct PrimitiveSerializedTypes
         }
     };
 };
-
-}; // namespace v2

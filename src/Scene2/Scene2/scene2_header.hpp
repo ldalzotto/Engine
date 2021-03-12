@@ -2,9 +2,6 @@
 
 #include "Math2/math.hpp"
 
-namespace v2
-{
-
 using component_t = hash_t;
 
 /*
@@ -175,4 +172,3 @@ struct Scene
     void destroy_component_removed_events();
 };
 
-} // namespace v2

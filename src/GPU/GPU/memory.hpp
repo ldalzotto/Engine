@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 struct HeapPagedGPU
 {
     struct MemoryGPU
@@ -435,10 +433,6 @@ struct BufferCommandUtils
     static void cmd_revert_image_layout_from_transfer_src(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format);
 };
 
-}; // namespace v2
-
-namespace v2
-{
 
 inline HeapPagedGPU::MemoryGPU HeapPagedGPU::MemoryGPU::allocate(const gc_t p_transfer_device, const uint32 p_memory_type_index, const uimax p_memory_size)
 {
@@ -1535,4 +1529,3 @@ inline void BufferCommandUtils::cmd_copy_buffer(const CommandBuffer& p_command_b
     vkCmdCopyBuffer(p_command_buffer.command_buffer, p_source_buffer, p_target_buffer, 1, &l_buffer_copy);
 };
 
-} // namespace v2

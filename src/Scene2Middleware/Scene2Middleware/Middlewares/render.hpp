@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 
 struct CameraComponent
 {
@@ -251,5 +249,3 @@ struct RenderMiddleWare_AllocationComposition
                                                            p_render_ressource_allocator.texture_unit, l_mesh_renderer.dependencies.material);
     };
 };
-
-}; // namespace v2

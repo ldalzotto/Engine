@@ -1,8 +1,5 @@
 #pragma once
 
-namespace v2
-{
-
 namespace ShaderParameterBufferAllocationFunctions
 {
 inline static Token(TextureGPU) allocate_texture_gpu_for_shaderparameter(GraphicsAllocator2& p_graphics_allocator, BufferMemory& p_buffer_memory, const ImageFormat& p_base_image_format)
@@ -222,4 +219,3 @@ struct Material
         return p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_parameter.texture_gpu).texture;
     };
 };
-} // namespace v2

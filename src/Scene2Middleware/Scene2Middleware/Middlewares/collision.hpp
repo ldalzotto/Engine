@@ -1,7 +1,6 @@
 #pragma once
 
-namespace v2
-{
+
 struct BoxColliderComponentAsset
 {
     v3f half_extend;
@@ -58,10 +57,7 @@ struct CollisionMiddleware
     void step(Collision2& p_collision, Scene* p_scene);
 };
 
-} // namespace v2
 
-namespace v2
-{
 inline CollisionAllocator CollisionAllocator::allocate_default()
 {
     return CollisionAllocator{PoolIndexed<BoxColliderComponent>::allocate_default(), Vector<Token(BoxColliderComponent)>::allocate(0), Vector<BoxColliderComponentAsset>::allocate(0)};
@@ -217,4 +213,3 @@ inline void CollisionMiddleware::step(Collision2& p_collision, Scene* p_scene)
     }
     poolindexed_foreach_token_2_end();
 };
-} // namespace v2

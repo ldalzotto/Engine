@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 #define RessourceAllocationEvent_member_allocated_ressource allocated_ressource
 #define RessourceAllocationEvent_member_asset asset
 
@@ -543,5 +541,3 @@ struct MaterialRessource
         Token(MaterialRessource) ressource;
     };
 };
-
-} // namespace v2

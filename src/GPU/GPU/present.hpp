@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 
 
 typedef VkSurfaceKHR gcsurface_t;
@@ -351,4 +349,3 @@ struct GPUPresent
         vk_handle_result(vkQueuePresentKHR(this->device.present_queue, &l_present_info));
     };
 };
-} // namespace v2

@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 struct Semafore
 {
     VkSemaphore semaphore;
@@ -42,10 +40,7 @@ struct CommandPool
     void free_command_buffer(const gc_t p_device, const CommandBuffer& p_command_buffer);
 };
 
-} // namespace v2
 
-namespace v2
-{
 inline Semafore Semafore::allocate(const gc_t p_device)
 {
     Semafore l_semaphore;
@@ -203,4 +198,3 @@ inline CommandBuffer CommandPool::allocate_command_buffer(const gc_t p_device, c
 inline void CommandPool::free_command_buffer(const gc_t p_device, const CommandBuffer& p_command_buffer){
     //  vkDestroySemaphore(p_device, p_command_buffer.semaphore, NULL);
 };
-} // namespace v2

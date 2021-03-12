@@ -3,9 +3,6 @@
 #include "AssetCompiler/asset_compiler.hpp"
 #include "asset_database_test_utils.hpp"
 
-namespace v2
-{
-
 inline void render_asset_binary_serialization_deserialization_test()
 {
     Slice<int8> l_slice_int8 = slice_int8_build_rawstr("this is a test slice");
@@ -876,19 +873,18 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     l_ctx.free();
 };
 
-} // namespace v2
 
 int main()
 {
-    v2::render_asset_binary_serialization_deserialization_test();
+    render_asset_binary_serialization_deserialization_test();
 
     CachedCompiledShaders l_cached_compiled_shaders = CachedCompiledShaders::allocate();
 
-    v2::render_middleware_inline_allocation(l_cached_compiled_shaders);
-    v2::render_middleware_inline_alloc_dealloc_same_frame(l_cached_compiled_shaders);
-    v2::render_middleware_database_allocation(l_cached_compiled_shaders);
-    v2::render_middleware_get_dependencies_from_database(l_cached_compiled_shaders);
-    v2::render_middleware_multiple_database_allocation(l_cached_compiled_shaders);
+    render_middleware_inline_allocation(l_cached_compiled_shaders);
+    render_middleware_inline_alloc_dealloc_same_frame(l_cached_compiled_shaders);
+    render_middleware_database_allocation(l_cached_compiled_shaders);
+    render_middleware_get_dependencies_from_database(l_cached_compiled_shaders);
+    render_middleware_multiple_database_allocation(l_cached_compiled_shaders);
 
     l_cached_compiled_shaders.free();
 

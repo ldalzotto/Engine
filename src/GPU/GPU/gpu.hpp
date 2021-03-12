@@ -7,18 +7,13 @@
 #endif
 #include "vulkan/vulkan.h"
 
-namespace v2
-{
-
 using gc_t = VkDevice;
 using gcqueue_t = VkQueue;
 using gcmemory_t = VkDeviceMemory;
 using gpuinstance_t = VkInstance;
 using gpuinstance_debugger_t = VkDebugUtilsMessengerEXT;
-} // namespace v2
 
-namespace v2
-{
+
 inline void _vk_handle_result(const VkResult p_result)
 {
 #if GPU_BOUND_TEST
@@ -79,7 +74,6 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
     return VK_FALSE;
 };
 
-} // namespace v2
 
 #include "./command_buffer.hpp"
 #include "./instance.hpp"
@@ -89,8 +83,6 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
 #include "./graphics_binder.hpp"
 #include "./present.hpp"
 
-namespace v2
-{
 struct GPUContext
 {
     GPUInstance instance;
@@ -159,7 +151,6 @@ struct GPUContext
         this->graphics_allocator.graphics_device.command_buffer.wait_for_completion();
     };
 };
-} // namespace v2
 
 #undef ShadowBuffer_t
 #undef ShadowBuffer_member_buffer

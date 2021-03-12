@@ -2,8 +2,6 @@
 
 #include "./scene2_header.hpp"
 
-namespace v2
-{
 inline Node::State Node::State::build(const int8 p_matrices_must_be_recalculated, const int8 p_haschanged_thisframe)
 {
     return State{p_matrices_must_be_recalculated, p_haschanged_thisframe};
@@ -457,6 +455,5 @@ inline void Scene::destroy_component_removed_events()
     */
     this->component_removed_events.clear();
 };
-} // namespace v2
 
 #include "./scene2_serialization.hpp"

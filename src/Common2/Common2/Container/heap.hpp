@@ -491,9 +491,3 @@ inline void HeapPaged::create_new_page()
     SliceIndex l_chunk_slice = SliceIndex::build(0, this->PageSize);
     this->FreeChunks.push_back_element(Slice<SliceIndex>::build_memory_elementnb(&l_chunk_slice, 1));
 }
-
-#undef ShadowHeap_t
-#undef sh_get_size
-#undef sh_resize
-#undef sh_get_freechunks
-#undef sh_get_allocated_chunks

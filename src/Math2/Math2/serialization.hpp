@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 struct MathJSONDeserialization
 {
     inline static v2f _v2f(JSONDeserializer* p_json_object)
@@ -59,4 +57,3 @@ struct MathJSONSerialization
         p_serializer->push_field(slice_int8_build_rawstr("w"), Slice<float32>::build_asint8_memory_singleelement(&p_value.w));
     };
 };
-} // namespace v2

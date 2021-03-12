@@ -12,8 +12,6 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 #endif
 
-namespace v2
-{
 
 inline void bufferstep_test()
 {
@@ -350,7 +348,6 @@ inline void draw_test()
     l_ctx.free();
     l_shader_compiler.free();
 };
-}; // namespace v2
 
 int main()
 {
@@ -362,9 +359,9 @@ int main()
     assert_true(ret == 1);
 #endif
 
-    v2::bufferstep_test();
-    v2::shader_linkto_material_allocation_test();
-    v2::draw_test();
+    bufferstep_test();
+    shader_linkto_material_allocation_test();
+    draw_test();
 
     memleak_ckeck();
 };

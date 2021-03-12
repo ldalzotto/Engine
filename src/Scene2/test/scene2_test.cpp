@@ -1,8 +1,6 @@
 
 #include "Scene2/scene2.hpp"
 
-namespace v2
-{
 struct ComponentTest
 {
     static const component_t Type;
@@ -547,18 +545,17 @@ inline void scene_to_sceneasset()
 inline void sceneasset_to_json(){
     // TODO sceneasset_to_json
 };
-} // namespace v2
 
 int main()
 {
-    v2::add_remove_setparent_node();
-    v2::add_remove_component();
-    v2::component_consume();
-    v2::math_hierarchy();
-    v2::json_deserialization();
-    v2::scenetreeasset_merge();
-    v2::scene_to_sceneasset();
-    v2::sceneasset_to_json();
+    add_remove_setparent_node();
+    add_remove_component();
+    component_consume();
+    math_hierarchy();
+    json_deserialization();
+    scenetreeasset_merge();
+    scene_to_sceneasset();
+    sceneasset_to_json();
 
     memleak_ckeck();
 };

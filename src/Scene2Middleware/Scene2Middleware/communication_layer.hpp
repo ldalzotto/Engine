@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 namespace BoxColliderComponentAsset_SceneCommunication
 {
 inline static BoxColliderComponentAsset from_json(JSONDeserializer& p_json_deserialiazer)
@@ -66,7 +64,7 @@ inline static NodeComponent construct_nodecomponent(const Token(MeshRendererComp
 
 inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
-    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, tk_b(v2::MeshRendererComponent, p_node_component.resource));
+    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, tk_b(MeshRendererComponent, p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
@@ -81,12 +79,12 @@ inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Col
         BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware, p_collision, p_node_component);
     }
     break;
-    case v2::MeshRendererComponent::Type:
+    case MeshRendererComponent::Type:
     {
         MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_render_ressource_allocator, p_node_component);
     }
     break;
-    case v2::CameraComponent::Type:
+    case CameraComponent::Type:
     {
         CameraComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_node_component);
     }
@@ -96,5 +94,3 @@ inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Col
         break;
     }
 };
-
-} // namespace v2

@@ -6,8 +6,6 @@
 #include "./img_compiler.hpp"
 #include "./shader_compiler.hpp"
 
-using namespace v2;
-
 // TODO -> handling errors by using the shader compiler silent :)
 inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file)
 {
@@ -44,7 +42,7 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
         else if (l_asset_path.compare(slice_int8_build_rawstr("obj")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            Vector<v2::Vertex> l_vertices = Vector<v2::Vertex>::allocate(0);
+            Vector<Vertex> l_vertices = Vector<Vertex>::allocate(0);
             Vector<uint32> l_indices = Vector<uint32>::allocate(0);
             ObjCompiler::ReadObj(l_buffer.slice, l_vertices, l_indices);
 

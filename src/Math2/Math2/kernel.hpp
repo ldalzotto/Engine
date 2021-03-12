@@ -1,7 +1,5 @@
 #pragma once
 
-namespace v2
-{
 inline int8 Math::equals(const float32 p_left, const float32 p_right)
 {
     return fabsf(p_left - p_right) <= Limits::tol_f;
@@ -120,7 +118,6 @@ inline float32 Math::linear_to_sRGB_float32(const float32 p_linear)
     }
 };
 
-} // namespace v2
 
 #define math_v2f_foreach_2(Left, Right, Op)                                                                                                                                                            \
     v2f                                                                                                                                                                                                \
@@ -164,7 +161,7 @@ inline float32 Math::linear_to_sRGB_float32(const float32 p_linear)
 
 inline int8 v2f::operator==(const v2f& p_other)
 {
-    return v2::Math::equals(this->Points[0], p_other.Points[0]) && v2::Math::equals(this->Points[1], p_other.Points[1]);
+    return Math::equals(this->Points[0], p_other.Points[0]) && Math::equals(this->Points[1], p_other.Points[1]);
 };
 
 inline v2f v2f::operator*(const v2f& p_other)
@@ -174,7 +171,7 @@ inline v2f v2f::operator*(const v2f& p_other)
 
 inline int8 v3f_assert_is_normalized(const v3f& p_vec)
 {
-    return v2::Math::equals(p_vec.length(), 1.0f);
+    return Math::equals(p_vec.length(), 1.0f);
 };
 
 inline v3f v3f::operator+(const v3f& p_other) const
@@ -199,12 +196,12 @@ inline v3f v3f::operator-(const v3f& p_other) const
 
 inline int8 v3f::operator==(const v3f& p_other) const
 {
-    return v2::Math::equals(this->Points[0], p_other.Points[0]) && v2::Math::equals(this->Points[1], p_other.Points[1]) && v2::Math::equals(this->Points[2], p_other.Points[2]);
+    return Math::equals(this->Points[0], p_other.Points[0]) && Math::equals(this->Points[1], p_other.Points[1]) && Math::equals(this->Points[2], p_other.Points[2]);
 };
 
 inline int8 v3f::operator!=(const v3f& p_other) const
 {
-    return v2::Math::nequals(this->Points[0], p_other.Points[0]) || v2::Math::nequals(this->Points[1], p_other.Points[1]) || v2::Math::nequals(this->Points[2], p_other.Points[2]);
+    return Math::nequals(this->Points[0], p_other.Points[0]) || Math::nequals(this->Points[1], p_other.Points[1]) || Math::nequals(this->Points[2], p_other.Points[2]);
 };
 
 inline float32& v3f::operator[](const uint8 p_index)
@@ -308,14 +305,14 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 #endif
 
     float32 l_costtheta = this->dot(p_to);
-    if (l_costtheta >= v2::Math_const::one_f - Limits::tol_f)
+    if (l_costtheta >= Math_const::one_f - Limits::tol_f)
     {
         return quat_const::IDENTITY;
     }
 
     v3f l_rotation_axis;
 
-    if (l_costtheta < -v2::Math_const::one_f + Limits::tol_f)
+    if (l_costtheta < -Math_const::one_f + Limits::tol_f)
     {
         l_rotation_axis = v3f_const::FORWARD.cross(*this);
         if (l_rotation_axis.length() < Limits::tol_f)
@@ -323,11 +320,11 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
             l_rotation_axis = v3f_const::RIGHT.cross(*this);
         }
         l_rotation_axis = l_rotation_axis.normalize();
-        return quat::rotate_around(l_rotation_axis, v2::Math_const::PI);
+        return quat::rotate_around(l_rotation_axis, Math_const::PI);
     }
 
     l_rotation_axis = this->cross(p_to);
-    float32 l_s = sqrtf((v2::Math_const::one_f + l_costtheta) * 2.0f);
+    float32 l_s = sqrtf((Math_const::one_f + l_costtheta) * 2.0f);
     float32 l_invs = 1.0f / l_s;
 
     return quat{l_rotation_axis.x * l_invs, l_rotation_axis.y * l_invs, l_rotation_axis.z * l_invs, l_s * 0.5f};
@@ -350,14 +347,14 @@ inline v4f v4f::operator+(const v4f& p_other) const
 
 inline int8 v4f::operator==(const v4f& p_other) const
 {
-    return v2::Math::equals(this->Points[0], p_other.Points[0]) && v2::Math::equals(this->Points[1], p_other.Points[1]) && v2::Math::equals(this->Points[2], p_other.Points[2]) &&
-           v2::Math::equals(this->Points[3], p_other.Points[3]);
+    return Math::equals(this->Points[0], p_other.Points[0]) && Math::equals(this->Points[1], p_other.Points[1]) && Math::equals(this->Points[2], p_other.Points[2]) &&
+           Math::equals(this->Points[3], p_other.Points[3]);
 };
 
 inline int8 v4f::operator!=(const v4f& p_other) const
 {
-    return v2::Math::nequals(this->Points[0], p_other.Points[0]) || v2::Math::nequals(this->Points[1], p_other.Points[1]) || v2::Math::nequals(this->Points[2], p_other.Points[2]) ||
-           v2::Math::nequals(this->Points[3], p_other.Points[3]);
+    return Math::nequals(this->Points[0], p_other.Points[0]) || Math::nequals(this->Points[1], p_other.Points[1]) || Math::nequals(this->Points[2], p_other.Points[2]) ||
+           Math::nequals(this->Points[3], p_other.Points[3]);
 };
 
 inline v4f v4f::operator*(const float32 p_other) const
@@ -383,12 +380,12 @@ inline float32 v4f::length() const
 
 inline v4f v4f::sRGB_to_linear() const
 {
-    return v4f{v2::Math::sRGB_to_linear_float32(this->x), v2::Math::sRGB_to_linear_float32(this->y), v2::Math::sRGB_to_linear_float32(this->z), v2::Math::sRGB_to_linear_float32(this->w)};
+    return v4f{Math::sRGB_to_linear_float32(this->x), Math::sRGB_to_linear_float32(this->y), Math::sRGB_to_linear_float32(this->z), Math::sRGB_to_linear_float32(this->w)};
 };
 
 inline v4f v4f::linear_to_sRGB() const
 {
-    return v4f{v2::Math::linear_to_sRGB_float32(this->x), v2::Math::linear_to_sRGB_float32(this->y), v2::Math::linear_to_sRGB_float32(this->z), v2::Math::linear_to_sRGB_float32(this->w)};
+    return v4f{Math::linear_to_sRGB_float32(this->x), Math::linear_to_sRGB_float32(this->y), Math::linear_to_sRGB_float32(this->z), Math::linear_to_sRGB_float32(this->w)};
 };
 
 inline v4ui8 v4f::to_uint8_color() const
@@ -404,16 +401,16 @@ inline int8 v4ui8::operator==(const v4ui8& p_other) const
 inline v4ui8 v4ui8::sRGB_to_linear() const
 {
     return v4ui8{
-        v2::Math::sRGB_to_linear_uint8(this->x),
-        v2::Math::sRGB_to_linear_uint8(this->y),
-        v2::Math::sRGB_to_linear_uint8(this->z),
-        v2::Math::sRGB_to_linear_uint8(this->w),
+        Math::sRGB_to_linear_uint8(this->x),
+        Math::sRGB_to_linear_uint8(this->y),
+        Math::sRGB_to_linear_uint8(this->z),
+        Math::sRGB_to_linear_uint8(this->w),
     };
 };
 
 inline v4ui8 v4ui8::linear_to_sRGB() const
 {
-    return v4ui8{v2::Math::linear_to_sRGB_uint8(this->x), v2::Math::linear_to_sRGB_uint8(this->y), v2::Math::linear_to_sRGB_uint8(this->z), v2::Math::linear_to_sRGB_uint8(this->w)};
+    return v4ui8{Math::linear_to_sRGB_uint8(this->x), Math::linear_to_sRGB_uint8(this->y), Math::linear_to_sRGB_uint8(this->z), Math::linear_to_sRGB_uint8(this->w)};
 };
 
 inline v4f v4ui8::to_color_f() const
@@ -499,7 +496,7 @@ inline v3f quat::euler() const
     float32 l_sinp = 2.0f * (this->y * this->z + this->w * this->x);
     float32 l_cosp = this->w * this->w - this->x * this->x - this->y * this->y + this->z * this->z;
 
-    if (v2::Math::equals(l_sinp, v2::Math_const::zero_f) && v2::Math::equals(l_cosp, v2::Math_const::zero_f))
+    if (Math::equals(l_sinp, Math_const::zero_f) && Math::equals(l_cosp, Math_const::zero_f))
     {
         l_return.Points[0] = 2.0f * atan2f(this->x, this->w);
     }
@@ -509,7 +506,7 @@ inline v3f quat::euler() const
     }
 
     // yaw
-    l_return.Points[1] = asinf(v2::Math::clamp_f32(-2.0f * (this->x * this->z - this->w * this->y), -1.0f, 1.0f));
+    l_return.Points[1] = asinf(Math::clamp_f32(-2.0f * (this->x * this->z - this->w * this->y), -1.0f, 1.0f));
 
     // roll
     l_return.Points[2] = atan2f(2.0f * (this->x * this->y + this->w * this->z), this->w * this->w + this->x * this->x - this->y * this->y - this->z * this->z);
@@ -589,7 +586,7 @@ inline quat m33f::to_rotation() const
 
 inline int8 m33f::operator==(const m33f& p_other) const
 {
-    mat_foreach_element_begin(3) if (!v2::Math::equals(this->Points2D[p_column_index].Points[p_line_index], p_other.Points2D[p_column_index].Points[p_line_index]))
+    mat_foreach_element_begin(3) if (!Math::equals(this->Points2D[p_column_index].Points[p_line_index], p_other.Points2D[p_column_index].Points[p_line_index]))
     {
         return 0;
     }
@@ -634,7 +631,7 @@ inline float32 m44f::mul_line_column(const m44f& p_left, const m44f& p_right, co
 
 inline float32 m44f::mul_line_vec(const m44f& p_left, const v4f& p_right, const uint8 p_line_index)
 {
-    float32 l_return = v2::Math_const::zero_f;
+    float32 l_return = Math_const::zero_f;
     for (int16 i = 0; i < 4; i++)
     {
         l_return += (p_left.Points2D[i].Points[p_line_index] * p_right.Points[i]);
@@ -675,7 +672,7 @@ inline m44f m44f::operator+(const float32 p_other) const
 
 inline int8 m44f::operator==(const m44f& p_other) const
 {
-    mat_foreach_element_begin(4) if (!v2::Math::equals(this->Points2D[p_column_index].Points[p_line_index], p_other.Points2D[p_column_index].Points[p_line_index]))
+    mat_foreach_element_begin(4) if (!Math::equals(this->Points2D[p_column_index].Points[p_line_index], p_other.Points2D[p_column_index].Points[p_line_index]))
     {
         return 0;
     };

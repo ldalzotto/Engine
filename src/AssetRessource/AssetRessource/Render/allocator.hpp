@@ -1,8 +1,5 @@
 #pragma once
 
-namespace v2
-{
-
 struct ShaderModuleRessourceUnit
 {
     PoolHashedCounted<hash_t, ShaderModuleRessource> shader_modules;
@@ -884,5 +881,3 @@ struct RenderRessourceAllocator2
         this->material_unit.allocation_step(this->shader_unit, this->texture_unit, p_renderer, p_gpu_context, p_asset_database);
     };
 };
-
-}; // namespace v2
