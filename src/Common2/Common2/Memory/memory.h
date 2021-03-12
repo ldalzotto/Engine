@@ -11,8 +11,6 @@ typedef LPVOID backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 
 backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] = {0};
 
-#include "dbghelp.h"
-
 inline void capture_backtrace(const uimax p_ptr_index)
 {
     CaptureStackBackTrace(0, MEM_LEAK_MAX_BACKTRACE, backtraces[p_ptr_index], NULL);

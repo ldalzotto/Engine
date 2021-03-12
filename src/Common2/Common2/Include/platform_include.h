@@ -6,8 +6,25 @@
 #define NOMINMAX
 #endif
 
+#if __PREPROCESS
+// clang-format off
+@include <Windows.h>
+@include <sysinfoapi.h>
+// clang-format on
+#else
 #include <Windows.h>
 #include <sysinfoapi.h>
+#endif
+
+#if MEM_LEAK_DETECTION
+#if __PREPROCESS
+// clang-format off
+@include "dbghelp.h"
+// clang-format on
+#else
+#include "dbghelp.h"
+#endif
+#endif
 
 inline uimax dword_lowhigh_to_uimax(const DWORD p_low, const DWORD p_high)
 {

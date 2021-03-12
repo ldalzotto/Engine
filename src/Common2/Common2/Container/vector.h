@@ -275,11 +275,14 @@ inline int8 Vector__erase_element_at_always(Vector_* thiz, const uimax t_thiz_el
     }
 };
 
-/*
-inline Vector_ Vector__allocate_capacity_slice(const uimax t_elementtype, const uimax p_inital_capacity, const Slice_* p_initial_elements)
-{
-    Vector_ l_vector = Vector__allocate(p_inital_capacity, t_elementtype);
-    l_vector.push_back_array(p_initial_elements);
-    return l_vector;
-};
-*/
+#define VectorC(ElementType) Vector_##ElementType
+#define Vector_declare(ElementType)                                                                                                                                                                    \
+    typedef struct s_Vector_##ElementType                                                                                                                                                              \
+    {                                                                                                                                                                                                  \
+        union                                                                                                                                                                                          \
+        {                                                                                                                                                                                              \
+            uimax Size;                                                                                                                                                                                \
+            SpanC(ElementType) Memory;                                                                                                                                                                              \
+        };                                                                                                                                                                                             \
+        Vector_ vector;                                                                                                                                                                                                   \
+    } VectorC(ElementType)

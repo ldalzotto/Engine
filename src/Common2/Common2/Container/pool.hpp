@@ -12,8 +12,15 @@ template <class ElementType> using PoolFreeBlocks_t = Vector<TokenT(ElementType)
 */
 template <class ElementType> struct Pool
 {
-    PoolMemory_t<ElementType> memory;
-    PoolFreeBlocks_t<ElementType> free_blocks;
+    union
+    {
+        struct
+        {
+            PoolMemory_t<ElementType> memory;
+            PoolFreeBlocks_t<ElementType> free_blocks;
+        };
+        Pool_ pool;
+    };
 
     inline static Pool<ElementType> build(const PoolMemory_t<ElementType> p_memory, const PoolFreeBlocks_t<ElementType> p_free_blocks)
     {
@@ -139,8 +146,3 @@ template <class ElementType> struct Pool
 #endif
     };
 };
-
-#define ShadowPool(ElementType) ShadowPool_##ElementType
-#define sp_reflection_ElementType() reflection_elementType()
-#define sp_get(p_token) get(p_token)
-#define sp_release_element(p_token) release_element(p_token)

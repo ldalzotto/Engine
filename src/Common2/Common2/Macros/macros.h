@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Types/types.h"
+
 #define COMA ,
 #define SEMICOLON ;
 #define STR(V1) #V1

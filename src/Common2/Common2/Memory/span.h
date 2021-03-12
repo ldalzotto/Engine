@@ -123,3 +123,50 @@ inline void Span__resize_until_capacity_met(Span_* thiz, const uimax t_thiz_elem
 
     Span__resize(thiz, t_thiz_elementtype, l_resized_capacity);
 };
+
+#define SpanC(ElementType) Span_##ElementType
+
+#define SpanC_declare(ElementType)                                                                                                                                                                     \
+    typedef struct s_Span_##ElementType                                                                                                                                                                \
+    {                                                                                                                                                                                                  \
+        union                                                                                                                                                                                          \
+        {                                                                                                                                                                                              \
+            struct                                                                                                                                                                                     \
+            {                                                                                                                                                                                          \
+                union                                                                                                                                                                                  \
+                {                                                                                                                                                                                      \
+                    struct                                                                                                                                                                             \
+                    {                                                                                                                                                                                  \
+                        uimax Capacity;                                                                                                                                                                \
+                        ElementType* Memory;                                                                                                                                                           \
+                    };                                                                                                                                                                                 \
+                    SliceC(ElementType) slice;                                                                                                                                                         \
+                };                                                                                                                                                                                     \
+            };                                                                                                                                                                                         \
+            Span_ span;                                                                                                                                                                                \
+        };                                                                                                                                                                                             \
+    } SpanC(ElementType)
+
+#define SpanC_build(ElementType) Span_##ElementType##_build
+#define SpanC_free(ElementType) Span_##ElementType##_free
+#define SpanC_resize(ElementType) Span_##ElementType##_resize
+#define SpanC_get(ElementType) Span_##ElementType##_get
+
+#define SpanC_declare_functions(ElementType)                                                                                                                                                           \
+    inline SpanC(ElementType) SpanC_build(ElementType)(ElementType * p_memory, const uimax p_capacity)                                                                                                 \
+    {                                                                                                                                                                                                  \
+        return (SpanC(ElementType)){.span = Span__build((int8*)p_memory, p_capacity)};                                                                                                                 \
+    };                                                                                                                                                                                                 \
+    inline void SpanC_free(ElementType)(SpanC(ElementType) * thiz)                                                                                                                                     \
+    {                                                                                                                                                                                                  \
+        Span__free(&thiz->span);                                                                                                                                                                       \
+    };                                                                                                                                                                                                 \
+    inline int8 SpanC_resize(ElementType)(SpanC(ElementType) * thiz, const uimax p_new_capacity)                                                                                                       \
+    {                                                                                                                                                                                                  \
+        return Span__resize(&thiz->span, sizeof(ElementType), p_new_capacity);                                                                                                                         \
+    };                                                                                                                                                                                                 \
+    inline ElementType* SpanC_get(ElementType)(SpanC(ElementType) * thiz, const uimax p_index)                                                                                                         \
+    {                                                                                                                                                                                                  \
+        return (ElementType*)Span__get(&thiz->span, sizeof(ElementType), p_index);                                                                                                                     \
+    };                                                                                                                                                                                                 \
+    \
