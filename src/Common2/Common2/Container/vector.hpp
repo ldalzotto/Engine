@@ -109,7 +109,7 @@ template <class ElementType> struct Vector
     inline int8 push_back_array(const Slice<ElementType>& p_elements)
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
-        this->Memory.slice.copy_memory(this->Size, p_elements);
+        this->Memory.slice.copy_memory_at_index(this->Size, p_elements);
         this->Size += p_elements.Size;
 
         return 1;
@@ -118,7 +118,7 @@ template <class ElementType> struct Vector
     inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
-        this->Memory.slice.copy_memory_2(this->Size, p_elements_0, p_elements_1);
+        this->Memory.slice.copy_memory_at_index_2(this->Size, p_elements_0, p_elements_1);
         this->Size += (p_elements_0.Size + p_elements_1.Size);
 
         return 1;
@@ -289,20 +289,27 @@ template <class ElementType> struct Vector
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
         this->move_memory_down(p_index, p_elements.Size);
-        this->Memory.slice.copy_memory(p_index, p_elements);
+        this->Memory.slice.copy_memory_at_index(p_index, p_elements);
 
         this->Size += p_elements.Size;
 
         return 1;
     };
 
-#define ShadowVector(ElementType) ElementType##_##ShadowVector
-#define ShadowVector_t(ElementType, Prefix) ElementType##_##ShadowVector##_##Prefix
+#define ShadowVector(ElementType) ShadowVector_##ElementType
 
-#define sv_get_size() get_size()
-#define sv_get(p_index) get(p_index)
-#define sv_erase_element_at(p_index) erase_element_at(p_index)
-#define sv_erase_element_at_always(p_index) erase_element_at_always(p_index)
-#define sv_push_back_element(p_element) push_back_element(p_element)
-#define sv_to_slice() to_slice()
+#define sv_func_get_size() get_size()
+#define sv_func_get(p_index) get(p_index)
+#define sv_func_erase_element_at(p_index) erase_element_at(p_index)
+#define sv_func_erase_element_at_always(p_index) erase_element_at_always(p_index)
+#define sv_func_push_back_element(p_element) push_back_element(p_element)
+#define sv_func_to_slice() to_slice()
+
+#define sv_c_get_size(p_shadow_vector) (p_shadow_vector)->get_size()
+#define sv_c_get(p_shadow_vector, p_index) (p_shadow_vector)->get(p_index)
+#define sv_c_erase_element_at(p_shadow_vector, p_index) (p_shadow_vector)->erase_element_at(p_index)
+#define sv_c_erase_element_at_always(p_shadow_vector, p_index) (p_shadow_vector)->erase_element_at_always(p_index)
+#define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector)->push_back_element(p_element)
+#define sv_c_to_slice(p_shadow_vector) (p_shadow_vector)->to_slice()
+
 };

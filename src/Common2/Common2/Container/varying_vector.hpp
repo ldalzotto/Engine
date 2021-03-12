@@ -7,20 +7,17 @@
 */
 struct VaryingVector
 {
-    using Memory_t = Vector<int8>;
-    using Chunks_t = Vector<SliceIndex>;
+    Vector<int8> memory;
+    Vector<SliceIndex> chunks;
 
-    Memory_t memory;
-    Chunks_t chunks;
-
-    inline static VaryingVector build(const Memory_t& p_memory, const Chunks_t& p_chunks)
+    inline static VaryingVector build(const Vector<int8>& p_memory, const Vector<SliceIndex>& p_chunks)
     {
         return VaryingVector{p_memory, p_chunks};
     };
 
     inline static VaryingVector allocate(const uimax p_memory_array_initial_capacity, const uimax p_chunk_array_initial_capacity)
     {
-        return build(Memory_t::allocate(p_memory_array_initial_capacity), Chunks_t::allocate(p_chunk_array_initial_capacity));
+        return build(Vector<int8>::allocate(p_memory_array_initial_capacity), Vector<SliceIndex>::allocate(p_chunk_array_initial_capacity));
     };
 
     inline static VaryingVector allocate_default()
@@ -195,15 +192,14 @@ struct VaryingVector
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
         Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
 
-        slice_memcpy(l_updated_chunk_slice, p_inserted_element);
+        l_updated_chunk_slice.copy_memory(p_inserted_element);
     };
 
     inline void element_movememory(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element)
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
         Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
-
-        slice_memmove(l_updated_chunk_slice, p_inserted_element);
+        l_updated_chunk_slice.move_memory(p_inserted_element);
     };
 
     inline Slice<int8> get_element(const uimax p_index)

@@ -3,7 +3,8 @@
 struct Sort
 {
     // TODO ->Implement Quick sort
-    template <class ElementType, class CompareFunc> inline static void Linear2(Slice<ElementType>& p_slice, const uimax p_start_index)
+    template<class ElementType, class CompareSlot>
+    inline static void Linear3(Slice<ElementType>& p_slice, const uimax p_start_index, const CompareSlot& p_compare_slot)
     {
         for (loop(i, p_start_index, p_slice.Size))
         {
@@ -11,7 +12,7 @@ struct Sort
             for (loop(j, i, p_slice.Size))
             {
                 ElementType& l_right = p_slice.get(j);
-                if (CompareFunc::compare(l_left, l_right))
+                if (p_compare_slot(l_left, l_right))
                 {
                     ElementType l_left_tmp = l_left;
                     l_left = l_right;
@@ -21,17 +22,3 @@ struct Sort
         }
     };
 };
-
-#define sort_linear2_begin(ElementType, StructName)                                                                                                                                                    \
-    struct StructName                                                                                                                                                                                  \
-    {                                                                                                                                                                                                  \
-        inline static int8 compare(const ElementType& p_left, const ElementType& p_right)                                                                                                              \
-        {
-
-#define sort_linear2_end(SliceVariable, ElementType, StructName)                                                                                                                                       \
-    }                                                                                                                                                                                                  \
-    ;                                                                                                                                                                                                  \
-    }                                                                                                                                                                                                  \
-    ;                                                                                                                                                                                                  \
-    auto l_slice_variable_##StructName = (SliceVariable);                                                                                                                                              \
-    Sort::Linear2<ElementType, StructName>(l_slice_variable_##StructName, 0);

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vector.hpp"
-
 /*
     A String is a vector of int8 that always have a NULL int8acter at it's last element.
 */
@@ -22,6 +20,7 @@ struct String
         return l_string;
     };
 
+    // TODO -> having a better way to do this ?
     inline static String build_from_raw_span(Span<int8>& p_raw_span)
     {
         Vector<int8> l_memory = {p_raw_span.Capacity, p_raw_span};
@@ -99,6 +98,7 @@ struct String
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);
     };
 
+    // TODO -> move to a more generic method ?
     inline void remove_int8s(const int8 p_int8)
     {
         for (vector_loop_reverse(&this->Memory, i))
@@ -108,5 +108,5 @@ struct String
                 this->Memory.erase_element_at_always(i);
             }
         }
-    }
+    };
 };

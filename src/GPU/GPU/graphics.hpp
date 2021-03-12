@@ -667,7 +667,7 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
 
 #if GPU_DEBUG
     l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
-    l_graphics_pass.attachement_layout.slice.copy_memory(0, p_render_pass_attachments.to_slice());
+    l_graphics_pass.attachement_layout.slice.copy_memory_at_index(0, p_render_pass_attachments.to_slice());
 #endif
     vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 
@@ -830,7 +830,7 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
 
     VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
-    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build(l_shader_stages, 0, 0);
+    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build_begin_end(l_shader_stages, 0, 0);
 
     if (p_shader_allocate_info.vertex_shader.module != NULL)
     {

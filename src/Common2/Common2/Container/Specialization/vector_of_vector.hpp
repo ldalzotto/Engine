@@ -22,8 +22,8 @@ struct VectorOfVector_VectorHeader
     {
         Span<int8> l_allocated_element = Span<int8>::allocate(sizeof(VectorOfVector_VectorHeader) + p_vector_slice.Size);
         VectorOfVector_VectorHeader l_vector_header = build(p_vector_size, p_vector_size);
-        l_allocated_element.slice.copy_memory(0, Slice<VectorOfVector_VectorHeader>::build_asint8_memory_elementnb(&l_vector_header, 1));
-        l_allocated_element.slice.copy_memory(sizeof(l_vector_header), p_vector_slice);
+        l_allocated_element.slice.copy_memory_at_index(0, Slice<VectorOfVector_VectorHeader>::build_asint8_memory_elementnb(&l_vector_header, 1));
+        l_allocated_element.slice.copy_memory_at_index(sizeof(l_vector_header), p_vector_slice);
         return l_allocated_element;
     };
 
@@ -251,32 +251,32 @@ template <class ElementType> struct VectorOfVector
             return Element_ShadowVector{p_vector_of_vector, p_index};
         };
 
-        inline uimax sv_get_size()
+        inline uimax sv_func_get_size()
         {
             return this->vectorOfVector->get_vectorheader(this->Index)->Size;
         };
 
-        inline ElementType& sv_get(const uimax p_index)
+        inline ElementType& sv_func_get(const uimax p_index)
         {
             return this->vectorOfVector->get(this->Index).get(p_index);
         };
 
-        inline void sv_erase_element_at(const uimax p_index)
+        inline void sv_func_erase_element_at(const uimax p_index)
         {
             this->vectorOfVector->element_erase_element_at(this->Index, p_index);
         };
 
-        inline void sv_erase_element_at_always(const uimax p_index)
+        inline void sv_func_erase_element_at_always(const uimax p_index)
         {
             this->vectorOfVector->element_erase_element_at_always(this->Index, p_index);
         };
 
-        inline void sv_push_back_element(const ElementType& p_index)
+        inline void sv_func_push_back_element(const ElementType& p_index)
         {
             this->vectorOfVector->element_push_back_element(this->Index, p_index);
         };
 
-        inline Slice<ElementType> sv_to_slice()
+        inline Slice<ElementType> sv_func_to_slice()
         {
             return this->vectorOfVector->get(this->Index);
         };

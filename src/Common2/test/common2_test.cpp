@@ -55,7 +55,7 @@ inline void slice_span_test()
 
         SliceN<uimax, 4> l_slice_1 = {0, 1, 2, 3};
         SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
-        l_span_sizet.slice.copy_memory_2(1, l_slice_1.to_slice(), l_slice_2.to_slice());
+        l_span_sizet.slice.copy_memory_at_index_2(1, l_slice_1.to_slice(), l_slice_2.to_slice());
 
         assert_true(l_span_sizet.slice.slide_rv(1).compare(l_slice_1.to_slice()));
         assert_true(l_span_sizet.slice.slide_rv(5).compare(l_slice_2.to_slice()));
@@ -354,7 +354,7 @@ inline void varyingvector_test()
         assert_true(l_varyingvector.get_size() == 1);
         Slice<int8> l_element_0 = l_varyingvector.get_element(0);
         assert_true(l_element_0.Size == 10);
-        assert_true(slice_memcompare_element(l_slice, l_element_0));
+        assert_true(l_slice.compare(l_element_0));
     }
 
     // push_back_empty
@@ -998,9 +998,14 @@ inline void sort_test(){{uimax l_sizet_array[10] = {10, 9, 8, 2, 7, 4, 10, 35, 9
 uimax l_sorted_sizet_array[10] = {35, 10, 10, 9, 9, 8, 7, 4, 4, 2};
 Slice<uimax> l_slice = Slice<uimax>::build_memory_elementnb(l_sizet_array, 10);
 
-sort_linear2_begin(uimax, Tesss);
-return p_left < p_right;
-sort_linear2_end(l_slice, uimax, Tesss);
+struct TestSorter
+{
+    inline int8 operator()(const uimax& p_left, const uimax& p_right) const
+    {
+        return p_left < p_right;
+    };
+};
+Sort::Linear3(l_slice, 0, TestSorter{});
 
 assert_true(memcmp(l_sizet_array, l_sorted_sizet_array, sizeof(uimax) * 10) == 0);
 }

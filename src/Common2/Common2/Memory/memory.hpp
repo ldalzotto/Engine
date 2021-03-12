@@ -170,11 +170,3 @@ template <class ElementType> inline uimax memory_offset_bytes(const uimax p_size
 {
     return sizeof(ElementType) * p_size;
 };
-
-inline constexpr uimax strlen_constexpr(const char* start)
-{
-    const char* end = start;
-    while (*end++ != 0)
-        ;
-    return end - start - 1;
-};

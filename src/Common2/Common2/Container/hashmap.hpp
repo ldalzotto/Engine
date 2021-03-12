@@ -10,6 +10,7 @@ template <class KeyType_t> struct HashMap_HashFn
     };
 };
 
+// We specialize hash only for hash_t because it's formula is simpler
 template <> struct HashMap_HashFn<hash_t>
 {
     inline static hash_t Hashmap_HashFn_Hash(const hash_t p_key, const uimax p_modulo)

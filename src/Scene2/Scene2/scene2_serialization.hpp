@@ -56,11 +56,11 @@ struct SceneAsset
         this->component_assets.push_back_empty(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size) + p_component_value_memory.Size);
         Slice<int8> l_element = this->component_assets.get_last_element();
 
-        slice_memcpy(l_element, Slice<component_t>::build_asint8_memory_singleelement((component_t*)&p_component_type));
+        l_element.copy_memory(Slice<component_t>::build_asint8_memory_singleelement((component_t*)&p_component_type));
         l_element.slide(sizeof(SceneAssetComponent::type));
-        slice_memcpy(l_element, Slice<uimax>::build_asint8_memory_singleelement((uimax*)&p_component_value_memory.Size));
+        l_element.copy_memory(Slice<uimax>::build_asint8_memory_singleelement((uimax*)&p_component_value_memory.Size));
         l_element.slide(sizeof(SceneAssetComponent::value_size));
-        slice_memcpy(l_element, p_component_value_memory);
+        l_element.copy_memory(p_component_value_memory);
 
         this->node_to_components.element_push_back_element(tk_v(p_node), tk_b(SliceIndex, this->component_assets.get_size() - 1));
     };

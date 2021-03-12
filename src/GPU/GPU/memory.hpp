@@ -598,7 +598,7 @@ inline void TransferDevice::free()
 
 inline MappedHostMemory MappedHostMemory::build_default()
 {
-    return MappedHostMemory{Slice<int8>::build(NULL, 0, 0)};
+    return MappedHostMemory{Slice<int8>::build_begin_end(NULL, 0, 0)};
 };
 
 inline void MappedHostMemory::map(TransferDevice& p_transfer_device, const TransferDeviceHeapToken& p_memory)
@@ -619,7 +619,7 @@ inline void MappedHostMemory::unmap(TransferDevice& p_device)
 
 inline void MappedHostMemory::copy_from(const Slice<int8>& p_from)
 {
-    slice_memcpy(this->memory, p_from);
+    this->memory.copy_memory(p_from);
 };
 
 inline int8 MappedHostMemory::is_mapped()
@@ -812,7 +812,7 @@ inline void ImageHost::free(TransferDevice& p_transfer_device)
 
 inline void ImageHost::push(const Slice<int8>& p_from)
 {
-    slice_memcpy(this->memory.memory, p_from);
+    this->memory.memory.copy_memory(p_from);
 };
 
 inline Slice<int8>& ImageHost::get_mapped_memory()

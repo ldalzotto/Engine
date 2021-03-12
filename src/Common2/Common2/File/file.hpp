@@ -133,6 +133,7 @@ inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 
 struct File
 {
+    // TODO -> remove this and handle allocated memory manually by the consumer
     union
     {
         Span<int8> path_allocated;

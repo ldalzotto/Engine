@@ -967,12 +967,12 @@ inline void gpu_texture_mapping()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slice(
                 SliceN<ShaderLayout::VertexInputParameter, 2>{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
-                                                              ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}});
+                                                              ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}}.to_slice());
 
             Span<ShaderLayoutParameterType> l_first_shader_layout_parameters =
-                Span<ShaderLayoutParameterType>::allocate_slicen(SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::TEXTURE_FRAGMENT});
+                Span<ShaderLayoutParameterType>::allocate_slice(SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice());
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
 

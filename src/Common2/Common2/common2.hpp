@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdlib.h>
-#include <cstring>
-#include <cstdio>
-#include <climits>
+#include <string.h>
+#include <stdio.h>
+#include <limits.h>
 #include <math.h>
 
 #include "sqlite3.h"

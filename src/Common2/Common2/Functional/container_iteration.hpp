@@ -14,6 +14,8 @@
 
 #define vector_foreach_end() }
 
+// TODO -> replace this with template ?
+
 #define vector_erase_if_2_begin(VectorVariable, IteratorName, VectorElementVariableName)                                                                                                               \
     for (vector_loop_reverse((VectorVariable), IteratorName))                                                                                                                                          \
     {                                                                                                                                                                                                  \

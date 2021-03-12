@@ -47,6 +47,8 @@ template <class ElementType> struct PoolIndexed
     };
 };
 
+// TODO ->  move this to a templated function
+
 #define poolindexed_foreach_token_2_begin(PoolIndexedVariable, IteratorName, TokenVariableName)                                                                                                        \
     for (vector_loop((&(PoolIndexedVariable)->Indices), IteratorName))                                                                                                                                 \
     {                                                                                                                                                                                                  \

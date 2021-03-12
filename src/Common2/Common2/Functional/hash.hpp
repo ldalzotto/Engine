@@ -55,6 +55,14 @@ inline hash_t HashRaw(const int8* p_str)
     return HashFunctionRaw((int8*)p_str, strlen(p_str));
 };
 
+inline constexpr uimax strlen_constexpr(const char* start)
+{
+    const char* end = start;
+    while (*end++ != 0)
+        ;
+    return end - start - 1;
+};
+
 inline constexpr hash_t HashRaw_constexpr(const int8* p_str)
 {
     return HashFunctionRaw((int8*)p_str, strlen_constexpr(p_str));

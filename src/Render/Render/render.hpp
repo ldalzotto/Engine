@@ -443,7 +443,7 @@ struct D3RendererAllocatorComposition
     {
         Span<ShaderLayoutParameterType> l_span =
             Span<ShaderLayoutParameterType>::allocate_slice_3(ColorStep_const::shaderlayout_before.to_slice(), p_specific_parameters, ColorStep_const::shaderlayout_after.to_slice());
-        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slicen(ColorStep_const::shaderlayout_vertex_input);
+        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slice(ColorStep_const::shaderlayout_vertex_input.to_slice());
 
         ShaderIndex l_shader_index;
         l_shader_index.execution_order = p_execution_order;
@@ -515,7 +515,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))}};
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    l_step.clear_values = Span<v4f>::allocate_slicen(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}});
+    l_step.clear_values = Span<v4f>::allocate_slice(SliceN<v4f, 2>{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}}.to_slice());
     l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
@@ -537,12 +537,12 @@ inline void ColorStep::free(GPUContext& p_gpu_context)
 
 inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
 {
-    slice_memcpy(p_gpu_context.buffer_memory.allocator.host_buffers
-                     .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                              .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                              .memory)
-                     .get_mapped_memory(),
-                 Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+    p_gpu_context.buffer_memory.allocator.host_buffers
+        .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
+                 .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
+                 .memory)
+        .get_mapped_memory()
+        .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
 };
 
 inline void ColorStep::set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
@@ -593,7 +593,7 @@ inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
                 .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
                 .get_mapped_memory();
 
-        slice_memcpy(l_mapped_memory, Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
+        l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
     };
 
     this->heap().model_update_events.clear();

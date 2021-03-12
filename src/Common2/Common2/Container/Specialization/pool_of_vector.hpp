@@ -28,11 +28,6 @@ template <class ElementType> struct PoolOfVector
         this->FreeBlocks.free();
     };
 
-    inline Slice<ElementType> sp_reflection_ElementType()
-    {
-        abort();
-    };
-
     inline int8 is_token_free(const PoolOfVectorToken<ElementType> p_token)
     {
         for (vector_loop(&this->FreeBlocks, i))
@@ -144,27 +139,27 @@ template <class ElementType> struct PoolOfVector
             return Element_ShadowVector{p_pool_of_vector, p_index};
         };
 
-        inline uimax sv_get_size()
+        inline uimax sv_func_get_size()
         {
             return this->pool_of_vector->get_vector(this->index).Size;
         };
 
-        inline ElementType& sv_get(const uimax p_index)
+        inline ElementType& sv_func_get(const uimax p_index)
         {
             return this->pool_of_vector->get_vector(this->index).get(p_index);
         };
 
-        inline void sv_push_back_element(const ElementType& p_element)
+        inline void sv_func_push_back_element(const ElementType& p_element)
         {
             this->pool_of_vector->element_push_back_element(this->index, p_element);
         };
 
-        inline void sv_erase_element_at_always(const uimax p_index)
+        inline void sv_func_erase_element_at_always(const uimax p_index)
         {
             this->pool_of_vector->element_erase_element_at_always(this->index, p_index);
         };
 
-        inline Slice<ElementType> sv_to_slice()
+        inline Slice<ElementType> sv_func_to_slice()
         {
             return this->pool_of_vector->get_vector(this->index);
         };

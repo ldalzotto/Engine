@@ -1,9 +1,5 @@
 #pragma once
 
-template <class ElementType> using PoolMemory_t = Vector<ElementType>;
-
-template <class ElementType> using PoolFreeBlocks_t = Vector<Token(ElementType)>;
-
 /*
     A Pool is a non continous Vector where elements are acessed via Tokens.
     Generated Tokens are unique from it's source Pool.
@@ -12,10 +8,10 @@ template <class ElementType> using PoolFreeBlocks_t = Vector<Token(ElementType)>
 */
 template <class ElementType> struct Pool
 {
-    PoolMemory_t<ElementType> memory;
-    PoolFreeBlocks_t<ElementType> free_blocks;
+    Vector<ElementType> memory;
+    Vector<Token(ElementType)> free_blocks;
 
-    inline static Pool<ElementType> build(const PoolMemory_t<ElementType> p_memory, const PoolFreeBlocks_t<ElementType> p_free_blocks)
+    inline static Pool<ElementType> build(const Vector<ElementType>& p_memory, const Vector<Token(ElementType)>& p_free_blocks)
     {
         return Pool<ElementType>{p_memory, p_free_blocks};
     };
@@ -139,8 +135,3 @@ template <class ElementType> struct Pool
 #endif
     };
 };
-
-#define ShadowPool(ElementType) ShadowPool_##ElementType
-#define sp_reflection_ElementType() reflection_elementType()
-#define sp_get(p_token) get(p_token)
-#define sp_release_element(p_token) release_element(p_token)
