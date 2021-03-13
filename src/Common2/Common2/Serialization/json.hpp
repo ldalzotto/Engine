@@ -10,12 +10,12 @@ inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int
     return p_type;
 };
 
-inline void remove_spaces(String& p_source)
+inline void remove_spaces(Vector<int8>& p_source)
 {
-    p_source.remove_int8s(' ');
-    p_source.remove_int8s('\n');
-    p_source.remove_int8s('\r');
-    p_source.remove_int8s('\t');
+    p_source.erase_all_elements_that_matches_element(' ');
+    p_source.erase_all_elements_that_matches_element('\n');
+    p_source.erase_all_elements_that_matches_element('\r');
+    p_source.erase_all_elements_that_matches_element('\t');
 };
 }; // namespace JSONUtil
 
@@ -43,7 +43,7 @@ struct JSONDeserializer
         return JSONDeserializer{p_source, p_parent_cursor, Vector<FieldNode>::allocate(0), (uimax)-1};
     };
 
-    inline static JSONDeserializer start(String& p_source)
+    inline static JSONDeserializer start(Vector<int8>& p_source)
     {
         JSONUtil::remove_spaces(p_source);
         uimax l_start_index;
@@ -76,7 +76,7 @@ struct JSONDeserializer
 
             if (l_next_field_whole_value.compare(l_field_name_json.to_slice()))
             {
-                Slice<int8> l_next_field_value_with_quotes = l_next_field_whole_value.slide_rv(l_field_name_json.get_int8_nb());
+                Slice<int8> l_next_field_value_with_quotes = l_next_field_whole_value.slide_rv(l_field_name_json.get_length());
 
                 FieldNode l_field_node;
                 uimax l_field_value_delta;

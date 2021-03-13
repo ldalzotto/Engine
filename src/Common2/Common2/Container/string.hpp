@@ -20,16 +20,6 @@ struct String
         return l_string;
     };
 
-    // TODO -> having a better way to do this ?
-    inline static String build_from_raw_span(Span<int8>& p_raw_span)
-    {
-        Vector<int8> l_memory = {p_raw_span.Capacity, p_raw_span};
-        String l_string = String{l_memory};
-        l_string.Memory.push_back_element((int8)NULL);
-        p_raw_span = Span<int8>::build_default();
-        return l_string;
-    };
-
     inline void free()
     {
         this->Memory.free();
@@ -77,7 +67,7 @@ struct String
         return this->Memory.Size;
     };
 
-    inline uimax get_int8_nb() const
+    inline uimax get_length() const
     {
         return this->Memory.Size - 1;
     };
@@ -96,17 +86,5 @@ struct String
     inline Slice<int8> to_slice_with_null_termination()
     {
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);
-    };
-
-    // TODO -> move to a more generic method ?
-    inline void remove_int8s(const int8 p_int8)
-    {
-        for (vector_loop_reverse(&this->Memory, i))
-        {
-            if (this->Memory.get(i) == p_int8)
-            {
-                this->Memory.erase_element_at_always(i);
-            }
-        }
     };
 };

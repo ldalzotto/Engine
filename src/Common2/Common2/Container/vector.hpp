@@ -234,6 +234,25 @@ template <class ElementType> struct Vector
         }
     };
 
+    template<class Predicate_t>
+    inline void erase_if(const Predicate_t& p_predicate)
+    {
+        for(loop_reverse(i, 0, this->Size))
+        {
+            if(p_predicate(this->get(i)))
+            {
+                this->erase_element_at_always(i);
+            }
+        }
+    };
+
+    inline void erase_all_elements_that_matches_element(const ElementType& p_compared_element)
+    {
+        this->erase_if([&](const ElementType& p_element){
+            return p_element == p_compared_element;
+        });
+    };
+
   private:
     inline void bound_check(const uimax p_index)
     {

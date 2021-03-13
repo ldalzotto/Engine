@@ -89,8 +89,9 @@ inline BoxColliderComponent& CollisionAllocator::get_or_allocate_box_collider(Co
 {
     if (this->box_colliders_waiting_for_allocation.Size != 0)
     {
-        vector_foreach_begin(&this->box_colliders_waiting_for_allocation, i, l_box_collider_token);
+        for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
+            Token(BoxColliderComponent) l_box_collider_token = this->box_colliders_waiting_for_allocation.get(i);
             if (tk_eq(p_box_collider_token, l_box_collider_token))
             {
                 BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
@@ -101,7 +102,6 @@ inline BoxColliderComponent& CollisionAllocator::get_or_allocate_box_collider(Co
                 return l_box_collider_component;
             }
         }
-        vector_foreach_end();
     };
 
     return this->get_box_collider_ressource_unsafe(p_box_collider_token);
@@ -175,13 +175,13 @@ inline void CollisionAllocator::allocate_awaiting_entities(Collision2& p_collisi
 {
     if (this->box_colliders_waiting_for_allocation.Size != 0)
     {
-        vector_foreach_begin(&this->box_colliders_waiting_for_allocation, i, l_box_collider_token);
+        for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
-            BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
+            BoxColliderComponent& l_box_collider_component = this->box_colliders.get(this->box_colliders_waiting_for_allocation.get(i));
             l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
             l_box_collider_component.force_update = 1;
         }
-        vector_foreach_end();
+
         this->box_colliders_waiting_for_allocation.clear();
         this->box_colliders_asset_waiting_for_allocation.clear();
     }
@@ -203,14 +203,12 @@ inline void CollisionMiddleware::step(Collision2& p_collision, Scene* p_scene)
 {
     this->allocator.allocate_awaiting_entities(p_collision);
 
-    poolindexed_foreach_value_begin(&this->allocator.box_colliders, i, l_box_collider_token, l_box_collider_component);
-    {
+    this->allocator.box_colliders.foreach ([&](const Token(BoxColliderComponent) l_box_collider_token, BoxColliderComponent& l_box_collider_component) {
         NodeEntry l_node = p_scene->get_node(l_box_collider_component.scene_node);
         if (l_box_collider_component.force_update || l_node.Element->state.haschanged_thisframe)
         {
             p_collision.on_collider_moved(l_box_collider_component.box_collider, transform_pa{p_scene->tree.get_worldposition(l_node), p_scene->tree.get_worldrotation(l_node).to_axis()});
             l_box_collider_component.force_update = false;
         }
-    }
-    poolindexed_foreach_token_2_end();
+    });
 };

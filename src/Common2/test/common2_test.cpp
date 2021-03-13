@@ -199,6 +199,23 @@ inline void vector_test()
         assert_true(l_vector_sizet.Size == 0);
         assert_span_unitialized(&l_vector_sizet.Memory);
     }
+
+    // erase_all_elements_that_matches_element
+
+    {
+        l_vector_sizet = Vector<uimax>::allocate(5);
+        l_vector_sizet.Size = l_vector_sizet.Memory.Capacity;
+        l_vector_sizet.get(0) = 0;
+        l_vector_sizet.get(1) = 1;
+        l_vector_sizet.get(2) = 2;
+        l_vector_sizet.get(3) = 2;
+        l_vector_sizet.get(4) = 3;
+        assert_true(l_vector_sizet.Size == 5);
+        l_vector_sizet.erase_all_elements_that_matches_element(2);
+        assert_true(l_vector_sizet.Size == 3);
+        assert_true(l_vector_sizet.get(2) == 3);
+        l_vector_sizet.free();
+    }
 };
 
 inline void hashmap_test(){{struct Key{uimax v1, v2, v3;
@@ -1155,12 +1172,12 @@ inline void string_test()
 
     assert_true(l_str.get(0) == (int8)NULL);
     assert_true(l_str.get_size() == 1);
-    assert_true(l_str.get_int8_nb() == 0);
+    assert_true(l_str.get_length() == 0);
 
     // append
     {
         l_str.append(slice_int8_build_rawstr("ABC"));
-        assert_true(l_str.get_int8_nb() == 3);
+        assert_true(l_str.get_length() == 3);
         assert_true(l_str.get(0) == 'A');
         assert_true(l_str.get(1) == 'B');
         assert_true(l_str.get(2) == 'C');
@@ -1168,26 +1185,18 @@ inline void string_test()
 
     {
         l_str.insert_array_at(slice_int8_build_rawstr("DEA"), 2);
-        assert_true(l_str.get_int8_nb() == 6);
+        assert_true(l_str.get_length() == 6);
         assert_true(l_str.get(2) == 'D');
         assert_true(l_str.get(3) == 'E');
         assert_true(l_str.get(4) == 'A');
     }
 
-    // remove_int8s
-    {
-        l_str.remove_int8s('A');
-        assert_true(l_str.get_int8_nb() == 4);
-        assert_true(l_str.get(0) == 'B');
-        assert_true(l_str.get(3) == 'C');
-    }
-
     // to_slice
     {
         Slice<int8> l_slice = l_str.to_slice();
-        assert_true(l_slice.Size == 4);
-        assert_true(l_slice.get(0) == 'B');
-        assert_true(l_slice.get(3) == 'C');
+        assert_true(l_slice.Size == 6);
+        assert_true(l_slice.get(1) == 'B');
+        assert_true(l_slice.get(5) == 'C');
     }
 
     l_str.free();
@@ -1228,7 +1237,7 @@ inline void deserialize_json_test(){{
     });
 
 String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
 JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 l_deserialized.next_object("local_position", &l_v3);
@@ -1274,7 +1283,7 @@ l_json_str.free();
                          "\"nodes\":[]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
     l_deserialized.next_array("nodes", &l_array);
@@ -1296,7 +1305,7 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
     l_deserialized.next_object("local_position", &l_v3);
@@ -1320,7 +1329,7 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
     l_deserialized.next_field("x");
     assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
     l_deserialized.next_field("y");
@@ -1337,7 +1346,7 @@ l_json_str.free();
         "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
@@ -1373,7 +1382,7 @@ l_json_str.free();
     const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2": {"f1": "16", "f2": "17"}});
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str);
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     assert_true(l_deserialized.next_field("field"));
     assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
@@ -1489,9 +1498,9 @@ inline void serialize_json_test()
 
     l_serializer.end();
 
-    JSONUtil::remove_spaces(l_serializer.output);
+    JSONUtil::remove_spaces(l_serializer.output.Memory);
     String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONUtil::remove_spaces(l_compared_json);
+    JSONUtil::remove_spaces(l_compared_json.Memory);
 
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
 

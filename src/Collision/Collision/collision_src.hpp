@@ -318,49 +318,55 @@ inline void CollisionDetectionStep::exit_collision(CollisionHeap2& p_collision_h
 
 inline void CollisionDetectionStep::remove_references_to_colliderdetector(CollisionHeap2& p_collision_heap, const Token(ColliderDetector) p_collider_detector)
 {
-    vector_erase_if_2_begin(&this->is_waitingfor_trigger_stay_detector, j, l_intsersrection_event) int8 l_erased = tk_eq(l_intsersrection_event.detector, p_collider_detector);
-    vector_erase_if_2_end(&this->is_waitingfor_trigger_stay_detector, j, l_erased);
+    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
+        return tk_eq(l_intsersrection_event.detector, p_collider_detector);
+    });
 
-    vector_erase_if_2_begin(&this->is_waitingfor_trigger_none_detector, j, l_trigger_event) int8 l_erased = tk_eq(l_trigger_event.detector, p_collider_detector);
-    vector_erase_if_2_end(&this->is_waitingfor_trigger_none_detector, j, l_erased);
+    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
+      return tk_eq(l_intsersrection_event.detector, p_collider_detector);
+    });
 
-    vector_erase_if_2_begin(&this->in_colliders_processed, j, l_disabled_collider);
-    int8 l_erased = false;
-    Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
-    if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
-    {
-        l_erased = true;
-    }
-    vector_erase_if_2_end(&this->in_colliders_processed, j, l_erased);
+    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_disabled_collider){
+      Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
+      if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
+      {
+          return true;
+      }
+      return false;
+    });
 };
 
 // /!\ Do not take care of the associated ColliderDetectors.
 inline void CollisionDetectionStep::remove_references_to_boxcollider(const Token(BoxCollider) p_box_collider)
 {
-    vector_erase_if_2_begin(&this->in_colliders_processed, j, l_collider) int8 l_erased = tk_eq(l_collider, p_box_collider);
-    vector_erase_if_2_end(&this->in_colliders_processed, j, l_erased);
+    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_collider) {
+        return tk_eq(l_collider, p_box_collider);
+    });
 
-    vector_erase_if_2_begin(&this->is_waitingfor_trigger_stay_detector, j, l_intsersrection_event) int8 l_erased = tk_eq(l_intsersrection_event.other, p_box_collider);
-    vector_erase_if_2_end(&this->is_waitingfor_trigger_stay_detector, j, l_erased);
+    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
+        return tk_eq(l_intsersrection_event.other, p_box_collider);
+    });
 
-    vector_erase_if_2_begin(&this->is_waitingfor_trigger_none_detector, j, l_trigger_event) int8 l_erased = tk_eq(l_trigger_event.other, p_box_collider);
-    vector_erase_if_2_end(&this->is_waitingfor_trigger_none_detector, j, l_erased);
+    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
+        return tk_eq(l_intsersrection_event.other, p_box_collider);
+    });
 };
 
 // Norify all ColliderDetectors with an exit_collision event.
 // TODO -> In the future, we want to partition the space to not notify the entire world
-inline void CollisionDetectionStep::generate_exit_collision_for_collider(CollisionHeap2& p_collision_heap,
-                                                                         const Token(BoxCollider) p_box_collider){poolindexed_foreach_token_2_begin(&p_collision_heap.box_colliders, j, l_box_collider){
-    if (p_collision_heap.box_colliders.get(l_box_collider).enabled){Token(ColliderDetector) & l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_box_collider);
-if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
+inline void CollisionDetectionStep::generate_exit_collision_for_collider(CollisionHeap2& p_collision_heap, const Token(BoxCollider) p_box_collider)
 {
-    this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_collider_detector, p_box_collider));
-}
-}
-}
-poolindexed_foreach_token_2_end()
-}
-;
+    p_collision_heap.box_colliders.foreach ([&](const Token(BoxCollider) p_compared_boxcollider_token, const BoxCollider& p_compared_boxcollider) {
+        if (p_compared_boxcollider.enabled)
+        {
+            Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(p_compared_boxcollider_token);
+            if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
+            {
+                this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_collider_detector, p_box_collider));
+            }
+        }
+    });
+};
 
 inline void CollisionDetectionStep::process_deleted_collider_detectors(CollisionHeap2& p_collision_heap)
 {
@@ -418,39 +424,37 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                 obb l_left_projected = l_left_collider.local_box.add_position_rotation(l_left_collider.transform);
 
                 // TODO -> In the future, we want to avoid to query the world
-                poolindexed_foreach_token_2_begin(&p_collision_heap.box_colliders, j, l_right_collider_token);
-
-                // Avoid self test
-                if (tk_neq(l_left_collider_token, l_right_collider_token))
-                {
-                    BoxCollider& l_right_collider = p_collision_heap.box_colliders.get(l_right_collider_token);
-                    if (l_right_collider.enabled)
+                p_collision_heap.box_colliders.foreach ([&](const Token(BoxCollider) l_right_collider_token, BoxCollider& l_right_collider) {
+                    // Avoid self test
+                    if (tk_neq(l_left_collider_token, l_right_collider_token))
                     {
-                        obb l_right_projected = l_left_collider.local_box.add_position_rotation(l_right_collider.transform);
-
-                        if (l_left_projected.overlap2(l_right_projected))
+                        if (l_right_collider.enabled)
                         {
-                            this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
+                            obb l_right_projected = l_left_collider.local_box.add_position_rotation(l_right_collider.transform);
 
-                            Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
-                            if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                            if (l_left_projected.overlap2(l_right_projected))
                             {
-                                this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
+                                this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
+
+                                Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
+                                if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                                {
+                                    this->currentstep_enter_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
+                                }
                             }
-                        }
-                        else
-                        {
-                            this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
-
-                            Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
-                            if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                            else
                             {
-                                this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
+                                this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_left_collider_detector, l_right_collider_token));
+
+                                Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
+                                if (tk_neq(l_right_collider_detector, tk_b(ColliderDetector, -1)))
+                                {
+                                    this->currentstep_exit_intersection_events.push_back_element(IntersectionEvent::build(l_right_collider_detector, l_left_collider_token));
+                                }
                             }
                         }
                     }
-                }
-                poolindexed_foreach_token_2_end();
+                });
             }
         }
         // If the processed collider doesn't have a collider detector, we get all other collider detectors and test collision
@@ -463,9 +467,7 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                 obb l_left_projected = l_left_collider.local_box.add_position_rotation(l_left_collider.transform);
 
                 // TODO -> In the future, we want to avoid to query the world
-                poolindexed_foreach_token_2_begin(&p_collision_heap.box_colliders, j, l_right_collider_token)
-                {
-                    BoxCollider& l_right_collider = p_collision_heap.box_colliders.get(l_right_collider_token);
+                p_collision_heap.box_colliders.foreach ([&](const Token(BoxCollider) l_right_collider_token, BoxCollider& l_right_collider) {
                     if (l_right_collider.enabled)
                     {
                         Token(ColliderDetector)& l_right_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_right_collider_token);
@@ -483,8 +485,7 @@ inline void CollisionDetectionStep::process_input_colliders(CollisionHeap2& p_co
                             }
                         }
                     }
-                }
-                poolindexed_foreach_token_2_end()
+                });
             }
         }
     }
@@ -520,13 +521,15 @@ inline void CollisionDetectionStep::remove_current_step_event_duplicates()
 
 inline void CollisionDetectionStep::udpate_triggerstate_from_intersectionevents(CollisionHeap2& p_collision_heap)
 {
-    vector_foreach_begin(&this->currentstep_enter_intersection_events, i, l_intersection_event);
-    this->enter_collision(p_collision_heap, l_intersection_event);
-    vector_foreach_end();
+    for (loop(i, 0, this->currentstep_enter_intersection_events.Size))
+    {
+        this->enter_collision(p_collision_heap, this->currentstep_enter_intersection_events.get(i));
+    }
 
-    vector_foreach_begin(&this->currentstep_exit_intersection_events, i, l_intersection_event);
-    this->exit_collision(p_collision_heap, l_intersection_event);
-    vector_foreach_end();
+    for (loop(i, 0, this->currentstep_exit_intersection_events.Size))
+    {
+        this->exit_collision(p_collision_heap, this->currentstep_exit_intersection_events.get(i));
+    }
 };
 
 inline void CollisionDetectionStep::clear_current_step_events()

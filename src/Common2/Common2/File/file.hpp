@@ -133,12 +133,7 @@ inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 
 struct File
 {
-    // TODO -> remove this and handle allocated memory manually by the consumer
-    union
-    {
-        Span<int8> path_allocated;
-        Slice<int8> path_slice;
-    };
+    Slice<int8> path_slice;
     FileHandle native_handle;
 
     inline static File create(const Slice<int8>& p_path)
@@ -181,23 +176,11 @@ struct File
         this->native_handle = NULL;
     };
 
-    inline void free_with_path()
-    {
-        this->free();
-        this->path_allocated.free();
-    }
 
     inline void erase_with_slicepath()
     {
         this->free();
         FileNative::delete_file(this->path_slice);
-    };
-
-    inline void erase_with_spanpath()
-    {
-        this->free();
-        FileNative::delete_file(this->path_allocated.slice);
-        this->path_allocated.free();
     };
 
     inline uimax get_size()

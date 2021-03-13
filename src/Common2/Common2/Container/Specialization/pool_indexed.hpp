@@ -45,21 +45,13 @@ template <class ElementType> struct PoolIndexed
     {
         return this->Memory.get(p_element);
     };
+
+    template <class ForeachSlot_t> inline void foreach (const ForeachSlot_t& p_foreach)
+    {
+        for (loop(i, 0, this->Indices.Size))
+        {
+            Token(ElementType) l_token = this->Indices.get(i);
+            p_foreach(l_token, this->Memory.get(l_token));
+        }
+    }
 };
-
-// TODO ->  move this to a templated function
-
-#define poolindexed_foreach_token_2_begin(PoolIndexedVariable, IteratorName, TokenVariableName)                                                                                                        \
-    for (vector_loop((&(PoolIndexedVariable)->Indices), IteratorName))                                                                                                                                 \
-    {                                                                                                                                                                                                  \
-        auto& TokenVariableName = (PoolIndexedVariable)->Indices.get(IteratorName);
-
-#define poolindexed_foreach_token_2_end() }
-
-#define poolindexed_foreach_value_begin(PoolIndexedVariable, IteratorName, TokenVariableName, ValueVariableName)                                                                                       \
-    for (vector_loop(&(PoolIndexedVariable)->Indices, IteratorName))                                                                                                                                   \
-    {                                                                                                                                                                                                  \
-        auto& TokenVariableName = (PoolIndexedVariable)->Indices.get(IteratorName);                                                                                                                    \
-        auto& ValueVariableName = (PoolIndexedVariable)->Memory.get(TokenVariableName);
-
-#define poolindexed_foreach_value_end() }

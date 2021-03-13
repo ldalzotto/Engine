@@ -1,19 +1,12 @@
 #pragma once
 
-inline File AssetCompiler_open_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
-{
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
-    File l_asset_file = File::open(l_asset_full_path.slice);
-    return l_asset_file;
-};
-
 inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
 {
     Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
     File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_asset_file_content = l_asset_file.read_file_allocate();
-    l_asset_full_path.free();
     l_asset_file.free();
+    l_asset_full_path.free();
     return l_asset_file_content;
 };
 
@@ -298,15 +291,15 @@ struct MaterialAssetJSON
 
         {
             Span<int8> l_shader_file_content = AssetCompiler_open_and_read_asset_file(p_root_path, p_json_deserializer->get_currentfield().value);
-            String l_shader_file_str = String::build_from_raw_span(l_shader_file_content);
-            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::start(l_shader_file_str);
+            Vector<int8> l_shader_file_content_vector = Vector<int8>{l_shader_file_content.Capacity, l_shader_file_content};
+            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::start(l_shader_file_content_vector);
             JSONDeserializer l_shader_asset_value_deserializer;
             AssetJSON::move_json_deserializer_to_value(&l_shader_asset_deserializer, &l_shader_asset_value_deserializer);
             ShaderAssetJSON::push_dependencies_from_json_to_buffer(&l_shader_asset_value_deserializer, &l_binary);
 
             l_shader_asset_deserializer.free();
             l_shader_asset_value_deserializer.free();
-            l_shader_file_str.free();
+            l_shader_file_content.free();
         }
 
         Vector<hash_t> l_textures = Vector<hash_t>::allocate(0);

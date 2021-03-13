@@ -53,8 +53,6 @@
 #include "./Serialization/binary.hpp"
 #include "./Serialization/types.hpp"
 
-#include "./Functional/container_iteration.hpp"
-
 #include "./Database/database.hpp"
 
 #include "./AppNativeEvent/app_native_event.hpp"

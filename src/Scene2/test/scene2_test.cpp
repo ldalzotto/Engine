@@ -348,7 +348,7 @@ inline void json_deserialization()
 #if 1
     String l_scene_json_string = String::allocate(0);
     l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
-    JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
+    JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string.Memory);
     SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
     SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
 
@@ -422,7 +422,7 @@ inline void scenetreeasset_merge()
 #if 1
     String l_scene_json_string = String::allocate(0);
     l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
-    JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string);
+    JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string.Memory);
     SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
     SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
 

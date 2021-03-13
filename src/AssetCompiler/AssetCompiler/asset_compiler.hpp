@@ -72,8 +72,8 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
         {
             Span<int8> l_compiled_asset = Span<int8>::build_default();
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            String l_str = String::build_from_raw_span(l_buffer);
-            JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_str);
+            Vector<int8> l_buffer_vector = Vector<int8>{l_buffer.Capacity, l_buffer};
+            JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_buffer_vector);
             JSONDeserializer l_json_value_deserializer;
 
             switch (AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer))
@@ -94,7 +94,7 @@ inline Span<int8> AssetCompiler_compile_single_file(ShaderCompiler& p_shader_com
 
             l_json_value_deserializer.free();
             l_json_deserializer.free();
-            l_str.free();
+            l_buffer.free();
             return l_compiled_asset;
         }
     }
@@ -119,8 +119,8 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
         {
             Span<int8> l_compiled_dependencies;
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            String l_str = String::build_from_raw_span(l_buffer);
-            JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_str);
+            Vector<int8> l_buffer_vector = Vector<int8>{l_buffer.Capacity, l_buffer};
+            JSONDeserializer l_json_deserializer = JSONDeserializer::start(l_buffer_vector);
 
             JSONDeserializer l_json_value_deserializer;
             switch (AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer))
@@ -141,7 +141,7 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
 
             l_json_value_deserializer.free();
             l_json_deserializer.free();
-            l_str.free();
+            l_buffer.free();
             return l_compiled_dependencies;
         }
     }
@@ -152,7 +152,8 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
 inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, AssetDatabase& p_asset_database, const Slice<int8>& p_root_path,
                                                                    const Slice<int8>& p_relative_asset_path)
 {
-    File l_asset_file = AssetCompiler_open_asset_file(p_root_path, p_relative_asset_path);
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
+    File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_compiled_asset = AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file);
     if (l_compiled_asset.Memory)
     {
@@ -166,5 +167,6 @@ inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
         l_compiled_dependencies.free();
     }
 
-    l_asset_file.free_with_path();
+    l_asset_file.free();
+    l_asset_full_path.free();
 };
