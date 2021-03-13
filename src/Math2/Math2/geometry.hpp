@@ -31,16 +31,34 @@ struct SAT
     inline static int8 mainaxis_y(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii);
     inline static int8 mainaxis_z(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii);
 
-    inline static int8 Loriented_Roriented(const Slice<v3f>& p_left_vertices, const m33f& p_left_rotation, const Slice<v3f>& p_right_vertices, const m33f& p_right_rotation, const v3f& p_tested_axis);
+    /*
+        Collapse left and right vertices to the tested axis.
+        Returns 1 if the shapes doesn't intersect along the tested axis.
+    */
+    inline static int8 L_R(const Slice<v3f>& p_left_vertices, const Slice<v3f>& p_right_vertices, const v3f& p_tested_axis);
 
-    // TODO -> We can create a more performant version by transforming right in left reference
-    /* This SAT test is true only if left and right centers are at the exact center of the tested shapes.  */
-    inline static int8 symetricalshapes_Loriented_Roriented(const v3f& p_left_center, const v3f& p_left_radii, const m33f& p_left_rotation, const v3f& p_right_center, const v3f& p_right_radii,
-                                                            const m33f& p_right_rotation, const v3f& p_tested_axis);
+    /*
+        This SAT test is true only if left and right centers are at the exact center of the tested shapes.
+        When that's the case, the SAT::L_R can be simplified by comparing the radii of the shape. Thus, SAT calculations with vertices now become SAT calculations with axis.
+        /!\ If we are coputing the SAT test for multiple axis of the same shape, it is more efficient to use the L_origin_oriented_R_oriented_symetricalshapes that skip one center projection.
+    */
+    inline static int8 L_oriented_R_oriented_symetricalshapes(const v3f& p_left_center, const m33f& p_left_radii_oriented, const v3f& p_right_center, const m33f& p_right_radii_oriented,
+                                                              const v3f& p_tested_axis);
+
+    /*
+        This SAT test is true only if left and right centers are at the exact center of the tested shapes.
+        The right center is relative to the left. So the left center is considered the origin.
+        When that's the case, the SAT::L_R can be simplified by comparing the radii of the shape. Thus, SAT calculations with vertices now become SAT calculations with axis.
+    */
+    inline static int8 L_origin_oriented_R_oriented_symetricalshapes(const m33f& p_left_radii_oriented, const v3f& p_right_center_relative_to_left, const m33f& p_right_radii_oriented,
+                                                                     const v3f& p_tested_axis);
 };
 
 struct GeometryUtil
 {
+    /*
+        Project all points to the input axis and return the min and max projected value.
+    */
     inline static void collapse_points_to_axis_min_max(const v3f& p_axis, const Slice<v3f>& p_points, float32* out_min, float32* out_max);
 };
 
@@ -93,22 +111,14 @@ inline int8 obb::overlap(const obb& p_other) const
     this->extract_vertices(&p_left_points);
     p_other.extract_vertices(&p_right_points);
 
-    if (SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Right) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Up) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Forward) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, p_other.axis.Right) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, p_other.axis.Up) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, p_other.axis.Forward)
-
-        | SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Right.cross(p_other.axis.Right)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Right.cross(p_other.axis.Up)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Right.cross(p_other.axis.Forward)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Up.cross(p_other.axis.Right)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Up.cross(p_other.axis.Up)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Up.cross(p_other.axis.Forward)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Forward.cross(p_other.axis.Right)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Forward.cross(p_other.axis.Up)) |
-        SAT::Loriented_Roriented(p_left_points, this->axis, p_right_points, p_other.axis, this->axis.Forward.cross(p_other.axis.Forward)))
+    // If at least one test is successful (meaning that shapes are not overlapping along one SAT) then thes shapes are not overlapping
+    if (SAT::L_R(p_left_points, p_right_points, this->axis.Right) | SAT::L_R(p_left_points, p_right_points, this->axis.Up) | SAT::L_R(p_left_points, p_right_points, this->axis.Forward) |
+        SAT::L_R(p_left_points, p_right_points, p_other.axis.Right) | SAT::L_R(p_left_points, p_right_points, p_other.axis.Up) | SAT::L_R(p_left_points, p_right_points, p_other.axis.Forward) |
+        SAT::L_R(p_left_points, p_right_points, this->axis.Right.cross(p_other.axis.Right)) | SAT::L_R(p_left_points, p_right_points, this->axis.Right.cross(p_other.axis.Up)) |
+        SAT::L_R(p_left_points, p_right_points, this->axis.Right.cross(p_other.axis.Forward)) | SAT::L_R(p_left_points, p_right_points, this->axis.Up.cross(p_other.axis.Right)) |
+        SAT::L_R(p_left_points, p_right_points, this->axis.Up.cross(p_other.axis.Up)) | SAT::L_R(p_left_points, p_right_points, this->axis.Up.cross(p_other.axis.Forward)) |
+        SAT::L_R(p_left_points, p_right_points, this->axis.Forward.cross(p_other.axis.Right)) | SAT::L_R(p_left_points, p_right_points, this->axis.Forward.cross(p_other.axis.Up)) |
+        SAT::L_R(p_left_points, p_right_points, this->axis.Forward.cross(p_other.axis.Forward)))
     {
         return 0;
     }
@@ -118,26 +128,31 @@ inline int8 obb::overlap(const obb& p_other) const
 
 inline int8 obb::overlap1(const obb& p_other) const
 {
-    if (SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Right) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Up) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Forward) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, p_other.axis.Right) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, p_other.axis.Up) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, p_other.axis.Forward)
+    m33f l_this_box_radii_oriented;
+    m33f l_other_radii_orented;
+    for (int8 i = 0; i < 3; i++)
+    {
+        l_this_box_radii_oriented.Points2D[i] = (this->axis.Points2D[i] * this->box.radiuses);
+        l_other_radii_orented.Points2D[i] = (p_other.axis.Points2D[i] * p_other.box.radiuses);
+    }
 
-        | SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis,
-                                                    this->axis.Right.cross(p_other.axis.Right)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Right.cross(p_other.axis.Up)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis,
-                                                  this->axis.Right.cross(p_other.axis.Forward)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Up.cross(p_other.axis.Right)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Up.cross(p_other.axis.Up)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Up.cross(p_other.axis.Forward)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis,
-                                                  this->axis.Forward.cross(p_other.axis.Right)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis, this->axis.Forward.cross(p_other.axis.Up)) |
-        SAT::symetricalshapes_Loriented_Roriented(this->box.center, this->box.radiuses, this->axis, p_other.box.center, p_other.box.radiuses, p_other.axis,
-                                                  this->axis.Forward.cross(p_other.axis.Forward)))
+    // If at least one test is successful (meaning that shapes are not overlapping along one SAT) then thes shapes are not overlapping
+    if (SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Right) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Up) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Forward) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, p_other.axis.Right) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, p_other.axis.Up) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, p_other.axis.Forward)
+
+        | SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Right)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Up)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Forward)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Right)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Up)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Forward)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Right)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Up)) |
+        SAT::L_oriented_R_oriented_symetricalshapes(this->box.center, l_this_box_radii_oriented, p_other.box.center, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Forward)))
     {
         return 0;
     }
@@ -145,6 +160,44 @@ inline int8 obb::overlap1(const obb& p_other) const
     return 1;
 };
 
+inline int8 obb::overlap2(const obb& p_other) const
+{
+    m33f l_this_box_radii_oriented;
+    m33f l_other_radii_orented;
+    for (int8 i = 0; i < 3; i++)
+    {
+        l_this_box_radii_oriented.Points2D[i] = (this->axis.Points2D[i] * this->box.radiuses);
+        l_other_radii_orented.Points2D[i] = (p_other.axis.Points2D[i] * p_other.box.radiuses);
+    }
+
+    v3f l_other_center_relative_to_this = p_other.box.center - this->box.center;
+
+    // If at least one test is successful (meaning that shapes are not overlapping along one SAT) then thes shapes are not overlapping
+    if (SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Right) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Up) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Forward) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, p_other.axis.Right) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, p_other.axis.Up) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, p_other.axis.Forward)
+
+        | SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Right)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Up)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Right.cross(p_other.axis.Forward)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Right)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Up)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Up.cross(p_other.axis.Forward)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Right)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Up)) |
+        SAT::L_origin_oriented_R_oriented_symetricalshapes(l_this_box_radii_oriented, l_other_center_relative_to_this, l_other_radii_orented, this->axis.Forward.cross(p_other.axis.Forward)))
+    {
+        return 0;
+    }
+
+    return 1;
+};
+
+// see Christer_Ericson-Real-Time_Collision_Detection-EN
+#if 0
 inline int8 obb::overlap2(const obb& p_other) const
 {
     float32 l_left_radii_projected, l_right_radii_projected;
@@ -229,6 +282,7 @@ inline int8 obb::overlap2(const obb& p_other) const
 
     return true;
 };
+#endif
 
 inline int8 SAT::mainaxis_x(const v3f& p_left_center, const v3f& p_left_radii, const v3f& p_right_center, const v3f& p_right_radii)
 {
@@ -245,7 +299,7 @@ inline int8 SAT::mainaxis_z(const v3f& p_left_center, const v3f& p_left_radii, c
     return (Math::greater(fabsf(p_left_center.z - p_right_center.z), p_left_radii.z + p_right_radii.z));
 };
 
-inline int8 SAT::Loriented_Roriented(const Slice<v3f>& p_left_vertices, const m33f& p_left_rotation, const Slice<v3f>& p_right_vertices, const m33f& p_right_rotation, const v3f& p_tested_axis)
+inline int8 SAT::L_R(const Slice<v3f>& p_left_vertices, const Slice<v3f>& p_right_vertices, const v3f& p_tested_axis)
 {
     float32 l_left_min, l_left_max, l_right_min, l_right_max;
     GeometryUtil::collapse_points_to_axis_min_max(p_tested_axis, p_left_vertices, &l_left_min, &l_left_max);
@@ -254,21 +308,39 @@ inline int8 SAT::Loriented_Roriented(const Slice<v3f>& p_left_vertices, const m3
     return (l_left_min < l_right_min || l_left_min > l_right_max) && (l_right_min < l_left_min || l_right_min > l_left_max);
 };
 
-inline int8 SAT::symetricalshapes_Loriented_Roriented(const v3f& p_left_center, const v3f& p_left_radii, const m33f& p_left_rotation, const v3f& p_right_center, const v3f& p_right_radii,
-                                                      const m33f& p_right_rotation, const v3f& p_tested_axis)
+inline int8 SAT::L_oriented_R_oriented_symetricalshapes(const v3f& p_left_center, const m33f& p_left_radii_oriented, const v3f& p_right_center, const m33f& p_right_radii_oriented,
+                                                        const v3f& p_tested_axis)
 {
     float32 l_left_radii_projected = 0;
     float32 l_right_radii_projected = 0;
-    for (int16 j = 0; j < 3; j++)
+    for (int8 j = 0; j < 3; j++)
     {
-        l_left_radii_projected += fabsf((p_left_rotation.Points2D[j] * p_left_radii.Points[j]).dot(p_tested_axis));
-        l_right_radii_projected += fabsf((p_right_rotation.Points2D[j] * p_right_radii.Points[j]).dot(p_tested_axis));
+        l_left_radii_projected += fabsf(p_left_radii_oriented.Points2D[j].dot(p_tested_axis));
+        l_right_radii_projected += fabsf(p_right_radii_oriented.Points2D[j].dot(p_tested_axis));
     }
 
     float32 l_left_center_projected = p_left_center.dot(p_tested_axis);
     float32 l_right_center_projected = p_right_center.dot(p_tested_axis);
 
     float32 l_tl = fabsf(l_right_center_projected - l_left_center_projected);
+
+    return Math::greater_eq(l_tl, l_left_radii_projected + l_right_radii_projected);
+};
+
+inline int8 SAT::L_origin_oriented_R_oriented_symetricalshapes(const m33f& p_left_radii_oriented, const v3f& p_right_center_relative_to_left, const m33f& p_right_radii_oriented,
+                                                               const v3f& p_tested_axis)
+{
+    float32 l_left_radii_projected = 0;
+    float32 l_right_radii_projected = 0;
+    for (int8 j = 0; j < 3; j++)
+    {
+        l_left_radii_projected += fabsf(p_left_radii_oriented.Points2D[j].dot(p_tested_axis));
+        l_right_radii_projected += fabsf(p_right_radii_oriented.Points2D[j].dot(p_tested_axis));
+    }
+
+    float32 l_right_center_projected = p_right_center_relative_to_left.dot(p_tested_axis);
+
+    float32 l_tl = fabsf(l_right_center_projected);
 
     return Math::greater_eq(l_tl, l_left_radii_projected + l_right_radii_projected);
 };
