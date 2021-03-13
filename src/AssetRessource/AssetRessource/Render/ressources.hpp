@@ -248,13 +248,18 @@ struct ShaderRessource
             hash_t vertex_module;
             hash_t fragment_module;
 
-            inline static Value build_from_asset(const AssetDependencies& p_dependencies)
+            inline static Value build_from_binarydeserializer(BinaryDeserializer& p_deserializer)
             {
                 Value l_return;
-                BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_dependencies.allocated_binary.slice);
-                l_return.vertex_module = *l_deserializer.type<hash_t>();
-                l_return.fragment_module = *l_deserializer.type<hash_t>();
+                l_return.vertex_module = *p_deserializer.type<hash_t>();
+                l_return.fragment_module = *p_deserializer.type<hash_t>();
                 return l_return;
+            };
+
+            inline static Value build_from_asset(const AssetDependencies& p_dependencies)
+            {
+                BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_dependencies.allocated_binary.slice);
+                return build_from_binarydeserializer(l_deserializer);
             };
 
             inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
@@ -479,16 +484,19 @@ struct MaterialRessource
             ShaderRessource::AssetDependencies::Value shader_dependencies;
             Slice<hash_t> textures;
 
-            inline static Value build_from_asset(const AssetDependencies& p_asset)
+            inline static Value build_from_binarydeserializer(BinaryDeserializer& p_deserializer)
             {
                 Value l_value;
-                BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
-                l_value.shader = *l_deserializer.type<hash_t>();
-                // TODO -> a function from shader must be called
-                l_value.shader_dependencies.vertex_module = *l_deserializer.type<hash_t>();
-                l_value.shader_dependencies.fragment_module = *l_deserializer.type<hash_t>();
-                l_value.textures = slice_cast<hash_t>(l_deserializer.slice());
+                l_value.shader = *p_deserializer.type<hash_t>();
+                l_value.shader_dependencies = ShaderRessource::AssetDependencies::Value::build_from_binarydeserializer(p_deserializer);
+                l_value.textures = slice_cast<hash_t>(p_deserializer.slice());
                 return l_value;
+            };
+
+            inline static Value build_from_asset(const AssetDependencies& p_asset)
+            {
+                BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
+                return build_from_binarydeserializer(l_deserializer);
             };
 
             inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const

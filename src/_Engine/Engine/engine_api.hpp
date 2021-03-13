@@ -1,5 +1,10 @@
 #pragma once
 
+inline uimax FrameCount(Engine& p_engine)
+{
+    return p_engine.clock.framecount;
+};
+
 inline Token(Node) CreateNode(Engine& p_engine, const transform& p_transform, const Token(Node) p_parent)
 {
     return p_engine.scene.add_node(p_transform, p_parent);

@@ -8,6 +8,14 @@ struct EngineConfiguration
     int8 render_target_host_readable;
 };
 
+enum class EngineExternalStep
+{
+    BEFORE_COLLISION = 0,
+    AFTER_COLLISION = BEFORE_COLLISION + 1,
+    BEFORE_UPDATE = AFTER_COLLISION + 1,
+    END_OF_FRAME = BEFORE_UPDATE + 1
+};
+
 struct Engine
 {
     int8 abort_condition;
@@ -89,13 +97,13 @@ struct Engine
         this->abort_condition = 1;
     };
 
-    template <class ExternalCallbacksFn> void main_loop(ExternalCallbacksFn& p_callbacks);
+    template <class ExternalCallbackStep> void main_loop(ExternalCallbackStep& p_callback_step);
 
-    template <class ExternalCallbacksFn> void single_frame_forced_delta(const float32 p_delta, ExternalCallbacksFn& p_callbacks);
+    template <class ExternalCallbackStep> void single_frame_forced_delta(const float32 p_delta, ExternalCallbackStep& p_callback_step);
 
-    template <class ExternalCallbacksFn> void single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbacksFn& p_callbacks);
+    template <class ExternalCallbackStep> void single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbackStep& p_callback_step);
 
-    template <class ExternalCallbacksFn> void single_frame(ExternalCallbacksFn& p_callbacks);
+    template <class ExternalCallbackStep> void single_frame(ExternalCallbackStep& p_callback_step);
 };
 
 struct Engine_ComponentReleaser
@@ -136,11 +144,11 @@ inline void Engine::free_headless()
     this->scene.free();
 };
 
-template <class ExternalCallbacksFn> inline void Engine::main_loop(ExternalCallbacksFn& p_callbacks)
+template <class ExternalCallbackStep> inline void Engine::main_loop(ExternalCallbackStep& p_callback_step)
 {
     while (!this->abort_condition)
     {
-        this->single_frame(p_callbacks);
+        this->single_frame(p_callback_step);
     }
     WindowAllocator::get_window(this->window).close();
 };
@@ -171,16 +179,16 @@ struct EngineLoopFunctions
         p_engine.clock.newframe();
     };
 
-    template <class ExternalCallbacksFn> inline static void update(Engine& p_engine, const float32 p_delta, ExternalCallbacksFn& p_external_callbacks)
+    template <class ExternalCallbackStep> inline static void update(Engine& p_engine, const float32 p_delta, ExternalCallbackStep& p_callback_step)
     {
         p_engine.clock.newupdate(p_delta);
 
-        p_external_callbacks.before_collision(p_engine);
+        p_callback_step.step(EngineExternalStep::BEFORE_COLLISION, p_engine);
 
         p_engine.collision.step();
 
-        p_external_callbacks.after_collision(p_engine);
-        p_external_callbacks.before_update(p_engine);
+        p_callback_step.step(EngineExternalStep::AFTER_COLLISION, p_engine);
+        p_callback_step.step(EngineExternalStep::BEFORE_UPDATE, p_engine);
 
         p_engine.scene_middleware.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
         p_engine.renderer_ressource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
@@ -214,45 +222,45 @@ struct EngineLoopFunctions
         p_engine.gpu_context.wait_for_completion();
     };
 
-    template <class ExternalCallbacksFn> inline static void end_of_frame(Engine& p_engine, ExternalCallbacksFn& p_external_callbacks)
+    template <class ExternalCallbackStep> inline static void end_of_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
         Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{p_engine};
         p_engine.scene.consume_component_events_stateful(l_component_releaser);
         p_engine.scene.step();
-        p_external_callbacks.end_of_frame(p_engine);
+        p_callback_step.step(EngineExternalStep::END_OF_FRAME, p_engine);
     };
 };
 
-template <class ExternalCallbacksFn> inline void Engine::single_frame_forced_delta(const float32 p_delta, ExternalCallbacksFn& p_callbacks)
+template <class ExternalCallbackStep> inline void Engine::single_frame_forced_delta(const float32 p_delta, ExternalCallbackStep& p_callback_step)
 {
     AppNativeEvent::poll_events();
     if (this->engine_loop.update_forced_delta(p_delta))
     {
         EngineLoopFunctions::new_frame(*this);
-        EngineLoopFunctions::update(*this, p_delta, p_callbacks);
+        EngineLoopFunctions::update(*this, p_delta, p_callback_step);
         EngineLoopFunctions::render(*this);
-        EngineLoopFunctions::end_of_frame(*this, p_callbacks);
+        EngineLoopFunctions::end_of_frame(*this, p_callback_step);
     }
 };
 
-template <class ExternalCallbacksFn> inline void Engine::single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbacksFn& p_callbacks)
+template <class ExternalCallbackStep> inline void Engine::single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbackStep& p_callback_step)
 {
     AppNativeEvent::poll_events();
     if (this->engine_loop.update_forced_delta(p_delta))
     {
         EngineLoopFunctions::new_frame_headless(*this);
-        EngineLoopFunctions::update(*this, p_delta, p_callbacks);
+        EngineLoopFunctions::update(*this, p_delta, p_callback_step);
         EngineLoopFunctions::render_headless(*this);
-        EngineLoopFunctions::end_of_frame(*this, p_callbacks);
+        EngineLoopFunctions::end_of_frame(*this, p_callback_step);
     }
 };
 
-template <class ExternalCallbacksFn> inline void Engine::single_frame(ExternalCallbacksFn& p_callbacks)
+template <class ExternalCallbackStep> inline void Engine::single_frame(ExternalCallbackStep& p_callback_step)
 {
     AppNativeEvent::poll_events();
     float32 l_delta;
     if (this->engine_loop.update(&l_delta))
     {
-        this->single_frame_forced_delta(l_delta, p_callbacks);
+        this->single_frame_forced_delta(l_delta, p_callback_step);
     };
 };
