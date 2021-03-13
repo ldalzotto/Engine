@@ -26,7 +26,7 @@ enum class GPUExtension
 struct GPUInstance
 {
     gpuinstance_t instance;
-#if GPU_DEBUG
+#if __DEBUG
     gpuinstance_debugger_t debugger;
 #endif
     GraphicsCard graphics_card;
@@ -127,7 +127,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     l_instance_create_info.pApplicationInfo = &l_app_info;
 
-#if GPU_DEBUG
+#if __DEBUG
 
     const int8* l_validation_layers_str[1] = {"VK_LAYER_KHRONOS_validation"};
     // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
@@ -177,7 +177,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         }
     }
 
-#if GPU_DEBUG
+#if __DEBUG
     l_extensions.push_back_element(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
@@ -188,11 +188,11 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     l_extensions.free();
 
-#if GPU_DEBUG
+#if __DEBUG
     l_available_layers.free();
 #endif
 
-#if GPU_DEBUG
+#if __DEBUG
     VkDebugUtilsMessengerCreateInfoEXT l_createinfo = {};
     l_createinfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     l_createinfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -264,7 +264,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.queueCreateInfoCount = 1;
     
 
-#if GPU_DEBUG
+#if __DEBUG
 
     l_device_create_info.enabledLayerCount = (uint32)l_validation_layers.Size;
     l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
@@ -284,7 +284,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
 inline void GPUInstance::free()
 {
-#if GPU_DEBUG
+#if __DEBUG
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr((VkInstance)instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != NULL)
     {

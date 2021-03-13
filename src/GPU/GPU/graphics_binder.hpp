@@ -39,7 +39,7 @@ struct GraphicsBinder
 
     inline void begin_render_pass(GraphicsPass& p_graphics_pass, const Slice<v4f>& p_clear_values)
     {
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(p_graphics_pass.attachement_layout.Capacity == p_clear_values.Size);
 #endif
         this->binded_graphics_pass = &p_graphics_pass;
@@ -48,7 +48,7 @@ struct GraphicsBinder
 
     inline void end_render_pass()
     {
-#if GPU_DEBUG
+#if __DEBUG
         if (this->binded_graphics_pass == NULL)
         {
             abort();
@@ -60,7 +60,7 @@ struct GraphicsBinder
 
     inline void bind_shader(Shader& p_shader)
     {
-#if GPU_DEBUG
+#if __DEBUG
         if (this->binded_graphics_pass == NULL)
         {
             abort();
@@ -90,7 +90,7 @@ struct GraphicsBinder
     {
         this->material_set_count -= (uint32)this->graphics_allocator.heap.material_parameters.get_vector(p_material.parameters).Size;
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(this->material_set_count <= 10000);
 #endif
     };
@@ -104,7 +104,7 @@ struct GraphicsBinder
     inline void pop_shaderbufferhost_parameter()
     {
         this->material_set_count -= 1;
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(this->material_set_count <= 10000);
 #endif
     };
@@ -118,7 +118,7 @@ struct GraphicsBinder
     inline void pop_shadertexturegpu_parameter()
     {
         this->material_set_count -= 1;
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(this->material_set_count <= 10000);
 #endif
     };
@@ -221,7 +221,7 @@ struct GraphicsBinder
 
     inline void _cmd_bind_uniform_buffer_parameter(const ShaderLayout& p_shader_layout, const VkDescriptorSet p_descriptor_set, const uint32 p_set_number)
     {
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
                     p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
@@ -232,7 +232,7 @@ struct GraphicsBinder
 
     inline void _cmd_bind_shader_texture_gpu_parameter(const ShaderLayout& p_shader_layout, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)
     {
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 

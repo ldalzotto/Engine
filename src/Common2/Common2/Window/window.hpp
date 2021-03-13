@@ -1,6 +1,6 @@
 #pragma once
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
 #define window_handle_native_return(Code) assert_true(Code)
 #else
 #define window_handle_native_return(Code) Code
@@ -32,7 +32,7 @@ inline WindowHandle WindowNative::create_window(const uint32 p_client_width, con
 
     HWND hwnd = CreateWindowEx(0, (LPCSTR)AppNativeEvent::CLASS_NAME, p_display_name.Begin, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, l_windowWidth, l_windowHeight, NULL, NULL,
                                GetModuleHandle(NULL), NULL);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(hwnd != NULL);
 #endif
     return (WindowHandle)hwnd;
@@ -178,7 +178,7 @@ inline void WindowAllocator::initialize()
 };
 inline void WindowAllocator::finalize()
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(!g_app_windows.has_allocated_elements());
     assert_true(g_native_to_window.empty());
 #endif

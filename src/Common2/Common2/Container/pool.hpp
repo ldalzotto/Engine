@@ -67,7 +67,7 @@ template <class ElementType> struct Pool
 
     inline ElementType& get(const Token(ElementType) p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->element_free_check(p_token);
 #endif
 
@@ -107,7 +107,7 @@ template <class ElementType> struct Pool
 
     inline void release_element(const Token(ElementType) p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->element_not_free_check(p_token);
 #endif
 
@@ -117,7 +117,7 @@ template <class ElementType> struct Pool
   private:
     inline void element_free_check(const Token(ElementType) p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (this->is_element_free(p_token))
         {
             abort();
@@ -127,7 +127,7 @@ template <class ElementType> struct Pool
 
     inline void element_not_free_check(const Token(ElementType) p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (this->is_element_free(p_token))
         {
             abort();

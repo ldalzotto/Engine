@@ -27,7 +27,7 @@ inline uimax HashFunctionRawChecked(const int8* p_value, const uimax p_size)
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     // -1 is usually the default value of hash_t, we we prevent in debuf mode any value that can clash
     assert_true(hash != (hash_t)-1);
 #endif

@@ -16,7 +16,7 @@ using gpuinstance_debugger_t = VkDebugUtilsMessengerEXT;
 
 inline void _vk_handle_result(const VkResult p_result)
 {
-#if GPU_BOUND_TEST
+#if __DEBUG
     if (p_result != VK_SUCCESS)
     {
         abort();
@@ -24,7 +24,7 @@ inline void _vk_handle_result(const VkResult p_result)
 #endif
 };
 
-#if GPU_BOUND_TEST
+#if __DEBUG
 #define vk_handle_result(Code) _vk_handle_result(Code)
 #else
 #define vk_handle_result(Code) Code

@@ -78,7 +78,7 @@ template <class ElementType> struct PoolOfVector
 
     inline void release_vector(const PoolOfVectorToken<ElementType> p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
 
@@ -88,7 +88,7 @@ template <class ElementType> struct PoolOfVector
 
     inline Slice<ElementType> get_vector(const PoolOfVectorToken<ElementType> p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
 
@@ -97,7 +97,7 @@ template <class ElementType> struct PoolOfVector
 
     inline void element_push_back_element(const PoolOfVectorToken<ElementType> p_token, const ElementType& p_element)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
 
@@ -106,7 +106,7 @@ template <class ElementType> struct PoolOfVector
 
     inline void element_erase_element_at(const PoolOfVectorToken<ElementType> p_token, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
         this->Memory.element_erase_element_at(tk_v(p_token), p_index);
@@ -114,7 +114,7 @@ template <class ElementType> struct PoolOfVector
 
     inline void element_erase_element_at_always(const PoolOfVectorToken<ElementType> p_token, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
         this->Memory.element_erase_element_at_always(tk_v(p_token), p_index);
@@ -123,7 +123,7 @@ template <class ElementType> struct PoolOfVector
     inline void element_clear(const PoolOfVectorToken<ElementType> p_token)
     {
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->token_not_free_check(p_token);
 #endif
         this->Memory.element_clear(tk_v(p_token));
@@ -173,7 +173,7 @@ template <class ElementType> struct PoolOfVector
   private:
     inline void token_not_free_check(const PoolOfVectorToken<ElementType> p_token)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (this->is_token_free(p_token))
         {
             abort();

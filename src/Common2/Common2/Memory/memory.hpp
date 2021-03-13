@@ -1,6 +1,6 @@
 #pragma once
 
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
 
 #define MEM_LEAK_MAX_POINTER_COUNTER 10000
 #define MEM_LEAK_MAX_BACKTRACE 64
@@ -51,7 +51,7 @@ inline void remove_ptr_to_tracked(int8* p_ptr)
 
 inline void memleak_ckeck()
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
     {
         if (ptr_counter[i] != NULL)
@@ -77,7 +77,7 @@ inline void memleak_ckeck()
 
 inline int8* heap_malloc(const uimax p_size)
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     return push_ptr_to_tracked((int8*)::malloc(p_size));
 #else
     return (int8*)::malloc(p_size);
@@ -86,7 +86,7 @@ inline int8* heap_malloc(const uimax p_size)
 
 inline int8* heap_calloc(const uimax p_size)
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     return push_ptr_to_tracked((int8*)::calloc(1, p_size));
 #else
     return (int8*)::calloc(1, p_size);
@@ -95,7 +95,7 @@ inline int8* heap_calloc(const uimax p_size)
 
 inline int8* heap_realloc(int8* p_memory, const uimax p_new_size)
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     remove_ptr_to_tracked(p_memory);
     return push_ptr_to_tracked((int8*)::realloc(p_memory, p_new_size));
 #else
@@ -105,7 +105,7 @@ inline int8* heap_realloc(int8* p_memory, const uimax p_new_size)
 
 inline void heap_free(int8* p_memory)
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     remove_ptr_to_tracked(p_memory);
 #endif
     ::free(p_memory);
@@ -118,7 +118,7 @@ inline int8* memory_cpy(int8* p_dst, const int8* p_src, const uimax p_size)
 
 inline static int8* memory_cpy_safe(int8* p_dst, const uimax p_dst_size, const int8* p_src, const uimax p_size)
 {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
     if (p_size > p_dst_size)
     {
         abort();
@@ -135,7 +135,7 @@ inline void memory_zero(int8* p_dst, const uimax p_size)
 
 inline void memory_zero_safe(int8* p_dst, const uimax p_dst_size, const uimax p_size)
 {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
     if (p_size > p_dst_size)
     {
         abort();
@@ -151,7 +151,7 @@ inline int8* memory_move(int8* p_dst, const int8* p_src, const uimax p_size)
 
 inline int8* memory_move_safe(int8* p_dst, const uimax p_dst_size, const int8* p_src, const uimax p_size)
 {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
     if (p_size > p_dst_size)
     {
         abort();

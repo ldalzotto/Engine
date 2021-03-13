@@ -17,7 +17,7 @@ inline int8 tokent_is_valid(const token_t* p_token)
     return *p_token != (token_t)-1;
 };
 
-#if TOKEN_TYPE_SAFETY
+#if __TOKEN
 
 template <class ElementType> struct Token
 {

@@ -244,7 +244,7 @@ inline v3f v3f::project(const v3f& p_projected_on) const
 
 inline v3f v3f::project_normalized(const v3f& p_projected_on) const
 {
-#if MATH_NORMALIZATION_TEST
+#if __DEBUG
     assert_true(v3f_assert_is_normalized(*this));
     assert_true(v3f_assert_is_normalized(p_projected_on));
 #endif
@@ -264,7 +264,7 @@ inline float32 v3f::angle_unsigned(const v3f& p_end) const
 
 inline float32 v3f::angle_unsigned_normalized(const v3f& p_end_normalized) const
 {
-#ifdef MATH_NORMALIZATION_TEST
+#ifdef __DEBUG
     v3f_assert_is_normalized(*this);
     v3f_assert_is_normalized(p_end_normalized);
 #endif
@@ -299,7 +299,7 @@ inline quat v3f::from_to(const v3f& p_to) const
 
 inline quat v3f::from_to_normalized(const v3f& p_to) const
 {
-#ifdef MATH_NORMALIZATION_TEST
+#ifdef __DEBUG
     v3f_assert_is_normalized(*this);
     v3f_assert_is_normalized(p_to);
 #endif
@@ -606,7 +606,7 @@ inline m33f m33f::lookat(const v3f& p_origin, const v3f& p_target, const v3f& p_
 
 inline m33f m33f::looat_normalized(const v3f& p_origin, const v3f& p_target, const v3f& p_up_normalized)
 {
-#if MATH_NORMALIZATION_TEST
+#if __DEBUG
     v3f_assert_is_normalized(p_up_normalized);
 #endif
 
@@ -801,7 +801,7 @@ inline m44f m44f::view(const v3f& p_world_position, const v3f& p_forward, const 
 
 inline m44f m44f::view_normalized(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up_normalized)
 {
-#ifdef MATH_NORMALIZATION_TEST
+#ifdef __DEBUG
     v3f_assert_is_normalized(p_up_normalized);
 #endif
     v3f l_target = p_forward;

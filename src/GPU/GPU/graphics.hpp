@@ -132,7 +132,7 @@ typedef VkFramebuffer FrameBuffer_t;
 */
 struct GraphicsPass
 {
-#if GPU_DEBUG
+#if __DEBUG
     Span<RenderPassAttachment> attachement_layout;
 #endif
     RenderPass render_pass;
@@ -334,7 +334,7 @@ struct GraphicsHeap2
 
     inline void free()
     {
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(!this->textures_gpu.has_allocated_elements());
         assert_true(!this->renderpass_attachment_textures.has_allocated_elements());
         assert_true(!this->graphics_pass.has_allocated_elements());
@@ -552,7 +552,7 @@ inline void TextureGPU::free(BufferMemory& p_buffer_memory)
 template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
 {
 
-#if GPU_DEBUG
+#if __DEBUG
     assert_true(AttachmentCount >= 1);
 #endif
 
@@ -645,7 +645,7 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
                                            const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
 {
 
-#if GPU_DEBUG
+#if __DEBUG
     v3ui l_extend = p_render_pass_attachments.get(0).image_format.extent;
     for (loop(i, 1, AttachmentCount))
     {
@@ -666,7 +666,7 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
 
     GraphicsPass l_graphics_pass;
 
-#if GPU_DEBUG
+#if __DEBUG
     l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
     l_graphics_pass.attachement_layout.slice.copy_memory_at_index(0, p_render_pass_attachments.to_slice());
 #endif
@@ -684,7 +684,7 @@ inline void GraphicsPass::free(const GraphicsDevice& p_graphics_device)
 
     vkDestroyFramebuffer(p_graphics_device.device, this->frame_buffer, NULL);
 
-#if GPU_DEBUG
+#if __DEBUG
     this->attachement_layout.free();
 #endif
 };

@@ -20,11 +20,11 @@ struct FileNative
 
     inline static void read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(
 #endif
             ReadFile(p_file_handle, in_out_buffer->Begin, (DWORD)in_out_buffer->Size, NULL, NULL)
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         )
 #endif
             ;
@@ -32,11 +32,11 @@ struct FileNative
 
     inline static void write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(
 #endif
             WriteFile(p_file_handle, p_buffer.Begin, (DWORD)p_buffer.Size, NULL, NULL)
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         )
 #endif
             ;
@@ -50,7 +50,7 @@ struct FileNative
 inline FileHandle FileNative::create_file(const Slice<int8>& p_path)
 {
     FileHandle l_handle = CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     if (FileNative::handle_is_valid(l_handle))
     {
         push_ptr_to_tracked((int8*)l_handle);
@@ -62,7 +62,7 @@ inline FileHandle FileNative::create_file(const Slice<int8>& p_path)
 inline FileHandle FileNative::open_file(const Slice<int8>& p_path)
 {
     FileHandle l_handle = CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     if (FileNative::handle_is_valid(l_handle))
     {
         push_ptr_to_tracked((int8*)l_handle);
@@ -73,18 +73,18 @@ inline FileHandle FileNative::open_file(const Slice<int8>& p_path)
 
 inline void FileNative::close_file(const FileHandle& p_file_handle)
 {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
     if (FileNative::handle_is_valid(p_file_handle))
     {
         remove_ptr_to_tracked((int8*)p_file_handle);
     }
 #endif
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(
 #endif
         CloseHandle(p_file_handle)
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     )
 #endif
         ;
@@ -92,11 +92,11 @@ inline void FileNative::close_file(const FileHandle& p_file_handle)
 
 inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(
 #endif
         SetFilePointer(p_file_handle, (LONG)p_pointer, 0, FILE_BEGIN)
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         != INVALID_SET_FILE_POINTER)
 #endif
         ;
@@ -104,11 +104,11 @@ inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax 
 
 inline void FileNative::delete_file(const Slice<int8>& p_path)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(
 #endif
         DeleteFile(p_path.Begin)
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     )
 #endif
         ;
@@ -118,7 +118,7 @@ inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
 {
     DWORD l_file_size_high;
     DWORD l_return = GetFileSize(p_file_handle, &l_file_size_high);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(l_return != INVALID_FILE_SIZE);
 #endif
     return dword_lowhigh_to_uimax(l_return, l_file_size_high);
@@ -139,7 +139,7 @@ struct File
     inline static File create(const Slice<int8>& p_path)
     {
         File l_file = create_silent(p_path);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(l_file.is_valid());
 #endif
         return l_file;
@@ -148,7 +148,7 @@ struct File
     inline static File open(const Slice<int8>& p_path)
     {
         File l_file = open_silent(p_path);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(l_file.is_valid());
 #endif
         return l_file;
@@ -192,7 +192,7 @@ struct File
     {
         FileNative::set_file_pointer(this->native_handle, 0);
         uimax l_file_size = FileNative::get_file_size(this->native_handle);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(l_file_size <= in_out_buffer->Size);
 #endif
         in_out_buffer->Size = l_file_size;

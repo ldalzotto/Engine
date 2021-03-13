@@ -164,7 +164,7 @@ template <class ElementType> struct VectorOfVector
     {
         VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(p_index != l_vector_header->Size); // use vectorofvector_element_push_back_element
         assert_true(p_index < l_vector_header->Size);
 #endif
@@ -188,7 +188,7 @@ template <class ElementType> struct VectorOfVector
     {
         VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index == l_vector_header->Size)
         {
             abort();
@@ -204,7 +204,7 @@ template <class ElementType> struct VectorOfVector
     inline void element_pop_back_element(const uimax p_nested_vector_index, const uimax p_index)
     {
         VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index != (l_vector_header->Size - 1))
         {
             abort(); // use element_erase_element_at
@@ -216,7 +216,7 @@ template <class ElementType> struct VectorOfVector
     inline void element_erase_element_at_always(const uimax p_nested_vector_index, const uimax p_index)
     {
         VectorOfVector_VectorHeader* l_vector_header = this->get_vectorheader(p_nested_vector_index);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index >= l_vector_header->Size)
         {
             abort();

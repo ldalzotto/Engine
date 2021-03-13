@@ -27,7 +27,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline static HashMap<KeyType, ElementType> allocate(const uimax p_initial_size)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_initial_size < 2)
         {
             abort(); // minimal allocation size is 2
@@ -85,7 +85,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline int8 has_key_nothashed(const KeyType& p_key)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         hash_t l_hash = this->hash_key(p_key);
         if (this->has_key(l_hash))
         {
@@ -113,7 +113,7 @@ template <class KeyType, class ElementType> struct HashMap
         hash_t l_hash = this->hash_key(p_key);
         if (this->has_key(l_hash))
         {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
             assert_true(this->check_key_equality(p_key, l_hash));
 #endif
             return this->get_value(l_hash);
@@ -124,7 +124,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void put_key_value(const hash_t p_hash, const KeyType& p_key, const ElementType& p_value)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(!this->has_key(p_hash)); // use has_key before
 #endif
 
@@ -135,7 +135,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void put_value(const hash_t p_hash, const ElementType& p_value)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(this->has_key(p_hash)); // use has_key before
 #endif
 
@@ -145,7 +145,7 @@ template <class KeyType, class ElementType> struct HashMap
     inline void put_value_nothashed(const KeyType& p_key, const ElementType& p_value)
     {
         hash_t l_hash = this->hash_key(p_key);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(this->has_key(l_hash) && this->check_key_equality(p_key, l_hash)); // use has_key before
 #endif
         this->Memory.get(l_hash) = p_value;
@@ -182,7 +182,7 @@ template <class KeyType, class ElementType> struct HashMap
     inline void erase_key_nothashed(const KeyType& p_key)
     {
         hash_t l_hash = this->hash_key(p_key);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(this->check_key_equality(p_key, l_hash));
 #endif
         this->Slots.get(l_hash) = 0;

@@ -69,7 +69,7 @@ template <class ElementType> struct Vector
 
     inline ElementType& get(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
         this->bound_head_check(p_index);
 #endif
@@ -88,7 +88,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_array_at(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
         this->bound_head_check(p_index); // cannot insert at head. Use vector_insert_array_at_always instead.
 #endif
@@ -98,7 +98,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_element_at(const ElementType& p_element, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
         this->bound_head_check(p_index); // cannot insert at head. Use vector_insert_element_at_always instead.
 #endif
@@ -149,7 +149,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
 #endif
         if (p_index == this->Size)
@@ -164,7 +164,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_element_at_always(const ElementType& p_element, const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
 #endif
 
@@ -181,7 +181,7 @@ template <class ElementType> struct Vector
     inline int8 erase_array_at(const uimax p_index, const uimax p_element_nb)
     {
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
         this->bound_check(p_index + p_element_nb);
         this->bound_lastelement_check(p_index); // use vector_pop_back_array
@@ -195,7 +195,7 @@ template <class ElementType> struct Vector
 
     inline int8 erase_element_at(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
         this->bound_lastelement_check(p_index); // use vector_pop_back
 #endif
@@ -220,7 +220,7 @@ template <class ElementType> struct Vector
 
     inline int8 erase_element_at_always(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
 #endif
 
@@ -256,7 +256,7 @@ template <class ElementType> struct Vector
   private:
     inline void bound_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index > this->Size)
         {
             abort();
@@ -266,7 +266,7 @@ template <class ElementType> struct Vector
 
     inline void bound_head_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index == this->Size)
         {
             abort();
@@ -276,7 +276,7 @@ template <class ElementType> struct Vector
 
     inline void bound_lastelement_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index == this->Size - 1)
         {
             abort();

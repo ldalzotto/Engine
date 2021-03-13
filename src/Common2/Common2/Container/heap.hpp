@@ -165,11 +165,11 @@ template <class ShadowHeap_t(s)> inline HeapA::AllocationState HeapA::allocate_e
             uimax l_heap_size = sh_c_get_size(&p_heap);
             sh_c_resize(&p_heap, l_heap_size == 0 ? p_size : ((l_heap_size * 2) + p_size));
 
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
             assert_true(
 #endif
                 _allocate_element(p_heap, p_size, out_chunk)
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
             )
 #endif
                 ;
@@ -192,11 +192,11 @@ inline HeapA::AllocationState HeapA::allocate_element_with_modulo_offset(ShadowH
             uimax l_heap_size = sh_c_get_size(&p_heap);
             sh_c_resize(&p_heap, l_heap_size == 0 ? (p_modulo_offset > p_size ? p_modulo_offset : p_size) : ((l_heap_size * 2) + (p_modulo_offset > p_size ? p_modulo_offset : p_size)));
 
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
             assert_true(
 #endif
                 _allocate_element_with_modulo_offset(p_heap, p_size, p_modulo_offset, out_chunk)
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
             )
 #endif
                 ;
@@ -226,7 +226,7 @@ inline HeapA::AllocationState HeapA::allocate_element_norealloc_with_modulo_offs
 
 template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap_t(s) & p_heap, const uimax p_size, HeapA::AllocatedElementReturn* out_return)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(p_size != 0);
 #endif
 
@@ -256,7 +256,7 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
 template <class ShadowHeap_t(s)>
 inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap, const uimax p_size, const uimax p_modulo_offset, HeapA::AllocatedElementReturn* out_chunk)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(p_size != 0);
 #endif
 

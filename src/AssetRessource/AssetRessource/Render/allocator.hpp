@@ -14,7 +14,7 @@ struct ShaderModuleRessourceUnit
 
     inline void free()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->shader_modules_allocation_events.empty());
         assert_true(this->shader_modules_free_events.empty());
         assert_true(this->shader_modules.empty());
@@ -26,7 +26,7 @@ struct ShaderModuleRessourceUnit
 
     inline void assert_no_allocation_events()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->shader_modules_allocation_events.empty());
 #endif
     };
@@ -103,7 +103,7 @@ struct ShaderModuleRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.shader_modules.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -118,7 +118,7 @@ struct ShaderModuleRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.shader_modules.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -144,7 +144,7 @@ struct TextureRessourceUnit
 
     inline void free()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->textures_allocation_events.empty());
         assert_true(this->textures_free_events.empty());
         assert_true(this->textures.empty());
@@ -156,7 +156,7 @@ struct TextureRessourceUnit
 
     inline void assert_no_allocation_events()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->textures_allocation_events.empty());
 #endif
     };
@@ -239,7 +239,7 @@ struct TextureRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.textures.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -254,7 +254,7 @@ struct TextureRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.textures.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -279,7 +279,7 @@ struct MeshRessourceUnit
 
     inline void free()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->meshes_allocation_events.empty());
         assert_true(this->meshes_free_events.empty());
         assert_true(this->meshes.empty());
@@ -291,7 +291,7 @@ struct MeshRessourceUnit
 
     inline void assert_no_allocation_events()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->meshes_allocation_events.empty());
 #endif
     };
@@ -368,7 +368,7 @@ struct MeshRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.meshes.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -383,7 +383,7 @@ struct MeshRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.meshes.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -409,7 +409,7 @@ struct ShaderRessourceUnit
 
     inline void free()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->shaders_allocation_events.empty());
         assert_true(this->shaders_free_events.empty());
         assert_true(this->shaders.empty());
@@ -421,7 +421,7 @@ struct ShaderRessourceUnit
 
     inline void assert_no_allocation_events()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->shaders_allocation_events.empty());
 #endif
     };
@@ -504,7 +504,7 @@ struct ShaderRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.shaders.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -524,7 +524,7 @@ struct ShaderRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.shaders.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -578,7 +578,7 @@ struct MaterialRessourceUnit
 
     inline void free()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->materials_allocation_events.empty());
         assert_true(this->materials_free_events.empty());
         assert_true(this->materials.empty());
@@ -592,7 +592,7 @@ struct MaterialRessourceUnit
 
     inline void assert_no_allocation_events()
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->materials_allocation_events.empty());
 #endif
     };
@@ -703,7 +703,7 @@ struct MaterialRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.materials.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -749,7 +749,7 @@ struct MaterialRessourceComposition
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
-#if RENDER_BOUND_TEST
+#if __DEBUG
             assert_true(p_unit.materials.get(p_inline_input.id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return p_unit.increment_ressource(p_inline_input.id);
@@ -846,7 +846,7 @@ struct RenderRessourceAllocator2
 
     inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context)
     {
-#if RENDER_BOUND_TEST
+#if __DEBUG
         this->shader_module_unit.assert_no_allocation_events();
         this->mesh_unit.assert_no_allocation_events();
         this->texture_unit.assert_no_allocation_events();

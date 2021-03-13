@@ -4,7 +4,7 @@ namespace DatabaseConnection_Utils
 {
 inline static int32 handleSQLiteError(int32 p_return, sqlite3** p_connection)
 {
-#if DATABASE_DEBUG
+#if __DEBUG
     if (p_return != 0)
     {
         String l_error_message = String::allocate_elements(slice_int8_build_rawstr("SQLITE ERROR : "));
@@ -24,7 +24,7 @@ inline static int32 handleSQLiteError(int32 p_return, sqlite3** p_connection)
 
 inline static int32 handleStepError(int32 p_step_return, sqlite3** p_connection)
 {
-#if DATABASE_DEBUG
+#if __DEBUG
     if (p_step_return != SQLITE_BUSY && p_step_return != SQLITE_DONE && p_step_return != SQLITE_ROW)
     {
         String l_error_message = String::allocate_elements(slice_int8_build_rawstr("SQLITE ERROR : "));
@@ -55,7 +55,7 @@ struct DatabaseConnection
         l_database_file.free();
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_open(p_databasepath.Begin, &l_connection.connection), &l_connection.connection);
 
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         push_ptr_to_tracked((int8*)l_connection.connection);
 #endif
 
@@ -64,7 +64,7 @@ struct DatabaseConnection
 
     inline void free()
     {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         remove_ptr_to_tracked((int8*)this->connection);
 #endif
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_close(this->connection), &this->connection);
@@ -125,7 +125,7 @@ struct SQLitePreparedQuery
         sqlite3_stmt* l_statement;
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_prepare_v3(p_connection.connection, p_query.Begin, (int32)p_query.Size, SQLITE_PREPARE_PERSISTENT, &l_statement, NULL),
                                                     &p_connection.connection);
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         push_ptr_to_tracked((int8*)l_statement);
 #endif
         return SQLitePreparedQuery{p_parameter_layout, p_return_layout, l_statement};
@@ -133,7 +133,7 @@ struct SQLitePreparedQuery
 
     inline void free(DatabaseConnection& p_connection)
     {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         remove_ptr_to_tracked((int8*)this->statement);
 #endif
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_finalize(this->statement), &p_connection.connection);
@@ -162,7 +162,7 @@ struct SQLiteQuery
         sqlite3_stmt* l_statement;
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_prepare_v3(p_connection.connection, p_query.Begin, (int32)p_query.Size, SQLITE_PREPARE_PERSISTENT, &l_statement, NULL),
                                                     &p_connection.connection);
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         push_ptr_to_tracked((int8*)l_statement);
 #endif
         return SQLiteQuery{l_statement};
@@ -170,7 +170,7 @@ struct SQLiteQuery
 
     inline void free(DatabaseConnection& p_connection)
     {
-#if MEM_LEAK_DETECTION
+#if __MEMLEAK
         remove_ptr_to_tracked((int8*)this->statement);
 #endif
         DatabaseConnection_Utils::handleSQLiteError(sqlite3_finalize(this->statement), &p_connection.connection);
@@ -197,7 +197,7 @@ struct SQLiteQueryBinder
 
     inline void bind_int64(const int64 p_value, DatabaseConnection& p_connection)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
         assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::INT64);
 #endif
@@ -207,7 +207,7 @@ struct SQLiteQueryBinder
 
     inline void bind_text(const Slice<int8>& p_text, DatabaseConnection& p_connection)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
         assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
@@ -218,7 +218,7 @@ struct SQLiteQueryBinder
 
     inline void bind_blob(const Slice<int8>& p_blob, DatabaseConnection& p_connection)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
         assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif
@@ -249,7 +249,7 @@ struct SQLiteResultSet
 
     inline int64 get_int64(const int8 p_index)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_return_layout != NULL);
         assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::INT64);
 #endif
@@ -258,7 +258,7 @@ struct SQLiteResultSet
 
     inline Span<int8> get_text(const int8 p_index)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_return_layout != NULL);
         assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
@@ -268,7 +268,7 @@ struct SQLiteResultSet
 
     inline Span<int8> get_blob(const int8 p_index)
     {
-#if DATABASE_BOUND_TEST
+#if __DEBUG
         assert_true(this->binded_return_layout != NULL);
         assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif

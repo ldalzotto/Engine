@@ -4,7 +4,7 @@ namespace JSONUtil
 {
 inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int8>& p_awaited_type)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(p_type.compare(p_awaited_type));
 #endif
     return p_type;
@@ -306,7 +306,7 @@ struct JSONDeserializer
     (DeserializerVariable)->next_object(ObjectFieldNameValue, TmpDeserializerVariable);                                                                                                                \
     OutValueTypedVariable = FromSerializer(TmpDeserializerVariable);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
 
 #define json_get_type_checked(DeserializerVariable, AwaitedTypeSlice) JSONUtil::validate_json_type(JSONDeserializer::get_json_type(DeserializerVariable), AwaitedTypeSlice);
 

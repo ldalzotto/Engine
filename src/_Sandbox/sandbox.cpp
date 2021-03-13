@@ -5,7 +5,7 @@
 
 struct SandboxTestUtil
 {
-     inline static void render_texture_compare(Engine& p_engine, const Slice<int8>& p_compared_image_path)
+    inline static void render_texture_compare(Engine& p_engine, const Slice<int8>& p_compared_image_path)
     {
         ImageFormat l_rendertarget_texture_format;
         Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(

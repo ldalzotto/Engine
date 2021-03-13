@@ -10,7 +10,7 @@ struct VaryingSlice
 
     inline static VaryingSlice build(const Slice<int8>& p_memory, const Slice<SliceIndex>& p_chunks)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         uimax l_max_index = 0;
         for (loop(i, 0, p_chunks.Size))
         {

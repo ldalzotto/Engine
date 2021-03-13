@@ -83,7 +83,7 @@ struct HeapMemory
     {
         if ((HeapA::AllocationState_t)p_allocation_state & (HeapA::AllocationState_t)HeapA::AllocationState::HEAP_RESIZED)
         {
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
             if (!this->Memory.resize(this->_Heap.Size))
             {
                 abort();
@@ -93,7 +93,7 @@ struct HeapMemory
 #endif
         };
 
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
         if (!((HeapA::AllocationState_t)p_allocation_state & (HeapA::AllocationState_t)HeapA::AllocationState::ALLOCATED))
         {
             abort();

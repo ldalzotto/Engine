@@ -103,7 +103,7 @@ template <class ElementType> struct NTree
 
     inline Token(ElementType) push_root_value(const ElementType& p_element)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(this->Memory.get_size() == 0);
 #endif
         Token(ElementType) l_element;

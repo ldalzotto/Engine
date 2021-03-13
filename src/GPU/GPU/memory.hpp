@@ -682,7 +682,7 @@ inline Slice<int8> BufferHost::get_mapped_effective_memory()
 
 inline void BufferHost::bind(TransferDevice& p_transfer_device)
 {
-#if GPU_BOUND_TEST
+#if __DEBUG
     assert_true(this->memory.is_mapped());
 #endif
     SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
@@ -836,7 +836,7 @@ inline void ImageHost::unmap(TransferDevice& p_transfer_device)
 
 inline void ImageHost::bind(TransferDevice& p_transfer_device)
 {
-#if GPU_BOUND_TEST
+#if __DEBUG
     assert_true(this->memory.is_mapped());
 #endif
     SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
@@ -1023,7 +1023,7 @@ inline BufferAllocator BufferAllocator::allocate_default(const GPUInstance& p_in
 
 inline void BufferAllocator::free()
 {
-#if GPU_BOUND_TEST
+#if __DEBUG
     assert_true(!this->host_buffers.has_allocated_elements());
     assert_true(!this->gpu_buffers.has_allocated_elements());
     assert_true(!this->host_images.has_allocated_elements());
@@ -1111,7 +1111,7 @@ inline BufferEvents BufferEvents::allocate()
 
 inline void BufferEvents::free()
 {
-#if GPU_BOUND_TEST
+#if __DEBUG
     assert_true(this->garbage_host_buffers.empty());
     assert_true(this->write_buffer_gpu_to_buffer_host_events.empty());
     assert_true(this->write_buffer_host_to_buffer_gpu_events.empty());
@@ -1444,7 +1444,7 @@ inline void BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(const Comman
                                                                     const ShadowImage_t(Target) & p_target)
 {
 
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
     assert_true(ShadowImage_c_get_format(&p_source).extent == ShadowImage_c_get_format(&p_target).extent);
 #endif
 
@@ -1470,7 +1470,7 @@ inline void BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(const Comman
 inline void BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const BufferHost& p_host,
                                                                   const ImageGPU& p_gpu)
 {
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
     assert_true(p_host.size <= p_gpu.size);
 #endif
 
@@ -1489,7 +1489,7 @@ inline void BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(const CommandB
                                                                   const BufferHost& p_host)
 {
 
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
     assert_true(p_gpu.size <= p_host.size);
 #endif
 
@@ -1530,7 +1530,7 @@ inline void BufferCommandUtils::cmd_image_layout_transition_v2(const CommandBuff
 inline void BufferCommandUtils::cmd_copy_buffer(const CommandBuffer& p_command_buffer, const VkBuffer p_source_buffer, const uimax p_source_size, const VkBuffer p_target_buffer,
                                                 const uimax p_target_size)
 {
-#if CONTAINER_MEMORY_TEST
+#if __DEBUG
     assert_true(p_source_size <= p_target_size);
 #endif
 

@@ -93,7 +93,7 @@ inline void AppNativeEvent::initialize()
 
 inline void AppNativeEvent::finalize()
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     assert_true(g_appevent_listeners.empty());
 #endif
     g_appevent_listeners.free();

@@ -106,7 +106,7 @@ struct Material
     {
         uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).Size;
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
         assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
                     p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
@@ -135,7 +135,7 @@ struct Material
     {
         ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_shader_parameter.type == ShaderParameter::Type::UNIFORM_HOST);
 #endif
 
@@ -146,7 +146,7 @@ struct Material
     {
         uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).Size;
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
         assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
                     p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
@@ -177,7 +177,7 @@ struct Material
     {
         ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_shader_parameter.type == ShaderParameter::Type::UNIFORM_GPU);
 #endif
 
@@ -188,7 +188,7 @@ struct Material
     {
         uimax l_inserted_index = this->set_index_offset + p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).Size;
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
         assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
@@ -212,7 +212,7 @@ struct Material
     {
         ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_shader_parameter.type == ShaderParameter::Type::TEXTURE_GPU);
 #endif
 

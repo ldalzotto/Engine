@@ -50,7 +50,7 @@ template <class ElementType> struct Slice
 
     inline ElementType& get(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_index);
 #endif
         return this->Begin[p_index];
@@ -63,7 +63,7 @@ template <class ElementType> struct Slice
 
     inline void slide(const uimax p_offset_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_check(p_offset_index);
 #endif
 
@@ -85,7 +85,7 @@ template <class ElementType> struct Slice
 
     inline int8 find(const Slice<ElementType>& p_other, uimax* out_index) const
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_other.Size > this->Size)
         {
             abort();
@@ -115,7 +115,7 @@ template <class ElementType> struct Slice
 
     inline int8* move_memory(const Slice<ElementType>& p_source)
     {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
         return memory_move_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_source.Begin), p_source.Size * sizeof(ElementType));
 #else
         return memory_move((int8*)this->Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
@@ -125,7 +125,7 @@ template <class ElementType> struct Slice
     inline void move_memory_down(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
     {
         Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Begin, p_break_index + p_move_delta, p_moved_block_size);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_inside_check(l_target);
 #endif
         Slice<ElementType> l_source = Slice<ElementType>::build_begin_end(this->Begin, p_break_index, p_break_index + p_moved_block_size);
@@ -135,7 +135,7 @@ template <class ElementType> struct Slice
     inline void move_memory_up(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
     {
         Slice<ElementType> l_target = Slice<ElementType>::build_memory_offset_elementnb(this->Begin, p_break_index - p_move_delta, p_moved_block_size);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_inside_check(l_target);
 #endif
         Slice<ElementType> l_source = Slice<ElementType>::build_begin_end(this->Begin, p_break_index, p_break_index + p_moved_block_size);
@@ -144,7 +144,7 @@ template <class ElementType> struct Slice
 
     inline int8* copy_memory(const Slice<ElementType>& p_elements)
     {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
         return memory_cpy_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_elements.Begin), p_elements.Size * sizeof(ElementType));
 #else
         return memory_cpy((int8*)p_target.Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
@@ -155,7 +155,7 @@ template <class ElementType> struct Slice
     {
         Slice<ElementType> l_target = Slice<ElementType>::build_memory_elementnb(this->Begin + p_copy_index, p_elements.Size);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         this->bound_inside_check(l_target);
 #endif
 
@@ -176,7 +176,7 @@ template <class ElementType> struct Slice
 
     inline void zero()
     {
-#if STANDARD_ALLOCATION_BOUND_TEST
+#if __DEBUG
         memory_zero_safe((int8*)this->Begin, this->Size * sizeof(ElementType), this->Size * sizeof(ElementType));
 #else
         memory_zero((int8*)this->Begin, this->Size * sizeof(ElementType));
@@ -185,7 +185,7 @@ template <class ElementType> struct Slice
 
     inline void bound_inside_check(const Slice<ElementType>& p_tested_slice)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if ((p_tested_slice.Begin + p_tested_slice.Size) > (this->Begin + this->Size))
         {
             abort();
@@ -195,7 +195,7 @@ template <class ElementType> struct Slice
 
     inline void bound_check(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (p_index > this->Size)
         {
             abort();
@@ -205,7 +205,7 @@ template <class ElementType> struct Slice
 
     inline void assert_null_terminated() const
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(sizeof(ElementType) == sizeof(int8));
         assert_true(this->get(this->Size - 1) == '\0');
 #endif
@@ -224,7 +224,7 @@ inline Slice<int8> slice_int8_build_rawstr_with_null_termination(const int8* p_s
 
 template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8>& p_slice)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     if ((p_slice.Size % sizeof(CastedType)) != 0)
     {
         abort();
@@ -236,7 +236,7 @@ template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8
 
 template <class CastedType> inline CastedType* slice_cast_singleelement(const Slice<int8>& p_slice)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     if (p_slice.Size < sizeof(CastedType))
     {
         abort();
@@ -247,7 +247,7 @@ template <class CastedType> inline CastedType* slice_cast_singleelement(const Sl
 
 template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(const Slice<int8>& p_slice, const uimax p_element_nb)
 {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
     if (p_slice.Size < (sizeof(CastedType) * p_element_nb))
     {
         abort();
@@ -257,7 +257,7 @@ template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(c
     return slice_build_memory_elementnb(cast(CastedType*, p_slice.Begin), p_element_nb);
 };
 
-#if TOKEN_TYPE_SAFETY
+#if __TOKEN
 #define sliceoftoken_cast(CastedType, SourceSlice)                                                                                                                                                     \
     Slice<Token(CastedType)>                                                                                                                                                                           \
     {                                                                                                                                                                                                  \
@@ -288,7 +288,7 @@ template <class ElementType, uint32 Size_t> struct SliceN
 
     inline ElementType& get(const uimax p_index)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(p_index < Size_t);
 #endif
         return this->Memory[p_index];

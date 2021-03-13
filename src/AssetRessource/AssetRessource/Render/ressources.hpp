@@ -418,7 +418,7 @@ struct MaterialRessource
 
                 inline hash_t* get_parameter_texture_gpu_value(const uimax p_index)
                 {
-#if RENDER_BOUND_TEST
+#if __DEBUG
                     assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::TEXTURE_GPU);
 #endif
                     return slice_cast<hash_t>(this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type))).Begin;
@@ -426,7 +426,7 @@ struct MaterialRessource
 
                 inline Slice<int8> get_parameter_uniform_host_value(const uimax p_index)
                 {
-#if RENDER_BOUND_TEST
+#if __DEBUG
                     assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::UNIFORM_HOST);
 #endif
                     return this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type));

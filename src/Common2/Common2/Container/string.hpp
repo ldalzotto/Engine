@@ -38,7 +38,7 @@ struct String
 
     inline void erase_array_at(const uimax p_index, const uimax p_size)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if ((p_index + p_size) == this->get_size() - 1)
         {
             abort();

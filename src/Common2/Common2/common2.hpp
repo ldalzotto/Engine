@@ -1,12 +1,6 @@
 #pragma once
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <limits.h>
-#include <math.h>
-
-#include "sqlite3.h"
+#include "./system.hpp"
 
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"

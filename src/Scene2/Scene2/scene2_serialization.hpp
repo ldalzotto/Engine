@@ -76,7 +76,7 @@ struct SceneAsset
     template <class ComponentType> inline ComponentType* get_component_typed(const Token(SliceIndex) p_component)
     {
         Slice<int8> l_component_element = this->component_assets.get_element(tk_v(p_component));
-#if SCENE_BOUND_TEST
+#if __DEBUG
         assert_true(*(component_t*)l_component_element.Begin == ComponentType::Type);
 #endif
         return (ComponentType*)l_component_element.slide_rv(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size)).Begin;

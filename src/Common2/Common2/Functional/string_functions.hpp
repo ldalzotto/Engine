@@ -69,7 +69,7 @@ struct ToString
 
     inline static Slice<int8> afloat32(const float32 p_value, const Slice<int8>& out)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (out.Size < float32str_size)
         {
             abort();
@@ -98,7 +98,7 @@ struct ToString
 
     inline static Slice<int8> auimax(const uimax p_value, const Slice<int8>& out)
     {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         if (out.Size < uimaxstr_size)
         {
             abort();

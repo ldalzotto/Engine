@@ -42,7 +42,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
     inline CountElement* decrement(const KeyType& p_key)
     {
         CountElement* l_counted_element = this->CountMap.get_value_nothashed(p_key);
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(l_counted_element->counter != 0);
 #endif
         l_counted_element->counter -= 1;
@@ -113,7 +113,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 
         inline void allocate(const KeyType& p_key, const ElementType& p_value)
         {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
             assert_true(this->state == State::ALLOCATE);
 #endif
             this->allocated_token = thiz->push_back_element(p_key, p_value);
@@ -122,7 +122,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 
         inline void assert_ended()
         {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
             assert_true(this->state == State::END);
 #endif
         };
@@ -130,7 +130,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
       private:
         inline void increment(const KeyType& p_key)
         {
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
             assert_true(this->state == State::INCREMENT);
 #endif
             this->allocated_token = thiz->increment(p_key);

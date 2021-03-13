@@ -132,7 +132,7 @@ struct VaryingVector
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(p_expansion_size != 0);
 #endif
 
@@ -151,7 +151,7 @@ struct VaryingVector
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(p_pushed_element.Size != 0);
 #endif
 
@@ -173,7 +173,7 @@ struct VaryingVector
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
 
-#if CONTAINER_BOUND_TEST
+#if __DEBUG
         assert_true(p_size_delta != 0);
         assert_true(p_size_delta <= l_updated_chunk.Size);
 #endif

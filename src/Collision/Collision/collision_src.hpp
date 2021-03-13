@@ -31,7 +31,7 @@ inline CollisionHeap2 CollisionHeap2::allocate_default()
 
 inline void CollisionHeap2::free()
 {
-#if COLLIDER_BOUND_TEST
+#if __DEBUG
     assert_true(!this->box_colliders.has_allocated_elements());
     assert_true(!this->box_colliders_to_collider_detector.has_allocated_elements());
     assert_true(!this->collider_detectors.has_allocated_elements());
@@ -47,7 +47,7 @@ inline void CollisionHeap2::free()
 inline Token(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const Token(BoxCollider) p_box_collider)
 {
 
-#if COLLIDER_BOUND_TEST
+#if __DEBUG
     // Cannot attach multiple collider detector to a collider for now
     assert_true(!this->does_boxcollider_have_colliderdetector(p_box_collider));
 #endif
@@ -158,7 +158,7 @@ inline void CollisionDetectionStep::free(CollisionHeap2& p_collision_heap)
     // To free pending resources
     this->step_freeingresource_only(p_collision_heap);
 
-#if COLLIDER_BOUND_TEST
+#if __DEBUG
     assert_true(this->in_colliders_disabled.get_size() == 0);
     assert_true(this->in_colliders_processed.get_size() == 0);
     assert_true(this->deleted_colliders_from_last_step.get_size() == 0);

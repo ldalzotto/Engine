@@ -173,7 +173,7 @@ inline D3RendererHeap D3RendererHeap::allocate()
 
 inline void D3RendererHeap::free()
 {
-#if RENDER_BOUND_TEST
+#if __DEBUG
     assert_true(!this->shaders.has_allocated_elements());
     assert_true(!this->materials.has_allocated_elements());
     assert_true(!this->meshes.has_allocated_elements());

@@ -49,7 +49,7 @@ struct GPUPresentDevice
         }
         l_queueFamilies.free();
 
-#if GPU_DEBUG
+#if __DEBUG
         assert_true(l_present_queue_family_index != -1);
 #endif
 

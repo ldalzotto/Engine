@@ -77,14 +77,14 @@ struct RenderMiddleWare
     inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database, RenderRessourceAllocator2& p_render_ressource_allocator, Scene* p_scene)
     {
 
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->mesh_renderer_allocation_events.empty());
 #endif
 
         this->deallocation_step(p_renderer, p_gpu_context, p_render_ressource_allocator);
         this->step(p_renderer, p_gpu_context, p_scene);
 
-#if RENDER_BOUND_TEST
+#if __DEBUG
         assert_true(this->mesh_renderer_allocation_events.empty());
         assert_true(this->meshrenderer_free_events.empty());
         assert_true(!this->mesh_renderers.has_allocated_elements());
