@@ -13,7 +13,7 @@ struct SandboxTestUtil
             &l_rendertarget_texture_format);
 
         p_engine.gpu_context.buffer_step_and_wait_for_completion();
-        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
+        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
 
         Span<int8> l_image = ImgCompiler::read_image(p_compared_image_path);
@@ -32,7 +32,7 @@ struct SandboxTestUtil
             &l_rendertarget_texture_format);
 
         p_engine.gpu_context.buffer_step_and_wait_for_completion();
-        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_memory();
+        Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
         ImgCompiler::write_to_image(p_path, l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4,
                                     l_rendertarget_texture_value);

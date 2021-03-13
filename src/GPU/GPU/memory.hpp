@@ -107,8 +107,9 @@ struct MappedHostMemory
 };
 
 #define ShadowBuffer_t(Prefix) ShadowBuffer_##Prefix
-#define ShadowBuffer_member_buffer buffer
-#define ShadowBuffer_member_size size
+
+#define ShadowBuffer_c_get_buffer(p_shadow_buffer) (p_shadow_buffer)->buffer
+#define ShadowBuffer_c_get_size(p_shadow_buffer) (p_shadow_buffer)->size
 
 /*
     A BufferHost is a pointer to a HeapPaged chunk that have been specified to be visible by the CPU.
@@ -117,8 +118,8 @@ struct BufferHost
 {
     MappedHostMemory memory;
     TransferDeviceHeapToken heap_token;
-    VkBuffer ShadowBuffer_member_buffer;
-    uimax ShadowBuffer_member_size;
+    VkBuffer buffer;
+    uimax size;
 
     static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const BufferUsageFlag p_usage_flags);
 
@@ -126,11 +127,13 @@ struct BufferHost
 
     void push(const Slice<int8>& p_from);
 
-    // TODO
     // /!\ WARNING - The mapped memory slice is the slice of the WHOLE allocated GPU memory.
     // Depending on GPU device, effectively allocated GPU memory may be higher that the initial requested Size.
-    // This, casting on the returned slice may cause crash.
+    // Thus, casting on the returned slice may cause crash.
+    // To have a slice that is representative of the asked allocation size, use get_mapped_effective_memory
     Slice<int8>& get_mapped_memory();
+
+    Slice<int8> get_mapped_effective_memory();
 
   private:
     void bind(TransferDevice& p_transfer_device);
@@ -146,8 +149,8 @@ struct BufferHost
 struct BufferGPU
 {
     TransferDeviceHeapToken heap_token;
-    VkBuffer ShadowBuffer_member_buffer;
-    uimax ShadowBuffer_member_size;
+    VkBuffer buffer;
+    uimax size;
 
     static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const BufferUsageFlag p_usage_flags);
 
@@ -185,16 +188,16 @@ struct ImageFormat
     static ImageFormat build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage);
 };
 
-#define ShadowImage(Prefix) ShadowImage_##Prefix
-#define ShadowImage_member_image image
-#define ShadowImage_member_format format
+#define ShadowImage_t(Prefix) ShadowImage_##Prefix
+#define ShadowImage_c_get_image(p_shadow_image) (p_shadow_image)->image
+#define ShadowImage_c_get_format(p_shadow_image) (p_shadow_image)->format
 
 struct ImageHost
 {
     MappedHostMemory memory;
     TransferDeviceHeapToken heap_token;
-    VkImage ShadowImage_member_image;
-    ImageFormat ShadowImage_member_format;
+    VkImage image;
+    ImageFormat format;
 
     static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
 
@@ -215,8 +218,8 @@ struct ImageHost
 struct ImageGPU
 {
     TransferDeviceHeapToken heap_token;
-    VkImage ShadowImage_member_image;
-    ImageFormat ShadowImage_member_format;
+    VkImage image;
+    ImageFormat format;
     uimax size;
 
     static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout);
@@ -413,16 +416,16 @@ struct BufferCommandUtils
 
     static void cmd_copy_buffer_gpu_to_host(const CommandBuffer& p_command_buffer, const BufferGPU& p_gpu, const BufferHost& p_host);
 
-    template <class ShadowImage(Source), class ShadowImage(Target)>
-    static void cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(Source) & p_source,
-                                                    const ShadowImage(Target) & p_target);
+    template <class ShadowImage_t(Source), class ShadowImage_t(Target)>
+    static void cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage_t(Source) & p_source,
+                                                    const ShadowImage_t(Target) & p_target);
 
     static void cmd_copy_buffer_host_to_image_gpu(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const BufferHost& p_host, const ImageGPU& p_gpu);
 
     static void cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ImageGPU& p_gpu, const BufferHost& p_host);
 
-    template <class ShadowImage(_)>
-    static void cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(_) & p_image,
+    template <class ShadowImage_t(_)>
+    static void cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage_t(_) & p_image,
                                                const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage);
 
   private:
@@ -670,6 +673,13 @@ inline Slice<int8>& BufferHost::get_mapped_memory()
     return this->memory.memory;
 };
 
+inline Slice<int8> BufferHost::get_mapped_effective_memory()
+{
+    Slice<int8> l_return = this->memory.memory;
+    l_return.Size = this->size;
+    return l_return;
+};
+
 inline void BufferHost::bind(TransferDevice& p_transfer_device)
 {
 #if GPU_BOUND_TEST
@@ -694,7 +704,7 @@ inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const ui
 {
     BufferGPU l_buffer_gpu;
 
-    l_buffer_gpu.ShadowBuffer_member_size = p_size;
+    l_buffer_gpu.size = p_size;
 
     VkBufferCreateInfo l_buffercreate_info{};
     l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -704,7 +714,7 @@ inline BufferGPU BufferGPU::allocate(TransferDevice& p_transfer_device, const ui
     vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_gpu.buffer));
 
     VkMemoryRequirements l_requirements;
-    vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_gpu.ShadowBuffer_member_buffer, &l_requirements);
+    vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_gpu.buffer, &l_requirements);
 
     p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                                             &l_buffer_gpu.heap_token);
@@ -718,8 +728,8 @@ inline void BufferGPU::free(TransferDevice& p_transfer_device)
 {
     p_transfer_device.heap.release_element(this->heap_token);
     // p_transfer_device.heap.release_gpu_write_element(this->heap_token);
-    vkDestroyBuffer(p_transfer_device.device, this->ShadowBuffer_member_buffer, NULL);
-    this->ShadowBuffer_member_buffer = NULL;
+    vkDestroyBuffer(p_transfer_device.device, this->buffer, NULL);
+    this->buffer = NULL;
 };
 
 inline void BufferGPU::bind(TransferDevice& p_transfer_device)
@@ -1429,31 +1439,31 @@ inline void BufferCommandUtils::cmd_copy_buffer_gpu_to_host(const CommandBuffer&
     BufferCommandUtils::cmd_copy_buffer(p_command_buffer, p_gpu.buffer, p_gpu.size, p_host.buffer, p_host.size);
 };
 
-template <class ShadowImage(Source), class ShadowImage(Target)>
-inline void BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(Source) & p_source,
-                                                                    const ShadowImage(Target) & p_target)
+template <class ShadowImage_t(Source), class ShadowImage_t(Target)>
+inline void BufferCommandUtils::cmd_copy_shadowimage_to_shadowimage(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage_t(Source) & p_source,
+                                                                    const ShadowImage_t(Target) & p_target)
 {
 
 #if CONTAINER_MEMORY_TEST
-    assert_true(p_source.ShadowImage_member_format.extent == p_target.ShadowImage_member_format.extent);
+    assert_true(ShadowImage_c_get_format(&p_source).extent == ShadowImage_c_get_format(&p_target).extent);
 #endif
 
     {
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, p_source.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_READ);
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, p_target.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, ShadowImage_c_get_format(&p_source).imageUsage, ImageUsageFlag::TRANSFER_READ);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, ShadowImage_c_get_format(&p_target).imageUsage, ImageUsageFlag::TRANSFER_WRITE);
     }
 
     VkImageCopy l_region = {
-        VkImageSubresourceLayers{p_source.ShadowImage_member_format.imageAspect, 0, 0, (uint32_t)p_source.ShadowImage_member_format.arrayLayers}, VkOffset3D{0, 0, 0},
-        VkImageSubresourceLayers{p_target.ShadowImage_member_format.imageAspect, 0, 0, (uint32_t)p_target.ShadowImage_member_format.arrayLayers}, VkOffset3D{0, 0, 0},
-        VkExtent3D{(uint32_t)p_source.ShadowImage_member_format.extent.x, (uint32_t)p_source.ShadowImage_member_format.extent.y, (uint32_t)p_source.ShadowImage_member_format.extent.z}};
+        VkImageSubresourceLayers{ShadowImage_c_get_format(&p_source).imageAspect, 0, 0, (uint32_t)ShadowImage_c_get_format(&p_source).arrayLayers}, VkOffset3D{0, 0, 0},
+        VkImageSubresourceLayers{ShadowImage_c_get_format(&p_target).imageAspect, 0, 0, (uint32_t)ShadowImage_c_get_format(&p_target).arrayLayers}, VkOffset3D{0, 0, 0},
+        VkExtent3D{(uint32_t)ShadowImage_c_get_format(&p_source).extent.x, (uint32_t)ShadowImage_c_get_format(&p_source).extent.y, (uint32_t)ShadowImage_c_get_format(&p_source).extent.z}};
 
-    vkCmdCopyImage(p_command_buffer.command_buffer, p_source.ShadowImage_member_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, p_target.ShadowImage_member_image,
+    vkCmdCopyImage(p_command_buffer.command_buffer, ShadowImage_c_get_image(&p_source), VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, ShadowImage_c_get_image(&p_target),
                    VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
 
     {
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, ImageUsageFlag::TRANSFER_READ, p_source.ShadowImage_member_format.imageUsage);
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, ImageUsageFlag::TRANSFER_WRITE, p_target.ShadowImage_member_format.imageUsage);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, ImageUsageFlag::TRANSFER_READ, ShadowImage_c_get_format(&p_source).imageUsage);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, ImageUsageFlag::TRANSFER_WRITE, ShadowImage_c_get_format(&p_target).imageUsage);
     }
 };
 
@@ -1464,7 +1474,7 @@ inline void BufferCommandUtils::cmd_copy_buffer_host_to_image_gpu(const CommandB
     assert_true(p_host.size <= p_gpu.size);
 #endif
 
-    BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, p_gpu.ShadowImage_member_format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
+    BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
 
     VkBufferImageCopy l_buffer_image_copy{};
     l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
@@ -1494,8 +1504,8 @@ inline void BufferCommandUtils::cmd_copy_image_gpu_to_buffer_host(const CommandB
     BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
 };
 
-template <class ShadowImage(_)>
-inline void BufferCommandUtils::cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage(_) & p_image,
+template <class ShadowImage_t(_)>
+inline void BufferCommandUtils::cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ShadowImage_t(_) & p_image,
                                                                const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage)
 {
     VkImageMemoryBarrier l_image_memory_barrier{};
@@ -1504,10 +1514,10 @@ inline void BufferCommandUtils::cmd_image_layout_transition_v2(const CommandBuff
     l_image_memory_barrier.newLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_target_image_usage);
     l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    l_image_memory_barrier.image = p_image.ShadowImage_member_image;
+    l_image_memory_barrier.image = ShadowImage_c_get_image(&p_image);
 
-    l_image_memory_barrier.subresourceRange =
-        VkImageSubresourceRange{p_image.ShadowImage_member_format.imageAspect, 0, (uint32_t)p_image.ShadowImage_member_format.arrayLayers, 0, (uint32_t)p_image.ShadowImage_member_format.arrayLayers};
+    l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{ShadowImage_c_get_format(&p_image).imageAspect, 0, (uint32_t)ShadowImage_c_get_format(&p_image).arrayLayers, 0,
+                                                                      (uint32_t)ShadowImage_c_get_format(&p_image).arrayLayers};
 
     ImageLayoutTransitionBarrierConfiguration l_layout_barrier = p_barriers.get_barrier(p_source_image_usage, p_target_image_usage);
 

@@ -539,7 +539,7 @@ inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_cam
         .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
                  .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
                  .memory)
-        .get_mapped_memory()
+        .get_mapped_effective_memory()
         .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
 };
 
@@ -559,7 +559,7 @@ inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)
                                   .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
                                            .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
                                            .memory)
-                                  .get_mapped_memory());
+                                  .get_mapped_effective_memory());
 };
 
 inline D3Renderer D3Renderer::allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
@@ -586,10 +586,10 @@ inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
     {
         auto& l_event = this->heap().model_update_events.get(i);
 
-        Slice<int8>& l_mapped_memory =
+        Slice<int8> l_mapped_memory =
             p_gpu_context.buffer_memory.allocator.host_buffers
                 .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
-                .get_mapped_memory();
+                .get_mapped_effective_memory();
 
         l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
     };

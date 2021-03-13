@@ -153,15 +153,16 @@ struct GPUContext
 };
 
 #undef ShadowBuffer_t
-#undef ShadowBuffer_member_buffer
-#undef ShadowBuffer_member_size
+#undef ShadowBuffer_c_get_buffer
+#undef ShadowBuffer_c_get_size
 
-#undef ShadowImage
-#undef ShadowImage_member_image
-#undef ShadowImage_member_format
+#undef ShadowImage_t
+#undef ShadowImage_c_get_image
+#undef ShadowImage_c_get_format
 
 #undef ShadowShaderUniformBufferParameter_t
-#undef ShadowShaderUniformBufferParameter_member_descriptor_set
-#undef ShadowShaderUniformBufferParameter_member_memory
-#undef ShadowShaderUniformBufferParameter_method_free
-#undef ShadowShaderUniformBufferParameter_methodcall_free
+#undef ShadowShaderUniformBufferParameter_c_get_descriptor_set
+#undef ShadowShaderUniformBufferParameter_c_get_memory
+#undef ShadowShaderUniformBufferParameter_c_set_memory
+#undef ShadowShaderUniformBufferParameter_func_method_free
+#undef ShadowShaderUniformBufferParameter_c_free

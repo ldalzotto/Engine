@@ -236,13 +236,14 @@ struct Shader
     static VkFormat get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type);
 };
 
-// TODO -> name convention ? with getter/setter when necessary ?
-
 #define ShadowShaderUniformBufferParameter_t(Prefix) ShadowShaderUniformBufferParameter_##Prefix
-#define ShadowShaderUniformBufferParameter_member_descriptor_set descriptor_set
-#define ShadowShaderUniformBufferParameter_member_memory memory
-#define ShadowShaderUniformBufferParameter_method_free free
-#define ShadowShaderUniformBufferParameter_methodcall_free(const_ref_buffer_memory) ShadowShaderUniformBufferParameter_method_free(const_ref_buffer_memory)
+
+#define ShadowShaderUniformBufferParameter_c_get_descriptor_set(p_shaderparam) (p_shaderparam)->descriptor_set
+#define ShadowShaderUniformBufferParameter_c_get_memory(p_shaderparam) (p_shaderparam)->memory
+#define ShadowShaderUniformBufferParameter_c_set_memory(p_shaderparam, p_memory) (p_shaderparam)->memory = p_memory
+
+#define ShadowShaderUniformBufferParameter_func_method_free free
+#define ShadowShaderUniformBufferParameter_c_free(p_shaderparam) (p_shaderparam)->free()
 
 namespace ShadowShaderUniformBufferParameter
 {
@@ -253,24 +254,24 @@ static ShadowShaderUniformBufferParameter_t(_) allocate(const GraphicsDevice& p_
 
 struct ShaderUniformBufferHostParameter
 {
-    VkDescriptorSet ShadowShaderUniformBufferParameter_member_descriptor_set;
-    Token(BufferHost) ShadowShaderUniformBufferParameter_member_memory;
+    VkDescriptorSet descriptor_set;
+    Token(BufferHost) memory;
 
     static ShaderUniformBufferHostParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory_token,
                                                      const BufferHost& p_buffer_memory);
 
-    void ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device);
+    void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device);
 };
 
 struct ShaderUniformBufferGPUParameter
 {
-    VkDescriptorSet ShadowShaderUniformBufferParameter_member_descriptor_set;
-    Token(BufferGPU) ShadowShaderUniformBufferParameter_member_memory;
+    VkDescriptorSet descriptor_set;
+    Token(BufferGPU) memory;
 
     static ShaderUniformBufferGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferGPU) p_buffer_memory_token,
                                                     const BufferGPU& p_buffer_memory);
 
-    void ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device);
+    void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device);
 };
 
 struct ShaderTextureGPUParameter
@@ -908,17 +909,17 @@ inline ShadowShaderUniformBufferParameter_t(_) ShadowShaderUniformBufferParamete
     l_allocate_info.descriptorSetCount = 1;
     l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
 
-    l_shader_unifor_buffer_parameter.ShadowShaderUniformBufferParameter_member_memory = p_buffer_memory_token;
-    vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_unifor_buffer_parameter.ShadowShaderUniformBufferParameter_member_descriptor_set));
+    ShadowShaderUniformBufferParameter_c_set_memory(&l_shader_unifor_buffer_parameter, p_buffer_memory_token);
+    vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter)));
 
     VkDescriptorBufferInfo l_descriptor_buffer_info;
-    l_descriptor_buffer_info.buffer = p_buffer_memory.ShadowBuffer_member_buffer;
+    l_descriptor_buffer_info.buffer = ShadowBuffer_c_get_buffer(&p_buffer_memory);
     l_descriptor_buffer_info.offset = 0;
-    l_descriptor_buffer_info.range = p_buffer_memory.ShadowBuffer_member_size;
+    l_descriptor_buffer_info.range = ShadowBuffer_c_get_size(&p_buffer_memory);
 
     VkWriteDescriptorSet l_write_descriptor_set{};
     l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    l_write_descriptor_set.dstSet = l_shader_unifor_buffer_parameter.ShadowShaderUniformBufferParameter_member_descriptor_set;
+    l_write_descriptor_set.dstSet = ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter);
     l_write_descriptor_set.descriptorCount = 1;
     l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     l_write_descriptor_set.pBufferInfo = &l_descriptor_buffer_info;
@@ -934,7 +935,7 @@ inline ShaderUniformBufferHostParameter ShaderUniformBufferHostParameter::alloca
     return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferHostParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
 };
 
-inline void ShaderUniformBufferHostParameter::ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device)
+inline void ShaderUniformBufferHostParameter::free(const GraphicsDevice& p_graphics_device)
 {
     vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
 };
@@ -945,7 +946,7 @@ inline ShaderUniformBufferGPUParameter ShaderUniformBufferGPUParameter::allocate
     return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferGPUParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
 };
 
-inline void ShaderUniformBufferGPUParameter::ShadowShaderUniformBufferParameter_method_free(const GraphicsDevice& p_graphics_device)
+inline void ShaderUniformBufferGPUParameter::free(const GraphicsDevice& p_graphics_device)
 {
     vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
 };
