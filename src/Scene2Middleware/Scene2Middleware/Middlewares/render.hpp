@@ -61,7 +61,7 @@ struct MeshRendererComponent
 
     struct AllocationEvent
     {
-        Token(MeshRendererComponent) RessourceAllocationEvent_member_allocated_ressource;
+        Token(MeshRendererComponent) allocated_ressource;
     };
 
     struct FreeEvent

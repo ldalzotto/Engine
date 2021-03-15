@@ -1,9 +1,5 @@
 #pragma once
 
-// TODO -> remove this usage
-#define RessourceAllocationEvent_member_allocated_ressource allocated_ressource
-#define RessourceAllocationEvent_member_asset asset
-
 enum class RessourceAllocationType
 {
     UNKNOWN = 0,
@@ -86,8 +82,8 @@ struct ShaderModuleRessource
 
     struct AllocationEvent
     {
-        Asset RessourceAllocationEvent_member_asset;
-        Token(ShaderModuleRessource) RessourceAllocationEvent_member_allocated_ressource;
+        Asset asset;
+        Token(ShaderModuleRessource) allocated_ressource;
     };
 
     struct FreeEvent
@@ -167,8 +163,8 @@ struct MeshRessource
 
     struct AllocationEvent
     {
-        MeshRessource::Asset RessourceAllocationEvent_member_asset;
-        Token(MeshRessource) RessourceAllocationEvent_member_allocated_ressource;
+        MeshRessource::Asset asset;
+        Token(MeshRessource) allocated_ressource;
     };
 
     struct FreeEvent
@@ -296,8 +292,8 @@ struct ShaderRessource
 
     struct AllocationEvent
     {
-        ShaderRessource::Asset RessourceAllocationEvent_member_asset;
-        Token(ShaderRessource) RessourceAllocationEvent_member_allocated_ressource;
+        ShaderRessource::Asset asset;
+        Token(ShaderRessource) allocated_ressource;
     };
 
     struct FreeEvent
@@ -370,8 +366,8 @@ struct TextureRessource
 
     struct AllocationEvent
     {
-        Asset RessourceAllocationEvent_member_asset;
-        Token(TextureRessource) RessourceAllocationEvent_member_allocated_ressource;
+        Asset asset;
+        Token(TextureRessource) allocated_ressource;
     };
 
     struct FreeEvent
@@ -541,8 +537,8 @@ struct MaterialRessource
 
     struct AllocationEvent
     {
-        Asset RessourceAllocationEvent_member_asset;
-        Token(MaterialRessource) RessourceAllocationEvent_member_allocated_ressource;
+        Asset asset;
+        Token(MaterialRessource) allocated_ressource;
     };
 
     struct FreeEvent

@@ -118,47 +118,6 @@ inline float32 Math::linear_to_sRGB_float32(const float32 p_linear)
     }
 };
 
-// TODO -> use templates ?
-#define math_v2f_foreach_2(Left, Right, Op)                                                                                                                                                            \
-    v2f                                                                                                                                                                                                \
-    {                                                                                                                                                                                                  \
-        Op((Left)->Points[0], (Right)->Points[0]), Op((Left)->Points[1], (Right)->Points[1])                                                                                                           \
-    }
-
-#define math_v3f_foreach(Left, Op)                                                                                                                                                                     \
-    v3f                                                                                                                                                                                                \
-    {                                                                                                                                                                                                  \
-        Op((Left)->Points[0]), Op((Left)->Points[1]), Op((Left)->Points[2])                                                                                                                            \
-    }
-
-#define math_v3f_foreach_2(Left, Right, Op)                                                                                                                                                            \
-    v3f                                                                                                                                                                                                \
-    {                                                                                                                                                                                                  \
-        Op((Left)->Points[0], (Right)->Points[0]), Op((Left)->Points[1], (Right)->Points[1]), Op((Left)->Points[2], (Right)->Points[2])                                                                \
-    }
-
-#define math_v3f_reduce(Left, Op) Op(Op((Left)->Points[0], (Left)->Points[1]), (Left)->Points[2])
-
-#define math_v4f_foreach(Left, Op)                                                                                                                                                                     \
-    v4f                                                                                                                                                                                                \
-    {                                                                                                                                                                                                  \
-        Op((Left)->Points[0]), Op((Left)->Points[1]), Op((Left)->Points[2]), Op((Left)->Points[3])                                                                                                     \
-    }
-
-#define math_v4f_foreach_2(Left, Right, Op)                                                                                                                                                            \
-    v4f                                                                                                                                                                                                \
-    {                                                                                                                                                                                                  \
-        Op((Left)->Points[0], (Right)->Points[0]), Op((Left)->Points[1], (Right)->Points[1]), Op((Left)->Points[2], (Right)->Points[2]), Op((Left)->Points[3], (Right)->Points[3])                     \
-    }
-
-#define math_v4f_reduce(Left, Op) Op(Op(Op((Left)->Points[0], (Left)->Points[1]), (Left)->Points[2]), (Left)->Points[3])
-
-#define math_mul_op(Left, Right) Left* Right
-#define math_add_op(Left, Right) Left + Right
-#define math_min_op(Left, Right) Left - Right
-#define math_square_op(Left) Left* Left
-#define math_inv_op(Left) 1.0f / Left
-
 inline int8 v2f::operator==(const v2f& p_other)
 {
     return Math::equals(this->Points[0], p_other.Points[0]) && Math::equals(this->Points[1], p_other.Points[1]);
@@ -166,7 +125,10 @@ inline int8 v2f::operator==(const v2f& p_other)
 
 inline v2f v2f::operator*(const v2f& p_other)
 {
-    return math_v2f_foreach_2(this, &p_other, math_mul_op);
+    return v2f{
+        this->x * p_other.x,
+        this->y * p_other.y,
+    };
 };
 
 inline int8 v3f_assert_is_normalized(const v3f& p_vec)
@@ -176,7 +138,7 @@ inline int8 v3f_assert_is_normalized(const v3f& p_vec)
 
 inline v3f v3f::operator+(const v3f& p_other) const
 {
-    return math_v3f_foreach_2(this, &p_other, math_add_op);
+    return v3f{this->x + p_other.x, this->y + p_other.y, this->z + p_other.z};
 };
 
 inline v3f v3f::operator*(const float32 p_other) const
@@ -186,12 +148,12 @@ inline v3f v3f::operator*(const float32 p_other) const
 
 inline v3f v3f::operator*(const v3f& p_other) const
 {
-    return math_v3f_foreach_2(this, &p_other, math_mul_op);
+    return v3f{this->x * p_other.x, this->y * p_other.y, this->z * p_other.z};
 };
 
 inline v3f v3f::operator-(const v3f& p_other) const
 {
-    return math_v3f_foreach_2(this, &p_other, math_min_op);
+    return v3f{this->x - p_other.x, this->y - p_other.y, this->z - p_other.z};
 };
 
 inline int8 v3f::operator==(const v3f& p_other) const
@@ -212,7 +174,7 @@ inline float32& v3f::operator[](const uint8 p_index)
 inline float32 v3f::dot(const v3f& p_other) const
 {
     v3f l_mul = this->operator*(p_other);
-    return math_v3f_reduce(&l_mul, math_add_op);
+    return l_mul.x + l_mul.y + l_mul.z;
 };
 
 inline v3f v3f::cross(const v3f& p_other) const
@@ -223,8 +185,8 @@ inline v3f v3f::cross(const v3f& p_other) const
 
 inline float32 v3f::length() const
 {
-    v3f l_squared = math_v3f_foreach(this, math_square_op);
-    return sqrtf(math_v3f_reduce(&l_squared, math_add_op));
+    v3f l_squared = v3f{this->x * this->x, this->y * this->y, this->z * this->z};
+    return sqrtf(l_squared.x + l_squared.y + l_squared.z);
 };
 
 inline v3f v3f::normalize() const
@@ -234,7 +196,7 @@ inline v3f v3f::normalize() const
 
 inline v3f v3f::inv() const
 {
-    return math_v3f_foreach(this, math_inv_op);
+    return v3f{1.0f / this->x, 1.0f / this->y, 1.0f / this->z};
 };
 
 inline v3f v3f::project(const v3f& p_projected_on) const
@@ -342,7 +304,7 @@ inline int8 v3ui::operator!=(const v3ui& p_other) const
 
 inline v4f v4f::operator+(const v4f& p_other) const
 {
-    return math_v4f_foreach_2(this, &p_other, math_add_op);
+    return v4f{this->x + p_other.x, this->y + p_other.y, this->z + p_other.z, this->w + p_other.w};
 };
 
 inline int8 v4f::operator==(const v4f& p_other) const
@@ -364,7 +326,7 @@ inline v4f v4f::operator*(const float32 p_other) const
 
 inline v4f v4f::operator*(const v4f& p_other) const
 {
-    return math_v4f_foreach_2(this, &p_other, math_mul_op);
+    return v4f{this->x * p_other.x, this->y * p_other.y, this->z * p_other.z, this->w * p_other.w};
 };
 
 inline float32& v4f::operator[](const uint8 p_index)
@@ -374,8 +336,8 @@ inline float32& v4f::operator[](const uint8 p_index)
 
 inline float32 v4f::length() const
 {
-    v4f l_squared = math_v4f_foreach(this, math_square_op);
-    return sqrtf(math_v4f_reduce(&l_squared, math_add_op));
+    v4f l_squared = v4f{this->x * this->x, this->y * this->y, this->z * this->z, this->w * this->w};
+    return sqrtf(l_squared.x + l_squared.y + l_squared.z + l_squared.w);
 };
 
 inline v4f v4f::sRGB_to_linear() const
