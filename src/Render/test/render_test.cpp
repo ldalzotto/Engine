@@ -353,7 +353,6 @@ int main()
 {
 #ifdef RENDER_DOC_DEBUG
     HMODULE mod = GetModuleHandleA("renderdoc.dll");
-
     pRENDERDOC_GetAPI RENDERDOC_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
     int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_0, (void**)&rdoc_api);
     assert_true(ret == 1);

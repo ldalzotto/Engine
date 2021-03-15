@@ -97,7 +97,7 @@ struct Engine
         this->abort_condition = 1;
     };
 
-    template <class ExternalCallbackStep> void main_loop(ExternalCallbackStep& p_callback_step);
+    template <class ExternalCallbackStep> void main_loop(const ExternalCallbackStep& p_callback_step);
 
     template <class ExternalCallbackStep> void single_frame_forced_delta(const float32 p_delta, ExternalCallbackStep& p_callback_step);
 
@@ -144,7 +144,7 @@ inline void Engine::free_headless()
     this->scene.free();
 };
 
-template <class ExternalCallbackStep> inline void Engine::main_loop(ExternalCallbackStep& p_callback_step)
+template <class ExternalCallbackStep> inline void Engine::main_loop(const ExternalCallbackStep& p_callback_step)
 {
     while (!this->abort_condition)
     {

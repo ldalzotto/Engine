@@ -10,6 +10,16 @@ struct CameraComponent
         float32 Near;
         float32 Far;
         float32 Fov;
+
+        inline static Asset build_from_binary(const Slice<int8>& p_allocated_binary)
+        {
+            BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_allocated_binary);
+            Asset l_asset;
+            l_asset.Near = *l_deserializer.type<float32>();
+            l_asset.Far = *l_deserializer.type<float32>();
+            l_asset.Fov = *l_deserializer.type<float32>();
+            return l_asset;
+        };
     };
 
     int8 allocated;

@@ -57,3 +57,11 @@ struct MathJSONSerialization
         p_serializer->push_field(slice_int8_build_rawstr("w"), Slice<float32>::build_asint8_memory_singleelement(&p_value.w));
     };
 };
+
+struct MathBinaryDeserialization
+{
+    inline static transform _transform(BinaryDeserializer& p_deserializer)
+    {
+        return transform{*p_deserializer.type<v3f>(), *p_deserializer.type<quat>(), *p_deserializer.type<v3f>()};
+    };
+};
