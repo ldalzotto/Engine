@@ -118,7 +118,7 @@ inline float32 Math::linear_to_sRGB_float32(const float32 p_linear)
     }
 };
 
-
+// TODO -> use templates ?
 #define math_v2f_foreach_2(Left, Right, Op)                                                                                                                                                            \
     v2f                                                                                                                                                                                                \
     {                                                                                                                                                                                                  \

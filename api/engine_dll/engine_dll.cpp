@@ -15,7 +15,9 @@ enum class EngineAPIKey : uint32
     FrameCount = 6,
     NodeAddCamera = 7,
     NodeAddMeshRenderer = 8,
-    RemoveNode = 9
+    RemoveNode = 9,
+    NodeAddWorldRotation = 10,
+    DeltaTime = 11
 };
 
 extern "C"
@@ -39,20 +41,16 @@ extern "C"
 
             Engine* l_engine = (Engine*)heap_malloc(sizeof(Engine));
 
-            int32 l_payload_size = *(int32*)argv[2];
-            Slice<int8> l_input = Slice<int8>::build_memory_elementnb((int8*)argv[2] + sizeof(int32), l_payload_size);
+            Slice<int8> l_input = Slice<int8>::build_memory_elementnb((int8*)argv[2], -1);
 
-            int32 l_asset_database_path_length = *(int32*)l_input.Begin;
-            l_input.slide(sizeof(int32));
-            int8* l_asset_database_path = l_input.Begin;
-            l_input.slide(l_asset_database_path_length + 1);
+            BinaryDeserializer l_input_deserilizer = BinaryDeserializer::build(l_input);
+            // TODOD -> update client to send size_t size and (l_asset_database_path_length + 1)
+            Slice<int8> l_asset_database_path =  l_input_deserilizer.slice();
 
-            uint32 l_width, l_height;
-            l_width = *(uint32*)l_input.Begin;
-            l_input.slide(sizeof(uint32));
-            l_height = *(uint32*)l_input.Begin;
+            uint32 l_width = *l_input_deserilizer.type<uint32>();
+            uint32 l_height = *l_input_deserilizer.type<uint32>();
 
-            *l_engine = Engine::allocate(EngineConfiguration{slice_int8_build_rawstr_with_null_termination(l_asset_database_path), 0, v2ui{l_width, l_height}, 1});
+            *l_engine = Engine::allocate(EngineConfiguration{l_asset_database_path, 0, v2ui{l_width, l_height}, 1});
             *(Engine**)argv[1] = l_engine;
         }
         break;
@@ -60,24 +58,26 @@ extern "C"
         {
             Engine** l_engine = (Engine**)argv[1];
 
-            Span<int8> l_external_step_vp_input = Span<int8>::allocate(sizeof(uint32) + sizeof(Engine*));
+            Vector<int8> l_external_step_vp_input = Vector<int8>::allocate(0);
 
             typedef void (*l_external_step_vp)(void** p_args, int p_argc);
             struct engine_cb
             {
-                Span<int8>* l_external_step_vp_input;
+                Vector<int8>* l_external_step_vp_input;
                 void* js_cb;
                 l_external_step_vp cpp_cb;
                 inline void step(EngineExternalStep p_step, Engine& p_engine) const
                 {
-                    Slice<int8> l_input_slice = l_external_step_vp_input->slice;
-                    *(uint32*)l_input_slice.Begin = (uint32)p_step;
-                    l_input_slice.slide(sizeof(uint32));
-                    *(Engine**)l_input_slice.Begin = &p_engine;
+                    BinarySerializer::type(l_external_step_vp_input, (uint32)p_step);
+                    BinarySerializer::type(l_external_step_vp_input, &p_engine);
 
-                    void* l_args[3] = {this->js_cb, &l_external_step_vp_input->slice.Size, l_external_step_vp_input->slice.Begin};
+                    Slice<int8> l_args_binary = l_external_step_vp_input->to_slice();
+
+                    void* l_args[3] = {this->js_cb, &l_args_binary.Size, l_args_binary.Begin};
 
                     this->cpp_cb(l_args, 3);
+
+                    l_external_step_vp_input->clear();
                 };
             };
 
@@ -107,6 +107,15 @@ extern "C"
             RemoveNode(**l_engine, *l_node);
         }
         break;
+        case EngineAPIKey::NodeAddWorldRotation:
+        {
+            Engine** l_engine = (Engine**)argv[1];
+            Token(Node)* l_node = (Token(Node)*)argv[2];
+            BinaryDeserializer l_binary_deserializer = BinaryDeserializer::build(Slice<int8>::build_begin_end((int8*)argv[3], 0, -1));
+            quat l_delta = *l_binary_deserializer.type<quat>();
+            NodeAddWorldRotation(**l_engine, *l_node, l_delta);
+        }
+        break;
         case EngineAPIKey::NodeAddCamera:
         {
             Engine** l_engine = (Engine**)argv[1];
@@ -120,22 +129,24 @@ extern "C"
             Token(Node)* l_node = (Token(Node)*)argv[2];
 
             Slice<int8> l_input = Slice<int8>::build_memory_elementnb((int8*)argv[3], -1);
+            BinaryDeserializer l_input_deserilizer = BinaryDeserializer::build(l_input);
 
-            int32 l_asset_material_path_length = *(int32*)l_input.Begin;
-            l_input.slide(sizeof(int32));
-            int8* l_asset_material_path = l_input.Begin;
-            l_input.slide(l_asset_material_path_length + 1);
+            Slice<int8> l_asset_material_path = l_input_deserilizer.slice();
+            Slice<int8> l_asset_mesh_path = l_input_deserilizer.slice();
 
-            l_input.slide(sizeof(int32));
-            int8* l_asset_mesh_path = l_input.Begin;
-
-            *(Token(MeshRendererComponent)*)argv[4] = NodeAddMeshRenderer(**l_engine, *l_node, HashRaw(l_asset_material_path), HashRaw(l_asset_mesh_path));
+            *(Token(MeshRendererComponent)*)argv[4] = NodeAddMeshRenderer(**l_engine, *l_node, HashRaw(l_asset_material_path.Begin), HashRaw(l_asset_mesh_path.Begin));
         }
         break;
         case EngineAPIKey::FrameCount:
         {
             Engine** l_engine = (Engine**)argv[1];
             *(size_t*)argv[2] = FrameCount(**l_engine);
+        }
+        break;
+        case EngineAPIKey::DeltaTime:
+        {
+            Engine** l_engine = (Engine**)argv[1];
+            *(float32*)argv[2] = DeltaTime(**l_engine);
         }
         break;
         case EngineAPIKey::DestroyEngine:
