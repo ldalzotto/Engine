@@ -38,8 +38,10 @@ struct CollisionAllocator
 
     void free_box_collider_component(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
 
+    // TODO -> this function must be removed. It is up to the consumer to ensure that the requested ressource is allocated
     v3f box_collider_get_world_half_extend(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
 
+    // TODO -> this function must be removed. It is up to the consumer to ensure that the requested ressource is allocated
     int8 box_collider_is_queued_for_detection(Collision2& p_collision, const Token(BoxColliderComponent) p_box_collider_component);
 
     Token(ColliderDetector) attach_collider_detector(Collision2& p_collition, const Token(BoxColliderComponent) p_box_collider_component);

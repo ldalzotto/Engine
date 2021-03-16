@@ -1,4 +1,7 @@
-1/ No dependencie on absolute path ?
+1/ Creating a small app that consumes the asset_compiler dll and display states oon compiled asset
+2/ Making the engine work on Release build.
+3/ Migrating the collision allocation to the new system.
+4/ No dependencies on absolute path ?
 
 At this point the Engine is capable of reproducing the old version that was a code mess and not tested :feelsbadman:
 

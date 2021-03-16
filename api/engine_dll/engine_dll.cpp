@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Engine/engine.hpp"
 
 #define ENGINE_API __declspec(dllexport)
@@ -20,6 +18,7 @@ enum class EngineAPIKey : uint32
     DeltaTime = 11
 };
 
+// TODO -> add Initialize and Finalize ?
 extern "C"
 {
     ENGINE_API void __cdecl EntryPoint(void** argv, int argc)
@@ -44,7 +43,6 @@ extern "C"
             Slice<int8> l_input = Slice<int8>::build_memory_elementnb((int8*)argv[2], -1);
 
             BinaryDeserializer l_input_deserilizer = BinaryDeserializer::build(l_input);
-            // TODOD -> update client to send size_t size and (l_asset_database_path_length + 1)
             Slice<int8> l_asset_database_path =  l_input_deserilizer.slice();
 
             uint32 l_width = *l_input_deserilizer.type<uint32>();

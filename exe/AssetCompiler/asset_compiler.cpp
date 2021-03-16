@@ -1,6 +1,7 @@
 #include "AssetCompiler/asset_compiler.hpp"
 
 #if 1
+// TODO -> this module must be removed in favor of the assetcompiler dll
 int main(int32 argc, int8** argv)
 {
     if (argc > 1)
