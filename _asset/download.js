@@ -39,9 +39,59 @@ const download_from_google_drive = function (p_path, p_file_id, p_on_success, p_
     });
 };
 
-const download_instance = {
-    file_id: "",
-    relative_extract_path: ""
+const unzip_to = function (p_zip_file_path, p_extract_path, p_on_success, p_on_error)
+{
+    fs.rmdir(p_extract_path, {recursive: true}, (err) => {
+        if (err) {
+            if(p_on_error)
+            {
+                p_on_error(err);
+            }
+            return;
+        }
+        fs.mkdir(p_extract_path, {recursive: true}, (err) => {
+            if (err) {
+                if(p_on_error)
+                {
+                    p_on_error(err);
+                    return;
+                }
+            }
+
+            child_process.exec(`7z x ${p_zip_file_path} -o${p_extract_path}`, {}, (error, stdout, stderr) => {
+                if (error) {
+                    if(p_on_error)
+                    {
+                        p_on_error(err);
+                    }
+                    return;
+                }
+
+                if(p_on_success)
+                {
+                    p_on_success();
+                }
+
+            });
+        });
+    });
+};
+
+const git_checkout = function (p_repo_root_path, p_commit_hash, p_on_success, p_on_error) {
+    let l_old_folder = __dirname;
+    process.chdir(p_repo_root_path);
+    child_process.exec(`git checkout ${p_commit_hash}`, {}, (error, stdout, stderr) => {
+        process.chdir(l_old_folder);
+        if (error) {
+            if (p_on_error) {
+                p_on_error(error);
+            }
+        }
+
+        if (p_on_success) {
+            p_on_success();
+        }
+    });
 };
 
 const zip_temp_folder_path = path.join(__dirname, "./.tmp");
@@ -87,32 +137,32 @@ fs.mkdir(zip_temp_folder_path, {recursive: true}, (err) => {
 
                 download_from_google_drive(zip_temp_file_path, l_download_instance.file_id, () => {
 
-                    fs.rmdir(path.join(__dirname, l_download_instance.relative_extract_path), {recursive: true}, (err) => {
-                        if (err) {
-                            console.error(error);
-                            close_app();
-                            return;
-                        }
-                        fs.mkdir(path.join(__dirname, l_download_instance.relative_extract_path), {recursive: true}, (err) => {
-                            if (err) {
-                                console.error(error);
-                                close_app();
-                                return;
-                            }
+                    let l_extract_path = path.join(__dirname, l_download_instance.relative_extract_path);
+                    unzip_to(zip_temp_file_path, l_extract_path, () => {
 
-                            child_process.exec(`7z x ${zip_temp_file_path} -o${path.join(__dirname, l_download_instance.relative_extract_path)}`, {}, (error, stdout, stderr) => {
+                        if (l_download_instance.git) {
+                            git_checkout(l_extract_path, l_download_instance.git.commit_hash, () => {
+                                l_index += 1;
+                                foreach_func();
+                            }, (error) => {
                                 if (error) {
                                     console.error(error);
                                     close_app();
                                     return;
                                 }
-                                l_index += 1;
-                                foreach_func();
                             });
+                        } else {
+                            l_index += 1;
+                            foreach_func();
+                        }
 
-                        });
+                    }, (error) => {
+                        if (error) {
+                            console.error(error);
+                            close_app();
+                            return;
+                        }
                     });
-
                 }, () => {
                     close_app();
                 });
@@ -126,5 +176,49 @@ fs.mkdir(zip_temp_folder_path, {recursive: true}, (err) => {
     });
 })
 
-// "1UY90XLx5J0ABUilpkB2fOQHQD_qrnvtI"
+/*
 
+
+                    fs.rmdir(path.join(__dirname, l_download_instance.relative_extract_path), {recursive: true}, (err) => {
+                        if (err) {
+                            console.error(error);
+                            close_app();
+                            return;
+                        }
+                        fs.mkdir(path.join(__dirname, l_download_instance.relative_extract_path), {recursive: true}, (err) => {
+                            if (err) {
+                                console.error(error);
+                                close_app();
+                                return;
+                            }
+
+                            let l_extract_path = path.join(__dirname, l_download_instance.relative_extract_path);
+                            child_process.exec(`7z x ${zip_temp_file_path} -o${l_extract_path}`, {}, (error, stdout, stderr) => {
+                                if (error) {
+                                    console.error(error);
+                                    close_app();
+                                    return;
+                                }
+
+                                if (l_download_instance.git) {
+                                    git_checkout(l_extract_path, l_download_instance.git.commit_hash, () => {
+                                        l_index += 1;
+                                        foreach_func();
+                                    }, (error) => {
+                                        if (error) {
+                                            console.error(error);
+                                            close_app();
+                                            return;
+                                        }
+                                    });
+                                } else {
+                                    l_index += 1;
+                                    foreach_func();
+                                }
+
+                            });
+
+                        });
+                    });
+
+*/
