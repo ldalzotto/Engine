@@ -13,8 +13,7 @@ cmake-build-release
 cmake-build-minsizerel
 cmake-build-relwithdebinfo
 
-ThirdParty
-ThirdParty2
+ThirdParty2/ThirdParty
 
 .asset/
 _asset/asset
