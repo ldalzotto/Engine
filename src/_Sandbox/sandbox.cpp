@@ -34,12 +34,54 @@ struct SandboxTestUtil
         p_engine.gpu_context.buffer_step_and_wait_for_completion();
         Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
-        ImgCompiler::write_to_image(p_path, l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4,
-                                    l_rendertarget_texture_value);
+        ImgCompiler::write_to_image(p_path, l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4, l_rendertarget_texture_value);
 
-        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
-                                                                                 l_rendertarget_texture);
+        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events, l_rendertarget_texture);
     };
+};
+
+inline void resize_test()
+{
+    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(slice_int8_build_rawstr("/resize_test/asset.db"));
+    {
+    }
+    EngineConfiguration l_configuration{};
+    l_configuration.asset_database_path = l_database_path.to_slice();
+    l_configuration.render_size = v2ui{400, 400};
+    l_configuration.render_target_host_readable = 1;
+
+    float32 l_delta_tume = 1.0f / 60.0f;
+    Engine l_engine = Engine::allocate(EngineConfiguration{l_configuration});
+
+    struct engine_loop
+    {
+        inline static void step(const EngineExternalStep p_step, Engine& p_engine)
+        {
+            if (p_engine.clock.framecount == 1)
+            {
+                if (p_step == EngineExternalStep::END_OF_FRAME)
+                {
+                    WindowNative::simulate_resize_appevent(g_app_windows.get(p_engine.window).handle, 500, 500);
+                }
+            }
+            else if (p_engine.clock.framecount == 3)
+            {
+                if (p_step == EngineExternalStep::BEFORE_COLLISION)
+                {
+                    p_engine.close();
+                }
+            }
+        };
+    };
+
+    l_engine.main_loop(engine_loop{});
+
+    assert_true(g_app_windows.get(l_engine.window).client_width == 500);
+    assert_true(g_app_windows.get(l_engine.window).client_height == 500);
+
+    l_engine.free();
+    l_database_path.free();
 };
 
 struct BoxCollisionSandboxEnvironment
@@ -282,6 +324,7 @@ inline void d3renderer_cube()
 
 int main()
 {
+    resize_test();
     boxcollision();
     d3renderer_cube();
 

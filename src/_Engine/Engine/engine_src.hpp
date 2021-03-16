@@ -164,7 +164,6 @@ struct EngineLoopFunctions
         {
             l_window.consume_resize_event();
             p_engine.present.resize(v3ui{l_window.client_width, l_window.client_height, 1}, p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator);
-            p_engine.abort_condition = 1;
         }
         if(l_window.is_closing)
         {

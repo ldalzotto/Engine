@@ -11,7 +11,7 @@ struct WindowNative
     inline static WindowHandle create_window(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_display_name);
     inline static void display_window(const WindowHandle p_window_handle);
     inline static void destroy_window(const WindowHandle p_window_handle);
-    inline static void resize_window_no_appevent(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height);
+    inline static void resize_window(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height);
     inline static void get_window_client_dimensions(const WindowHandle p_window_handle, uint32* out_client_width, uint32* out_client_height);
     inline static void simulate_resize_appevent(const WindowHandle p_window, const uint32 p_width, const uint32 p_height);
     inline static void simulate_close_appevent(const WindowHandle p_window);
@@ -48,7 +48,7 @@ inline void WindowNative::destroy_window(const WindowHandle p_window_handle)
     window_handle_native_return(DestroyWindow((HWND)p_window_handle));
 };
 
-inline void WindowNative::resize_window_no_appevent(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height)
+inline void WindowNative::resize_window(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height)
 {
     RECT l_rect;
     GetWindowRect((HWND)p_window_handle, &l_rect);
@@ -76,8 +76,7 @@ inline void WindowNative::get_window_client_dimensions(const WindowHandle p_wind
 inline void WindowNative::simulate_resize_appevent(const WindowHandle p_window, const uint32 p_client_width, const uint32 p_client_height)
 {
     LPARAM l_new_size = MAKELPARAM(p_client_width, p_client_height);
-    WindowNative::resize_window_no_appevent(p_window, p_client_width, p_client_height);
-    WindowProc((HWND)p_window, WM_SIZE, 0, l_new_size);
+    WindowNative::resize_window(p_window, p_client_width, p_client_height);
 };
 
 inline void WindowNative::simulate_close_appevent(const WindowHandle p_window){

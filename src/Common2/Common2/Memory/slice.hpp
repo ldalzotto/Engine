@@ -147,7 +147,7 @@ template <class ElementType> struct Slice
 #if __DEBUG
         return memory_cpy_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_elements.Begin), p_elements.Size * sizeof(ElementType));
 #else
-        return memory_cpy((int8*)p_target.Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
+        return memory_cpy((int8*)this->Begin, (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
 #endif
     };
 
