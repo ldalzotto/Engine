@@ -2,13 +2,32 @@
 #include "AssetCompiler/asset_compiler.hpp"
 #include "asset_database_test_utils.hpp"
 
+struct AssetCompilerTestCtx {
+    DatabaseConnection connection;
+    AssetDatabase asset_database;
+
+    inline static AssetCompilerTestCtx allocate(const Slice<int8>& p_database_path)
+    {
+        AssetCompilerTestCtx l_ctx;
+        l_ctx.connection = DatabaseConnection::allocate(p_database_path);
+        l_ctx.asset_database = AssetDatabase::allocate(l_ctx.connection);
+        return l_ctx;
+    };
+
+    inline void free()
+    {
+        this->asset_database.free(this->connection);
+        this->connection.free();
+    }
+};
+
 inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
     Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
-    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shad.frag"));
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shad.frag"));
 
     {
         Span<int8> l_raw_file = AssetCompiler_open_and_read_asset_file(l_asset_root_path.slice, slice_int8_build_rawstr("shad.frag"));
@@ -17,7 +36,7 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
 
         l_raw_file.free();
 
-        Span<int8> l_shader_module_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("shad.frag")));
+        Span<int8> l_shader_module_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad.frag")));
 
         assert_true(l_shader_module_compiled.slice.compare(l_shader.get_compiled_binary()));
 
@@ -26,21 +45,21 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
     }
 
     l_asset_root_path.free();
-    l_asset_database.free();
+    l_ctx.free();
     l_asset_database_path.free();
 };
 
 inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
 
     Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
-    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shader_asset_test.json"));
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("shader_asset_test.json"));
 
     {
-        Span<int8> l_shader_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        Span<int8> l_shader_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
         ShaderRessource::Asset::Value l_shader_value = ShaderRessource::Asset::Value::build_from_asset(ShaderRessource::Asset::build_from_binary(l_shader_ressource_compiled));
 
         assert_true(l_shader_value.execution_order == 1001);
@@ -51,7 +70,7 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
         l_shader_ressource_compiled.free();
     }
     {
-        Span<int8> l_shader_dependencies_compiled = l_asset_database.get_asset_dependencies_blob(HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        Span<int8> l_shader_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
         ShaderRessource::AssetDependencies::Value l_shader_dependencies =
             ShaderRessource::AssetDependencies::Value::build_from_asset(ShaderRessource::AssetDependencies{l_shader_dependencies_compiled});
 
@@ -62,21 +81,21 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
     }
 
     l_asset_root_path.free();
-    l_asset_database.free();
+    l_ctx.free();
     l_asset_database_path.free();
 };
 
 inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
 
     Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
-    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
 
     {
-        Span<int8> l_material_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
+        Span<int8> l_material_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
         MaterialRessource::Asset::Value l_material_value = MaterialRessource::Asset::Value::build_from_asset(MaterialRessource::Asset::build_from_binary(l_material_ressource_compiled));
 
         assert_true(l_material_value.parameters.parameters.get_size() == 5);
@@ -103,7 +122,7 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
         l_material_ressource_compiled.free();
     }
     {
-        Span<int8> l_material_dependencies_compiled = l_asset_database.get_asset_dependencies_blob(HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
+        Span<int8> l_material_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
         MaterialRessource::AssetDependencies::Value l_material_dependencies =
             MaterialRessource::AssetDependencies::Value::build_from_asset(MaterialRessource::AssetDependencies{l_material_dependencies_compiled});
 
@@ -115,20 +134,20 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
     }
 
     l_asset_root_path.free();
-    l_asset_database.free();
+    l_ctx.free();
     l_asset_database_path.free();
 };
 
 inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
 
     Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
-    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("cube.obj"));
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("cube.obj"));
     {
-        Span<int8> l_mesh_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("cube.obj")));
+        Span<int8> l_mesh_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("cube.obj")));
         MeshRessource::Asset::Value l_mesh_value = MeshRessource::Asset::Value::build_from_asset(MeshRessource::Asset::build_from_binary(l_mesh_ressource_compiled));
 
         v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
@@ -155,20 +174,20 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
     }
 
     l_asset_root_path.free();
-    l_asset_database.free();
+    l_ctx.free();
     l_asset_database_path.free();
 };
 
 inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-    AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
 
     Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
 
-    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("texture.png"));
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_asset_root_path.slice, slice_int8_build_rawstr("texture.png"));
     {
-        Span<int8> l_texture_ressource_compiled = l_asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("texture.png")));
+        Span<int8> l_texture_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("texture.png")));
 
         TextureRessource::Asset::Value l_texture_value = TextureRessource::Asset::Value::build_from_asset(TextureRessource::Asset{l_texture_ressource_compiled});
         assert_true(l_texture_value.size == v3ui{4, 4, 1});
@@ -186,7 +205,7 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
     }
 
     l_asset_root_path.free();
-    l_asset_database.free();
+    l_ctx.free();
     l_asset_database_path.free();
 }
 

@@ -220,12 +220,13 @@ struct RenderMiddleWare_AllocationComposition
     };
 
     inline static Token(MeshRendererComponent)
-        allocate_meshrenderer_database_and_load_dependecies(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, AssetDatabase& p_assrt_database,
-                                                            const MeshRendererComponent::AssetDependencies& p_meshrenderer_asset_dependencied, const Token(Node) p_scene_node)
+        allocate_meshrenderer_database_and_load_dependecies(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, DatabaseConnection& p_database_connection,
+                                                            AssetDatabase& p_assrt_database, const MeshRendererComponent::AssetDependencies& p_meshrenderer_asset_dependencied,
+                                                            const Token(Node) p_scene_node)
     {
         Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             p_render_ressource_allocator.material_unit, p_render_ressource_allocator.shader_unit, p_render_ressource_allocator.shader_module_unit, p_render_ressource_allocator.texture_unit,
-            p_assrt_database, p_meshrenderer_asset_dependencied.material);
+            p_database_connection, p_assrt_database, p_meshrenderer_asset_dependencied.material);
         Token(MeshRessource) l_mesh_ressource =
             MeshRessourceComposition::allocate_or_increment_database(p_render_ressource_allocator.mesh_unit, MeshRessource::DatabaseAllocationInput{p_meshrenderer_asset_dependencied.mesh});
         return p_render_middleware.allocate_meshrenderer(MeshRendererComponent::Dependencies{l_material_ressource, l_mesh_ressource}, p_scene_node);

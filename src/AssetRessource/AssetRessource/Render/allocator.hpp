@@ -43,13 +43,13 @@ struct ShaderModuleRessourceUnit
         }
     };
 
-    inline void allocation_step(GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         for (loop_reverse(i, 0, this->shader_modules_allocation_events.Size))
         {
             auto& l_event = this->shader_modules_allocation_events.get(i);
             ShaderModuleRessource& l_ressource = this->shader_modules.pool.get(l_event.allocated_ressource);
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_database_connection, p_asset_database, l_ressource.header, &l_event.asset);
 
             ShaderModuleRessource::Asset::Value l_value = ShaderModuleRessource::Asset::Value::build_from_asset(l_event.asset);
             l_ressource.shader_module = p_gpu_context.graphics_allocator.allocate_shader_module(l_value.compiled_shader);
@@ -173,14 +173,14 @@ struct TextureRessourceUnit
         }
     };
 
-    inline void allocation_step(GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         for (loop_reverse(i, 0, this->textures_allocation_events.Size))
         {
             auto& l_event = this->textures_allocation_events.get(i);
             TextureRessource& l_ressource = this->textures.pool.get(l_event.allocated_ressource);
 
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_database_connection, p_asset_database, l_ressource.header, &l_event.asset);
 
             TextureRessource::Asset::Value l_value = TextureRessource::Asset::Value::build_from_asset(l_event.asset);
             l_ressource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory,
@@ -308,14 +308,14 @@ struct MeshRessourceUnit
         }
     };
 
-    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         for (loop_reverse(i, 0, this->meshes_allocation_events.Size))
         {
             auto& l_event = this->meshes_allocation_events.get(i);
 
             MeshRessource& l_ressource = this->meshes.pool.get(l_event.allocated_ressource);
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_database_connection, p_asset_database, l_ressource.header, &l_event.asset);
 
             MeshRessource::Asset::Value l_value = MeshRessource::Asset::Value::build_from_asset(l_event.asset);
             l_ressource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, l_value.initial_vertices, l_value.initial_indices);
@@ -438,14 +438,15 @@ struct ShaderRessourceUnit
         }
     };
 
-    inline void allocation_step(ShaderModuleRessourceUnit& p_shader_module_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(ShaderModuleRessourceUnit& p_shader_module_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection,
+                                AssetDatabase& p_asset_database)
     {
         for (loop_reverse(i, 0, this->shaders_allocation_events.Size))
         {
             auto& l_event = this->shaders_allocation_events.get(i);
             ShaderRessource& l_ressource = this->shaders.pool.get(l_event.allocated_ressource);
 
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_database_connection, p_asset_database, l_ressource.header, &l_event.asset);
 
             ShaderModuleRessource& l_vertex_shader = p_shader_module_unit.shader_modules.pool.get(l_ressource.dependencies.vertex_shader);
             ShaderModuleRessource& l_fragment_shader = p_shader_module_unit.shader_modules.pool.get(l_ressource.dependencies.fragment_shader);
@@ -611,14 +612,15 @@ struct MaterialRessourceUnit
         }
     };
 
-    inline void allocation_step(ShaderRessourceUnit& p_shader_unit, TextureRessourceUnit& p_texture_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(ShaderRessourceUnit& p_shader_unit, TextureRessourceUnit& p_texture_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection,
+                                AssetDatabase& p_asset_database)
     {
         for (loop_reverse(i, 0, this->materials_allocation_events.Size))
         {
             auto& l_event = this->materials_allocation_events.get(i);
             MaterialRessource& l_ressource = this->materials.pool.get(l_event.allocated_ressource);
 
-            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_asset_database, l_ressource.header, &l_event.asset);
+            RessourceComposition::retrieve_ressource_asset_from_database_if_necessary(p_database_connection, p_asset_database, l_ressource.header, &l_event.asset);
 
             ShaderRessource& l_shader = p_shader_unit.shaders.pool.get(l_ressource.dependencies.shader);
             ShaderIndex& l_shader_index = p_renderer.allocator.heap.shaders.get(l_shader.shader);
@@ -762,7 +764,7 @@ struct MaterialRessourceComposition
 
     inline static Token(MaterialRessource)
         allocate_or_increment_database_and_load_dependecies(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
-                                                            TextureRessourceUnit& p_texture_unit, AssetDatabase& p_asset_database, const hash_t p_id)
+                                                            TextureRessourceUnit& p_texture_unit, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id)
     {
         if (p_unit.is_ressource_id_allocated(p_id))
         {
@@ -770,7 +772,7 @@ struct MaterialRessourceComposition
         }
         else
         {
-            Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_id);
+            Span<int8> l_asset_dependencies = p_asset_database.get_asset_dependencies_blob(p_database_connection, p_id);
             MaterialRessource::AssetDependencies::Value l_asset_dependencies_value =
                 MaterialRessource::AssetDependencies::Value::build_from_asset(MaterialRessource::AssetDependencies{l_asset_dependencies});
 
@@ -872,12 +874,12 @@ struct RenderRessourceAllocator2
         this->shader_module_unit.deallocation_step(p_gpu_context);
     };
 
-    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database)
+    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
-        this->shader_module_unit.allocation_step(p_gpu_context, p_asset_database);
-        this->mesh_unit.allocation_step(p_renderer, p_gpu_context, p_asset_database);
-        this->shader_unit.allocation_step(this->shader_module_unit, p_renderer, p_gpu_context, p_asset_database);
-        this->texture_unit.allocation_step(p_gpu_context, p_asset_database);
-        this->material_unit.allocation_step(this->shader_unit, this->texture_unit, p_renderer, p_gpu_context, p_asset_database);
+        this->shader_module_unit.allocation_step(p_gpu_context, p_database_connection, p_asset_database);
+        this->mesh_unit.allocation_step(p_renderer, p_gpu_context, p_database_connection, p_asset_database);
+        this->shader_unit.allocation_step(this->shader_module_unit, p_renderer, p_gpu_context, p_database_connection, p_asset_database);
+        this->texture_unit.allocation_step(p_gpu_context, p_database_connection, p_asset_database);
+        this->material_unit.allocation_step(this->shader_unit, this->texture_unit, p_renderer, p_gpu_context, p_database_connection, p_asset_database);
     };
 };

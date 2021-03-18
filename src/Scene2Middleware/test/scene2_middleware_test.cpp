@@ -23,6 +23,7 @@ struct Scene2MiddlewareContext
     Collision2 collision;
     GPUContext gpu_ctx;
     D3Renderer renderer;
+    DatabaseConnection database_connection;
     AssetDatabase asset_database;
     RenderRessourceAllocator2 render_ressource_allocator;
     SceneMiddleware scene_middleware;
@@ -34,17 +35,19 @@ struct Scene2MiddlewareContext
         GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
         D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-        AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+        DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
+        AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_connection);
         l_asset_database_path.free();
         SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
         RenderRessourceAllocator2 l_render_ressource_allocator = RenderRessourceAllocator2::allocate();
-        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_asset_database, l_render_ressource_allocator, l_scene_middleware};
+        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_ressource_allocator, l_scene_middleware};
     };
 
     inline void free(ComponentReleaser2& p_component_releaser)
     {
         this->scene.consume_component_events_stateful(p_component_releaser);
-        this->asset_database.free();
+        this->asset_database.free(this->database_connection);
+        this->database_connection.free();
         this->collision.free();
         this->render_ressource_allocator.free(this->renderer, this->gpu_ctx);
         this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_ctx, this->render_ressource_allocator, this->asset_database);
@@ -58,7 +61,7 @@ struct Scene2MiddlewareContext
         this->scene.consume_component_events_stateful<ComponentReleaser2>(p_component_releaser);
         this->scene_middleware.deallocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator);
         this->render_ressource_allocator.deallocation_step(this->renderer, this->gpu_ctx);
-        this->render_ressource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->asset_database);
+        this->render_ressource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->database_connection, this->asset_database);
         this->scene_middleware.allocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator, this->asset_database);
         this->scene_middleware.step(&this->scene, this->collision, this->renderer, this->gpu_ctx);
     };

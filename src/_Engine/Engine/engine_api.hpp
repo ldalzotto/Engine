@@ -51,7 +51,8 @@ inline CameraComponent& NodeAddCamera(Engine& p_engine, const Token(Node) p_node
 inline Token(MeshRendererComponent) NodeAddMeshRenderer(Engine& p_engine, const Token(Node) p_node, const hash_t p_material_id, const hash_t p_mesh_id)
 {
     Token(MeshRendererComponent) l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
-        p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.asset_database, MeshRendererComponent::AssetDependencies{p_material_id, p_mesh_id}, p_node);
+        p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.database_connection, p_engine.asset_database,
+        MeshRendererComponent::AssetDependencies{p_material_id, p_mesh_id}, p_node);
     p_engine.scene.add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
     return l_mesh_renderer;
 };

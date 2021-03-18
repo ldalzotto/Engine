@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssetRessource/asset_ressource.hpp"
+#include "./asset_metadata.hpp"
 #include "./asset_types_json.hpp"
 #include "./obj_compiler.hpp"
 #include "./img_compiler.hpp"
@@ -149,21 +150,21 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
     return Span<int8>::build_default();
 };
 
-inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, AssetDatabase& p_asset_database, const Slice<int8>& p_root_path,
-                                                                   const Slice<int8>& p_relative_asset_path)
+inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
+                                                                   const Slice<int8>& p_root_path, const Slice<int8>& p_relative_asset_path)
 {
     Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
     File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_compiled_asset = AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file);
     if (l_compiled_asset.Memory)
     {
-        p_asset_database.insert_or_update_asset_blob(p_relative_asset_path, l_compiled_asset.slice);
+        p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.slice);
         l_compiled_asset.free();
     }
     Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
     if (l_compiled_dependencies.Memory)
     {
-        p_asset_database.insert_asset_dependencies_blob(p_relative_asset_path, l_compiled_dependencies.slice);
+        p_asset_database.insert_asset_dependencies_blob(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
         l_compiled_dependencies.free();
     }
 

@@ -9,6 +9,8 @@ inline String asset_database_test_initialize(const Slice<int8>& p_db_local_path)
         l_tmp_file.erase_with_slicepath();
     }
 
-    AssetDatabase::initialize_database(l_database_path.to_slice());
+    DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
+    AssetDatabase::initialize_database(l_connection);
+    l_connection.free();
     return l_database_path;
 };

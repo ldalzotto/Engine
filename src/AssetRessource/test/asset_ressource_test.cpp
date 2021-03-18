@@ -63,6 +63,7 @@ struct AssetRessourceTestContext
     GPUContext gpu_ctx;
     D3Renderer renderer;
     RenderRessourceAllocator2 render_ressource_allocator;
+    DatabaseConnection database_connection;
     AssetDatabase asset_database;
 
     inline static AssetRessourceTestContext allocate()
@@ -70,15 +71,17 @@ struct AssetRessourceTestContext
         GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
         D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0});
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-        AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+        DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
+        AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_connection);
         RenderRessourceAllocator2 l_render_ressource_allocator = RenderRessourceAllocator2::allocate();
         l_asset_database_path.free();
-        return AssetRessourceTestContext{l_gpu_ctx, l_renderer, l_render_ressource_allocator, l_asset_database};
+        return AssetRessourceTestContext{l_gpu_ctx, l_renderer, l_render_ressource_allocator, l_database_connection, l_asset_database};
     };
 
     inline void free()
     {
-        this->asset_database.free();
+        this->asset_database.free(this->database_connection);
+        this->database_connection.free();
         this->render_ressource_allocator.free(this->renderer, this->gpu_ctx);
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
@@ -86,9 +89,11 @@ struct AssetRessourceTestContext
 
     inline void reset_database()
     {
-        this->asset_database.free();
+        this->asset_database.free(this->database_connection);
+        this->database_connection.free();
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
-        this->asset_database = AssetDatabase::allocate(l_asset_database_path.to_slice());
+        this->database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
+        this->asset_database = AssetDatabase::allocate(this->database_connection);
         l_asset_database_path.free();
     };
 };
@@ -323,7 +328,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         /*
             We created mesh_1, mesh_2, material_1 and material_2
@@ -391,7 +396,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
         }
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource_2);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
@@ -408,7 +413,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
         }
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         // We removed the l_node_2. The l_node_1 is still here and common ressources still allocated
         {
@@ -528,7 +533,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
         }
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
     }
     l_ctx.free();
 }
@@ -584,12 +589,12 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
 
-        l_ctx.asset_database.insert_asset_blob(l_vertex_shader_path, p_cached_compiled_shaders.vertex_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_fragment_shader_path, p_cached_compiled_shaders.fragment_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_shader_path, l_shader_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_texture_path, l_texture_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_material_path, l_material_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_mesh_path, l_mesh_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_vertex_shader_path, p_cached_compiled_shaders.vertex_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_fragment_shader_path, p_cached_compiled_shaders.fragment_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_shader_path, l_shader_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_texture_path, l_texture_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
         l_shader_asset.free();
         l_texture_asset.free();
@@ -610,7 +615,7 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
         assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 1);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         {
             AssetRessource_TestAssertion::assert_material_allocation(
@@ -688,18 +693,18 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
 
-        l_ctx.asset_database.insert_asset_blob(l_vertex_shader_path, p_cached_compiled_shaders.vertex_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_fragment_shader_path, p_cached_compiled_shaders.fragment_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_shader_path, l_shader_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_texture_path, l_texture_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_material_path, l_material_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_mesh_path, l_mesh_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_vertex_shader_path, p_cached_compiled_shaders.vertex_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_fragment_shader_path, p_cached_compiled_shaders.fragment_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_shader_path, l_shader_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_texture_path, l_texture_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
         MaterialRessource::AssetDependencies l_material_asset_dependencies = MaterialRessource::AssetDependencies::allocate_from_values(
             MaterialRessource::AssetDependencies::Value{HashSlice(l_shader_path), ShaderRessource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)},
                                                         SliceN<hash_t, 1>{HashSlice(l_texture_path)}.to_slice()});
 
-        l_ctx.asset_database.insert_asset_dependencies_blob(l_material_path, l_material_asset_dependencies.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_dependencies_blob(l_ctx.database_connection, l_material_path, l_material_asset_dependencies.allocated_binary.slice);
 
         l_material_asset_dependencies.free();
 
@@ -712,7 +717,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
     {
         Token(MaterialRessource) l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
-            l_ctx.render_ressource_allocator.texture_unit, l_ctx.asset_database, HashSlice(l_material_path));
+            l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
         {
             AssetRessource_TestAssertion::assert_material_allocation(
@@ -728,7 +733,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
         assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_modules_allocation_events.Size == 2);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material);
@@ -789,18 +794,18 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
 
-        l_ctx.asset_database.insert_asset_blob(l_vertex_shader_path, p_cached_compile_shaders.vertex_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_fragment_shader_path, p_cached_compile_shaders.fragment_dummy_shader.slice);
-        l_ctx.asset_database.insert_asset_blob(l_shader_path, l_shader_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_texture_path, l_texture_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_material_path, l_material_asset.allocated_binary.slice);
-        l_ctx.asset_database.insert_asset_blob(l_mesh_path, l_mesh_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_vertex_shader_path, p_cached_compile_shaders.vertex_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_fragment_shader_path, p_cached_compile_shaders.fragment_dummy_shader.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_shader_path, l_shader_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_texture_path, l_texture_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
         MaterialRessource::AssetDependencies l_material_asset_dependencies = MaterialRessource::AssetDependencies::allocate_from_values(
             MaterialRessource::AssetDependencies::Value{HashSlice(l_shader_path), ShaderRessource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)},
                                                         SliceN<hash_t, 1>{HashSlice(l_texture_path)}.to_slice()});
 
-        l_ctx.asset_database.insert_asset_dependencies_blob(l_material_path, l_material_asset_dependencies.allocated_binary.slice);
+        l_ctx.asset_database.insert_asset_dependencies_blob(l_ctx.database_connection, l_material_path, l_material_asset_dependencies.allocated_binary.slice);
 
         l_material_asset_dependencies.free();
 
@@ -812,11 +817,11 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
 
     Token(MaterialRessource) l_material;
     {
-        l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
-                                                                                                       l_ctx.render_ressource_allocator.shader_module_unit,
-                                                                                                       l_ctx.render_ressource_allocator.texture_unit, l_ctx.asset_database, HashSlice(l_material_path));
+        l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
+            l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
+            l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
     }
 
     {
@@ -833,7 +838,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     {
         Token(MaterialRessource) l_material_2 = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
-            l_ctx.render_ressource_allocator.texture_unit, l_ctx.asset_database, HashSlice(l_material_path));
+            l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
         assert_true(tk_eq(l_material_2, l_material));
 
@@ -842,7 +847,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
         assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_modules_allocation_events.Size == 0);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
         {
             AssetRessource_TestAssertion::assert_material_allocation(
@@ -867,7 +872,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material);
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
-        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.asset_database);
+        l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
     }
 
     l_ctx.free();

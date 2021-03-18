@@ -35,6 +35,7 @@ struct Engine
     Scene scene;
     SceneMiddleware scene_middleware;
 
+    DatabaseConnection database_connection;
     AssetDatabase asset_database;
 
     inline static Engine allocate(const EngineConfiguration& p_configuration)
@@ -48,7 +49,8 @@ struct Engine
         l_engine.renderer_ressource_allocator = RenderRessourceAllocator2::allocate();
         l_engine.scene = Scene::allocate_default();
         l_engine.scene_middleware = SceneMiddleware::allocate_default();
-        l_engine.asset_database = AssetDatabase::allocate(p_configuration.asset_database_path);
+        l_engine.database_connection = DatabaseConnection::allocate(p_configuration.asset_database_path);
+        l_engine.asset_database = AssetDatabase::allocate(l_engine.database_connection);
 
         ColorStep::AllocateInfo l_colorstep_allocate_info{};
         l_colorstep_allocate_info.attachment_host_read = p_configuration.render_target_host_readable;
@@ -68,8 +70,8 @@ struct Engine
         if (!p_configuration.headless)
         {
             l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, slice_int8_build_rawstr(""));
-            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
-            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
+            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
+            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
             l_engine.present = GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
                                                         WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
                                                         l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
@@ -121,7 +123,8 @@ inline void Engine::free()
     Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{*this};
     this->scene.consume_component_events_stateful(l_component_releaser);
     this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
-    this->asset_database.free();
+    this->asset_database.free(this->database_connection);
+    this->database_connection.free();
     this->collision.free();
     this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
     this->renderer.free(this->gpu_context);
@@ -136,7 +139,8 @@ inline void Engine::free_headless()
     Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{*this};
     this->scene.consume_component_events_stateful(l_component_releaser);
     this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
-    this->asset_database.free();
+    this->asset_database.free(this->database_connection);
+    this->database_connection.free();
     this->collision.free();
     this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
     this->renderer.free(this->gpu_context);
@@ -191,7 +195,7 @@ struct EngineLoopFunctions
 
         p_engine.scene_middleware.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
         p_engine.renderer_ressource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
-        p_engine.renderer_ressource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.asset_database);
+        p_engine.renderer_ressource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.database_connection, p_engine.asset_database);
         p_engine.scene_middleware.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator, p_engine.asset_database);
 
         p_engine.scene_middleware.step(&p_engine.scene, p_engine.collision, p_engine.renderer, p_engine.gpu_context);
