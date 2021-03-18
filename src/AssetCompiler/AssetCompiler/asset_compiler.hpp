@@ -181,8 +181,6 @@ inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
     if (l_compiled_asset.compiled_data.Memory)
     {
         p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
-
-        // TODO -> write test :)
         p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type));
 
         l_compiled_asset.free();
