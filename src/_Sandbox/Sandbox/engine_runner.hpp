@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO -> remove this class, it is useless
 struct SandboxEngineRunner
 {
     Engine engine;

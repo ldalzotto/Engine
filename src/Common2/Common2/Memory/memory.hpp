@@ -5,7 +5,10 @@
 #define MEM_LEAK_MAX_POINTER_COUNTER 10000
 #define MEM_LEAK_MAX_BACKTRACE 64
 
-int8* ptr_counter[MEM_LEAK_MAX_POINTER_COUNTER] = {};
+typedef int8* ptr_counter_t[MEM_LEAK_MAX_POINTER_COUNTER];
+
+// TODO -> not using mutex but a hash based nested table ?
+Mutex<ptr_counter_t> ptr_counter = Mutex<ptr_counter_t>::build_default();
 
 typedef LPVOID backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 
@@ -20,14 +23,23 @@ inline void capture_backtrace(const uimax p_ptr_index)
 
 inline int8* push_ptr_to_tracked(int8* p_ptr)
 {
-    for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
-    {
-        if (ptr_counter[i] == NULL)
+    int8* l_return = NULL;
+    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
-            ptr_counter[i] = p_ptr;
-            capture_backtrace(i);
-            return p_ptr;
+            if (p_ptr_counter[i] == NULL)
+            {
+                p_ptr_counter[i] = p_ptr;
+                capture_backtrace(i);
+                l_return = p_ptr;
+                break;
+            }
         }
+    });
+
+    if (l_return)
+    {
+        return l_return;
     }
 
     abort();
@@ -35,13 +47,22 @@ inline int8* push_ptr_to_tracked(int8* p_ptr)
 
 inline void remove_ptr_to_tracked(int8* p_ptr)
 {
-    for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
-    {
-        if (ptr_counter[i] == p_ptr)
+    int8 l_successful = 0;
+    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
-            ptr_counter[i] = NULL;
-            return;
+            if (p_ptr_counter[i] == p_ptr)
+            {
+                p_ptr_counter[i] = NULL;
+                l_successful = 1;
+                break;
+            }
         }
+    });
+
+    if (l_successful)
+    {
+        return;
     }
 
     abort();
@@ -52,26 +73,29 @@ inline void remove_ptr_to_tracked(int8* p_ptr)
 inline void memleak_ckeck()
 {
 #if __MEMLEAK
-    for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
-    {
-        if (ptr_counter[i] != NULL)
+    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
-            /*
-            for (loop(j, 0, MEM_LEAK_MAX_BACKTRACE))
+            if (p_ptr_counter[i] != NULL)
             {
-                LPVOID l_func_pointer = backtraces[i][j];
-                if (l_func_pointer)
+                /*
+                for (loop(j, 0, MEM_LEAK_MAX_BACKTRACE))
                 {
-                    SYMBOL_INFO l_symbol;
-                    assert_true(SymFromAddr(GetCurrentProcess(), (DWORD64)l_func_pointer, 0, &l_symbol));
-                    printf(l_symbol.Name);
-                    printf("\n");
+                    LPVOID l_func_pointer = backtraces[i][j];
+                    if (l_func_pointer)
+                    {
+                        SYMBOL_INFO l_symbol;
+                        assert_true(SymFromAddr(GetCurrentProcess(), (DWORD64)l_func_pointer, 0, &l_symbol));
+                        printf(l_symbol.Name);
+                        printf("\n");
+                    }
                 }
+                */
+                abort();
             }
-            */
-            abort();
         }
-    }
+    });
+
 #endif
 };
 

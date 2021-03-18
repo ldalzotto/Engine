@@ -1,6 +1,30 @@
 #pragma once
 
-#include "./system.hpp"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <limits.h>
+#include <math.h>
+
+#if __DEBUG
+
+#define __MEMLEAK 1
+#define __TOKEN 1
+
+#elif __RELEASE
+
+#define __MEMLEAK 0
+#define __TOKEN 0
+
+#endif
+
+#ifndef __SQLITE_ENABLED
+#define __SQLITE_ENABLED 1
+#endif
+
+#ifndef __NATIVE_WINDOW_ENABLED
+#define __NATIVE_WINDOW_ENABLED 1
+#endif
 
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
@@ -8,15 +32,16 @@
 
 #include "./Include/platform_include.hpp"
 
-#include "./Clock/clock.hpp"
-#include "./Thread/thread.hpp"
-
 #include "./Functional/assert.hpp"
+#include "./Thread/mutex.hpp"
 
 #include "./Memory/token.hpp"
 #include "./Memory/memory.hpp"
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
+
+#include "./Clock/clock.hpp"
+#include "./Thread/thread.hpp"
 
 #include "./Functional/hash.hpp"
 
@@ -42,12 +67,22 @@
 #include "./Functional/string_functions.hpp"
 
 #include "./File/file.hpp"
+#include "./File/shared_lib_loader.hpp"
 
 #include "./Serialization/json.hpp"
 #include "./Serialization/binary.hpp"
 #include "./Serialization/types.hpp"
 
+#if __SQLITE_ENABLED
+#include "sqlite3.h"
 #include "./Database/database.hpp"
+#endif
 
+#if __NATIVE_WINDOW_ENABLED
 #include "./AppNativeEvent/app_native_event.hpp"
 #include "./Window/window.hpp"
+#endif
+
+
+#undef __SQLITE_ENABLED
+#undef __NATIVE_WINDOW_ENABLED

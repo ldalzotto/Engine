@@ -1647,6 +1647,33 @@ inline void database_test()
     l_database_path.free();
 };
 
+inline void thread_test()
+{
+    struct my_thread
+    {
+        inline static int8 main(const Slice<int8*>& p_args)
+        {
+            assert_true(p_args.Size == 2);
+            assert_true(*(int8*)p_args.get(0) == 0);
+            assert_true(*(int32*)p_args.get(1) == 5);
+
+            *(int8*)p_args.get(0) = 1;
+
+            return 0;
+        };
+    };
+
+    int8 l_arg_1 = 0;
+    int32 l_arg_2 = 5;
+
+    int8* l_args[2] = {(int8*)&l_arg_1, (int8*)&l_arg_2};
+
+    Thread::MainInput l_input = Thread::MainInput{&my_thread::main, SliceN<int8*, 2>{(int8*)&l_arg_1, (int8*)&l_arg_2}.to_slice()};
+    thread_t l_thread = Thread::spawn_thread(l_input);
+    Thread::wait_for_end_and_terminate(l_thread, -1);
+    assert_true(l_arg_1 == 1);
+};
+
 inline void native_window()
 {
     Token(Window) l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
@@ -1716,6 +1743,7 @@ int main(int argc, int8** argv)
     serialize_deserialize_binary_test();
     file_test();
     database_test();
+    thread_test();
     native_window();
 
     memleak_ckeck();

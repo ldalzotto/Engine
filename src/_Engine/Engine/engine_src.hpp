@@ -8,7 +8,7 @@ struct EngineConfiguration
     int8 render_target_host_readable;
 };
 
-enum class EngineExternalStep
+enum class EngineExternalStep : int8
 {
     BEFORE_COLLISION = 0,
     AFTER_COLLISION = BEFORE_COLLISION + 1,

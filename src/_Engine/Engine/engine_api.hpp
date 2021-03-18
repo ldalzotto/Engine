@@ -1,5 +1,15 @@
 #pragma once
 
+inline Engine SpawnEngine(const EngineConfiguration& p_configuration)
+{
+    return Engine::allocate(p_configuration);
+};
+
+inline void DestroyEngine(Engine& p_engine)
+{
+    p_engine.free();
+};
+
 inline uimax FrameCount(Engine& p_engine)
 {
     return p_engine.clock.framecount;
@@ -46,4 +56,7 @@ inline Token(MeshRendererComponent) NodeAddMeshRenderer(Engine& p_engine, const 
     return l_mesh_renderer;
 };
 
-
+inline void NodeRemoveMeshRenderer(Engine& p_engine, const Token(Node) p_node)
+{
+    p_engine.scene.remove_node_component(p_node, MeshRendererComponent::Type);
+};
