@@ -4,6 +4,7 @@
 #include "./qt_utility.hpp"
 
 #include "Engine/engine.hpp"
+#include "AssetCompiler/asset_compiler.hpp"
 
 struct EngineThread
 {
@@ -265,23 +266,37 @@ struct MaterialViewerWindow
             this->callbacks.on_database_selected(this, this->callbacks.closure);
         }
 
-        // TODO -> these values must be requested from the asset database
-        this->widgets.selected_material->clear();
-        this->widgets.selected_material->addItem("block_1x1_material.json");
+        Slice<int8> l_database_file_path = slice_int8_build_rawstr(this->view.database_file.toLocal8Bit().data());
+        DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_file_path);
+        AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_connection);
+        {
+            AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MATERIAL_NAME);
 
-        this->widgets.selected_mesh->clear();
-        this->widgets.selected_mesh->addItem("block_1x1.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
-        this->widgets.selected_mesh->addItem("sphere.obj");
+            this->widgets.selected_material->clear();
+            for(loop(i, 0, l_material_paths.data.Size))
+            {
+                Span<int8>& l_path = l_material_paths.data.get(i);
+                QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                this->widgets.selected_material->addItem(l_str);
+            }
+            l_material_paths.free();
+        }
+        {
+            AssetMetadataDatabase::Paths l_mesh_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MESH_NAME);
+
+            this->widgets.selected_mesh->clear();
+            for(loop(i, 0, l_mesh_paths.data.Size))
+            {
+                Span<int8>& l_path = l_mesh_paths.data.get(i);
+                QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                this->widgets.selected_mesh->addItem(l_str);
+            }
+            l_mesh_paths.free();
+        }
+
+
+        l_asset_metadata_database.free(l_connection);
+        l_connection.free();
     };
 
     inline void on_material_selected(const QString& p_file)

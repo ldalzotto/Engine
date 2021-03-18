@@ -10,26 +10,57 @@ inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_as
     return l_asset_file_content;
 };
 
-enum class AssetJSONTypes
+enum class AssetType
 {
     UNDEFINED = 0,
-    SHADER = UNDEFINED + 1,
-    MATERIAL = SHADER + 1
+    SHADER_MODULE = UNDEFINED + 1,
+    SHADER = SHADER_MODULE + 1,
+    MESH = SHADER + 1,
+    TEXTURE = MESH + 1,
+    MATERIAL = TEXTURE + 1
+};
+
+namespace AssetType_Const
+{
+static const Slice<int8> SHADER_MODULE_NAME = slice_int8_build_rawstr("SHADER_MODULE");
+static const Slice<int8> SHADER_NAME = slice_int8_build_rawstr("SHADER");
+static const Slice<int8> MATERIAL_NAME = slice_int8_build_rawstr("MATERIAL");
+static const Slice<int8> MESH_NAME = slice_int8_build_rawstr("MESH");
+static const Slice<int8> TEXTURE_NAME = slice_int8_build_rawstr("TEXTURE");
+}; // namespace AssetType_Const
+
+inline const Slice<int8> AssetType_getName(const AssetType p_asset_type)
+{
+    switch (p_asset_type)
+    {
+    case AssetType::SHADER_MODULE:
+        return AssetType_Const::SHADER_MODULE_NAME;
+    case AssetType::SHADER:
+        return AssetType_Const::SHADER_NAME;
+    case AssetType::MATERIAL:
+        return AssetType_Const::MATERIAL_NAME;
+    case AssetType::MESH:
+        return AssetType_Const::MESH_NAME;
+    case AssetType::TEXTURE:
+        return AssetType_Const::TEXTURE_NAME;
+    default:
+        abort();
+    }
 };
 
 struct AssetJSON
 {
-    inline static AssetJSONTypes get_value_of_asset_json(JSONDeserializer* p_json_deserializer, JSONDeserializer* out_val_deserializer)
+    inline static AssetType get_value_of_asset_json(JSONDeserializer* p_json_deserializer, JSONDeserializer* out_val_deserializer)
     {
         p_json_deserializer->next_field("type");
-        AssetJSONTypes l_type = AssetJSONTypes::UNDEFINED;
+        AssetType l_type = AssetType::UNDEFINED;
         if (p_json_deserializer->get_currentfield().value.compare(slice_int8_build_rawstr("SHADER")))
         {
-            l_type = AssetJSONTypes::SHADER;
+            l_type = AssetType::SHADER;
         }
         else if (p_json_deserializer->get_currentfield().value.compare(slice_int8_build_rawstr("MATERIAL")))
         {
-            l_type = AssetJSONTypes::MATERIAL;
+            l_type = AssetType::MATERIAL;
         }
 
         *out_val_deserializer = JSONDeserializer::allocate_default();

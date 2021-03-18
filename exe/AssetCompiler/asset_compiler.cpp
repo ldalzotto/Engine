@@ -14,12 +14,19 @@ int main(int32 argc, int8** argv)
             Slice<int8> l_asset_relative_path = slice_int8_build_rawstr(l_args.get(3));
 
             ShaderCompiler l_shader_compiled = ShaderCompiler::allocate();
-            AssetDatabase::initialize_database(l_asset_database_path);
-            AssetDatabase l_asset_database = AssetDatabase::allocate(l_asset_database_path);
+            DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path);
 
-            AssetCompiler_compile_and_push_to_database_single_file(l_shader_compiled, l_asset_database, l_root_path, l_asset_relative_path);
+            AssetDatabase::initialize_database(l_database_connection);
+            AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_connection);
 
-            l_asset_database.free();
+            AssetMetadataDatabase::initialize_database(l_database_connection);
+            AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_database_connection);
+
+            AssetCompiler_compile_and_push_to_database_single_file(l_shader_compiled, l_database_connection, l_asset_database, l_asset_metadata_database, l_root_path, l_asset_relative_path);
+
+            l_asset_metadata_database.free(l_database_connection);
+            l_asset_database.free(l_database_connection);
+            l_database_connection.free();
             l_shader_compiled.free();
         }
     }
