@@ -35,6 +35,25 @@ else ()
     add_compile_definitions(__RELEASE=1)
 endif ()
 
+set(ASSET_FOLDER_VAR "${CMAKE_CURRENT_SOURCE_DIR}/_asset/asset")
+
 add_subdirectory(src)
 add_subdirectory(exe)
 add_subdirectory(tools)
+
+
+add_custom_target(
+        Test_ALL
+        COMMAND Common2Test
+        COMMAND AssetDatabaseTest
+        COMMAND Math2Test
+        COMMAND CollisionTest
+        COMMAND RenderTest
+        COMMAND AssetRessourceTest
+        COMMAND Scene2Test
+        COMMAND GPUTest
+        COMMAND Scene2MiddlewareTest
+        COMMAND Sandbox
+        COMMAND AssetCompilerTest
+        COMMAND MaterialViewerTest
+)

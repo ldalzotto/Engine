@@ -34,6 +34,7 @@
 
 #include "./Functional/assert.hpp"
 #include "./Thread/mutex.hpp"
+#include "./Thread/barrier.hpp"
 
 #include "./Memory/token.hpp"
 #include "./Memory/memory.hpp"

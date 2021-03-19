@@ -1682,6 +1682,75 @@ inline void thread_test()
     assert_true(l_arg_1 == 1);
 };
 
+inline void barrier_test()
+{
+    BarrierTwoStep l_barrier_two_step = BarrierTwoStep{};
+    Vector<int8> l_order_result = Vector<int8>::allocate(0);
+    struct thread_1
+    {
+        Vector<int8>* order_result;
+        BarrierTwoStep* barrier;
+
+        inline static int8 main(const Slice<int8*>& p_args)
+        {
+            thread_1* l_thread = (thread_1*)p_args.get(0);
+            l_thread->barrier->ask_and_wait_for_sync_1();
+            l_thread->order_result->push_back_element(1);
+            l_thread->barrier->notify_sync_2();
+
+            l_thread->barrier->ask_and_wait_for_sync_1();
+            l_thread->order_result->push_back_element(3);
+            l_thread->barrier->notify_sync_2();
+
+            return 0;
+        };
+    };
+
+    struct thread_2
+    {
+        Vector<int8>* order_result;
+        BarrierTwoStep* barrier;
+
+        inline static int8 main(const Slice<int8*>& p_args)
+        {
+            thread_2* l_thread = (thread_2*)p_args.get(0);
+
+            while (l_thread->barrier->is_opened())
+            {
+            };
+
+            l_thread->order_result->push_back_element(0);
+            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
+            l_thread->order_result->push_back_element(2);
+            while (l_thread->barrier->is_opened())
+            {
+            };
+            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
+            l_thread->order_result->push_back_element(4);
+
+            return 0;
+        };
+    };
+
+    thread_1 l_t1 = thread_1{&l_order_result, &l_barrier_two_step};
+    SliceN<int8*, 1> l_t1_args = {(int8*)&l_t1};
+    Thread::MainInput l_thread_1_input = Thread::MainInput{thread_1::main, slice_from_slicen(&l_t1_args)};
+    thread_t l_tt1 = Thread::spawn_thread(l_thread_1_input);
+
+    thread_2 l_t2 = thread_2{&l_order_result, &l_barrier_two_step};
+    SliceN<int8*, 1> l_t2_args = {(int8*)&l_t2};
+    Thread::MainInput l_thread_2_input = Thread::MainInput{thread_2::main, slice_from_slicen(&l_t2_args)};
+    thread_t l_tt2 = Thread::spawn_thread(l_thread_2_input);
+
+    Thread::wait_for_end_and_terminate(l_tt1, -1);
+    Thread::wait_for_end_and_terminate(l_tt2, -1);
+
+    SliceN<int8, 4> l_awaited_result = {0, 1, 2, 3};
+    assert_true(l_order_result.to_slice().compare(slice_from_slicen(&l_awaited_result)));
+
+    l_order_result.free();
+};
+
 inline void native_window()
 {
     Token(Window) l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
@@ -1752,6 +1821,7 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
+    barrier_test();
     native_window();
 
     memleak_ckeck();

@@ -7,22 +7,9 @@
 
 #include "AssetCompiler/asset_compiler.hpp"
 
-struct EngineThread
+struct MaterialViewerEngineThread
 {
-    Engine engine;
-
-    // TODO -> we must think of a better way to handle engine thread synchronisation
-    int8 engine_spawned;
-    int8 stop_at_end_of_frame;
-    int8 is_stopped;
-
-    String database_path;
-    uint32 width;
-    uint32 height;
-
-    int8* thread_input_ptr;
-    Thread::MainInput thread_input;
-    thread_t thread;
+    EngineThreadV2 thread;
 
     Token(Node) camera_node;
     Token(Node) material_node;
@@ -37,10 +24,10 @@ struct EngineThread
 
     Mutex<SharedRessources> shared;
 
-    inline static EngineThread allocate()
+    inline static MaterialViewerEngineThread allocate()
     {
-        EngineThread l_return{};
-        l_return.database_path = String::allocate(0);
+        MaterialViewerEngineThread l_return{};
+        l_return.thread = EngineThreadV2::allocate();
         l_return.material_node_meshrenderer = tk_bd(MeshRendererComponent);
         l_return.camera_node = tk_bd(Node);
         l_return.material_node = tk_bd(Node);
@@ -49,50 +36,8 @@ struct EngineThread
 
     inline void start(const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
     {
-        this->database_path.append(p_asset_database);
-        this->width = p_width;
-        this->height = p_height;
-        this->thread_input_ptr = (int8*)this;
-        this->thread_input = Thread::MainInput{EngineThread::main, Slice<int8*>::build_begin_end(&this->thread_input_ptr, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
-    };
-
-    inline void free()
-    {
-        this->kill();
-        this->database_path.free();
-    }
-
-    inline int8 is_running()
-    {
-        return this->thread != NULL;
-    };
-
-    // TODO -> we must think of a better way to handle engine thread synchronisation
-    inline void wait_for_engine_spawned()
-    {
-        while (!this->engine_spawned)
-        {
-        }
-    };
-
-    // TODO -> we must think of a better way to handle engine thread synchronisation
-    inline void wait_for_atleast_a_single_frame()
-    {
-        uimax l_old_frame = this->engine.clock.framecount;
-        while (l_old_frame == this->engine.clock.framecount)
-        {
-        }
-    };
-
-    inline void kill()
-    {
-        this->engine.close();
-        if (this->is_running())
-        {
-            Thread::wait_for_end_and_terminate(this->thread, -1);
-            this->thread = NULL;
-        }
+        this->engine_loop = s_engine_loop{this};
+        this->thread.start(p_asset_database, p_width, p_height, this->engine_loop);
     };
 
     inline void set_new_material(const hash_t p_new_material)
@@ -111,76 +56,44 @@ struct EngineThread
         });
     };
 
-    inline static int8 main(const Slice<int8*>& p_args)
-    {
-        EngineThread* thiz = (EngineThread*)p_args.get(0);
-
-        EngineConfiguration l_engine_config{};
-        l_engine_config.asset_database_path = thiz->database_path.to_slice();
-        l_engine_config.render_size = v2ui{thiz->width, thiz->height};
-
-        thiz->engine = SpawnEngine(l_engine_config);
-
-        thiz->engine_spawned = 1;
-
-        struct s_engine_loop
-        {
-            EngineThread* thread;
-
-            inline void step(const EngineExternalStep p_step, Engine& p_engine) const
-            {
-                engine_loop(p_step, p_engine, thread);
-            };
-        };
-
-        thiz->engine.main_loop(s_engine_loop{thiz});
-
-        RemoveNode(thiz->engine, thiz->camera_node);
-        RemoveNode(thiz->engine, thiz->material_node);
-        DestroyEngine(thiz->engine);
-
-        return 0;
-    };
-
   private:
-    inline static void engine_loop(const EngineExternalStep p_step, Engine& p_engine, EngineThread* thiz)
+    struct s_engine_loop
     {
-        if (p_step == EngineExternalStep::BEFORE_UPDATE)
+        MaterialViewerEngineThread* thiz;
+        inline void step(const EngineExternalStep p_step, Engine& p_engine)
         {
-            float32 l_deltatime = DeltaTime(p_engine);
-            uimax l_frame_count = FrameCount(p_engine);
-            if (l_frame_count == 1)
+            if (p_step == EngineExternalStep::BEFORE_UPDATE)
             {
-                thiz->camera_node = CreateNode(p_engine, transform_const::ORIGIN);
-                thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
-                NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
-            }
+                float32 l_deltatime = DeltaTime(p_engine);
+                uimax l_frame_count = FrameCount(p_engine);
+                if (l_frame_count == 1)
+                {
+                    thiz->camera_node = CreateNode(p_engine, transform_const::ORIGIN);
+                    thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
+                    NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
+                }
                 thiz->shared.acquire([&](SharedRessources& p_shared) {
                     if (p_shared.change_requested)
                     {
                         if (tk_v(thiz->material_node_meshrenderer) != -1)
-                    {
-                        NodeRemoveMeshRenderer(p_engine, thiz->material_node);
+                        {
+                            NodeRemoveMeshRenderer(p_engine, thiz->material_node);
+                        }
+                        thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
+                        p_shared.change_requested = 0;
                     }
-                    thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
-                    p_shared.change_requested = 0;
-                }
-            });
+                });
 
-            NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
-        }
-        else if (p_step == EngineExternalStep::END_OF_FRAME)
-        {
-            if (thiz->stop_at_end_of_frame)
-            {
-                thiz->is_stopped = 1;
-                while (thiz->stop_at_end_of_frame)
-                {
-                }
-                thiz->is_stopped = 0;
+                NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
             }
-        }
-    };
+        };
+
+        inline void cleanup_ressources(Engine& p_engine)
+        {
+            RemoveNode(p_engine, thiz->camera_node);
+            RemoveNode(p_engine, thiz->material_node);
+        };
+    } engine_loop;
 };
 
 struct MaterialViewerWindow
@@ -358,24 +271,23 @@ struct MaterialViewerWindow
     };
 };
 
-// TODO -> adding test
 struct MaterialViewerEditor
 {
-    EngineThread engine_thread;
+    MaterialViewerEngineThread engine_thread;
     MaterialViewerWindow material_viewer;
 
     inline void allocate()
     {
-        this->engine_thread = EngineThread::allocate();
+        this->engine_thread = MaterialViewerEngineThread::allocate();
 
         MaterialViewerWindow::Callbacks l_callbacks;
         l_callbacks.closure = this;
         l_callbacks.on_database_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
-            if (thiz->engine_thread.is_running())
+            if (thiz->engine_thread.thread.is_running())
             {
-                thiz->engine_thread.free();
-                thiz->engine_thread = EngineThread::allocate();
+                thiz->engine_thread.thread.free();
+                thiz->engine_thread = MaterialViewerEngineThread::allocate();
             }
             thiz->engine_thread.start(slice_int8_build_rawstr(thiz->material_viewer.view.database_file.toLocal8Bit().data()), 400, 400);
         };
@@ -392,7 +304,7 @@ struct MaterialViewerEditor
 
     inline void free()
     {
-        this->engine_thread.free();
+        this->engine_thread.thread.free();
     };
 
     inline QWidget* root()

@@ -19,3 +19,5 @@ target_link_libraries(MaterialViewerExec PUBLIC MaterialViewer)
 
 add_executable(MaterialViewerTest ./MaterialViewer/test/material_viewer_test.cpp)
 target_link_libraries(MaterialViewerTest PUBLIC MaterialViewer)
+target_compile_definitions(MaterialViewerTest PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/MaterialViewer/")
+

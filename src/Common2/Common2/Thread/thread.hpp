@@ -18,7 +18,7 @@ struct Thread
         Slice<int8*> args;
     };
 
-    static thread_t spawn_thread(const MainInput& p_thread_main);
+    static thread_t spawn_thread(MainInput& p_thread_main);
     static thread_t get_current_thread();
     static void wait(const thread_t p_thread, const uimax p_time_in_ms);
     static void wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms);
@@ -33,7 +33,7 @@ DWORD WINAPI Thread_native_main_function(LPVOID lpParam)
     return l_input->function(l_input->args);
 };
 
-inline thread_t Thread::spawn_thread(const MainInput& p_thread_main)
+inline thread_t Thread::spawn_thread(MainInput& p_thread_main)
 {
     DWORD l_id;
     thread_t l_thread = (thread_t)CreateThread(NULL, 0, Thread_native_main_function, (LPVOID)&p_thread_main, 0, &l_id);

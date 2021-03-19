@@ -1,6 +1,4 @@
 
-set(ASSET_FOLDER_VAR "${CMAKE_CURRENT_SOURCE_DIR}/../_asset/asset")
-
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
 target_link_libraries(Common2 INTERFACE SQLite)
@@ -112,17 +110,3 @@ target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}
 target_link_libraries(Sandbox PUBLIC AssetCompiler)
 
 
-add_custom_target(
-        Test_ALL
-        COMMAND Common2Test
-        COMMAND AssetDatabaseTest
-        COMMAND Math2Test
-        COMMAND CollisionTest
-        COMMAND RenderTest
-        COMMAND AssetRessourceTest
-        COMMAND Scene2Test
-        COMMAND GPUTest
-        COMMAND Scene2MiddlewareTest
-        COMMAND Sandbox
-        COMMAND AssetCompilerTest
-)
