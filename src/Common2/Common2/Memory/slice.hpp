@@ -271,16 +271,6 @@ template <class ElementType, uint32 Size_t> struct SliceN
 {
     ElementType Memory[Size_t];
 
-    inline Slice<ElementType> to_slice()
-    {
-        return Slice<ElementType>{Size_t, this->Memory};
-    };
-
-    inline const Slice<ElementType> to_slice() const
-    {
-        return ((SliceN<ElementType, Size_t>*)this)->to_slice();
-    };
-
     inline uimax Size()
     {
         return Size_t;
@@ -298,6 +288,11 @@ template <class ElementType, uint32 Size_t> struct SliceN
     {
         return ((SliceN<ElementType, Size_t>*)this)->get(p_index);
     }
+};
+
+template <class ElementType, uint32 Size_t> inline Slice<ElementType> slice_from_slicen(const SliceN<ElementType, Size_t>* p_slice_n)
+{
+    return Slice<ElementType>{Size_t, (ElementType*)p_slice_n->Memory};
 };
 
 /*

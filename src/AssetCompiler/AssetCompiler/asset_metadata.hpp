@@ -28,31 +28,33 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline static AssetMetadataDatabase allocate(DatabaseConnection& p_database_connection)
         {
+            SliceN<SQLiteQueryPrimitiveTypes, 1> tmp_layout_int64{SQLiteQueryPrimitiveTypes::INT64};
+            SliceN<SQLiteQueryPrimitiveTypes, 1> tmp_layout_text{SQLiteQueryPrimitiveTypes::TEXT};
+            SliceN<SQLiteQueryPrimitiveTypes, 2> tmp_layout_text_text{SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT};
+            SliceN<SQLiteQueryPrimitiveTypes, 3> tmp_layout_int64_text_text{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT};
+            SliceN<SQLiteQueryPrimitiveTypes, 3> tmp_layout_text_text_int64{SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::INT64};
+
             AssetMetadataDatabase l_database;
-            l_database.assetmetadata_insert_query =
-                SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_INSERT_QUERY),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(
-                                                  SliceN<SQLiteQueryPrimitiveTypes, 3>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT}.to_slice())),
-                                              SQLiteQueryLayout::build_default());
-            l_database.assetmetadata_update_query =
-                SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_UPDATE_QUERY),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(
-                                                  SliceN<SQLiteQueryPrimitiveTypes, 3>{SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                                              SQLiteQueryLayout::build_default());
+            l_database.assetmetadata_insert_query = SQLitePreparedQuery::allocate(
+                p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_INSERT_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64_text_text))), SQLiteQueryLayout::build_default());
+            l_database.assetmetadata_update_query = SQLitePreparedQuery::allocate(
+                p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_UPDATE_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text_text_int64))), SQLiteQueryLayout::build_default());
             l_database.assetmetadata_select_query = SQLitePreparedQuery::allocate(
                 p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_SELECT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
                 SQLiteQueryLayout::allocate_span(
-                    Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 2>{SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT}.to_slice())));
+                    Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text_text))));
 
             l_database.assetmetadata_count_query = SQLitePreparedQuery::allocate(
                 p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_COUNT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())));
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))));
             l_database.assetmetadata_select_paths_from_type = SQLitePreparedQuery::allocate(
                 p_database_connection, slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_SELECT_PATHS_FROM_TYPE),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::TEXT}.to_slice())),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::TEXT}.to_slice())));
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text))),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text))));
             return l_database;
         };
 

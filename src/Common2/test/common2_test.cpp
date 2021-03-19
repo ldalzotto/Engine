@@ -55,18 +55,18 @@ inline void slice_span_test()
 
         SliceN<uimax, 4> l_slice_1 = {0, 1, 2, 3};
         SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
-        l_span_sizet.slice.copy_memory_at_index_2(1, l_slice_1.to_slice(), l_slice_2.to_slice());
+        l_span_sizet.slice.copy_memory_at_index_2(1, slice_from_slicen(&l_slice_1), slice_from_slicen(&l_slice_2));
 
-        assert_true(l_span_sizet.slice.slide_rv(1).compare(l_slice_1.to_slice()));
-        assert_true(l_span_sizet.slice.slide_rv(5).compare(l_slice_2.to_slice()));
+        assert_true(l_span_sizet.slice.slide_rv(1).compare(slice_from_slicen(&l_slice_1)));
+        assert_true(l_span_sizet.slice.slide_rv(5).compare(slice_from_slicen(&l_slice_2)));
 
         l_span_sizet.free();
     }
     {
         SliceN<uimax, 4> l_slice = {15, 26, 78, 10};
-        l_span_sizet = Span<uimax>::allocate_slice(l_slice.to_slice());
+        l_span_sizet = Span<uimax>::allocate_slice(slice_from_slicen(&l_slice));
         assert_true(l_span_sizet.Capacity == 4);
-        assert_true(l_span_sizet.slice.compare(l_slice.to_slice()));
+        assert_true(l_span_sizet.slice.compare(slice_from_slicen(&l_slice)));
 
         l_span_sizet.free();
     }
@@ -341,11 +341,11 @@ inline void pool_test()
 
 inline void varyingslice_test()
 {
-    Slice<uimax> l_varying_slice_memory = SliceN<uimax, 5>{0, 1, 2, 3, 4}.to_slice();
-    Slice<SliceIndex> l_varying_slice_indices =
-        SliceN<SliceIndex, 5>{SliceIndex::build(0, sizeof(uimax)), SliceIndex::build(sizeof(uimax), sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 2, sizeof(uimax)),
-                              SliceIndex::build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 4, sizeof(uimax))}
-            .to_slice();
+    SliceN<uimax, 5> l_varying_slice_memory_arr = SliceN<uimax, 5>{0, 1, 2, 3, 4};
+    Slice<uimax> l_varying_slice_memory = slice_from_slicen(&l_varying_slice_memory_arr);
+    SliceN<SliceIndex, 5> l_varying_slice_indices_arr = {SliceIndex::build(0, sizeof(uimax)), SliceIndex::build(sizeof(uimax), sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 2, sizeof(uimax)),
+                                                         SliceIndex::build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 4, sizeof(uimax))};
+    const Slice<SliceIndex> l_varying_slice_indices = slice_from_slicen(&l_varying_slice_indices_arr);
 
     VaryingSlice l_varying_slice = VaryingSlice::build(l_varying_slice_memory.build_asint8(), l_varying_slice_indices);
 
@@ -1510,7 +1510,8 @@ inline void serialize_json_test()
 
 inline void serialize_deserialize_binary_test()
 {
-    Slice<uimax> l_slice = SliceN<uimax, 5>{0, 1, 2, 3, 4}.to_slice();
+    SliceN<uimax, 5> l_slice_arr = {0, 1, 2, 3, 4};
+    Slice<uimax> l_slice = slice_from_slicen(&l_slice_arr);
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
 
@@ -1538,8 +1539,10 @@ inline void file_test()
     File l_file = File::create(l_file_path.to_slice());
     assert_true(l_file.is_valid());
 
-    Slice<int8> l_source_buffer = SliceN<int8, 100>{0, 1, 2, 3, 4, 5}.to_slice();
-    Slice<int8> l_buffer = SliceN<int8, 100>{}.to_slice();
+    SliceN<int8, 100> l_source_buffer_arr = {0, 1, 2, 3, 4, 5};
+    Slice<int8> l_source_buffer = slice_from_slicen(&l_source_buffer_arr);
+    SliceN<int8, 100> l_buffer_arr = {};
+    Slice<int8> l_buffer = slice_from_slicen(&l_buffer_arr);
 
     l_file.write_file(l_source_buffer);
     l_file.read_file(&l_buffer);
@@ -1585,11 +1588,13 @@ inline void database_test()
         SQLiteQuery l_table_creation_query =
             SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY, num integer, txt text, data blob);)));
 
-        SQliteQueryExecution::execute_sync(l_connection, l_table_creation_query.statement, []() {});
+        SQliteQueryExecution::execute_sync(l_connection, l_table_creation_query.statement, []() {
+        });
         l_table_creation_query.free(l_connection);
 
-        SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(
-            SliceN<SQLiteQueryPrimitiveTypes, 4>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB}.to_slice());
+        SliceN<SQLiteQueryPrimitiveTypes, 4> l_parameter_layout_arr = {SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT,
+                                                                       SQLiteQueryPrimitiveTypes::BLOB};
+        SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(slice_from_slicen(&l_parameter_layout_arr));
         SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
 				MULTILINE(
 						insert into test(id, num, txt, data)
@@ -1606,12 +1611,14 @@ inline void database_test()
         uimax l_value = 30;
         l_binder.bind_blob(Slice<uimax>::build_asint8_memory_singleelement(&l_value), l_connection);
 
-        SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []() {});
+        SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []() {
+        });
 
         l_insersion_query.free(l_connection);
 
-        SQLiteQueryLayout l_return_layout =
-            SQLiteQueryLayout::build_slice(SliceN<SQLiteQueryPrimitiveTypes, 3>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB}.to_slice());
+        SliceN<SQLiteQueryPrimitiveTypes, 3> l_return_layout_arr =
+            SliceN<SQLiteQueryPrimitiveTypes, 3>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB};
+        SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(slice_from_slicen(&l_return_layout_arr));
         SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
 				MULTILINE(
 						select num, txt, data from test where test.id = ?;
@@ -1668,7 +1675,8 @@ inline void thread_test()
 
     int8* l_args[2] = {(int8*)&l_arg_1, (int8*)&l_arg_2};
 
-    Thread::MainInput l_input = Thread::MainInput{&my_thread::main, SliceN<int8*, 2>{(int8*)&l_arg_1, (int8*)&l_arg_2}.to_slice()};
+    SliceN<int8*, 2> l_arg_arr = {(int8*)&l_arg_1, (int8*)&l_arg_2};
+    Thread::MainInput l_input = Thread::MainInput{&my_thread::main, slice_from_slicen(&l_arg_arr)};
     thread_t l_thread = Thread::spawn_thread(l_input);
     Thread::wait_for_end_and_terminate(l_thread, -1);
     assert_true(l_arg_1 == 1);

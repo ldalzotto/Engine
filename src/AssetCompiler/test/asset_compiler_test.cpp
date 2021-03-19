@@ -100,11 +100,12 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
     {
         Span<int8> l_shader_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
         ShaderRessource::Asset::Value l_shader_value = ShaderRessource::Asset::Value::build_from_asset(ShaderRessource::Asset::build_from_binary(l_shader_ressource_compiled));
+        SliceN<ShaderLayoutParameterType, 1> l_shader_layout_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
 
         assert_true(l_shader_value.execution_order == 1001);
         assert_true(l_shader_value.shader_configuration.zwrite == 0);
         assert_true(l_shader_value.shader_configuration.ztest == ShaderConfiguration::CompareOp::Always);
-        assert_true(l_shader_value.specific_parameters.compare(SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice()));
+        assert_true(l_shader_value.specific_parameters.compare(slice_from_slicen(&l_shader_layout_arr)));
 
         l_shader_ressource_compiled.free();
 
@@ -221,8 +222,8 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
                                  Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
         SliceN<uint32, 36> l_indices = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
 
-        assert_true(l_mesh_value.initial_vertices.compare(l_vertices.to_slice()));
-        assert_true(l_mesh_value.initial_indices.compare(l_indices.to_slice()));
+        assert_true(l_mesh_value.initial_vertices.compare(slice_from_slicen(&l_vertices)));
+        assert_true(l_mesh_value.initial_indices.compare(slice_from_slicen(&l_indices)));
 
         l_mesh_ressource_compiled.free();
     }
@@ -255,13 +256,12 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
         assert_true(l_texture_value.channel_nb == 4);
         Slice<color> l_pixels = slice_cast<color>(l_texture_value.pixels);
         assert_true(l_pixels.Size == 16);
-        Slice<color> l_awaited_pixels = SliceN<color, 16>{color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                                                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}}
-                                            .to_slice();
+        SliceN<color, 16>l_awaited_pixels_arr{color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}};
 
-        assert_true(l_pixels.compare(l_awaited_pixels));
+        assert_true(l_pixels.compare(slice_from_slicen(&l_awaited_pixels_arr)));
         l_texture_ressource_compiled.free();
     }
     {

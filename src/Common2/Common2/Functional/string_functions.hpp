@@ -119,7 +119,7 @@ struct ToString
 
     inline static void auimax_append(const uimax p_value, String& p_str)
     {
-        Slice<int8> l_uimax_str_buffer = SliceN<int8, uimaxstr_size>{}.to_slice();
-        p_str.append(auimax(p_value, l_uimax_str_buffer));
+        SliceN<int8, uimaxstr_size> l_uimax_str_buffer_arr = {};
+        p_str.append(auimax(p_value, slice_from_slicen(&l_uimax_str_buffer_arr)));
     };
 };

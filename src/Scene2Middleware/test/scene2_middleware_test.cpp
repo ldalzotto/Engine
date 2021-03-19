@@ -93,8 +93,8 @@ inline static Token(MeshRendererComponent)
     l_vertex_shader_compiled.free();
     l_fragment_shader_compiled.free();
 
-    Slice<ShaderLayoutParameterType> l_shader_parameter_layout =
-        SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice();
+    SliceN<ShaderLayoutParameterType, 2> l_shader_parameter_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+    Slice<ShaderLayoutParameterType> l_shader_parameter_layout = slice_from_slicen(&l_shader_parameter_layout_arr);
 
     v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
                           v3f{1.0f, -1.0f, 1.0f},  v3f{1.0f, 1.0f, 1.0f},  v3f{1.0f, -1.0f, -1.0f},  v3f{1.0f, 1.0f, -1.0f}};
@@ -137,12 +137,12 @@ inline static Token(MeshRendererComponent)
         l_material_parameter_temp.free();
     }
 
+    SliceN<TextureRessource::InlineAllocationInput, 1> tmp_material_texture_input{TextureRessource::InlineAllocationInput{p_material_texture_id, l_material_texture_asset}};
     return RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
         p_ctx.scene_middleware.render_middleware, p_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{p_vertex_shader_id, l_vertex_shader},
         ShaderModuleRessource::InlineAllocationInput{p_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{p_shader_asset_id, l_shader_asset},
-        MaterialRessource::InlineAllocationInput{p_material_id, l_material_asset_1,
-                                                 SliceN<TextureRessource::InlineAllocationInput, 1>{TextureRessource::InlineAllocationInput{p_material_texture_id, l_material_texture_asset}}.to_slice()},
-        MeshRessource::InlineAllocationInput{p_mesh_id, l_mesh_asset}, p_scene_node);
+        MaterialRessource::InlineAllocationInput{p_material_id, l_material_asset_1, slice_from_slicen(&tmp_material_texture_input)}, MeshRessource::InlineAllocationInput{p_mesh_id, l_mesh_asset},
+        p_scene_node);
 };
 
 }; // namespace MeshRederer_AllocationTestUtil
@@ -266,8 +266,8 @@ inline void render_middleware_inline_allocation()
         l_vertex_shader_compiled.free();
         l_fragment_shader_compiled.free();
 
-        Slice<ShaderLayoutParameterType> l_shader_parameter_layout =
-            SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice();
+        SliceN<ShaderLayoutParameterType, 2> l_shader_parameter_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+        Slice<ShaderLayoutParameterType> l_shader_parameter_layout = slice_from_slicen(&l_shader_parameter_layout_arr);
 
         v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
                               v3f{1.0f, -1.0f, 1.0f},  v3f{1.0f, 1.0f, 1.0f},  v3f{1.0f, -1.0f, -1.0f},  v3f{1.0f, 1.0f, -1.0f}};
@@ -316,12 +316,11 @@ inline void render_middleware_inline_allocation()
             l_material_parameter_temp.free();
         }
 
+        SliceN<TextureRessource::InlineAllocationInput, 1> l_material_texture_input{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
         Token(MeshRendererComponent) l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.scene_middleware.render_middleware, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
-            MaterialRessource::InlineAllocationInput{
-                0, l_material_asset_1, SliceN<TextureRessource::InlineAllocationInput, 1>{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}}.to_slice()},
-            MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
+            MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_texture_input)}, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
         Token(Node) l_camera_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
@@ -371,8 +370,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
         Span<int8> l_compiled_vertex = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)p_vertex_litteral, 1));
         Span<int8> l_compiled_fragment = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)p_fragment_litteral, 1));
 
-        Slice<ShaderLayoutParameterType> l_shader_parameter_layout =
-            SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice();
+        SliceN<ShaderLayoutParameterType, 2> l_shader_parameter_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+        Slice<ShaderLayoutParameterType> l_shader_parameter_layout = slice_from_slicen(&l_shader_parameter_layout_arr);
 
         v3f l_positions[1] = {v3f{-1.0f, -1.0f, 1.0f}};
 
@@ -419,12 +418,11 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
             l_material_parameter_temp.free();
         }
 
+        SliceN<TextureRessource::InlineAllocationInput, 1> tmp_material_input{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
         Token(MeshRendererComponent) l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.scene_middleware.render_middleware, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
-            MaterialRessource::InlineAllocationInput{
-                0, l_material_asset_1, SliceN<TextureRessource::InlineAllocationInput, 1>{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}}.to_slice()},
-            MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
+            MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&tmp_material_input)}, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
         l_ctx.scene.remove_node_component(l_node_1, MeshRendererComponent::Type);
 

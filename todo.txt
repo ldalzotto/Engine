@@ -1,6 +1,3 @@
-1/ Adding a new asset database table that store asset metadata. The path of the asset must be sotred in the metadata.
-   This table is not available by the engine but usable by third party tools.
-2/ Creating a small app that consumes the asset_compiler dll and display states oon compiled asset
 3/ Making the engine work on Release build.
 4/ Migrating the collision allocation to the new system.
 5/ No dependencies on absolute path ?

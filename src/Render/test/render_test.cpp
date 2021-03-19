@@ -135,10 +135,11 @@ inline void draw_test()
     Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
     Token(ShaderModule) l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
 
+    SliceN<ShaderLayoutParameterType, 1> l_shader_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT};
     Token(ShaderIndex) l_shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
-        l_ctx.graphics_allocator, l_renderer.allocator, SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT}.to_slice(), 0,
-        l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass), ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual},
-        l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module), l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module));
+        l_ctx.graphics_allocator, l_renderer.allocator, slice_from_slicen(&l_shader_layout_arr), 0, l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
+        ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}, l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
+        l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module));
 
     ShaderIndex l_shader_value = l_renderer.heap().shaders.get(l_shader);
 

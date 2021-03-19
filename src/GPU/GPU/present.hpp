@@ -96,21 +96,21 @@ struct GPUPresent_2DQuad
 
     inline static GPUPresent_2DQuad allocate(BufferMemory& p_buffer_memory)
     {
-        Slice<_vertex> l_2D_quad_vertices =
-            SliceN<_vertex, 4>{
-                _vertex{v3f{-1.0f, 1.0f, 0.0f}, v2f{0.0f, 1.0f}},
-                _vertex{v3f{1.0f, -1.0f, 0.0f}, v2f{1.0f, 0.0f}},
-                _vertex{v3f{-1.0f, -1.0f, 0.0f}, v2f{0.0f, 0.0f}},
-                _vertex{v3f{1.0f, 1.0f, 0.0f}, v2f{1.0f, 1.0f}},
-            }
-                .to_slice();
+        SliceN<_vertex, 4> l_2D_quad_vertices_arr = {
+            _vertex{v3f{-1.0f, 1.0f, 0.0f}, v2f{0.0f, 1.0f}},
+            _vertex{v3f{1.0f, -1.0f, 0.0f}, v2f{1.0f, 0.0f}},
+            _vertex{v3f{-1.0f, -1.0f, 0.0f}, v2f{0.0f, 0.0f}},
+            _vertex{v3f{1.0f, 1.0f, 0.0f}, v2f{1.0f, 1.0f}},
+        };
+        Slice<_vertex> l_2D_quad_vertices = slice_from_slicen(&l_2D_quad_vertices_arr);
 
         GPUPresent_2DQuad l_return;
         l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(l_2D_quad_vertices.build_asint8().Size,
                                                                                  (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_vertices, l_2D_quad_vertices.build_asint8());
 
-        Slice<uint32> l_indices = SliceN<uint32, 6>{0, 1, 2, 0, 3, 1}.to_slice();
+        SliceN<uint32, 6> l_indices_arr{0, 1, 2, 0, 3, 1};
+        Slice<uint32> l_indices = slice_from_slicen(&l_indices_arr);
         l_return.d2_quad_indices_image_indices = p_buffer_memory.allocator.allocate_buffergpu(
             l_indices.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_indices_image_indices, l_indices.build_asint8());
@@ -175,12 +175,11 @@ struct GPUPresent_SwapChain
     {
         p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(p_present_device.device);
 
-        Span<ShaderLayoutParameterType> l_shader_parameter_layout =
-            Span<ShaderLayoutParameterType>::allocate_slice(SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice());
-        Span<ShaderLayout::VertexInputParameter> l_vertex_parameter = Span<ShaderLayout::VertexInputParameter>::allocate_slice(SliceN<ShaderLayout::VertexInputParameter, 2>{
-            ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
-            ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2,
-                                               offsetof(GPUPresent_2DQuad::_vertex, uv)}}.to_slice());
+        SliceN<ShaderLayoutParameterType, 1> l_shader_parameter_layout_input_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+        Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_shader_parameter_layout_input_arr));
+        SliceN<ShaderLayout::VertexInputParameter, 2> l_vertex_parameter_arr{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
+                                                                             ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(GPUPresent_2DQuad::_vertex, uv)}};
+        Span<ShaderLayout::VertexInputParameter> l_vertex_parameter = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_vertex_parameter_arr));
         p_swap_chain.image_copy_shader_layout = p_graphics_allocator.allocate_shader_layout(l_shader_parameter_layout, l_vertex_parameter, sizeof(GPUPresent_2DQuad::_vertex));
 
         p_swap_chain.image_copy_shader_vertex = p_graphics_allocator.allocate_shader_module(p_compiled_vertex_shader);
@@ -323,8 +322,9 @@ struct GPUPresent
         vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, this->swap_chain.swap_chain_next_image_semaphore.semaphore, VK_NULL_HANDLE,
                                                &this->current_swapchain_image_index));
 
+        SliceN<v4f, 1> l_renderpass_clear_arr{v4f{1.0f, 0, 0, 0}};
         p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->swap_chain.rendertarget_copy_pass.get(this->current_swapchain_image_index)),
-                                            SliceN<v4f, 1>{v4f{1.0f, 0, 0, 0}}.to_slice());
+                                            slice_from_slicen(&l_renderpass_clear_arr));
         p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(this->swap_chain.image_copy_shaders.get(this->current_swapchain_image_index)));
         p_graphics_binder.bind_shadertexturegpu_parameter(p_graphics_binder.graphics_allocator.heap.shader_texture_gpu_parameters.get(this->swap_chain.shader_parameter_texture));
         this->d2_quad.bind_and_draw(p_graphics_binder);
@@ -337,7 +337,8 @@ struct GPUPresent
 
     inline void present(const Semafore& p_awaited_semaphore)
     {
-        Slice<Semafore> l_awaited_semaphores = SliceN<Semafore, 2>{this->swap_chain.swap_chain_next_image_semaphore, p_awaited_semaphore}.to_slice();
+        SliceN<Semafore, 2> l_awaited_semaphores_arr{this->swap_chain.swap_chain_next_image_semaphore, p_awaited_semaphore};
+        Slice<Semafore> l_awaited_semaphores = slice_from_slicen(&l_awaited_semaphores_arr);
 
         VkPresentInfoKHR l_present_info{};
         l_present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

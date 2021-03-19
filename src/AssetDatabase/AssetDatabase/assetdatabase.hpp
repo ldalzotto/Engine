@@ -64,33 +64,36 @@ static const int8* DB_ASSET_RESSOURCE_TABLE_INITIALIZATION = MULTILINE(create ta
         inline static AssetDatabase allocate(DatabaseConnection& p_database_connection)
         {
             AssetDatabase l_asset_database;
-            l_asset_database.asset_count_query = SQLitePreparedQuery::allocate(
-                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_COUNT_SELECT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())));
-            l_asset_database.asset_blob_select_query = SQLitePreparedQuery::allocate(
-                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_SELECT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::BLOB}.to_slice())));
-            l_asset_database.asset_insert_query = SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_INSERT_QUERY),
-                                                                                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 2>{
-                                                                                    SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB}.to_slice())),
-                                                                                SQLiteQueryLayout::build_default());
-            l_asset_database.asset_update_query = SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_UPDATE_QUERY),
-                                                                                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(
-                                                                                    SliceN<SQLiteQueryPrimitiveTypes, 2>{SQLiteQueryPrimitiveTypes::BLOB, SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                                                                                SQLiteQueryLayout::build_default());
 
-            l_asset_database.asset_dependencies_blob_select_query = SQLitePreparedQuery::allocate(
-                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_SELECT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::INT64}.to_slice())),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(SliceN<SQLiteQueryPrimitiveTypes, 1>{SQLiteQueryPrimitiveTypes::BLOB}.to_slice())));
+            SliceN<SQLiteQueryPrimitiveTypes, 1> tmp_layout_int64{SQLiteQueryPrimitiveTypes::INT64};
+            SliceN<SQLiteQueryPrimitiveTypes, 1> tmp_layout_blob{SQLiteQueryPrimitiveTypes::BLOB};
+            SliceN<SQLiteQueryPrimitiveTypes, 2> tmp_layout_int64_blob{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB};
+            SliceN<SQLiteQueryPrimitiveTypes, 2> tmp_layout_blob_int64{SQLiteQueryPrimitiveTypes::BLOB, SQLiteQueryPrimitiveTypes::INT64};
+
+            l_asset_database.asset_count_query = SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_COUNT_SELECT_QUERY),
+                                                                               SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
+                                                                               SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))));
+
+            l_asset_database.asset_blob_select_query =
+                SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_SELECT_QUERY),
+                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
+                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_blob))));
+            l_asset_database.asset_insert_query = SQLitePreparedQuery::allocate(
+                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_INSERT_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64_blob))), SQLiteQueryLayout::build_default());
+            l_asset_database.asset_update_query = SQLitePreparedQuery::allocate(
+                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_BLOB_UPDATE_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_blob_int64))), SQLiteQueryLayout::build_default());
+
+            l_asset_database.asset_dependencies_blob_select_query =
+                SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_SELECT_QUERY),
+                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
+                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_blob))));
 
             l_asset_database.asset_dependencies_insert_query =
-                SQLitePreparedQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_INSERT_QUERY),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(
-                                                  SliceN<SQLiteQueryPrimitiveTypes, 2>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB}.to_slice())),
-                                              SQLiteQueryLayout::build_default());
+                SQLitePreparedQuery::allocate(
+                p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::ASSET_DEPENDENCIES_BLOB_INSERT_QUERY),
+                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64_blob))), SQLiteQueryLayout::build_default());
 
             return l_asset_database;
         };

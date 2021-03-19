@@ -288,9 +288,9 @@ inline void gpu_draw()
                                                  vertex_position{v3f{0.0f, 0.5f, 0.0f}},  vertex_position{v3f{0.5f, 0.0f, 0.0f}},  vertex_position{v3f{0.0f, 0.0f, 0.0f}}};
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            l_vertices.to_slice().build_asint8().Size,
+            slice_from_slicen(&l_vertices).build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -538,9 +538,9 @@ inline void gpu_depth_compare_test()
                                                  vertex_position{v3f{0.0f, 0.5f, 0.1f}},  vertex_position{v3f{0.5f, 0.0f, 0.1f}},  vertex_position{v3f{-0.5f, -0.5f, 0.1f}}};
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            l_vertices.to_slice().build_asint8().Size,
+            slice_from_slicen(&l_vertices).build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -765,13 +765,13 @@ inline void gpu_draw_indexed()
         SliceN<uint32, 6> l_indices = {0, 1, 2, 0, 3, 1};
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            l_vertices.to_slice().build_asint8().Size,
+            slice_from_slicen(&l_vertices).build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
 
         Token(BufferGPU) l_indices_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            l_indices.to_slice().build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::INDEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_indices_buffer, l_indices.to_slice().build_asint8());
+            slice_from_slicen(&l_indices).build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::INDEX));
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_indices_buffer, slice_from_slicen(&l_indices).build_asint8());
 
         Token(Shader) l_first_shader;
         Token(ShaderLayout) l_first_shader_layout;
@@ -940,9 +940,9 @@ inline void gpu_texture_mapping()
                                         vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, 0.5f, 0.0f}, v2f{1.0f, 1.0f}},  vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}};
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            l_vertices.to_slice().build_asint8().Size,
+            slice_from_slicen(&l_vertices).build_asint8().Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, l_vertices.to_slice().build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
 
         /*
         Token(TextureGPU) l_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(l_buffer_allocator, l_graphics_allocator,
@@ -965,12 +965,13 @@ inline void gpu_texture_mapping()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slice(
-                SliceN<ShaderLayout::VertexInputParameter, 2>{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
-                                                              ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}}.to_slice());
+            SliceN<ShaderLayout::VertexInputParameter, 2>l_shader_vertex_input_primitives_arr{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
+                                                          ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
 
+            SliceN<ShaderLayoutParameterType, 1>l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
             Span<ShaderLayoutParameterType> l_first_shader_layout_parameters =
-                Span<ShaderLayoutParameterType>::allocate_slice(SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::TEXTURE_FRAGMENT}.to_slice());
+                Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
 
@@ -1098,7 +1099,8 @@ inline void gpu_present()
     Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
     Window& l_window = WindowAllocator::get_window(l_window_token);
 
-    GPUContext l_gpu_context = GPUContext::allocate(SliceN<GPUExtension, 1>{GPUExtension::WINDOW_PRESENT}.to_slice());
+    SliceN<GPUExtension, 1> l_gpu_extension_arr{GPUExtension::WINDOW_PRESENT};
+    GPUContext l_gpu_context = GPUContext::allocate(slice_from_slicen(&l_gpu_extension_arr));
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
     const int8* p_vertex_litteral = MULTILINE(#version 450 \n
