@@ -59,31 +59,28 @@ inline void Thread::wait(const thread_t p_thread, const uimax p_time_in_ms)
 #if __DEBUG
     assert_true(
 #endif
-    WaitForSingleObject(p_thread, (DWORD)p_time_in_ms)
-        #if __DEBUG
+        WaitForSingleObject(p_thread, (DWORD)p_time_in_ms)
+#if __DEBUG
         != WAIT_FAILED)
-        #endif
+#endif
         ;
 };
 
 inline void Thread::wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
 {
     Thread::wait(p_thread, p_max_time_in_ms);
-    DWORD l_exit_code;
 
 #if __MEMLEAK
     remove_ptr_to_tracked((int8*)p_thread);
 #endif
 
 #if __DEBUG
-    assert_true(
+    DWORD l_exit_code;
+    assert_true(GetExitCodeThread(p_thread, &l_exit_code));
+    TerminateThread(p_thread, 0);
+    assert_true(l_exit_code == 0);
 #endif
-        GetExitCodeThread(p_thread, &l_exit_code)
-#if __DEBUG
-    )
-#endif
-        ;
-    assert_true(l_exit_code != STILL_ACTIVE);
+
     TerminateThread(p_thread, 0);
 };
 

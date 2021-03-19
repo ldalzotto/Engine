@@ -7,7 +7,8 @@
 
 typedef int8* ptr_counter_t[MEM_LEAK_MAX_POINTER_COUNTER];
 
-// TODO -> not using mutex but a hash based nested table ?
+// Not using mutex but a hash based nested table ?
+// -> NO, because some ressource may be allocated from one thread and dealocated a different one
 Mutex<ptr_counter_t> ptr_counter = Mutex<ptr_counter_t>::build_default();
 
 typedef LPVOID backtrace_t[MEM_LEAK_MAX_BACKTRACE];

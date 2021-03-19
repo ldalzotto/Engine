@@ -5,6 +5,10 @@
     This structure allows synchronisation hooks
 */
 // TODO -> adding test :)
+// TODO -> This is not the right way to handle Engine execution on a thread. With the current implementation, one thread is limited to a single Engine.
+//         It is a wiser choice to implement an "EngineExecutionUnit" that executes the Engine step by step (Like the Sandbox execution). It is up to the caller to decide on which thread the execution
+//         is done.
+// TODO -> Also, isn't it weird to evaluate thread synchronization inside the main loop ? (yes) Shouldn't we have an "EngineRunner" that handle all synchronisation requests ?
 struct EngineThreadV2
 {
     Engine engine;
@@ -68,11 +72,19 @@ struct EngineThreadV2
         }
     };
 
+    // /!\ WARNING - this doesn't guarantee that a full frame have passed by.
     template <class t_EndOfFrameFunc> inline void sync_at_end_of_frame(const t_EndOfFrameFunc& p_callback)
     {
         this->synchronization.end_of_frame.ask_and_wait_for_sync_1();
         p_callback();
         this->synchronization.end_of_frame.notify_sync_2();
+    };
+
+    template <class t_EndOfFrameFunc> inline void sync_wait_for_one_whole_frame_at_end_of_frame(const t_EndOfFrameFunc& p_callback)
+    {
+        this->sync_at_end_of_frame([]() {
+        });
+        this->sync_at_end_of_frame(p_callback);
     };
 
     inline void kill()
