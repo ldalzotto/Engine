@@ -1,5 +1,13 @@
 #pragma once
 
+inline int32 qt_app_start(QApplication& qt_app, QWidget* p_widget, QMainWindow** out_main_window)
+{
+    *out_main_window = new QMainWindow(NULL);
+    (*out_main_window)->setCentralWidget(p_widget);
+    (*out_main_window)->show();
+    return qt_app.exec();
+};
+
 template <class Layout_t, class Widget_t> struct QLayoutWidget
 {
     Layout_t* layout;

@@ -1,14 +1,21 @@
 #pragma once
 
 #include "./qt_include.hpp"
-#include "./qt_utility.hpp"
 
 #include "Engine/engine.hpp"
+#include "./qt_utility.hpp"
+
 #include "AssetCompiler/asset_compiler.hpp"
 
 struct EngineThread
 {
     Engine engine;
+
+    // TODO -> we must think of a better way to handle engine thread synchronisation
+    int8 engine_spawned;
+    int8 stop_at_end_of_frame;
+    int8 is_stopped;
+
     String database_path;
     uint32 width;
     uint32 height;
@@ -35,7 +42,8 @@ struct EngineThread
         EngineThread l_return{};
         l_return.database_path = String::allocate(0);
         l_return.material_node_meshrenderer = tk_bd(MeshRendererComponent);
-
+        l_return.camera_node = tk_bd(Node);
+        l_return.material_node = tk_bd(Node);
         return l_return;
     };
 
@@ -60,11 +68,31 @@ struct EngineThread
         return this->thread != NULL;
     };
 
+    // TODO -> we must think of a better way to handle engine thread synchronisation
+    inline void wait_for_engine_spawned()
+    {
+        while (!this->engine_spawned)
+        {
+        }
+    };
+
+    // TODO -> we must think of a better way to handle engine thread synchronisation
+    inline void wait_for_atleast_a_single_frame()
+    {
+        uimax l_old_frame = this->engine.clock.framecount;
+        while (l_old_frame == this->engine.clock.framecount)
+        {
+        }
+    };
+
     inline void kill()
     {
         this->engine.close();
-        Thread::wait_for_end_and_terminate(this->thread, -1);
-        this->thread = NULL;
+        if (this->is_running())
+        {
+            Thread::wait_for_end_and_terminate(this->thread, -1);
+            this->thread = NULL;
+        }
     };
 
     inline void set_new_material(const hash_t p_new_material)
@@ -92,6 +120,8 @@ struct EngineThread
         l_engine_config.render_size = v2ui{thiz->width, thiz->height};
 
         thiz->engine = SpawnEngine(l_engine_config);
+
+        thiz->engine_spawned = 1;
 
         struct s_engine_loop
         {
@@ -125,21 +155,29 @@ struct EngineThread
                 thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
                 NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
             }
-            else
-            {
                 thiz->shared.acquire([&](SharedRessources& p_shared) {
                     if (p_shared.change_requested)
                     {
                         if (tk_v(thiz->material_node_meshrenderer) != -1)
-                        {
-                            NodeRemoveMeshRenderer(p_engine, thiz->material_node);
-                        }
-                        thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
-                        p_shared.change_requested = 0;
+                    {
+                        NodeRemoveMeshRenderer(p_engine, thiz->material_node);
                     }
-                });
+                    thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
+                    p_shared.change_requested = 0;
+                }
+            });
 
-                NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+            NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+        }
+        else if (p_step == EngineExternalStep::END_OF_FRAME)
+        {
+            if (thiz->stop_at_end_of_frame)
+            {
+                thiz->is_stopped = 1;
+                while (thiz->stop_at_end_of_frame)
+                {
+                }
+                thiz->is_stopped = 0;
             }
         }
     };
@@ -163,6 +201,7 @@ struct MaterialViewerWindow
 
         QLayoutWidget<QHBoxLayout, QWidget> db_layout;
         QPushButton* db_file_selection;
+        QFileDialog* db_file_dialog;
         QLabel* db_file_label;
 
         QLayoutWidget<QVBoxLayout, QGroupBox> selected_material_root;
@@ -233,12 +272,12 @@ struct MaterialViewerWindow
         this->callbacks = p_callbacks;
 
         QObject::connect(this->widgets.db_file_selection, &QPushButton::released, [&]() {
-            QFileDialog* l_q = new QFileDialog(this->root);
-            l_q->setNameFilters({"DB files (*.db)", "Any files (*)"});
-            QObject::connect(l_q, &QFileDialog::fileSelected, [&, this](const QString& p_file) {
+            this->widgets.db_file_dialog = new QFileDialog(this->root);
+            this->widgets.db_file_dialog->setNameFilters({"DB files (*.db)", "Any files (*)"});
+            QObject::connect(this->widgets.db_file_dialog, &QFileDialog::fileSelected, [&, this](const QString& p_file) {
                 this->on_database_file_selected(p_file);
             });
-            l_q->open();
+            this->widgets.db_file_dialog->open();
         });
 
         QObject::connect(this->widgets.selected_material, &QListWidget::currentItemChanged, [&](QListWidgetItem* current, QListWidgetItem* previous) {
@@ -266,14 +305,15 @@ struct MaterialViewerWindow
             this->callbacks.on_database_selected(this, this->callbacks.closure);
         }
 
-        Slice<int8> l_database_file_path = slice_int8_build_rawstr(this->view.database_file.toLocal8Bit().data());
+        QByteArray l_database_file_path_arr = this->view.database_file.toLocal8Bit();
+        Slice<int8> l_database_file_path = slice_int8_build_rawstr(l_database_file_path_arr.data());
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_file_path);
         AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_connection);
         {
             AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MATERIAL_NAME);
 
             this->widgets.selected_material->clear();
-            for(loop(i, 0, l_material_paths.data.Size))
+            for (loop(i, 0, l_material_paths.data.Size))
             {
                 Span<int8>& l_path = l_material_paths.data.get(i);
                 QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);

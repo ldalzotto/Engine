@@ -12,3 +12,4 @@
 #include "QtWidgets/qlabel.h"
 #include "QtWidgets/qgroupbox.h"
 #include "QtWidgets/qlistwidget.h"
+#include "QtCore/qtimer.h"

@@ -1,4 +1,3 @@
-3/ Making the engine work on Release build.
 4/ Migrating the collision allocation to the new system.
 5/ No dependencies on absolute path ?
 

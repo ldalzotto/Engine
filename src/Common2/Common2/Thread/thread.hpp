@@ -56,7 +56,14 @@ inline thread_t Thread::get_current_thread()
 
 inline void Thread::wait(const thread_t p_thread, const uimax p_time_in_ms)
 {
-    WaitForSingleObject(p_thread, (DWORD)p_time_in_ms);
+#if __DEBUG
+    assert_true(
+#endif
+    WaitForSingleObject(p_thread, (DWORD)p_time_in_ms)
+        #if __DEBUG
+        != WAIT_FAILED)
+        #endif
+        ;
 };
 
 inline void Thread::wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
