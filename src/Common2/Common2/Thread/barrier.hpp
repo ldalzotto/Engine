@@ -45,6 +45,8 @@ struct BarrierTwoStep
         SYNC_2_REACHED = 4
     } state;
 
+
+
     inline void ask_and_wait_for_sync_1()
     {
         while (this->state != State::OPENED)
@@ -54,6 +56,14 @@ struct BarrierTwoStep
         while (this->state != State::SYNC_1_REACHED)
         {
         }
+    };
+
+    inline void ask_for_sync_1()
+    {
+        while (this->state != State::OPENED)
+        {
+        }
+        this->state = State::ASKING_FOR_SYNC_1;
     };
 
     inline void wait_for_sync_1()

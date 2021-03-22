@@ -46,9 +46,9 @@ inline void material_viewer(int argc, char* argv[])
         }
         else if (l_frame_count == 2)
         {
-            assert_true(tk_eq(l_material_viewer_editor.engine_thread.material_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.engine_thread.camera_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.engine_thread.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
+            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
+            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer.widgets.db_file_dialog;
             Span<int8> l_file_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
@@ -57,7 +57,8 @@ inline void material_viewer(int argc, char* argv[])
             fd->close();
             l_file_path.free();
 
-            l_material_viewer_editor.engine_thread.thread.sync_wait_for_engine_to_spawn();
+            EngineExecutionUnit* l_unit =
+                l_material_viewer_editor.engine_runner.sync_wait_for_engine_execution_unit_to_be_allocated(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
 
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_mesh->count() == 3);
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_material->count() == 3);
@@ -65,23 +66,24 @@ inline void material_viewer(int argc, char* argv[])
             l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(0);
             l_material_viewer_editor.material_viewer.widgets.selected_material->setCurrentRow(0);
 
-            l_material_viewer_editor.engine_thread.thread.sync_wait_for_one_whole_frame_at_end_of_frame([&]() {
+            l_unit->sync_wait_for_one_whole_frame_at_end_of_frame([&]() {
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.selected_material.toLocal8Bit().data()).compare(slice_int8_build_rawstr("material_1.json")));
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_1.obj")));
 
-                assert_true(tk_neq(l_material_viewer_editor.engine_thread.material_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.engine_thread.camera_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.engine_thread.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
+                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
+                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
             });
         }
         else if (l_frame_count == 3)
         {
-            l_material_viewer_editor.engine_thread.thread.sync_at_end_of_frame([&]() {
+            EngineExecutionUnit& l_unit = l_material_viewer_editor.engine_runner.engines.get(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
+            l_unit.sync_at_end_of_frame([&]() {
                 l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(1);
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_2.obj")));
 
-                assert_true(l_material_viewer_editor.engine_thread.shared._data.change_requested == 1);
-                assert_true(l_material_viewer_editor.engine_thread.shared._data.mesh_hash == HashSlice(slice_int8_build_rawstr("shape_2.obj")));
+                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.change_requested == 1);
+                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.mesh_hash == HashSlice(slice_int8_build_rawstr("shape_2.obj")));
             });
         }
         else if (l_frame_count == 4)
@@ -93,12 +95,10 @@ inline void material_viewer(int argc, char* argv[])
     });
     l_main_loop.start();
     int l_exec = qt.start(l_material_viewer_editor.root());
-
-    l_material_viewer_editor.free();
-
     qt.free();
 };
 
+// TODO -> adding a test that close the material window manually before the application
 // TODO -> there is an error telling that  when trying to run multiple test back to back
 int main(int argc, char* argv[])
 {

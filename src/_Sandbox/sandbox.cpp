@@ -75,7 +75,7 @@ inline void resize_test()
         };
     };
 
-    l_engine.main_loop(engine_loop{});
+    EngineRunner::main_loop(l_engine, engine_loop{});
 
     assert_true(g_app_windows.get(l_engine.window).client_width == 500);
     assert_true(g_app_windows.get(l_engine.window).client_height == 500);

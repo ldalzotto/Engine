@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO -> remove this, we must use the native one
 template <class ElementType> struct Mutex
 {
     ElementType _data;

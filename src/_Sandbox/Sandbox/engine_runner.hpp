@@ -15,7 +15,7 @@ struct SandboxEngineRunner
     {
         while (!this->engine.abort_condition)
         {
-            this->engine.single_frame_forced_delta(this->simulated_delta_time, p_callbacks);
+            EngineRunner::single_frame_forced_delta(this->engine, this->simulated_delta_time, p_callbacks);
         }
 
         this->engine.free();
@@ -25,7 +25,7 @@ struct SandboxEngineRunner
     {
         while (!this->engine.abort_condition)
         {
-            this->engine.single_frame_forced_delta_headless(this->simulated_delta_time, p_callbacks);
+            EngineRunner::single_frame_forced_delta_headless(this->engine, this->simulated_delta_time, p_callbacks);
         }
 
         this->engine.free_headless();

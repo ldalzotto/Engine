@@ -38,6 +38,17 @@ struct Engine
     DatabaseConnection database_connection;
     AssetDatabase asset_database;
 
+    struct ComponentReleaser
+    {
+        Engine& engine;
+
+        inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
+        {
+            g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator,
+                                        p_component);
+        };
+    };
+
     inline static Engine allocate(const EngineConfiguration& p_configuration)
     {
         Engine l_engine;
@@ -91,71 +102,51 @@ struct Engine
         return l_engine;
     };
 
-    void free();
+    inline void free()
+    {
+        ComponentReleaser l_component_releaser = ComponentReleaser{*this};
+        this->scene.consume_component_events_stateful(l_component_releaser);
+        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
+        this->asset_database.free(this->database_connection);
+        this->database_connection.free();
+        this->collision.free();
+        this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
+        this->renderer.free(this->gpu_context);
+        this->present.free(this->gpu_context.instance, this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator);
+        this->gpu_context.free();
+        WindowAllocator::free(this->window);
+        this->scene.free();
+    };
 
-    void free_headless();
+    inline void free_headless()
+    {
+        ComponentReleaser l_component_releaser = ComponentReleaser{*this};
+        this->scene.consume_component_events_stateful(l_component_releaser);
+        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
+        this->asset_database.free(this->database_connection);
+        this->database_connection.free();
+        this->collision.free();
+        this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
+        this->renderer.free(this->gpu_context);
+        this->gpu_context.free();
+        this->scene.free();
+    };
 
     inline void close()
     {
         this->abort_condition = 1;
     };
-
-    template <class ExternalCallbackStep> void main_loop(const ExternalCallbackStep& p_callback_step);
-
-    template <class ExternalCallbackStep> void single_frame_forced_delta(const float32 p_delta, ExternalCallbackStep& p_callback_step);
-
-    template <class ExternalCallbackStep> void single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbackStep& p_callback_step);
-
-    template <class ExternalCallbackStep> void single_frame(ExternalCallbackStep& p_callback_step);
 };
 
-struct Engine_ComponentReleaser
+struct EngineExternalStepCallback
 {
-    Engine& engine;
-
-    inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
+    void* closure;
+    typedef void(*cb_t)(EngineExternalStep, Engine&, void*);
+    cb_t cb;
+    inline void step(EngineExternalStep p_step, Engine& p_engine)
     {
-        g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator, p_component);
+        this->cb(p_step, p_engine, this->closure);
     };
-};
-
-inline void Engine::free()
-{
-    Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{*this};
-    this->scene.consume_component_events_stateful(l_component_releaser);
-    this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
-    this->asset_database.free(this->database_connection);
-    this->database_connection.free();
-    this->collision.free();
-    this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
-    this->renderer.free(this->gpu_context);
-    this->present.free(this->gpu_context.instance, this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator);
-    this->gpu_context.free();
-    WindowAllocator::free(this->window);
-    this->scene.free();
-};
-
-inline void Engine::free_headless()
-{
-    Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{*this};
-    this->scene.consume_component_events_stateful(l_component_releaser);
-    this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
-    this->asset_database.free(this->database_connection);
-    this->database_connection.free();
-    this->collision.free();
-    this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
-    this->renderer.free(this->gpu_context);
-    this->gpu_context.free();
-    this->scene.free();
-};
-
-template <class ExternalCallbackStep> inline void Engine::main_loop(const ExternalCallbackStep& p_callback_step)
-{
-    while (!this->abort_condition)
-    {
-        this->single_frame(p_callback_step);
-    }
-    WindowAllocator::get_window(this->window).close();
 };
 
 struct EngineLoopFunctions
@@ -170,7 +161,7 @@ struct EngineLoopFunctions
             l_window.consume_resize_event();
             p_engine.present.resize(v3ui{l_window.client_width, l_window.client_height, 1}, p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator);
         }
-        if(l_window.is_closing)
+        if (l_window.is_closing)
         {
             l_window.close();
             p_engine.abort_condition = 1;
@@ -228,43 +219,61 @@ struct EngineLoopFunctions
 
     template <class ExternalCallbackStep> inline static void end_of_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
-        Engine_ComponentReleaser l_component_releaser = Engine_ComponentReleaser{p_engine};
+        Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
         p_engine.scene.consume_component_events_stateful(l_component_releaser);
         p_engine.scene.step();
         p_callback_step.step(EngineExternalStep::END_OF_FRAME, p_engine);
     };
 };
 
-template <class ExternalCallbackStep> inline void Engine::single_frame_forced_delta(const float32 p_delta, ExternalCallbackStep& p_callback_step)
+struct EngineRunner
 {
-    AppNativeEvent::poll_events();
-    if (this->engine_loop.update_forced_delta(p_delta))
-    {
-        EngineLoopFunctions::new_frame(*this);
-        EngineLoopFunctions::update(*this, p_delta, p_callback_step);
-        EngineLoopFunctions::render(*this);
-        EngineLoopFunctions::end_of_frame(*this, p_callback_step);
-    }
-};
 
-template <class ExternalCallbackStep> inline void Engine::single_frame_forced_delta_headless(const float32 p_delta, ExternalCallbackStep& p_callback_step)
-{
-    AppNativeEvent::poll_events();
-    if (this->engine_loop.update_forced_delta(p_delta))
+    template <class ExternalCallbackStep> inline static void single_frame_forced_delta(Engine& p_engine, const float32 p_delta, ExternalCallbackStep& p_callback_step)
     {
-        EngineLoopFunctions::new_frame_headless(*this);
-        EngineLoopFunctions::update(*this, p_delta, p_callback_step);
-        EngineLoopFunctions::render_headless(*this);
-        EngineLoopFunctions::end_of_frame(*this, p_callback_step);
-    }
-};
+        AppNativeEvent::poll_events();
+        p_engine.engine_loop.update_forced_delta(p_delta);
+        EngineLoopFunctions::new_frame(p_engine);
+        EngineLoopFunctions::update(p_engine, p_delta, p_callback_step);
+        EngineLoopFunctions::render(p_engine);
+        EngineLoopFunctions::end_of_frame(p_engine, p_callback_step);
+    };
 
-template <class ExternalCallbackStep> inline void Engine::single_frame(ExternalCallbackStep& p_callback_step)
-{
-    AppNativeEvent::poll_events();
-    float32 l_delta;
-    if (this->engine_loop.update(&l_delta))
+    template <class ExternalCallbackStep> inline static void single_frame_forced_delta_headless(Engine& p_engine, const float32 p_delta, ExternalCallbackStep& p_callback_step)
     {
-        this->single_frame_forced_delta(l_delta, p_callback_step);
+        AppNativeEvent::poll_events();
+        p_engine.engine_loop.update_forced_delta(p_delta);
+        EngineLoopFunctions::new_frame_headless(p_engine);
+        EngineLoopFunctions::update(p_engine, p_delta, p_callback_step);
+        EngineLoopFunctions::render_headless(p_engine);
+        EngineLoopFunctions::end_of_frame(p_engine, p_callback_step);
+    };
+
+    template <class ExternalCallbackStep> inline static void single_frame_no_block(Engine& p_engine, ExternalCallbackStep& p_callback_step)
+    {
+        AppNativeEvent::poll_events();
+        float32 l_delta;
+        if (p_engine.engine_loop.update(&l_delta))
+        {
+            EngineRunner::single_frame_forced_delta(p_engine, l_delta, p_callback_step);
+        };
+    };
+
+    template <class ExternalCallbackStep> inline static void single_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
+    {
+        AppNativeEvent::poll_events();
+        float32 l_delta;
+        if (p_engine.engine_loop.update_thread_block(&l_delta))
+        {
+            EngineRunner::single_frame_forced_delta(p_engine, l_delta, p_callback_step);
+        };
+    };
+
+    template <class ExternalCallbackStep> inline static void main_loop(Engine& p_engine, const ExternalCallbackStep& p_callback_step)
+    {
+        while (!p_engine.abort_condition)
+        {
+            EngineRunner::single_frame(p_engine, p_callback_step);
+        }
     };
 };

@@ -4,12 +4,14 @@
 
 #include "Engine/engine.hpp"
 #include "./qt_utility.hpp"
+#include "./qt_engine_runner_thread.hpp"
 
 #include "AssetCompiler/asset_compiler.hpp"
 
-struct MaterialViewerEngineThread
+struct MaterialViewerEngineUnit
 {
-    EngineThreadV2 thread;
+    int8 is_running;
+    Token(EngineExecutionUnit) engine_execution_unit;
 
     Token(Node) camera_node;
     Token(Node) material_node;
@@ -24,20 +26,37 @@ struct MaterialViewerEngineThread
 
     Mutex<SharedRessources> shared;
 
-    inline static MaterialViewerEngineThread allocate()
+    inline static MaterialViewerEngineUnit build()
     {
-        MaterialViewerEngineThread l_return{};
-        l_return.thread = EngineThreadV2::allocate();
+        MaterialViewerEngineUnit l_return{};
+        l_return.engine_execution_unit = tk_bd(EngineExecutionUnit);
         l_return.material_node_meshrenderer = tk_bd(MeshRendererComponent);
         l_return.camera_node = tk_bd(Node);
         l_return.material_node = tk_bd(Node);
         return l_return;
     };
 
-    inline void start(const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
+    inline void free(QtEngineRunnerThread& p_engine_runner)
     {
-        this->engine_loop = s_engine_loop{this};
-        this->thread.start(p_asset_database, p_width, p_height, this->engine_loop);
+        if (this->is_running)
+        {
+            p_engine_runner.free_engine_sync(this->engine_execution_unit);
+            *this = MaterialViewerEngineUnit::build();
+        }
+    };
+
+    inline void start(QtEngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
+    {
+        this->is_running = 1;
+        this->engine_execution_unit =
+            p_engine_runner.allocate_engine(p_asset_database, p_width, p_height, EngineExternalStepCallback{(void*)this, (EngineExternalStepCallback::cb_t)MaterialViewerEngineUnit::step},
+                                            EngineExecutionUnit::CleanupCallback{(void*)this, (EngineExecutionUnit::CleanupCallback::cb_t)MaterialViewerEngineUnit::cleanup_ressources});
+    };
+
+    inline void restart(QtEngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
+    {
+        this->free(p_engine_runner);
+        this->start(p_engine_runner, p_asset_database, p_width, p_height);
     };
 
     inline void set_new_material(const hash_t p_new_material)
@@ -57,48 +76,44 @@ struct MaterialViewerEngineThread
     };
 
   private:
-    struct s_engine_loop
+    inline static void step(const EngineExternalStep p_step, Engine& p_engine, MaterialViewerEngineUnit* thiz)
     {
-        MaterialViewerEngineThread* thiz;
-        inline void step(const EngineExternalStep p_step, Engine& p_engine)
+        if (p_step == EngineExternalStep::BEFORE_UPDATE)
         {
-            if (p_step == EngineExternalStep::BEFORE_UPDATE)
+            float32 l_deltatime = DeltaTime(p_engine);
+            uimax l_frame_count = FrameCount(p_engine);
+            if (l_frame_count == 1)
             {
-                float32 l_deltatime = DeltaTime(p_engine);
-                uimax l_frame_count = FrameCount(p_engine);
-                if (l_frame_count == 1)
-                {
-                    thiz->camera_node = CreateNode(p_engine, transform_const::ORIGIN);
-                    thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
-                    NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
-                }
-                thiz->shared.acquire([&](SharedRessources& p_shared) {
-                    if (p_shared.change_requested)
-                    {
-                        if (tk_v(thiz->material_node_meshrenderer) != -1)
-                        {
-                            NodeRemoveMeshRenderer(p_engine, thiz->material_node);
-                        }
-                        thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
-                        p_shared.change_requested = 0;
-                    }
-                });
-
-                NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+                thiz->camera_node = CreateNode(p_engine, transform_const::ORIGIN);
+                thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
+                NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
             }
-        };
+            thiz->shared.acquire([&](SharedRessources& p_shared) {
+                if (p_shared.change_requested)
+                {
+                    if (tk_v(thiz->material_node_meshrenderer) != -1)
+                    {
+                        NodeRemoveMeshRenderer(p_engine, thiz->material_node);
+                    }
+                    thiz->material_node_meshrenderer = NodeAddMeshRenderer(p_engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
+                    p_shared.change_requested = 0;
+                }
+            });
 
-        inline void cleanup_ressources(Engine& p_engine)
-        {
-            RemoveNode(p_engine, thiz->camera_node);
-            RemoveNode(p_engine, thiz->material_node);
-        };
-    } engine_loop;
+            NodeAddWorldRotation(p_engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+        }
+    };
+
+    inline static void cleanup_ressources(Engine& p_engine, MaterialViewerEngineUnit* thiz)
+    {
+        RemoveNode(p_engine, thiz->camera_node);
+        RemoveNode(p_engine, thiz->material_node);
+        thiz->is_running = 0;
+    };
 };
 
 struct MaterialViewerWindow
 {
-
     struct View
     {
         QString database_file;
@@ -273,23 +288,21 @@ struct MaterialViewerWindow
 
 struct MaterialViewerEditor
 {
-    MaterialViewerEngineThread engine_thread;
+    QtEngineRunnerThread engine_runner;
+    MaterialViewerEngineUnit material_viewer_engine_unit;
     MaterialViewerWindow material_viewer;
 
     inline void allocate()
     {
-        this->engine_thread = MaterialViewerEngineThread::allocate();
+        this->material_viewer_engine_unit = MaterialViewerEngineUnit::build();
+        this->engine_runner = QtEngineRunnerThread::allocate();
+        this->engine_runner.start();
 
         MaterialViewerWindow::Callbacks l_callbacks;
         l_callbacks.closure = this;
         l_callbacks.on_database_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
-            if (thiz->engine_thread.thread.is_running())
-            {
-                thiz->engine_thread.thread.free();
-                thiz->engine_thread = MaterialViewerEngineThread::allocate();
-            }
-            thiz->engine_thread.start(slice_int8_build_rawstr(thiz->material_viewer.view.database_file.toLocal8Bit().data()), 400, 400);
+            thiz->material_viewer_engine_unit.restart(thiz->engine_runner, slice_int8_build_rawstr(thiz->material_viewer.view.database_file.toLocal8Bit().data()), 400, 400);
         };
         l_callbacks.on_material_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
@@ -304,7 +317,8 @@ struct MaterialViewerEditor
 
     inline void free()
     {
-        this->engine_thread.thread.free();
+        this->material_viewer_engine_unit.free(this->engine_runner);
+        this->engine_runner.free();
     };
 
     inline QWidget* root()
@@ -320,7 +334,7 @@ struct MaterialViewerEditor
             return;
         }
 
-        this->engine_thread.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.selected_material.toLocal8Bit().data())));
-        this->engine_thread.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.slected_mesh.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.selected_material.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.slected_mesh.toLocal8Bit().data())));
     };
 };

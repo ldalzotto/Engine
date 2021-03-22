@@ -46,9 +46,23 @@ template <class ElementType> struct PoolIndexed
         return this->Memory.get(p_element);
     };
 
+    inline ElementType& get_by_index(const uimax p_index)
+    {
+        Token(ElementType) l_token = this->Indices.get(p_index);
+        return this->Memory.get(l_token);
+    };
+
     template <class ForeachSlot_t> inline void foreach (const ForeachSlot_t& p_foreach)
     {
         for (loop(i, 0, this->Indices.Size))
+        {
+            Token(ElementType) l_token = this->Indices.get(i);
+            p_foreach(l_token, this->Memory.get(l_token));
+        }
+    }
+    template <class ForeachSlot_t> inline void foreach_reverse(const ForeachSlot_t& p_foreach)
+    {
+        for (loop_reverse(i, 0, this->Indices.Size))
         {
             Token(ElementType) l_token = this->Indices.get(i);
             p_foreach(l_token, this->Memory.get(l_token));
