@@ -89,6 +89,7 @@ template <class KeyType, class ElementType> struct HashMap
         hash_t l_hash = this->hash_key(p_key);
         if (this->has_key(l_hash))
         {
+            // TODO check_key_equality should not be an assertion here because l_hash can be the same as an other key that hashed to the same result.
             assert_true(this->check_key_equality(p_key, l_hash));
             return 1;
         }

@@ -40,7 +40,7 @@ inline static int32 handleStepError(int32 p_step_return, sqlite3** p_connection)
     }
 #endif
     return p_step_return;
-}
+};
 
 }; // namespace DatabaseConnection_Utils
 

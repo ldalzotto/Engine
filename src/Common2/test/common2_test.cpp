@@ -1011,6 +1011,11 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
 };
 
+inline void assert_heap_memory_alignement(const uimax p_alignment, const HeapA::AllocatedElementReturn& p_chunk)
+{
+    assert_true((p_chunk.Offset % p_alignment) == 0);
+};
+
 inline void sort_test(){{uimax l_sizet_array[10] = {10, 9, 8, 2, 7, 4, 10, 35, 9, 4};
 uimax l_sorted_sizet_array[10] = {35, 10, 10, 9, 9, 8, 7, 4, 4, 2};
 Slice<uimax> l_slice = Slice<uimax>::build_memory_elementnb(l_sizet_array, 10);
@@ -1073,6 +1078,7 @@ inline void heap_test()
 
     l_heap.free();
 
+    l_initial_heap_size = 30;
     l_heap = Heap::allocate(l_initial_heap_size);
     assert_heap_integrity(&l_heap);
     {
@@ -1080,12 +1086,22 @@ inline void heap_test()
         HeapA::AllocatedElementReturn l_allocated_chunk;
         assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
+        assert_heap_memory_alignement(5, l_allocated_chunk);
         assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 5);
+        assert_heap_memory_alignement(5, l_allocated_chunk);
         assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 14);
+        assert_heap_memory_alignement(7, l_allocated_chunk);
+
+        // There was a bug that were causing the heap to align memory chunk with the size of the chunk instead of the desired alignment
+        l_heap.release_element(l_allocated_chunk.token);
+        assert_heap_integrity(&l_heap);
+        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == HeapA::AllocationState::ALLOCATED);
+        assert_true(l_allocated_chunk.Offset == 14);
+        assert_heap_memory_alignement(7, l_allocated_chunk);
 
         assert_true(l_heap.Size == l_initial_heap_size);
     }

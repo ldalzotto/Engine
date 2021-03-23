@@ -43,6 +43,10 @@ struct HeapA
     static AllocationState allocate_element_norealloc_with_modulo_offset(ShadowHeap_t(s) & p_heap, const uimax p_size, const uimax p_alignement_modulo, HeapA::AllocatedElementReturn* out_chunk);
 
   private:
+#if __DEBUG
+    static void _assert_memory_alignment(const uimax p_alignment_modulo, const HeapA::AllocatedElementReturn& p_allocated_chunk);
+#endif
+
     template <class ShadowHeap_t(s)> static int8 _allocate_element(ShadowHeap_t(s) & p_heap, const uimax p_size, HeapA::AllocatedElementReturn* out_return);
 
     template <class ShadowHeap_t(s)>
@@ -208,6 +212,10 @@ inline HeapA::AllocationState HeapA::allocate_element_with_modulo_offset(ShadowH
     return HeapA::AllocationState::ALLOCATED;
 }
 
+#if __DEBUG
+template <class ShadowHeap_t(s)> inline void assert_memory_alignment(ShadowHeap_t(s) & p_heap, const uimax p_alignment_modulo, const HeapA::AllocatedElementReturn& p_allocated_chunk);
+#endif
+
 template <class ShadowHeap_t(s)>
 inline HeapA::AllocationState HeapA::allocate_element_norealloc_with_modulo_offset(ShadowHeap_t(s) & p_heap, const uimax p_size, const uimax p_alignement_modulo,
                                                                                    HeapA::AllocatedElementReturn* out_chunk)
@@ -232,7 +240,7 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
+    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);
         if (l_free_chunk.Size > p_size)
@@ -253,6 +261,13 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
     return 0;
 }
 
+#if __DEBUG
+inline void HeapA::_assert_memory_alignment(const uimax p_alignment_modulo, const HeapA::AllocatedElementReturn& p_allocated_chunk)
+{
+    assert_true((p_allocated_chunk.Offset % p_alignment_modulo) == 0);
+};
+#endif
+
 template <class ShadowHeap_t(s)>
 inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap, const uimax p_size, const uimax p_modulo_offset, HeapA::AllocatedElementReturn* out_chunk)
 {
@@ -262,7 +277,8 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
+    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
+    // for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);
 
@@ -275,6 +291,10 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
                 SliceIndex l_new_allocated_chunk;
                 l_free_chunk.slice_two(l_free_chunk.Begin + p_size, &l_new_allocated_chunk, &l_free_chunk);
                 *out_chunk = _push_chunk(p_heap, &l_new_allocated_chunk);
+
+#if __DEBUG
+                HeapA::_assert_memory_alignment(p_modulo_offset, *out_chunk);
+#endif
                 return 1;
             }
             else
@@ -292,6 +312,9 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
 
                     sv_c_push_back_element(&l_free_chunks, l_new_free_chunk);
 
+#if __DEBUG
+                    HeapA::_assert_memory_alignment(p_modulo_offset, *out_chunk);
+#endif
                     return 1;
                 }
                 else if (l_free_chunk.Size == (p_size + l_chunk_offset_delta)) // offsetted chunk end matches perfectly the end of the free chunk
@@ -306,12 +329,14 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
         }
         else if (l_free_chunk.Size == p_size)
         {
-            uimax l_offset_modulo = (l_free_chunk.Size % p_modulo_offset);
+            uimax l_offset_modulo = (l_free_chunk.Begin % p_modulo_offset);
             if (l_offset_modulo == 0)
             {
                 *out_chunk = _push_chunk(p_heap, &l_free_chunk);
-                sv_c_erase_element_at(&l_free_chunks, i);
-
+                sv_c_erase_element_at_always(&l_free_chunks, i);
+#if __DEBUG
+                HeapA::_assert_memory_alignment(p_modulo_offset, *out_chunk);
+#endif
                 return 1;
             }
         }
