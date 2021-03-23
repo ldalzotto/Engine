@@ -269,11 +269,27 @@ struct EngineRunner
         };
     };
 
-    template <class ExternalCallbackStep> inline static void main_loop(Engine& p_engine, const ExternalCallbackStep& p_callback_step)
+    template <class ExternalCallbackStep> inline static void main_loop(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
         while (!p_engine.abort_condition)
         {
             EngineRunner::single_frame(p_engine, p_callback_step);
+        }
+    };
+
+    template <class ExternalCallbackStep> inline static void main_loop_forced_delta(Engine& p_engine, ExternalCallbackStep& p_callback_step, float32* in_delta)
+    {
+        while (!p_engine.abort_condition)
+        {
+            EngineRunner::single_frame_forced_delta(p_engine, *in_delta, p_callback_step);
+        }
+    };
+
+    template <class ExternalCallbackStep> inline static void main_loop_headless_forced_delta(Engine& p_engine, ExternalCallbackStep& p_callback_step, float32* in_delta)
+    {
+        while (!p_engine.abort_condition)
+        {
+            EngineRunner::single_frame_forced_delta_headless(p_engine, *in_delta, p_callback_step);
         }
     };
 };

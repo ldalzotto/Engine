@@ -320,11 +320,14 @@ inline void boxcollision()
     EngineConfiguration l_condfiguration;
     l_condfiguration.asset_database_path = l_database_path.to_slice();
     l_condfiguration.headless = 1;
-    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(l_condfiguration, 1.0f / 60.0f);
-    l_database_path.free();
+    Engine l_engine = SpawnEngine(l_condfiguration);
 
+    float32 l_delta = 1.0f / 60.0f;
     BoxCollisionSandboxEnvironment l_sandbox_environment = BoxCollisionSandboxEnvironment::build_default();
-    l_runner.main_loop_headless(l_sandbox_environment);
+    EngineRunner::main_loop_headless_forced_delta(l_engine, l_sandbox_environment, &l_delta);
+
+    l_engine.free_headless();
+    l_database_path.free();
 };
 
 namespace D3RendererCubeSandboxEnvironment_Const
@@ -435,11 +438,15 @@ inline void d3renderer_cube()
     l_configuration.asset_database_path = l_database_path.to_slice();
     l_configuration.render_size = v2ui{800, 600};
     l_configuration.render_target_host_readable = 1;
-    SandboxEngineRunner l_runner = SandboxEngineRunner::allocate(EngineConfiguration{l_configuration}, 1.0f / 60.0f);
-    l_database_path.free();
+    Engine l_engine = SpawnEngine(l_configuration);
+    float32 l_delta = 1.0f / 60.0f;
 
     D3RendererCubeSandboxEnvironment l_sandbox_environment = D3RendererCubeSandboxEnvironment::build_default();
-    l_runner.main_loop(l_sandbox_environment);
+    EngineRunner::main_loop_forced_delta(l_engine, l_sandbox_environment, &l_delta);
+
+    DestroyEngine(l_engine);
+
+    l_database_path.free();
 }
 
 int main()
