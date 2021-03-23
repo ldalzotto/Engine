@@ -84,6 +84,124 @@ inline void resize_test()
     l_database_path.free();
 };
 
+inline void engine_thread_test()
+{
+    EngineRunnerThread l_thread = EngineRunnerThread::allocate();
+    l_thread.start();
+
+    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(slice_int8_build_rawstr("/thread_test/asset.db"));
+
+    struct s_engine_cb
+    {
+        uimax frame_count;
+        int8 cleanup_called;
+        inline static void step(EngineExternalStep p_step, Engine& p_engine, s_engine_cb* thiz)
+        {
+            thiz->frame_count = FrameCount(p_engine);
+        };
+
+        inline static void cleanup_ressources(Engine& p_engine, s_engine_cb* thiz)
+        {
+            thiz->cleanup_called = 1;
+        };
+
+        inline EngineExternalStepCallback build_external_step_callback()
+        {
+            return EngineExternalStepCallback{this, (EngineExternalStepCallback::cb_t)s_engine_cb::step};
+        };
+
+        inline EngineExecutionUnit::CleanupCallback build_cleanup_callback()
+        {
+            return EngineExecutionUnit::CleanupCallback{this, (EngineExecutionUnit::CleanupCallback::cb_t)s_engine_cb::cleanup_ressources};
+        };
+    };
+
+    // only one engine
+    {
+        s_engine_cb engine_cb{};
+        Token(EngineExecutionUnit) l_engine_eu_1 =
+            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb.build_external_step_callback(), engine_cb.build_cleanup_callback());
+        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
+        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+            assert_true(engine_cb.frame_count == 2);
+        });
+        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+            assert_true(engine_cb.frame_count == 3);
+        });
+        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+            assert_true(engine_cb.frame_count == 4);
+            assert_true(engine_cb.cleanup_called == 0);
+        });
+        l_thread.free_engine_execution_unit_sync(l_engine_eu_1);
+        assert_true(engine_cb.cleanup_called == 1);
+    }
+    // two engine in //
+    {
+        s_engine_cb engine_cb_1{};
+        s_engine_cb engine_cb_2{};
+        Token(EngineExecutionUnit) l_engine_eu_1 =
+            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_1.build_external_step_callback(), engine_cb_1.build_cleanup_callback());
+        Token(EngineExecutionUnit) l_engine_eu_2 =
+            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_2.build_external_step_callback(), engine_cb_2.build_cleanup_callback());
+
+        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
+        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_2);
+
+        uimax l_start_frame_1;
+        uimax l_start_frame_2;
+
+        int8 l_exit = 0;
+        int8 l_step_count = 0;
+        l_thread.sync_step_loop(
+            [&]() {
+                if (l_step_count == 0)
+                {
+                    l_start_frame_1 = engine_cb_1.frame_count;
+                    l_start_frame_2 = engine_cb_2.frame_count;
+                }
+                else if (l_step_count == 1)
+                {
+                    assert_true(engine_cb_1.frame_count > l_start_frame_1);
+                    assert_true(engine_cb_2.frame_count > l_start_frame_2);
+                    l_start_frame_1 = engine_cb_1.frame_count;
+                    l_start_frame_2 = engine_cb_2.frame_count;
+                }
+                else if (l_step_count == 2)
+                {
+                    assert_true(engine_cb_1.frame_count > l_start_frame_1);
+                    assert_true(engine_cb_2.frame_count > l_start_frame_2);
+                    l_start_frame_1 = engine_cb_1.frame_count;
+                    l_start_frame_2 = engine_cb_2.frame_count;
+                }
+            },
+            [&]() {
+                l_step_count += 1;
+                if (l_step_count == 2)
+                {
+                    l_exit = 1;
+                }
+            },
+            &l_exit);
+
+        l_thread.free_engine_execution_unit(l_engine_eu_1);
+        l_thread.sync_end_of_step([&]() {
+            assert_true(l_thread.engines.Memory.is_element_free(l_engine_eu_1));
+            assert_true(engine_cb_1.cleanup_called == 1);
+            l_start_frame_2 = engine_cb_2.frame_count;
+        });
+
+        l_thread.engines.get(l_engine_eu_2).sync_at_end_of_frame([&]() {
+            assert_true(engine_cb_2.frame_count == (l_start_frame_2 + 1));
+        });
+
+        l_thread.free_engine_execution_unit_sync(l_engine_eu_2);
+    }
+
+    l_thread.free();
+    l_database_path.free();
+};
+
 struct BoxCollisionSandboxEnvironment
 {
     Token(Node) moving_node;
@@ -327,6 +445,7 @@ inline void d3renderer_cube()
 int main()
 {
     resize_test();
+    engine_thread_test();
     boxcollision();
     d3renderer_cube();
 
