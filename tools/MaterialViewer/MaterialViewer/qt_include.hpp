@@ -13,3 +13,4 @@
 #include "QtWidgets/qgroupbox.h"
 #include "QtWidgets/qlistwidget.h"
 #include "QtCore/qtimer.h"
+#include "QtGui/qpalette.h"

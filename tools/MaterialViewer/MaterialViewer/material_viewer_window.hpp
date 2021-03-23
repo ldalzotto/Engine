@@ -132,6 +132,7 @@ struct MaterialViewerWindow
         QPushButton* db_file_selection;
         QFileDialog* db_file_dialog;
         QLabel* db_file_label;
+        QLabel* db_status_label;
 
         QLayoutWidget<QVBoxLayout, QGroupBox> selected_material_root;
         QListWidget* selected_material;
@@ -162,7 +163,15 @@ struct MaterialViewerWindow
     {
         this->root = new QWidget();
         this->widgets.db_file_selection = new QPushButton("DB");
+        this->widgets.db_file_selection->setMaximumWidth(20);
         this->widgets.db_file_label = new QLabel();
+        this->widgets.db_file_label->setWordWrap(1);
+        this->widgets.db_status_label = new QLabel();
+        // this->widgets.db_file_label->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+
+        this->widgets.db_layout = QLayoutWidget<QHBoxLayout, QWidget>::allocate();
+        // this->widgets.db_layout.layout.exp
+        // this->widgets.db_layout.layout->size
 
         this->widgets.selected_material_root = QLayoutWidget<QVBoxLayout, QGroupBox>::allocate();
         this->widgets.selected_material_root.widget->setTitle("material");
@@ -173,8 +182,6 @@ struct MaterialViewerWindow
         this->widgets.selected_mesh = new QListWidget();
 
         this->widgets.main_layout = new QVBoxLayout(this->root);
-
-        this->widgets.db_layout = QLayoutWidget<QHBoxLayout, QWidget>::allocate();
     };
 
     inline void setup_widget_layout()
@@ -193,18 +200,31 @@ struct MaterialViewerWindow
         l_builder.add_widget(this->widgets.selected_mesh);
 
         l_builder.bind_layout(this->widgets.main_layout);
-        l_builder.add_widget_3(this->widgets.db_layout.widget, this->widgets.selected_material_root.widget, this->widgets.selected_mesh_root.widget);
+        l_builder.add_widget(this->widgets.db_layout.widget);
+        l_builder.add_widget(this->widgets.db_status_label);
+        l_builder.add_widget(this->widgets.selected_material_root.widget);
+        l_builder.add_widget(this->widgets.selected_mesh_root.widget);
     };
 
     inline void setup_widget_events(const Callbacks& p_callbacks)
     {
         this->callbacks = p_callbacks;
 
+        this->widgets.db_status_label->setText("Waiting for asset database.");
         QObject::connect(this->widgets.db_file_selection, &QPushButton::released, [&]() {
             this->widgets.db_file_dialog = new QFileDialog(this->root);
             this->widgets.db_file_dialog->setNameFilters({"DB files (*.db)", "Any files (*)"});
             QObject::connect(this->widgets.db_file_dialog, &QFileDialog::fileSelected, [&, this](const QString& p_file) {
-                this->on_database_file_selected(p_file);
+                if (this->on_database_file_selected(p_file))
+                {
+                    this->widgets.db_status_label->setText("Database recognized !");
+                    this->widgets.db_status_label->setStyleSheet("QLabel { color: green; }");
+                }
+                else
+                {
+                    this->widgets.db_status_label->setText("Database invalid format !");
+                    this->widgets.db_status_label->setStyleSheet("QLabel { color: red; }");
+                }
             });
             this->widgets.db_file_dialog->open();
         });
@@ -224,48 +244,55 @@ struct MaterialViewerWindow
         });
     };
 
-    inline void on_database_file_selected(const QString& p_file)
+    inline int8 on_database_file_selected(const QString& p_file)
     {
         this->view = View{};
         this->view.database_file = p_file;
         this->widgets.db_file_label->setText(this->view.database_file);
-        if (this->callbacks.on_database_selected)
-        {
-            this->callbacks.on_database_selected(this, this->callbacks.closure);
-        }
 
         QByteArray l_database_file_path_arr = this->view.database_file.toLocal8Bit();
         Slice<int8> l_database_file_path = slice_int8_build_rawstr(l_database_file_path_arr.data());
-        DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_file_path);
-        AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_connection);
+        DatabaseConnection l_connection;
+        if (DatabaseConnection::allocate_silent(l_database_file_path, &l_connection))
         {
-            AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MATERIAL_NAME);
-
-            this->widgets.selected_material->clear();
-            for (loop(i, 0, l_material_paths.data.Size))
+            if (this->callbacks.on_database_selected)
             {
-                Span<int8>& l_path = l_material_paths.data.get(i);
-                QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
-                this->widgets.selected_material->addItem(l_str);
+                this->callbacks.on_database_selected(this, this->callbacks.closure);
             }
-            l_material_paths.free();
-        }
-        {
-            AssetMetadataDatabase::Paths l_mesh_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MESH_NAME);
 
-            this->widgets.selected_mesh->clear();
-            for(loop(i, 0, l_mesh_paths.data.Size))
+            AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_connection);
             {
-                Span<int8>& l_path = l_mesh_paths.data.get(i);
-                QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
-                this->widgets.selected_mesh->addItem(l_str);
+                AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MATERIAL_NAME);
+
+                this->widgets.selected_material->clear();
+                for (loop(i, 0, l_material_paths.data.Size))
+                {
+                    Span<int8>& l_path = l_material_paths.data.get(i);
+                    QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                    this->widgets.selected_material->addItem(l_str);
+                }
+                l_material_paths.free();
             }
-            l_mesh_paths.free();
+            {
+                AssetMetadataDatabase::Paths l_mesh_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MESH_NAME);
+
+                this->widgets.selected_mesh->clear();
+                for (loop(i, 0, l_mesh_paths.data.Size))
+                {
+                    Span<int8>& l_path = l_mesh_paths.data.get(i);
+                    QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                    this->widgets.selected_mesh->addItem(l_str);
+                }
+                l_mesh_paths.free();
+            }
+
+            l_asset_metadata_database.free(l_connection);
+            l_connection.free();
+
+            return 1;
         }
 
-
-        l_asset_metadata_database.free(l_connection);
-        l_connection.free();
+        return 0;
     };
 
     inline void on_material_selected(const QString& p_file)

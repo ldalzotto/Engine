@@ -5,7 +5,7 @@ enable_language(CXX)
 
 set(QT_PATH "E:/qt/6.0.2/msvc2019_64/")
 
-set(QT_LIB ${QT_PATH}lib/Qt6Core.lib ${QT_PATH}lib/Qt6Cored.lib ${QT_PATH}lib/Qt6Widgets.lib ${QT_PATH}lib/Qt6Widgetsd.lib)
+set(QT_LIB ${QT_PATH}lib/Qt6Core.lib ${QT_PATH}lib/Qt6Cored.lib ${QT_PATH}lib/Qt6Widgets.lib ${QT_PATH}lib/Qt6Widgetsd.lib ${QT_PATH}lib/Qt6Gui.lib ${QT_PATH}lib/Qt6Guid.lib)
 
 add_library(MaterialViewer INTERFACE)
 target_include_directories(MaterialViewer INTERFACE "${QT_PATH}include")

@@ -62,6 +62,22 @@ struct DatabaseConnection
         return l_connection;
     }
 
+    inline static int allocate_silent(const Slice<int8>& p_databasepath, DatabaseConnection* out_connection)
+    {
+        File l_database_file = File::create_or_open(p_databasepath);
+        l_database_file.free();
+        int l_return = sqlite3_open(p_databasepath.Begin, &out_connection->connection);
+#if __MEMLEAK
+        if (l_return)
+        {
+
+            push_ptr_to_tracked((int8*)out_connection->connection);
+        }
+#endif
+
+        return l_return;
+    };
+
     inline void free()
     {
 #if __MEMLEAK
