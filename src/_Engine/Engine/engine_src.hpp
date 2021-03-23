@@ -10,8 +10,7 @@ struct EngineConfiguration
 
 enum class EngineExternalStep : int8
 {
-    NEW_FRAME = 0,
-    BEFORE_COLLISION = NEW_FRAME + 1,
+    BEFORE_COLLISION = 0,
     AFTER_COLLISION = BEFORE_COLLISION + 1,
     BEFORE_UPDATE = AFTER_COLLISION + 1,
     END_OF_FRAME = BEFORE_UPDATE + 1
@@ -155,7 +154,6 @@ struct EngineLoopFunctions
     template <class ExternalCallbackStep> inline static void new_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
         p_engine.clock.newframe();
-        p_callback_step.step(EngineExternalStep::NEW_FRAME, p_engine);
 
         Window& l_window = WindowAllocator::get_window(p_engine.window);
         if (l_window.resize_event.ask)

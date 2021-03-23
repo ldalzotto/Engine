@@ -57,16 +57,13 @@ inline void material_viewer(int argc, char* argv[])
             fd->close();
             l_file_path.free();
 
-            EngineExecutionUnit* l_unit =
-                l_material_viewer_editor.engine_runner.sync_wait_for_engine_execution_unit_to_be_allocated(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
-
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_mesh->count() == 3);
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_material->count() == 3);
 
             l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(0);
             l_material_viewer_editor.material_viewer.widgets.selected_material->setCurrentRow(0);
 
-            l_unit->sync_wait_for_one_whole_frame_at_end_of_frame([&]() {
+            l_material_viewer_editor.engine_runner.sync_engine_wait_for_one_whole_frame_at_end_of_frame(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit, [&]() {
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.selected_material.toLocal8Bit().data()).compare(slice_int8_build_rawstr("material_1.json")));
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_1.obj")));
 
@@ -77,13 +74,12 @@ inline void material_viewer(int argc, char* argv[])
         }
         else if (l_frame_count == 3)
         {
-            EngineExecutionUnit& l_unit = l_material_viewer_editor.engine_runner.engines.get(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
-            l_unit.sync_at_end_of_frame([&]() {
-              l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(1);
-              assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_2.obj")));
+            l_material_viewer_editor.engine_runner.sync_engine_at_end_of_frame(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit, [&]() {
+                l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(1);
+                assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_2.obj")));
 
-              assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.change_requested == 1);
-              assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.mesh_hash == HashSlice(slice_int8_build_rawstr("shape_2.obj")));
+                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.change_requested == 1);
+                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.mesh_hash == HashSlice(slice_int8_build_rawstr("shape_2.obj")));
             });
         }
         else if (l_frame_count == 4)
@@ -129,16 +125,13 @@ inline void material_viewer_close_material_window_before_app(int argc, char* arg
             fd->close();
             l_file_path.free();
 
-            EngineExecutionUnit* l_unit =
-                l_material_viewer_editor.engine_runner.sync_wait_for_engine_execution_unit_to_be_allocated(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
-
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_mesh->count() == 3);
             assert_true(l_material_viewer_editor.material_viewer.widgets.selected_material->count() == 3);
 
             l_material_viewer_editor.material_viewer.widgets.selected_mesh->setCurrentRow(0);
             l_material_viewer_editor.material_viewer.widgets.selected_material->setCurrentRow(0);
 
-            l_unit->sync_wait_for_one_whole_frame_at_end_of_frame([&]() {
+            l_material_viewer_editor.engine_runner.sync_engine_wait_for_one_whole_frame_at_end_of_frame(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit, [&]() {
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.selected_material.toLocal8Bit().data()).compare(slice_int8_build_rawstr("material_1.json")));
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_1.obj")));
 
@@ -150,11 +143,10 @@ inline void material_viewer_close_material_window_before_app(int argc, char* arg
         else if (l_frame_count == 3)
         {
             EngineExecutionUnit& l_unit = l_material_viewer_editor.engine_runner.engines.get(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit);
-            l_unit.sync_at_end_of_frame([&]() {
+            l_material_viewer_editor.engine_runner.sync_engine_at_end_of_frame(l_material_viewer_editor.material_viewer_engine_unit.engine_execution_unit, [&]() {
                 WindowNative::simulate_close_appevent(g_app_windows.get(l_unit.engine.window).handle);
             });
             l_elapsed_time_before_close_app_last_frame = clock_currenttime_mics();
-            // l_unit.sync_wait_for_one_whole_frame_at_end_of_frame([](){});
         }
         else if(l_frame_count >= 4) {
             l_elapsed_time_before_close_app += (clock_currenttime_mics() - l_elapsed_time_before_close_app_last_frame);

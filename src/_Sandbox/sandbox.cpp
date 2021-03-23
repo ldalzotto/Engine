@@ -123,13 +123,13 @@ inline void engine_thread_test()
         Token(EngineExecutionUnit) l_engine_eu_1 =
             l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb.build_external_step_callback(), engine_cb.build_cleanup_callback());
         l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
-        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
             assert_true(engine_cb.frame_count == 2);
         });
-        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
             assert_true(engine_cb.frame_count == 3);
         });
-        l_thread.engines.get(l_engine_eu_1).sync_at_end_of_frame([&]() {
+        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
             assert_true(engine_cb.frame_count == 4);
             assert_true(engine_cb.cleanup_called == 0);
         });
@@ -191,7 +191,7 @@ inline void engine_thread_test()
             l_start_frame_2 = engine_cb_2.frame_count;
         });
 
-        l_thread.engines.get(l_engine_eu_2).sync_at_end_of_frame([&]() {
+        l_thread.sync_engine_at_end_of_frame(l_engine_eu_2, [&]() {
             assert_true(engine_cb_2.frame_count == (l_start_frame_2 + 1));
         });
 

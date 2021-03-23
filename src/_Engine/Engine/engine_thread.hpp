@@ -21,20 +21,12 @@ struct EngineExecutionUnit
     Engine engine;
     EngineExternalStepCallback step_callback;
 
-    struct Synchronization
-    {
-        Barrier engine_spawned;
-        BarrierTwoStep end_of_frame;
-    } synchronization;
-
     EngineExternalStepCallback external_loop_callback;
     CleanupCallback cleanup_callback;
 
     inline void allocate(const EngineConfiguration& p_engine_configuration, const EngineExternalStepCallback& p_step_callback, const CleanupCallback& p_cleanup_callback)
     {
-        this->synchronization.engine_spawned.close();
         this->engine = SpawnEngine(p_engine_configuration);
-        this->synchronization.engine_spawned.open();
         this->external_loop_callback = p_step_callback;
         this->cleanup_callback = p_cleanup_callback;
     };
@@ -52,53 +44,7 @@ struct EngineExecutionUnit
 
     inline void single_frame_no_block()
     {
-        struct single_frame_no_block_cb {
-            EngineExecutionUnit* thiz;
-            inline void step(const EngineExternalStep p_step, Engine& p_engine) const
-            {
-                thiz->external_loop_callback.step(p_step, p_engine);
-                EngineExecutionUnit::engine_sync(p_step, p_engine, thiz);
-            };
-        };
-        EngineRunner::single_frame_no_block(this->engine, single_frame_no_block_cb{this});
-    };
-
-    inline void sync_wait_for_engine_to_spawn()
-    {
-        this->synchronization.engine_spawned.wait_for_open();
-
-        while (FrameCount(this->engine) <= 1)
-        {
-            this->sync_at_end_of_frame([]() {
-            });
-        }
-    };
-
-    // /!\ WARNING - this doesn't guarantee that a full frame have passed by.
-    template <class t_EndOfFrameFunc> inline void sync_at_end_of_frame(const t_EndOfFrameFunc& p_callback)
-    {
-        this->synchronization.end_of_frame.ask_and_wait_for_sync_1();
-        p_callback();
-        this->synchronization.end_of_frame.notify_sync_2();
-    };
-
-    template <class t_EndOfFrameFunc> inline void sync_wait_for_one_whole_frame_at_end_of_frame(const t_EndOfFrameFunc& p_callback)
-    {
-        this->sync_at_end_of_frame([]() {
-        });
-        this->sync_at_end_of_frame(p_callback);
-    };
-
-  private:
-    inline static void engine_sync(const EngineExternalStep p_step, Engine& p_engine, EngineExecutionUnit* thiz)
-    {
-        if (p_step == EngineExternalStep::END_OF_FRAME)
-        {
-            if (!thiz->synchronization.end_of_frame.is_opened())
-            {
-                thiz->synchronization.end_of_frame.notify_sync_1_and_wait_for_sync_2();
-            }
-        }
+        EngineRunner::single_frame_no_block(this->engine, this->external_loop_callback);
     };
 };
 
@@ -122,6 +68,14 @@ struct EngineRunnerThread
     Vector<EngineAllocationEvent> allocation_events;
     PoolIndexed<EngineExecutionUnit> engines;
 
+    struct EngineSyncrhonisation
+    {
+        int8 spawned;
+        BarrierTwoStep end_of_frame;
+    };
+
+    Pool<EngineSyncrhonisation> engine_synchronisation;
+
     int8 ask_exit;
 
     struct Synchronization
@@ -139,6 +93,7 @@ struct EngineRunnerThread
         EngineRunnerThread l_runner{};
         l_runner.allocation_events = Vector<EngineAllocationEvent>::allocate(0);
         l_runner.engines = PoolIndexed<EngineExecutionUnit>::allocate_default();
+        l_runner.engine_synchronisation = Pool<EngineSyncrhonisation>::allocate(0);
         l_runner.ask_exit = 0;
         return l_runner;
     };
@@ -163,6 +118,7 @@ struct EngineRunnerThread
         this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
         {
             l_engine = this->engines.alloc_element(EngineExecutionUnit{});
+            this->engine_synchronisation.alloc_element(EngineSyncrhonisation{});
             this->allocation_events.push_back_element(EngineAllocationEvent{l_engine, String::allocate_elements(p_asset_database), p_width, p_height, p_step_cb, p_cleanup_cb});
         }
         this->synchronization.start_of_step_barrier.notify_sync_2();
@@ -228,6 +184,22 @@ struct EngineRunnerThread
         this->synchronization.end_of_step_barrier.notify_sync_2();
     };
 
+    // /!\ WARNING - this doesn't guarantee that a full frame have passed by.
+    template <class t_EndOfFrameFunc> inline void sync_engine_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
+    {
+        EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_execution_unit_token));
+        l_engine_sync.end_of_frame.ask_and_wait_for_sync_1();
+        p_callback();
+        l_engine_sync.end_of_frame.notify_sync_2();
+    };
+
+    template <class t_EndOfFrameFunc> inline void sync_engine_wait_for_one_whole_frame_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
+    {
+        this->sync_engine_at_end_of_frame(p_execution_unit_token, []() {
+        });
+        this->sync_engine_at_end_of_frame(p_execution_unit_token, p_callback);
+    };
+
     inline void free_engine_execution_unit(const Token(EngineExecutionUnit) p_engine_execution_unit)
     {
         sync_start_of_step([&]() {
@@ -285,6 +257,7 @@ struct EngineRunnerThread
             l_configuration.render_size.y = l_event.height;
 
             this->engines.get(l_event.token).allocate(l_configuration, l_event.external_loop_callback, l_event.cleanup_callback);
+            this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, l_event.token)).spawned = 1;
 
             l_event.free();
         }
@@ -296,10 +269,16 @@ struct EngineRunnerThread
             {
                 p_engine.free();
                 this->engines.release_element(p_engine_token);
+                this->engine_synchronisation.release_element(tk_bf(EngineSyncrhonisation, p_engine_token));
             }
             else
             {
                 p_engine.single_frame_no_block();
+                EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_engine_token));
+                if (!l_engine_sync.end_of_frame.is_opened())
+                {
+                    l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
+                }
             }
         });
 
@@ -333,9 +312,16 @@ struct EngineRunnerThread
         }
         this->allocation_events.free();
 
+#if __DEBUG
+        assert_true(!this->engine_synchronisation.has_allocated_elements());
+#endif
+
+        this->engine_synchronisation.free();
+
         this->engines.foreach ([](Token(EngineExecutionUnit) p_engine_token, EngineExecutionUnit& p_engine) {
             p_engine.free();
         });
         this->engines.free();
+
     };
 };

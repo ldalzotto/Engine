@@ -108,6 +108,7 @@ struct MaterialViewerEngineUnit
     {
         RemoveNode(p_engine, thiz->camera_node);
         RemoveNode(p_engine, thiz->material_node);
+        thiz->material_node_meshrenderer = tk_bd(MeshRendererComponent);
         thiz->is_running = 0;
     };
 };
