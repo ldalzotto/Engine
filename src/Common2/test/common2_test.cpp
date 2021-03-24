@@ -1552,7 +1552,7 @@ inline void file_test()
 
     {
         File l_tmp_file = File::create_or_open(l_file_path.to_slice());
-        l_tmp_file.erase_with_slicepath();
+        l_tmp_file.erase();
     }
 
     File l_file = File::create(l_file_path.to_slice());
@@ -1568,7 +1568,7 @@ inline void file_test()
 
     assert_true(l_buffer.compare(l_source_buffer));
 
-    l_file.erase_with_slicepath();
+    l_file.erase();
 
     l_file_path.free();
 };
@@ -1579,7 +1579,7 @@ inline void database_test()
     l_database_path.append(slice_int8_build_rawstr("asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
-        l_tmp_file.erase_with_slicepath();
+        l_tmp_file.erase();
     }
 
     // create database and table
@@ -1597,7 +1597,7 @@ inline void database_test()
 
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
-        l_tmp_file.erase_with_slicepath();
+        l_tmp_file.erase();
     }
 
     // create/insert/read

@@ -18,6 +18,8 @@ struct FileNative
 
     static uimax get_file_size(const FileHandle& p_file_handle);
 
+    static uimax get_modification_ts(const FileHandle& p_file_handle);
+
     inline static void read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer)
     {
 #if __DEBUG
@@ -124,6 +126,29 @@ inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
     return dword_lowhigh_to_uimax(l_return, l_file_size_high);
 };
 
+inline uimax FileNative::get_modification_ts(const FileHandle& p_file_handle)
+{
+    FILETIME l_creation_time, l_last_access_time, l_last_write_time;
+    BOOL l_filetime_return = GetFileTime(p_file_handle, &l_creation_time, &l_last_access_time, &l_last_write_time);
+#if __DEBUG
+    assert_true(l_filetime_return);
+#endif
+    uimax l_ct = FILETIME_to_mics(l_creation_time);
+    uimax l_at = FILETIME_to_mics(l_last_access_time);
+    uimax l_wt = FILETIME_to_mics(l_last_write_time);
+
+    uimax l_return = l_ct;
+    if (l_at >= l_return)
+    {
+        l_return = l_at;
+    }
+    if (l_wt >= l_return)
+    {
+        l_return = l_wt;
+    }
+    return l_return;
+};
+
 inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 {
     return p_file_handle != INVALID_HANDLE_VALUE;
@@ -184,8 +209,7 @@ struct File
         this->native_handle = NULL;
     };
 
-
-    inline void erase_with_slicepath()
+    inline void erase()
     {
         this->free();
         FileNative::delete_file(this->path_slice);
@@ -194,6 +218,11 @@ struct File
     inline uimax get_size()
     {
         return FileNative::get_file_size(this->native_handle);
+    };
+
+    inline uimax get_modification_ts()
+    {
+        return FileNative::get_modification_ts(this->native_handle);
     };
 
     inline void read_file(Slice<int8>* in_out_buffer) const

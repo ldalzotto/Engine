@@ -31,13 +31,19 @@ inline void asset_metatadata_get_by_type()
 
     Slice<int8> l_path_1 = slice_int8_build_rawstr("path1");
     Slice<int8> l_type_1 = slice_int8_build_rawstr("type1");
+    time_t l_modification_ts_1 = 12;
+    time_t l_insertion_ts_1 = 48;
     Slice<int8> l_path_2 = slice_int8_build_rawstr("path2");
     Slice<int8> l_type_2 = slice_int8_build_rawstr("type2");
+    time_t l_modification_ts_2 = 471;
+    time_t l_insertion_ts_2 = 889;
     Slice<int8> l_path_3 = slice_int8_build_rawstr("path3");
+    time_t l_modification_ts_3 = 7105;
+    time_t l_insertion_ts_3 = 411;
 
-    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_1, l_type_1);
-    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_2, l_type_1);
-    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_3, l_type_2);
+    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_1, l_type_1, l_modification_ts_1, l_insertion_ts_1);
+    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_2, l_type_1, l_modification_ts_2, l_insertion_ts_2);
+    l_ctx.assetmetadata_database.insert_or_update_metadata(l_ctx.connection, l_path_3, l_type_2, l_modification_ts_3, l_insertion_ts_3);
 
     {
         AssetMetadataDatabase::Paths l_paths = l_ctx.assetmetadata_database.get_all_path_from_type(l_ctx.connection, l_type_1);
@@ -51,6 +57,66 @@ inline void asset_metatadata_get_by_type()
 
     l_ctx.free();
     l_asset_database_path.free();
+};
+
+inline void compile_modificationts_cache(ShaderCompiler& p_shader_compiler)
+{
+    String l_asset_database_path = asset_database_and_metadata_test_initialize(slice_int8_build_rawstr("asset.db"));
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+
+    String l_tmp_asset_path;
+    File l_tmp_file;
+    {
+        String l_src_asset_path = String::allocate_elements(l_asset_root_path.slice);
+        l_src_asset_path.append(slice_int8_build_rawstr("material_asset_test.json"));
+
+        l_tmp_asset_path = String::allocate_elements(l_asset_root_path.slice);
+        l_tmp_asset_path.append(slice_int8_build_rawstr("tmp.json"));
+        l_tmp_file = File::create_or_open(l_tmp_asset_path.to_slice());
+        File l_src_file = File::open(l_src_asset_path.to_slice());
+
+        Span<int8> l_buf = l_src_file.read_file_allocate();
+        l_tmp_file.write_file(l_buf.slice);
+
+        l_buf.free();
+        l_src_asset_path.free();
+        l_src_file.free();
+    }
+
+    assert_true(AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
+                                                                       slice_int8_build_rawstr("tmp.json")) == 1);
+    AssetMetadataDatabase::MetadataTS l_ts_before = l_ctx.assetmetadata_database.get_timestamps(l_ctx.connection, slice_int8_build_rawstr("tmp.json"));
+    assert_true(AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
+                                                                       slice_int8_build_rawstr("tmp.json")) == 1);
+    AssetMetadataDatabase::MetadataTS l_ts_after = l_ctx.assetmetadata_database.get_timestamps(l_ctx.connection, slice_int8_build_rawstr("tmp.json"));
+    assert_true(l_ts_before.file_modification_ts == l_ts_after.file_modification_ts);
+    assert_true(l_ts_before.insert_ts == l_ts_after.insert_ts);
+
+    // We simulate a write operation
+    {
+        String l_src_asset_path = String::allocate_elements(l_asset_root_path.slice);
+        l_src_asset_path.append(slice_int8_build_rawstr("material_asset_test.json"));
+        File l_src_file = File::open(l_src_asset_path.to_slice());
+        Span<int8> l_buf = l_src_file.read_file_allocate();
+        l_tmp_file.write_file(l_buf.slice);
+        l_buf.free();
+        l_src_asset_path.free();
+        l_src_file.free();
+    }
+
+    assert_true(AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
+                                                                       slice_int8_build_rawstr("tmp.json")) == 1);
+    AssetMetadataDatabase::MetadataTS l_ts_after_2 = l_ctx.assetmetadata_database.get_timestamps(l_ctx.connection, slice_int8_build_rawstr("tmp.json"));
+    assert_true(l_ts_after_2.file_modification_ts != l_ts_after.file_modification_ts);
+    assert_true(l_ts_after_2.insert_ts != l_ts_after.insert_ts);
+
+    l_tmp_file.erase();
+    l_tmp_asset_path.free();
+
+    l_ctx.free();
+    l_asset_database_path.free();
+    l_asset_root_path.free();
 };
 
 inline void compile_invalid_file(ShaderCompiler& p_shader_compiler)
@@ -322,6 +388,7 @@ int main()
 
     asset_metatadata_get_by_type();
 
+    compile_modificationts_cache(l_shader_compiler);
     compile_invalid_file(l_shader_compiler);
     shader_module_compilation(l_shader_compiler);
     shader_module_error_compilation(l_shader_compiler);

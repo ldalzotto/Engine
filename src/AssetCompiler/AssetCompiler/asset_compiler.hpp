@@ -192,21 +192,33 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
     File l_asset_file = File::open_silent(l_asset_full_path.slice);
     if (l_asset_file.is_valid())
     {
-        AssetCompiled l_compiled_asset;
-        if (AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file, &l_compiled_asset))
+        if (p_asset_metadata_database.does_assetmetadata_exists(p_database_connection, HashSlice(p_relative_asset_path)))
         {
-            p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
-            p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type));
-
-            l_compiled_asset.free();
-
-            Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
-            if (l_compiled_dependencies.Memory)
+            AssetMetadataDatabase::MetadataTS l_ts = p_asset_metadata_database.get_timestamps(p_database_connection, p_relative_asset_path);
+            if (l_ts.file_modification_ts >= l_asset_file.get_modification_ts())
             {
-                p_asset_database.insert_asset_dependencies_blob(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
-                l_compiled_dependencies.free();
+                l_return = 1;
             }
-            l_return = 1;
+        }
+        if (!l_return)
+        {
+            AssetCompiled l_compiled_asset;
+            if (AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file, &l_compiled_asset))
+            {
+                p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
+                p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type), l_asset_file.get_modification_ts(),
+                                                                    clock_currenttime_mics());
+
+                l_compiled_asset.free();
+
+                Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
+                if (l_compiled_dependencies.Memory)
+                {
+                    p_asset_database.insert_or_update_asset_dependencies(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
+                    l_compiled_dependencies.free();
+                }
+                l_return = 1;
+            }
         }
 
         l_asset_file.free();

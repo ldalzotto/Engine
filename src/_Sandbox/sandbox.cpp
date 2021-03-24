@@ -312,7 +312,7 @@ inline void boxcollision()
     l_database_path.append(slice_int8_build_rawstr("/boxcollision/asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
-        l_tmp_file.erase_with_slicepath();
+        l_tmp_file.erase();
         DatabaseConnection l_conection = DatabaseConnection::allocate(l_database_path.to_slice());
         AssetDatabase::initialize_database(l_conection);
         l_conection.free();

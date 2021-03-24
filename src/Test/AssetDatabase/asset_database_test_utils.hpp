@@ -6,7 +6,7 @@ inline String asset_database_test_initialize(const Slice<int8>& p_db_local_path)
     l_database_path.append(p_db_local_path);
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
-        l_tmp_file.erase_with_slicepath();
+        l_tmp_file.erase();
     }
 
     DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
