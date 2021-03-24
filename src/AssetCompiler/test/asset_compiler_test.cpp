@@ -53,6 +53,23 @@ inline void asset_metatadata_get_by_type()
     l_asset_database_path.free();
 };
 
+inline void compile_invalid_file(ShaderCompiler& p_shader_compiler)
+{
+    String l_asset_database_path = asset_database_and_metadata_test_initialize(slice_int8_build_rawstr("asset.db"));
+
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+
+    int8 l_compilation_result = AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
+                                                                                       slice_int8_build_rawstr("aeiajeoijaef"));
+
+    assert_true(l_compilation_result == 0);
+
+    l_asset_root_path.free();
+    l_ctx.free();
+    l_asset_database_path.free();
+};
+
 inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
 {
     String l_asset_database_path = asset_database_and_metadata_test_initialize(slice_int8_build_rawstr("asset.db"));
@@ -85,6 +102,29 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
     l_asset_root_path.free();
     l_ctx.free();
     l_asset_database_path.free();
+};
+
+inline void shader_module_error_compilation(ShaderCompiler& p_shader_compiler)
+{
+    printf("shader_module_error_compilation - BEGIN - error message awaited \n");
+    String l_asset_database_path = asset_database_and_metadata_test_initialize(slice_int8_build_rawstr("asset.db"));
+
+    AssetCompilerTestCtx l_ctx = AssetCompilerTestCtx::allocate(l_asset_database_path.to_slice());
+    Span<int8> l_asset_root_path = Span<int8>::allocate_slice(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+
+    AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
+                                                           slice_int8_build_rawstr("shad_wrong.frag"));
+
+    {
+        assert_true(l_ctx.asset_database.does_asset_exists(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
+        assert_true(l_ctx.assetmetadata_database.does_assetmetadata_exists(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
+    }
+
+    l_asset_root_path.free();
+    l_ctx.free();
+    l_asset_database_path.free();
+
+    printf("shader_module_error_compilation - END\n");
 };
 
 inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
@@ -281,12 +321,15 @@ int main()
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
     asset_metatadata_get_by_type();
+
+    compile_invalid_file(l_shader_compiler);
     shader_module_compilation(l_shader_compiler);
+    shader_module_error_compilation(l_shader_compiler);
     shader_asset_compilation(l_shader_compiler);
     material_asset_compilation(l_shader_compiler);
     mesh_asset_compilation(l_shader_compiler);
     texture_asset_compilation(l_shader_compiler);
-    
+
     l_shader_compiler.free();
 
     memleak_ckeck();

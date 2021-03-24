@@ -1671,6 +1671,17 @@ inline void database_test()
     }
 
     l_database_path.free();
+
+    // Wrong file silent
+
+    {
+        String l_non_db_file = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+        l_non_db_file.append(slice_int8_build_rawstr("non_db_file.txt"));
+        DatabaseConnection l_connection = DatabaseConnection::allocate(l_non_db_file.to_slice()); 
+        assert_true(DatabaseConnection_is_valid_silent(l_connection) == 0);
+        l_connection.free();
+        l_non_db_file.free();
+    }
 };
 
 inline void thread_test()

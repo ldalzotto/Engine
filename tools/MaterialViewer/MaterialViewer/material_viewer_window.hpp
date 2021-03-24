@@ -252,8 +252,8 @@ struct MaterialViewerWindow
 
         QByteArray l_database_file_path_arr = this->view.database_file.toLocal8Bit();
         Slice<int8> l_database_file_path = slice_int8_build_rawstr(l_database_file_path_arr.data());
-        DatabaseConnection l_connection;
-        if (DatabaseConnection::allocate_silent(l_database_file_path, &l_connection))
+        DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_file_path);
+        if (DatabaseConnection_is_valid_silent(l_connection))
         {
             if (this->callbacks.on_database_selected)
             {

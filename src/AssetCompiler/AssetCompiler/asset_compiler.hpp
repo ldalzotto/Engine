@@ -28,8 +28,7 @@ struct AssetCompiled
     };
 };
 
-// TODO -> handling errors by using the shader compiler silent :)
-inline AssetCompiled AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file)
+inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file, AssetCompiled* out_asset_compiled)
 {
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
@@ -45,21 +44,31 @@ inline AssetCompiled AssetCompiler_compile_single_file(ShaderCompiler& p_shader_
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
-            ShaderCompiled l_compiled_shader = p_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, l_buffer.slice);
-            Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
-            l_compiled_shader.free();
+            ShaderCompiled l_compiled_shader;
+            int l_compilation_result = p_shader_compiler.compile_shader_silent(ShaderModuleStage::VERTEX, l_buffer.slice, &l_compiled_shader);
             l_buffer.free();
-            return AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
+            if (l_compilation_result)
+            {
+                Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
+                l_compiled_shader.free();
+                *out_asset_compiled = AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
+                return 1;
+            };
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("frag")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
-            ShaderCompiled l_compiled_shader = p_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, l_buffer.slice);
-            Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
-            l_compiled_shader.free();
+            ShaderCompiled l_compiled_shader;
+            int l_compilation_result = p_shader_compiler.compile_shader_silent(ShaderModuleStage::FRAGMENT, l_buffer.slice, &l_compiled_shader);
             l_buffer.free();
-            return AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
+            if (l_compilation_result)
+            {
+                Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
+                l_compiled_shader.free();
+                *out_asset_compiled = AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
+                return 1;
+            }
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("obj")))
         {
@@ -73,7 +82,8 @@ inline AssetCompiled AssetCompiler_compile_single_file(ShaderCompiler& p_shader_
             l_vertices.free();
             l_indices.free();
             l_buffer.free();
-            return AssetCompiled::build(AssetType::MESH, l_mesh_asset.allocated_binary);
+            *out_asset_compiled = AssetCompiled::build(AssetType::MESH, l_mesh_asset.allocated_binary);
+            return 1;
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("jpg")) || l_asset_path.compare(slice_int8_build_rawstr("png")))
         {
@@ -88,7 +98,8 @@ inline AssetCompiled AssetCompiler_compile_single_file(ShaderCompiler& p_shader_
 
             l_pixels.free();
             l_buffer.free();
-            return AssetCompiled::build(AssetType::TEXTURE, l_texture_asset.allocated_binary);
+            *out_asset_compiled = AssetCompiled::build(AssetType::TEXTURE, l_texture_asset.allocated_binary);
+            return 1;
         }
         else if (l_asset_path.compare(slice_int8_build_rawstr("json")))
         {
@@ -118,11 +129,12 @@ inline AssetCompiled AssetCompiler_compile_single_file(ShaderCompiler& p_shader_
             l_json_value_deserializer.free();
             l_json_deserializer.free();
             l_buffer.free();
-            return l_compiled_asset;
+            *out_asset_compiled = l_compiled_asset;
+            return 1;
         }
     }
 
-    return AssetCompiled::build_default();
+    return 0;
 };
 
 inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_shader_compiler, const Slice<int8>& p_root_path, const File& p_asset_file)
@@ -172,26 +184,34 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
     return Span<int8>::build_default();
 };
 
-inline void AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
+inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
                                                                    AssetMetadataDatabase& p_asset_metadata_database, const Slice<int8>& p_root_path, const Slice<int8>& p_relative_asset_path)
 {
+    int8 l_return = 0;
     Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
-    File l_asset_file = File::open(l_asset_full_path.slice);
-    AssetCompiled l_compiled_asset = AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file);
-    if (l_compiled_asset.compiled_data.Memory)
+    File l_asset_file = File::open_silent(l_asset_full_path.slice);
+    if (l_asset_file.is_valid())
     {
-        p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
-        p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type));
+        AssetCompiled l_compiled_asset;
+        if (AssetCompiler_compile_single_file(p_shader_compiler, l_asset_file, &l_compiled_asset))
+        {
+            p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
+            p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type));
 
-        l_compiled_asset.free();
-    }
-    Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
-    if (l_compiled_dependencies.Memory)
-    {
-        p_asset_database.insert_asset_dependencies_blob(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
-        l_compiled_dependencies.free();
-    }
+            l_compiled_asset.free();
 
-    l_asset_file.free();
+            Span<int8> l_compiled_dependencies = AssetCompiler_compile_dependencies_of_file(p_shader_compiler, p_root_path, l_asset_file);
+            if (l_compiled_dependencies.Memory)
+            {
+                p_asset_database.insert_asset_dependencies_blob(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
+                l_compiled_dependencies.free();
+            }
+            l_return = 1;
+        }
+
+        l_asset_file.free();
+    }
     l_asset_full_path.free();
+
+    return l_return;
 };

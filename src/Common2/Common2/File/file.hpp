@@ -145,6 +145,14 @@ struct File
         return l_file;
     };
 
+    inline static File open_silent(const Slice<int8>& p_path)
+    {
+        File l_file;
+        l_file.path_slice = p_path;
+        l_file.native_handle = FileNative::open_file(p_path);
+        return l_file;
+    };
+
     inline static File open(const Slice<int8>& p_path)
     {
         File l_file = open_silent(p_path);
@@ -227,11 +235,4 @@ struct File
         return l_file;
     };
 
-    inline static File open_silent(const Slice<int8>& p_path)
-    {
-        File l_file;
-        l_file.path_slice = p_path;
-        l_file.native_handle = FileNative::open_file(p_path);
-        return l_file;
-    };
 };
