@@ -28,10 +28,8 @@ struct qt_test
     };
 };
 
-inline void material_viewer(int argc, char* argv[])
+inline void material_viewer(qt_test& qt_app)
 {
-    qt_test qt = qt_test::allocate(argc, argv);
-
     MaterialViewerEditor l_material_viewer_editor{};
     l_material_viewer_editor.allocate();
 
@@ -85,19 +83,16 @@ inline void material_viewer(int argc, char* argv[])
         else if (l_frame_count == 4)
         {
             l_material_viewer_editor.free();
-            qt.close();
+            qt_app.close();
         }
         l_frame_count += 1;
     });
     l_main_loop.start();
-    int l_exec = qt.start(l_material_viewer_editor.root());
-    qt.free();
+    int l_exec = qt_app.start(l_material_viewer_editor.root());
 };
 
-inline void material_viewer_close_material_window_before_app(int argc, char* argv[])
+inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
 {
-    qt_test qt = qt_test::allocate(argc, argv);
-
     MaterialViewerEditor l_material_viewer_editor{};
     l_material_viewer_editor.allocate();
 
@@ -154,7 +149,7 @@ inline void material_viewer_close_material_window_before_app(int argc, char* arg
             if(l_elapsed_time_before_close_app >= (1000.0f / 60.0f))
             {
                 l_material_viewer_editor.free();
-                qt.close();
+                qt_app.close();
                 l_main_loop.stop();
             }
 
@@ -163,14 +158,15 @@ inline void material_viewer_close_material_window_before_app(int argc, char* arg
         l_frame_count += 1;
     });
     l_main_loop.start();
-    int l_exec = qt.start(l_material_viewer_editor.root());
-    qt.free();
+    int l_exec = qt_app.start(l_material_viewer_editor.root());
 };
 
 int main(int argc, char* argv[])
 {
-    material_viewer(argc, argv);
-    material_viewer_close_material_window_before_app(argc, argv);
+    qt_test app = qt_test::allocate(argc, argv);
+    material_viewer(app);
+    material_viewer_close_material_window_before_app(app);
+    app.free();
     memleak_ckeck();
     return 0;
 };

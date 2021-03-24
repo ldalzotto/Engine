@@ -35,6 +35,7 @@ inline WindowHandle WindowNative::create_window(const uint32 p_client_width, con
 #if __DEBUG
     assert_true(hwnd != NULL);
 #endif
+
     return (WindowHandle)hwnd;
 };
 

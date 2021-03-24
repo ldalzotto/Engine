@@ -1,42 +1,42 @@
 #pragma once
 
-template <class ElementType> struct Mutex
+template <class ElementType> struct MutexNative
 {
     ElementType _data;
-    int8 is_locked;
+    HANDLE _mutex;
 
-    inline static Mutex<ElementType> build_default()
+    inline static MutexNative<ElementType> allocate()
     {
-        return Mutex<ElementType>{};
+        MutexNative<ElementType> l_mutex{};
+        l_mutex._mutex = CreateMutex(NULL, 0, NULL);
+#if __DEBUG
+        assert_true(l_mutex._mutex != NULL);
+#endif
+        return l_mutex;
     };
 
-    inline static Mutex<ElementType> build(const ElementType& p_data)
+    inline void free()
     {
-        return Mutex<ElementType>{p_data, 0};
+        DWORD l_wait = WaitForSingleObject(this->_mutex, INFINITE);
+#if __DEBUG
+        assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
+#endif
+        BOOL l_ch = CloseHandle(this->_mutex);
+#if __DEBUG
+        assert_true(l_ch);
+#endif
     };
 
     template <class t_WithFunc> inline void acquire(const t_WithFunc& p_with)
     {
-        while (this->is_locked)
-        {
-        }
-        this->is_locked = 1;
+        DWORD l_wait = WaitForSingleObject(this->_mutex, INFINITE);
+#if __DEBUG
+        assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
+#endif
         p_with(_data);
-        this->is_locked = 0;
-    };
-};
-
-struct mutex_
-{
-    int8 is_locked;
-
-    template <class t_WithFunc> inline void acquire(const t_WithFunc& p_with)
-    {
-        while (this->is_locked)
-        {
-        }
-        this->is_locked = 1;
-        p_with();
-        this->is_locked = 0;
+        BOOL l_rm = ReleaseMutex(this->_mutex);
+#if __DEBUG
+        assert_true(l_rm);
+#endif
     };
 };

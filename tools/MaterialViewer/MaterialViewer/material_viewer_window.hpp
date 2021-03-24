@@ -23,25 +23,28 @@ struct MaterialViewerEngineUnit
         int8 change_requested;
     };
 
-    Mutex<SharedRessources> shared;
+    MutexNative<SharedRessources> shared;
 
-    inline static MaterialViewerEngineUnit build()
+    inline static MaterialViewerEngineUnit allocate()
     {
         MaterialViewerEngineUnit l_return{};
-        l_return.engine_execution_unit = tk_bd(EngineExecutionUnit);
-        l_return.material_node_meshrenderer = tk_bd(MeshRendererComponent);
-        l_return.camera_node = tk_bd(Node);
-        l_return.material_node = tk_bd(Node);
+        l_return.set_sefault_values();
+        l_return.shared = MutexNative<SharedRessources>::allocate();
         return l_return;
+    };
+
+    inline void set_sefault_values()
+    {
+        this->engine_execution_unit = tk_bd(EngineExecutionUnit);
+        this->material_node_meshrenderer = tk_bd(MeshRendererComponent);
+        this->camera_node = tk_bd(Node);
+        this->material_node = tk_bd(Node);
     };
 
     inline void free(EngineRunnerThread& p_engine_runner)
     {
-        if (this->is_running)
-        {
-            p_engine_runner.free_engine_execution_unit_sync(this->engine_execution_unit);
-            *this = MaterialViewerEngineUnit::build();
-        }
+        this->stop(p_engine_runner);
+        this->shared.free();
     };
 
     inline void start(EngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
@@ -52,9 +55,18 @@ struct MaterialViewerEngineUnit
             EngineExecutionUnit::CleanupCallback{(void*)this, (EngineExecutionUnit::CleanupCallback::cb_t)MaterialViewerEngineUnit::cleanup_ressources});
     };
 
+    inline void stop(EngineRunnerThread& p_engine_runner)
+    {
+        if (this->is_running)
+        {
+            p_engine_runner.free_engine_execution_unit_sync(this->engine_execution_unit);
+            this->set_sefault_values();
+        }
+    };
+
     inline void restart(EngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
     {
-        this->free(p_engine_runner);
+        this->stop(p_engine_runner);
         this->start(p_engine_runner, p_asset_database, p_width, p_height);
     };
 
@@ -322,7 +334,7 @@ struct MaterialViewerEditor
 
     inline void allocate()
     {
-        this->material_viewer_engine_unit = MaterialViewerEngineUnit::build();
+        this->material_viewer_engine_unit = MaterialViewerEngineUnit::allocate();
         this->engine_runner = EngineRunnerThread::allocate();
         this->engine_runner.start();
 
