@@ -83,6 +83,11 @@ struct String
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size - 1);
     };
 
+    inline Slice<int8> to_slice() const
+    {
+        return ((String*)this)->to_slice();
+    };
+
     inline Slice<int8> to_slice_with_null_termination()
     {
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);

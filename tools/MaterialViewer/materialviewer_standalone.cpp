@@ -1,5 +1,5 @@
 
-#include "MaterialViewer/material_viewer_window.hpp"
+#include "MaterialViewer/material_viewer_editor.hpp"
 
 int main(int argc, char* argv[])
 {

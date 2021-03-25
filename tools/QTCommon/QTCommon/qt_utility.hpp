@@ -1,6 +1,6 @@
 #pragma once
 
-inline int32 qt_app_start(QApplication& qt_app, QWidget* p_widget, QMainWindow** out_main_window)
+inline int qt_app_start(QApplication& qt_app, QWidget* p_widget, QMainWindow** out_main_window)
 {
     *out_main_window = new QMainWindow(NULL);
     (*out_main_window)->setCentralWidget(p_widget);

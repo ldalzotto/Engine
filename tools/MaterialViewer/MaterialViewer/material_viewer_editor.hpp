@@ -1,10 +1,7 @@
 #pragma once
 
-#include "./qt_include.hpp"
-
+#include "QTCommon/qt_common.hpp"
 #include "Engine/engine.hpp"
-#include "./qt_utility.hpp"
-
 #include "AssetCompiler/asset_compiler.hpp"
 
 struct MaterialViewerEngineUnit
@@ -330,7 +327,7 @@ struct MaterialViewerEditor
 {
     EngineRunnerThread engine_runner;
     MaterialViewerEngineUnit material_viewer_engine_unit;
-    MaterialViewerWindow material_viewer;
+    MaterialViewerWindow material_viewer_window;
 
     inline void allocate()
     {
@@ -342,7 +339,7 @@ struct MaterialViewerEditor
         l_callbacks.closure = this;
         l_callbacks.on_database_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
-            thiz->material_viewer_engine_unit.restart(thiz->engine_runner, slice_int8_build_rawstr(thiz->material_viewer.view.database_file.toLocal8Bit().data()), 400, 400);
+            thiz->material_viewer_engine_unit.restart(thiz->engine_runner, slice_int8_build_rawstr(thiz->material_viewer_window.view.database_file.toLocal8Bit().data()), 400, 400);
         };
         l_callbacks.on_material_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
@@ -352,7 +349,7 @@ struct MaterialViewerEditor
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
             thiz->try_to_update_material_or_mesh();
         };
-        this->material_viewer.allocate(l_callbacks);
+        this->material_viewer_window.allocate(l_callbacks);
     };
 
     inline void free()
@@ -363,18 +360,18 @@ struct MaterialViewerEditor
 
     inline QWidget* root()
     {
-        return this->material_viewer.root;
+        return this->material_viewer_window.root;
     };
 
   private:
     inline void try_to_update_material_or_mesh()
     {
-        if (this->material_viewer.view.selected_material.isEmpty() || this->material_viewer.view.slected_mesh.isEmpty())
+        if (this->material_viewer_window.view.selected_material.isEmpty() || this->material_viewer_window.view.slected_mesh.isEmpty())
         {
             return;
         }
 
-        this->material_viewer_engine_unit.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.selected_material.toLocal8Bit().data())));
-        this->material_viewer_engine_unit.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer.view.slected_mesh.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.selected_material.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.slected_mesh.toLocal8Bit().data())));
     };
 };
