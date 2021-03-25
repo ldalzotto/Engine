@@ -115,7 +115,7 @@ struct JSONDeserializer
         FieldNode l_field_node;
         if (find_next_json_field(l_compared_slice, l_field_name_json.to_slice(), '{', '}', &l_field_node.whole_field, &l_field_node.value))
         {
-            l_field_node.value.slide(1); //for '{'
+            l_field_node.value.slide(1); // for '{'
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
             this->stack_fields.push_back_element(l_field_node);
@@ -181,6 +181,25 @@ struct JSONDeserializer
             l_field_found = 1;
         }
         return l_field_found;
+    };
+
+    inline int8 next_array_plain_value(Slice<int8>* out_plain_value)
+    {
+        int8 l_plain_value_found = 0;
+
+        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+
+        FieldNode l_field_node;
+        if (find_next_json_plain_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
+        {
+            // We still push the plain value to the field stack so that the cursor is moving forward
+            this->stack_fields.push_back_element(l_field_node);
+            this->current_field = this->stack_fields.Size - 1;
+
+            l_plain_value_found = 1;
+        }
+
+        return l_plain_value_found;
     };
 
     inline FieldNode& get_currentfield()
@@ -279,6 +298,23 @@ struct JSONDeserializer
             return 1;
         }
 
+        return 0;
+    };
+
+    inline static int8 find_next_json_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
+    {
+        if (p_source.compare(slice_int8_build_rawstr("\"")))
+        {
+            *out_plain_value_whole = p_source;
+            Slice<int8> l_plain_value_with_trail = p_source.slide_rv(1);
+            uimax l_end_index;
+            if (l_plain_value_with_trail.find(slice_int8_build_rawstr("\""), &l_end_index))
+            {
+                *out_plain_value_only = Slice<int8>::build_begin_end(l_plain_value_with_trail.Begin, 0, l_end_index);
+                out_plain_value_whole->Size = l_end_index + 2; // To add the "
+                return 1;
+            }
+        }
         return 0;
     };
 };

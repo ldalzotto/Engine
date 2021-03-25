@@ -118,13 +118,14 @@ struct AssetCompilationThread
         return l_thread;
     };
 
+    inline void stop_and_free()
+    {
+        this->stop_and_wait();
+        this->free();
+    };
+
     inline void free()
     {
-        if (this->is_running)
-        {
-            this->stop();
-        }
-
 #if __DEBUG
         assert_true(this->input_events._data.compilation_passes.empty());
         assert_true(this->output_result._data.compilation_results.empty());
@@ -153,7 +154,7 @@ struct AssetCompilationThread
 
     };
 
-    inline void stop()
+    inline void stop_and_wait()
     {
         this->ask_exit = 1;
         Thread::wait_for_end_and_terminate(this->thread, -1);
@@ -221,11 +222,10 @@ struct AssetCompilationThread
 struct AssetCompilerHeap
 {
     Pool<AssetCompilationPass> asset_compilation_passes;
-    Vector<AssetCompilationPassStatic> static_compilation_passes;
 
-    inline static AssetCompilerHeap allocate(const Slice<AssetCompilationPassStatic>& p_static_compilation_passes)
+    inline static AssetCompilerHeap allocate()
     {
-        return AssetCompilerHeap{Pool<AssetCompilationPass>::allocate(0), Vector<AssetCompilationPassStatic>::allocate_elements(p_static_compilation_passes)};
+        return AssetCompilerHeap{Pool<AssetCompilationPass>::allocate(0)};
     };
 
     inline void free()
@@ -234,11 +234,6 @@ struct AssetCompilerHeap
         assert_true(!this->asset_compilation_passes.has_allocated_elements());
 #endif
         this->asset_compilation_passes.free();
-        for (loop(i, 0, this->static_compilation_passes.Size))
-        {
-            this->static_compilation_passes.get(i).free();
-        }
-        this->static_compilation_passes.free();
     };
 
     inline void free_asset_compiler_pass(const Token(AssetCompilationPass) p_asset_compiler_pass_token)
@@ -467,72 +462,145 @@ struct AssetCompilerComposition
     };
 };
 
+struct AssetCompilerConfigurationJSON
+{
+    Vector<AssetCompilationPassStatic> static_passes;
+    Vector<AssetCompilationPass> local_passes;
+
+    inline static AssetCompilerConfigurationJSON allocate_default()
+    {
+        return AssetCompilerConfigurationJSON{Vector<AssetCompilationPassStatic>::allocate(0), Vector<AssetCompilationPass>::allocate(0)};
+    };
+
+    inline void free()
+    {
+        for (loop(i, 0, this->static_passes.Size))
+        {
+            this->static_passes.get(i).free();
+        }
+        this->static_passes.free();
+        this->local_passes.free();
+    };
+
+    inline static AssetCompilerConfigurationJSON allocate_from_json(const Slice<int8>& p_json_file_path, const Slice<int8>& p_pathes_absolute_prefix)
+    {
+        AssetCompilerConfigurationJSON l_return = AssetCompilerConfigurationJSON::allocate_default();
+
+        File l_file = File::open(p_json_file_path);
+        Span<int8> l_file_content = l_file.read_file_allocate();
+        l_file.free();
+
+        Vector<int8> l_file_content_vector = Vector<int8>{l_file_content.Capacity, l_file_content};
+        JSONDeserializer l_deserializer = JSONDeserializer::start(l_file_content_vector);
+
+        {
+            JSONDeserializer l_common_array = JSONDeserializer::allocate_default();
+            JSONDeserializer l_common_item = JSONDeserializer::allocate_default();
+            l_deserializer.next_array("common", &l_common_array);
+            while (l_common_array.next_array_object(&l_common_item))
+            {
+                AssetCompilationPassStatic l_static_pass = AssetCompilationPassStatic::allocate_default();
+
+                l_common_item.next_field("root_folder");
+                l_static_pass.root_path.append(p_pathes_absolute_prefix);
+                l_static_pass.root_path.append(l_common_item.get_currentfield().value);
+
+                JSONDeserializer l_assets_array = JSONDeserializer::allocate_default();
+                Slice<int8> l_assets_array_item;
+                l_common_item.next_array("assets", &l_assets_array);
+                while (l_assets_array.next_array_plain_value(&l_assets_array_item))
+                {
+                    l_static_pass.assets_to_compile.push_back_element(String::allocate_elements(l_assets_array_item));
+                }
+                l_assets_array.free();
+
+                l_return.static_passes.push_back_element(l_static_pass);
+            }
+            l_common_item.free();
+            l_common_array.free();
+        }
+
+        {
+            JSONDeserializer l_local_array = JSONDeserializer::allocate_default();
+            JSONDeserializer l_local_array_item = JSONDeserializer::allocate_default();
+            l_deserializer.next_array("config", &l_local_array);
+            while (l_local_array.next_array_object(&l_local_array_item))
+            {
+                AssetCompilationPass l_local_config = AssetCompilationPass::allocate_default();
+                l_local_array_item.next_field("root_folder");
+                l_local_config.root_path.append(p_pathes_absolute_prefix);
+                l_local_config.root_path.append(l_local_array_item.get_currentfield().value);
+                l_local_array_item.next_field("database");
+                l_local_config.database_path.append(l_local_config.root_path.to_slice());
+                l_local_config.database_path.append(l_local_array_item.get_currentfield().value);
+
+                JSONDeserializer l_assets_array = JSONDeserializer::allocate_default();
+                Slice<int8> l_assets_array_item;
+                l_local_array_item.next_array("assets", &l_assets_array);
+                while (l_assets_array.next_array_plain_value(&l_assets_array_item))
+                {
+                    l_local_config.assets_to_compile.push_back_element(String::allocate_elements(l_assets_array_item));
+                }
+                l_assets_array.free();
+
+                l_return.local_passes.push_back_element(l_local_config);
+            }
+            l_local_array.free();
+            l_local_array_item.free();
+        }
+
+        l_deserializer.free();
+        l_file_content_vector.free();
+
+        return l_return;
+    };
+
+    inline Vector<AssetCompilationPass> merge_to_passes()
+    {
+        Vector<AssetCompilationPass> l_return = Vector<AssetCompilationPass>::allocate(0);
+        for (loop(i, 0, this->local_passes.Size))
+        {
+            AssetCompilationPass& l_local_pass = this->local_passes.get(i);
+            for (loop(j, 0, this->static_passes.Size))
+            {
+                l_return.push_back_element(AssetCompilationPass::allocate_from_static(String::allocate_elements(l_local_pass.database_path.to_slice()), this->static_passes.get(j)));
+            }
+            l_return.push_back_element(l_local_pass);
+        }
+        return l_return;
+    };
+};
+
 struct AssetCompilerEditor
 {
     AssetCompilerHeap heap;
     AssetCompilerWindow window;
     AssetCompilationThread compilation_thread;
     QTimer* compilation_thread_output_consumer;
+    Slice<int8> asset_folder_root;
 
     inline QWidget* root()
     {
         return this->window.root;
     };
 
-    inline void allocate()
+    inline void allocate(const Slice<int8>& p_asset_folder_root)
     {
-        SliceN<String, 2> l_static_assets =
-            SliceN<String, 2>{String::allocate_elements(slice_int8_build_rawstr("internal/quad_blit.vert")), String::allocate_elements(slice_int8_build_rawstr("internal/quad_blit.frag"))};
-        SliceN<AssetCompilationPassStatic, 1> l_static_pass = SliceN<AssetCompilationPassStatic, 1>{AssetCompilationPassStatic::build(
-            String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/common/")), Vector<String>::allocate_elements(slice_from_slicen(&l_static_assets)))};
-
-        this->heap = AssetCompilerHeap::allocate(slice_from_slicen(&l_static_pass));
-
+        this->heap = AssetCompilerHeap::allocate();
+        this->asset_folder_root = p_asset_folder_root;
         AssetCompilerWindow::Callbacks l_asset_compiler_window_cb{};
         l_asset_compiler_window_cb.closure = this;
         l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
+            AssetCompilerConfigurationJSON l_asset_compiler_configuration =
+                AssetCompilerConfigurationJSON::allocate_from_json(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"), thiz->asset_folder_root);
+            Vector<AssetCompilationPass> l_passes = l_asset_compiler_configuration.merge_to_passes();
+            for (loop(i, 0, l_passes.Size))
             {
-                SliceN<String, 13> l_assets =
-                    SliceN<String, 13>{String::allocate_elements(slice_int8_build_rawstr("grad_1.png")),      String::allocate_elements(slice_int8_build_rawstr("grad_2.png")),
-                                       String::allocate_elements(slice_int8_build_rawstr("grad_3.png")),      String::allocate_elements(slice_int8_build_rawstr("grad_4.png")),
-                                       String::allocate_elements(slice_int8_build_rawstr("material_1.json")), String::allocate_elements(slice_int8_build_rawstr("material_2.json")),
-                                       String::allocate_elements(slice_int8_build_rawstr("material_3.json")), String::allocate_elements(slice_int8_build_rawstr("material_4.json")),
-                                       String::allocate_elements(slice_int8_build_rawstr("cone.obj")),        String::allocate_elements(slice_int8_build_rawstr("cube.obj")),
-                                       String::allocate_elements(slice_int8_build_rawstr("cylinder.obj")),    String::allocate_elements(slice_int8_build_rawstr("icosphere.obj")),
-                                       String::allocate_elements(slice_int8_build_rawstr("sphere.obj"))};
-                in_out_asset_compilation_pass->push_back_element(thiz->heap.asset_compilation_passes.alloc_element(
-                    AssetCompilationPass::build(String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/asset.db")),
-                                                String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/")),
-                                                Vector<String>::allocate_elements(slice_from_slicen(&l_assets)))));
-
-                for (loop(i, 0, thiz->heap.static_compilation_passes.Size))
-                {
-                    in_out_asset_compilation_pass->push_back_element(thiz->heap.asset_compilation_passes.alloc_element(AssetCompilationPass::allocate_from_static(
-                        String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/asset.db")), thiz->heap.static_compilation_passes.get(i))));
-                }
+                in_out_asset_compilation_pass->push_back_element(thiz->heap.asset_compilation_passes.alloc_element(l_passes.get(i)));
             }
-            {
-                SliceN<String, 13> l_assets =
-                    SliceN<String, 13>{String::allocate_elements(slice_int8_build_rawstr("grad_1.png")),      String::allocate_elements(slice_int8_build_rawstr("grad_2.png")),
-                                       String::allocate_elements(slice_int8_build_rawstr("grad_3.png")),      String::allocate_elements(slice_int8_build_rawstr("grad_4.png")),
-                                       String::allocate_elements(slice_int8_build_rawstr("material_1.json")), String::allocate_elements(slice_int8_build_rawstr("material_2.json")),
-                                       String::allocate_elements(slice_int8_build_rawstr("material_3.json")), String::allocate_elements(slice_int8_build_rawstr("material_4.json")),
-                                       String::allocate_elements(slice_int8_build_rawstr("cone.obj")),        String::allocate_elements(slice_int8_build_rawstr("cube.obj")),
-                                       String::allocate_elements(slice_int8_build_rawstr("cylinder.obj")),    String::allocate_elements(slice_int8_build_rawstr("icosphere.obj")),
-                                       String::allocate_elements(slice_int8_build_rawstr("sphere.obj"))};
-                in_out_asset_compilation_pass->push_back_element(thiz->heap.asset_compilation_passes.alloc_element(
-                    AssetCompilationPass::build(String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/asset_2.db")),
-                                                String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/")),
-                                                Vector<String>::allocate_elements(slice_from_slicen(&l_assets)))));
-
-                for (loop(i, 0, thiz->heap.static_compilation_passes.Size))
-                {
-                    in_out_asset_compilation_pass->push_back_element(thiz->heap.asset_compilation_passes.alloc_element(
-                        AssetCompilationPass::allocate_from_static(String::allocate_elements(slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/MaterialViewerTest/asset_2.db")),
-                                                                   thiz->heap.static_compilation_passes.get(i))));
-                }
-            }
+            l_asset_compiler_configuration.free();
+            l_passes.free();
         };
         l_asset_compiler_window_cb.on_go_button_pushed = [](AssetCompilerWindow* p_window, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
@@ -553,8 +621,10 @@ struct AssetCompilerEditor
 
     inline void free()
     {
-        this->window.free(this->heap);
+        this->compilation_thread.stop_and_wait();
+        AssetCompilerComposition::try_consume_output_thread_events(this->compilation_thread, this->window);
         this->compilation_thread.free();
+        this->window.free(this->heap);
         this->heap.free();
     };
 };

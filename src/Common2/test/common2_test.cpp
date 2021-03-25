@@ -1396,9 +1396,31 @@ l_json_str.free();
     l_json_str.free();
 }
 
+// array with values
+{
+    const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
+    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
+
+    JSONDeserializer l_array = JSONDeserializer::allocate_default();
+    Slice<int8> l_array_plain_value;
+    assert_true(l_deserialized.next_array("value_array", &l_array));
+    // TODO ->
+    assert_true(l_array.next_array_plain_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
+    assert_true(l_array.next_array_plain_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
+    assert_true(l_array.next_array_plain_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
+
+    l_deserialized.free();
+    l_array.free();
+    l_json_str.free();
+}
+
 // field - nested objects (uimax)
 {
-    const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2": {"f1": "16", "f2": "17"}});
+    const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
@@ -1588,7 +1610,8 @@ inline void database_test()
 
         SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY);)));
 
-        SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {});
+        SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {
+        });
 
         l_query.free(l_connection);
 
@@ -1677,7 +1700,7 @@ inline void database_test()
     {
         String l_non_db_file = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
         l_non_db_file.append(slice_int8_build_rawstr("non_db_file.txt"));
-        DatabaseConnection l_connection = DatabaseConnection::allocate(l_non_db_file.to_slice()); 
+        DatabaseConnection l_connection = DatabaseConnection::allocate(l_non_db_file.to_slice());
         assert_true(DatabaseConnection_is_valid_silent(l_connection) == 0);
         l_connection.free();
         l_non_db_file.free();

@@ -25,6 +25,7 @@ target_link_libraries(AssetCompilerEditor INTERFACE Engine)
 target_link_libraries(AssetCompilerEditor INTERFACE AssetCompiler)
 target_link_libraries(AssetCompilerEditor INTERFACE QtCommon)
 
+
 add_executable(MaterialViewerExec MaterialViewer/materialviewer_standalone.cpp)
 target_link_libraries(MaterialViewerExec PUBLIC MaterialViewer)
 
@@ -34,3 +35,4 @@ target_compile_definitions(MaterialViewerTest PUBLIC ASSET_FOLDER_PATH="${ASSET_
 
 add_executable(AssetCompilerEditorExec ./AssetCompiler/assetcompiler_standalone.cpp)
 target_link_libraries(AssetCompilerEditorExec PUBLIC AssetCompilerEditor)
+target_compile_definitions(AssetCompilerEditorExec PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/")
