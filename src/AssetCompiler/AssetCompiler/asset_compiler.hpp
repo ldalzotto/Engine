@@ -227,3 +227,6 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
 
     return l_return;
 };
+
+
+#include "./asset_compiler_pass.hpp"

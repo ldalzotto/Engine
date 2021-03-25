@@ -2,7 +2,8 @@
 #include "AssetCompiler/asset_compiler.hpp"
 #include "asset_metadata_database_test_utils.hpp"
 
-struct AssetCompilerTestCtx {
+struct AssetCompilerTestCtx
+{
     DatabaseConnection connection;
     AssetDatabase asset_database;
     AssetMetadataDatabase assetmetadata_database;
@@ -215,12 +216,10 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
 
         l_shader_ressource_compiled.free();
 
-
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::SHADER_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("shader_asset_test.json")));
         l_metadata.free();
-
     }
     {
         Span<int8> l_shader_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
@@ -317,15 +316,15 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
         v2f l_uvs[14] = {v2f{0.625f, 0.0f},  v2f{0.375f, 0.25f}, v2f{0.375f, 0.0f},  v2f{0.625f, 0.25f}, v2f{0.375f, 0.5f},  v2f{0.625f, 0.5f},  v2f{0.375f, 0.75f},
                          v2f{0.625f, 0.75f}, v2f{0.375f, 1.00f}, v2f{0.125f, 0.75f}, v2f{0.125f, 0.50f}, v2f{0.875f, 0.50f}, v2f{0.625f, 1.00f}, v2f{0.875f, 0.75f}};
 
-        for(loop(i, 0, 14))
+        for (loop(i, 0, 14))
         {
             l_uvs[i].y = 1.0f - l_uvs[i].y;
         }
 
         SliceN<Vertex, 14> l_vertices = SliceN<Vertex, 14>{Vertex{l_positions[1], l_uvs[0]},  Vertex{l_positions[2], l_uvs[1]}, Vertex{l_positions[0], l_uvs[2]},  Vertex{l_positions[3], l_uvs[3]},
-                                 Vertex{l_positions[6], l_uvs[4]},  Vertex{l_positions[7], l_uvs[5]}, Vertex{l_positions[4], l_uvs[6]},  Vertex{l_positions[5], l_uvs[7]},
-                                 Vertex{l_positions[0], l_uvs[8]},  Vertex{l_positions[0], l_uvs[9]}, Vertex{l_positions[2], l_uvs[10]}, Vertex{l_positions[3], l_uvs[11]},
-                                 Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
+                                                           Vertex{l_positions[6], l_uvs[4]},  Vertex{l_positions[7], l_uvs[5]}, Vertex{l_positions[4], l_uvs[6]},  Vertex{l_positions[5], l_uvs[7]},
+                                                           Vertex{l_positions[0], l_uvs[8]},  Vertex{l_positions[0], l_uvs[9]}, Vertex{l_positions[2], l_uvs[10]}, Vertex{l_positions[3], l_uvs[11]},
+                                                           Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
         SliceN<uint32, 36> l_indices = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
 
         assert_true(l_mesh_value.initial_vertices.compare(slice_from_slicen(&l_vertices)));
@@ -362,10 +361,10 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
         assert_true(l_texture_value.channel_nb == 4);
         Slice<color> l_pixels = slice_cast<color>(l_texture_value.pixels);
         assert_true(l_pixels.Size == 16);
-        SliceN<color, 16>l_awaited_pixels_arr{color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
-                          color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}};
+        SliceN<color, 16> l_awaited_pixels_arr{color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                               color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                               color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+                                               color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}};
 
         assert_true(l_pixels.compare(slice_from_slicen(&l_awaited_pixels_arr)));
         l_texture_ressource_compiled.free();
@@ -382,6 +381,93 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
     l_asset_database_path.free();
 }
 
+inline void compilation_pass(ShaderCompiler& p_shader_compiler)
+{
+    String l_db_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_db_path.append(slice_int8_build_rawstr("asset.db"));
+    String l_db_2_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_db_2_path.append(slice_int8_build_rawstr("asset_2.db"));
+    {
+        File l_db = File::create_or_open(l_db_path.to_slice());
+        l_db.erase();
+    }
+
+    AssetCompilerPassHeap l_heap = AssetCompilerPassHeap::allocate();
+    AssetCompilerConfigurationJSON l_asset_compiler_configuration{};
+
+    AssetCompilationPassStatic l_static_pass = AssetCompilationPassStatic::allocate_default();
+    l_static_pass.root_path.append(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_static_pass.assets_to_compile.push_back_element(String::allocate_elements(slice_int8_build_rawstr("cube.obj")));
+    l_asset_compiler_configuration.static_passes.push_back_element(l_static_pass);
+
+    AssetCompilationPass l_pass_1 = AssetCompilationPass::allocate_default();
+    l_pass_1.root_path.append(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_pass_1.database_path.append(l_db_path.to_slice());
+    l_pass_1.assets_to_compile.push_back_element(String::allocate_elements(slice_int8_build_rawstr("material_asset_test.json")));
+
+    AssetCompilationPass l_pass_2 = AssetCompilationPass::allocate_default();
+    l_pass_2.root_path.append(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_pass_2.database_path.append(l_db_2_path.to_slice());
+    l_pass_2.assets_to_compile.push_back_element(String::allocate_elements(slice_int8_build_rawstr("material_asset_test.json")));
+    l_pass_2.assets_to_compile.push_back_element(String::allocate_elements(slice_int8_build_rawstr("texture.png")));
+
+    l_asset_compiler_configuration.local_passes.push_back_element(l_pass_1);
+    l_asset_compiler_configuration.local_passes.push_back_element(l_pass_2);
+
+    Vector<Token(AssetCompilationPass)> l_passes = Vector<Token(AssetCompilationPass)>::allocate(0);
+    AssetCompilerPassComposition::allocate_passes_from_inline(l_heap, l_asset_compiler_configuration, slice_int8_build_rawstr(ASSET_FOLDER_PATH), &l_passes);
+
+    assert_true(l_passes.Size == 4);
+
+    for (loop(i, 0, l_passes.Size))
+    {
+        AssetCompilerPassComposition::ExecutionState l_execution = AssetCompilerPassComposition::ExecutionState::allocate(p_shader_compiler, l_heap.asset_compilation_passes.get(l_passes.get(i)));
+        l_execution.compile_all();
+        l_execution.free();
+
+        l_heap.free_asset_compiler_pass(l_passes.get(i));
+    }
+
+    {
+        DatabaseConnection l_db_connection = DatabaseConnection::allocate(l_db_path.to_slice());
+        AssetDatabase l_asset_db = AssetDatabase::allocate(l_db_connection);
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("cube.obj"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("texture.png"))) == 0);
+        l_asset_db.free(l_db_connection);
+        l_db_connection.free();
+    }
+    {
+        DatabaseConnection l_db_connection = DatabaseConnection::allocate(l_db_2_path.to_slice());
+        AssetDatabase l_asset_db = AssetDatabase::allocate(l_db_connection);
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("cube.obj"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("texture.png"))));
+        l_asset_db.free(l_db_connection);
+        l_db_connection.free();
+    }
+
+    {
+        File l_db = File::create_or_open(l_db_path.to_slice());
+        l_db.erase();
+    }
+    {
+        File l_db = File::create_or_open(l_db_2_path.to_slice());
+        l_db.erase();
+    }
+
+    l_passes.free();
+    l_heap.free();
+    l_db_path.free();
+    l_db_2_path.free();
+};
+
+inline void compilation_pass_configuration_serialization(){
+    // TODO -> write test
+    // const int8* l_configuration_json = MULTILINE();
+    // AssetCompilerConfigurationJSON l_configuration = AssetCompilerConfigurationJSON::allocate_from_json();
+};
+
 int main()
 {
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -397,7 +483,11 @@ int main()
     mesh_asset_compilation(l_shader_compiler);
     texture_asset_compilation(l_shader_compiler);
 
+    compilation_pass(l_shader_compiler);
+
     l_shader_compiler.free();
+
+    compilation_pass_configuration_serialization();
 
     memleak_ckeck();
 }
