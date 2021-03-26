@@ -62,7 +62,7 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
     l_severity.append(slice_int8_build_rawstr("validation layer: "));
     l_severity.append(slice_int8_build_rawstr(pCallbackData->pMessage));
     l_severity.append(slice_int8_build_rawstr("\n"));
-    printf(l_severity.get_memory());
+    printf("%s\n", l_severity.get_memory());
 
     l_severity.free();
 

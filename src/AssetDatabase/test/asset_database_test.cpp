@@ -1,5 +1,3 @@
-#pragma once
-
 #include "AssetDatabase/assetdatabase.hpp"
 #include "asset_database_test_utils.hpp"
 

@@ -134,14 +134,14 @@ inline static void ShaderCompiler_ErrorHandler(glslang_shader_s* p_shader, glsla
     {
         if (p_shader)
         {
-            printf(glslang_shader_get_info_log(p_shader));
-            printf(glslang_shader_get_info_debug_log(p_shader));
+            printf("%s\n", glslang_shader_get_info_log(p_shader));
+            printf("%s\n", glslang_shader_get_info_debug_log(p_shader));
         }
         if (p_program)
         {
             // glslang_shader_get_info_log()
-            printf(glslang_program_get_info_log(p_program));
-            printf(glslang_program_get_info_debug_log(p_program));
+            printf("%s\n", glslang_program_get_info_log(p_program));
+            printf("%s\n", glslang_program_get_info_debug_log(p_program));
         }
 
         // glslang_shader_get_info_log()
@@ -155,14 +155,14 @@ inline static int8 ShaderCompiler_ErrorHandler_silent(glslang_shader_s* p_shader
     {
         if (p_shader)
         {
-            printf(glslang_shader_get_info_log(p_shader));
-            printf(glslang_shader_get_info_debug_log(p_shader));
+            printf("%s\n", glslang_shader_get_info_log(p_shader));
+            printf("%s\n", glslang_shader_get_info_debug_log(p_shader));
         }
         if (p_program)
         {
             // glslang_shader_get_info_log()
-            printf(glslang_program_get_info_log(p_program));
-            printf(glslang_program_get_info_debug_log(p_program));
+            printf("%s\n", glslang_program_get_info_log(p_program));
+            printf("%s\n", glslang_program_get_info_debug_log(p_program));
         }
 
         return 0;

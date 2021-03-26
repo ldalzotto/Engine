@@ -55,7 +55,7 @@ inline static SQLiteReturnCode handleSQLiteError_silent(SQLiteReturnCode p_retur
             l_error_message.append(slice_int8_build_rawstr(" : "));
             l_error_message.append(slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
         }
-        printf(l_error_message.get_memory());
+        printf("%s\n", l_error_message.get_memory());
         l_error_message.free();
     }
 #endif
@@ -85,7 +85,7 @@ inline static SQLiteReturnCode handleStepError(SQLiteReturnCode p_step_return, s
             l_error_message.append(slice_int8_build_rawstr(" : "));
             l_error_message.append(slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
         }
-        printf(l_error_message.get_memory());
+        printf("%s\n", l_error_message.get_memory());
         l_error_message.free();
         abort();
     }

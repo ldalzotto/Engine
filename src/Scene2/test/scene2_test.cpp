@@ -531,16 +531,16 @@ inline void scene_to_sceneasset()
 
     Slice<Token(SliceIndex)> l_1_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 0)));
     assert_true(l_1_components.Size == 2);
-    assert_true(l_scene_asset.get_component_typed<CameraTestComponent>(l_1_components.get(0))->Type == CameraTestComponent::Type);
-    assert_true(l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_1_components.get(1))->Type == MeshRendererTestComponent::Type);
+    l_scene_asset.get_component_typed<CameraTestComponent>(l_1_components.get(0));
+    l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_1_components.get(1));
 
     Slice<Token(SliceIndex)> l_2_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 1)));
     assert_true(l_2_components.Size == 1);
-    assert_true(l_scene_asset.get_component_typed<CameraTestComponent>(l_2_components.get(0))->Type == CameraTestComponent::Type);
+    l_scene_asset.get_component_typed<CameraTestComponent>(l_2_components.get(0));
 
     Slice<Token(SliceIndex)> l_3_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 2)));
     assert_true(l_3_components.Size == 1);
-    assert_true(l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_3_components.get(0))->Type == MeshRendererTestComponent::Type);
+    l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_3_components.get(0));
 
     l_scene_asset.free();
 

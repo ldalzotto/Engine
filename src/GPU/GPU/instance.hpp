@@ -168,7 +168,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         switch (p_required_instance_extensions.get(i))
         {
         case GPUExtension::WINDOW_PRESENT:
-            l_window_present_enabled = 1; 
+            l_window_present_enabled = 1;
             l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
             l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);

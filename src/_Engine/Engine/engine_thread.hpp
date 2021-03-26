@@ -159,7 +159,7 @@ struct EngineRunnerThread
     };
 
     template <class t_StartOfStepCallback, class t_EndOfStepCallback>
-    inline void sync_step_loop(t_StartOfStepCallback& p_start_of_step_callback, t_EndOfStepCallback& p_end_of_step_callback, int8* p_exit)
+    inline void sync_step_loop(const t_StartOfStepCallback& p_start_of_step_callback, const t_EndOfStepCallback& p_end_of_step_callback, int8* p_exit)
     {
         this->synchronization.start_of_step_barrier.ask_for_sync_1();
         while (!(*p_exit))
