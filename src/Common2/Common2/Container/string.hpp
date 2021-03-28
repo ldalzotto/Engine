@@ -10,7 +10,7 @@ struct String
     inline static String allocate(const uimax p_initial_capacity)
     {
         int8 l_null_int8 = (int8)NULL;
-        return String{Vector<int8>::allocate_capacity_elements(p_initial_capacity + 1, Slice<int8>::build_asint8_memory_elementnb(&l_null_int8, 1))};
+        return String{Vector<int8>::allocate_capacity_elements(p_initial_capacity + 1, Slice_build_asint8_memory_elementnb<int8>(&l_null_int8, 1))};
     };
 
     inline static String allocate_elements(const Slice<int8>& p_initial_elements)
@@ -80,7 +80,7 @@ struct String
 
     inline Slice<int8> to_slice()
     {
-        return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size - 1);
+        return Slice_build_memory_elementnb<int8>(this->Memory.Memory.Memory, this->Memory.Size - 1);
     };
 
     inline Slice<int8> to_slice() const
@@ -90,6 +90,6 @@ struct String
 
     inline Slice<int8> to_slice_with_null_termination()
     {
-        return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);
+        return Slice_build_memory_elementnb<int8>(this->Memory.Memory.Memory, this->Memory.Size);
     };
 };

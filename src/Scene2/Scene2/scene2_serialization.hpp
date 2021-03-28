@@ -9,8 +9,9 @@ struct SceneAssetComponent
 
     inline static SceneAssetComponent build_from_memory(const Slice<int8>& p_memory)
     {
-        return SceneAssetComponent{*slice_cast_singleelement<component_t>(p_memory), *slice_cast_singleelement<uimax>(p_memory.slide_rv(sizeof(SceneAssetComponent::type))),
-                                   p_memory.slide_rv(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size))};
+        Slice<int8> l_memory_component_type_offsetted = Slice_slide_rv(&p_memory, sizeof(SceneAssetComponent::type));
+        return SceneAssetComponent{*Slice_cast_singleelement<component_t>(&p_memory), *Slice_cast_singleelement<uimax>(&l_memory_component_type_offsetted),
+                                   Slice_slide_rv(&p_memory, sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size))};
     };
 };
 
@@ -54,37 +55,37 @@ struct SceneAsset
         this->component_assets.push_back_empty(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size) + p_component_value_memory.Size);
         Slice<int8> l_element = this->component_assets.get_last_element();
 
-        l_element.copy_memory(Slice<component_t>::build_asint8_memory_singleelement((component_t*)&p_component_type));
-        l_element.slide(sizeof(SceneAssetComponent::type));
-        l_element.copy_memory(Slice<uimax>::build_asint8_memory_singleelement((uimax*)&p_component_value_memory.Size));
-        l_element.slide(sizeof(SceneAssetComponent::value_size));
+        l_element.copy_memory(Slice_build_asint8_memory_singleelement<component_t>((component_t*)&p_component_type));
+        Slice_slide(&l_element, sizeof(SceneAssetComponent::type));
+        l_element.copy_memory(Slice_build_asint8_memory_singleelement<uimax>((uimax*)&p_component_value_memory.Size));
+        Slice_slide(&l_element, sizeof(SceneAssetComponent::value_size));
         l_element.copy_memory(p_component_value_memory);
 
-        this->node_to_components.element_push_back_element(tk_v(p_node), tk_b(SliceIndex, this->component_assets.get_size() - 1));
+        this->node_to_components.element_push_back_element(token_get_value(p_node), token_build(SliceIndex, this->component_assets.get_size() - 1));
     };
 
     template <class ComponentType> inline void add_component_typed(const Token(transform) p_node, const ComponentType& p_component)
     {
-        this->add_component(p_node, ComponentType::Type, Slice<ComponentType>::build_asint8_memory_singleelement(&p_component));
+        this->add_component(p_node, ComponentType::Type, Slice_build_asint8_memory_singleelement<ComponentType>(&p_component));
     };
 
     inline Slice<Token(SliceIndex)> get_components(const NTree<transform>::Resolve& p_node)
     {
-        return this->node_to_components.get(tk_v(p_node.Node->index));
+        return this->node_to_components.get(token_get_value(p_node.Node->index));
     };
 
     template <class ComponentType> inline ComponentType* get_component_typed(const Token(SliceIndex) p_component)
     {
-        Slice<int8> l_component_element = this->component_assets.get_element(tk_v(p_component));
+        Slice<int8> l_component_element = this->component_assets.get_element(token_get_value(p_component));
 #if __DEBUG
         assert_true(*(component_t*)l_component_element.Begin == ComponentType::Type);
 #endif
-        return (ComponentType*)l_component_element.slide_rv(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size)).Begin;
+        return (ComponentType*)Slice_slide_rv(&l_component_element, sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size)).Begin;
     };
 
     inline SceneAssetComponent get_component(const Token(SliceIndex) p_component)
     {
-        return SceneAssetComponent::build_from_memory(this->component_assets.get_element(tk_v(p_component)));
+        return SceneAssetComponent::build_from_memory(this->component_assets.get_element(token_get_value(p_component)));
     };
 
     /*
@@ -97,11 +98,11 @@ struct SceneAsset
     {
         Span<Token(Node)> l_allocated_nodes = Span<Token(Node)>::allocate(this->nodes.Indices.get_size());
         {
-            this->nodes.traverse3(tk_b(NTreeNode, 0), [&](const NTree<transform>::Resolve& p_node) {
+            this->nodes.traverse3(token_build(NTreeNode, 0), [&](const NTree<transform>::Resolve& p_node) {
                 Token(Node) l_parent;
                 if (p_node.has_parent())
                 {
-                    l_parent = l_allocated_nodes.get(tk_v(p_node.Node->parent));
+                    l_parent = l_allocated_nodes.get(token_get_value(p_node.Node->parent));
                 }
                 else
                 {
@@ -109,12 +110,12 @@ struct SceneAsset
                 }
 
                 Token(Node) l_allocated_node = p_target_scene->add_node(*p_node.Element, l_parent);
-                l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
+                l_allocated_nodes.get(token_get_value(p_node.Node->index)) = l_allocated_node;
 
                 Slice<Token(SliceIndex)> l_components = this->get_components(p_node);
                 for (loop(i, 0, l_components.Size))
                 {
-                    SceneAssetComponent l_scene_asset_component = this->get_component(l_components.get(i));
+                    SceneAssetComponent l_scene_asset_component = this->get_component(*Slice_get(&l_components, i));
                     p_target_scene->add_node_component_by_value(l_allocated_node, NodeComponent::build(l_scene_asset_component.type, p_component_resource_allocator(l_scene_asset_component)));
                     ;
                 }
@@ -149,22 +150,22 @@ struct SceneAsset
         {
             NodeEntry l_node = p_scene->tree.node_tree.get(p_start_node_included);
             Token(transform) l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
-            l_allocated_nodes.get(tk_v(l_node.Node->index)) = l_allocated_node;
-            Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, l_node.Node->index));
+            l_allocated_nodes.get(token_get_value(l_node.Node->index)) = l_allocated_node;
+            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from(Node, l_node.Node->index));
             for (loop(i, 0, l_components.Size))
             {
-                p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{this, l_allocated_node});
+                p_component_resrouce_deconstructor(*Slice_get(&l_components, i), AddComponentAssetToSceneAsset{this, l_allocated_node});
             }
         }
 
-        p_scene->tree.node_tree.traverse3_excluded(tk_bf(NTreeNode, p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
-            Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(tk_v(p_node.Node->parent)));
-            l_allocated_nodes.get(tk_v(p_node.Node->index)) = l_allocated_node;
+        p_scene->tree.node_tree.traverse3_excluded(token_build_from(NTreeNode, p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
+            Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(token_get_value(p_node.Node->parent)));
+            l_allocated_nodes.get(token_get_value(p_node.Node->index)) = l_allocated_node;
 
-            Slice<NodeComponent> l_components = p_scene->get_node_components(tk_bf(Node, p_node.Node->index));
+            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from(Node, p_node.Node->index));
             for (loop(i, 0, l_components.Size))
             {
-                p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{this, l_allocated_node});
+                p_component_resrouce_deconstructor(*Slice_get(&l_components, i), AddComponentAssetToSceneAsset{this, l_allocated_node});
             }
         });
 
@@ -174,7 +175,7 @@ struct SceneAsset
 
 namespace SceneSerialization_const
 {
-const Slice<int8> scene_json_type = slice_int8_build_rawstr("scene");
+const Slice<int8> scene_json_type = Slice_int8_build_rawstr("scene");
 const int8* scene_nodes_field = "nodes";
 const int8* node_local_position_field = "local_position";
 const int8* node_local_rotation_field = "local_rotation";
@@ -260,7 +261,7 @@ struct SceneJSON_TO_SceneAsset
             JSONDeserializer l_object_iterator = JSONDeserializer::allocate_default();
 
             l_transform = deserialize_node_transform(l_object, l_object_iterator);
-            l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, tk_b(transform, 0));
+            l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, token_build(transform, 0));
             deserialize_components<ComponentDeserializationFunc>(l_object, l_object_iterator, l_allocated_node, in_out_SceneAssetTree);
 
             l_object.next_array(SceneSerialization_const::node_childs_field, &l_object_iterator);

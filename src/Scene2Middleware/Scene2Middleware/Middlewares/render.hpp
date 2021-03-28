@@ -29,7 +29,7 @@ struct CameraComponent
 
     inline static CameraComponent build_default()
     {
-        return CameraComponent{0, 0, tk_bd(Node)};
+        return CameraComponent{0, 0, token_build_default(Node)};
     };
 };
 
@@ -50,7 +50,7 @@ struct MeshRendererComponent
 
     inline static MeshRendererComponent build(const Token(Node) p_scene_node, const Dependencies& p_dependencies)
     {
-        return MeshRendererComponent{0, 1, p_scene_node, tk_bd(RenderableObject), p_dependencies};
+        return MeshRendererComponent{0, 1, p_scene_node, token_build_default(RenderableObject), p_dependencies};
     };
 
     struct AssetDependencies
@@ -246,7 +246,7 @@ struct RenderMiddleWare_AllocationComposition
             for (loop(i, 0, p_render_middleware.mesh_renderer_allocation_events.Size))
             {
                 auto& l_event = p_render_middleware.mesh_renderer_allocation_events.get(i);
-                if (tk_eq(l_event.allocated_ressource, p_mesh_renderer))
+                if (token_equals(l_event.allocated_ressource, p_mesh_renderer))
                 {
                     p_render_middleware.mesh_renderer_allocation_events.erase_element_at_always(i);
                     break;

@@ -5,7 +5,7 @@
 
 inline void render_asset_binary_serialization_deserialization_test()
 {
-    Slice<int8> l_slice_int8 = slice_int8_build_rawstr("this is a test slice");
+    Slice<int8> l_slice_int8 = Slice_int8_build_rawstr("this is a test slice");
     {
         ShaderModuleRessource::Asset l_shader_modules = ShaderModuleRessource::Asset::allocate_from_values(ShaderModuleRessource::Asset::Value{l_slice_int8});
         ShaderModuleRessource::Asset::Value l_shader_module_value = ShaderModuleRessource::Asset::Value::build_from_asset(l_shader_modules);
@@ -18,8 +18,8 @@ inline void render_asset_binary_serialization_deserialization_test()
         ShaderRessource::Asset l_shader = ShaderRessource::Asset::allocate_from_values(l_value);
         ShaderRessource::Asset::Value l_deserialized_asset = ShaderRessource::Asset::Value::build_from_asset(l_shader);
         assert_true(l_deserialized_asset.execution_order == l_value.execution_order);
-        assert_true(Slice<ShaderConfiguration>::build_memory_elementnb(&l_deserialized_asset.shader_configuration, 1)
-                        .compare(Slice<ShaderConfiguration>::build_memory_elementnb(&l_value.shader_configuration, 1)));
+        assert_true(Slice_build_memory_elementnb<ShaderConfiguration>(&l_deserialized_asset.shader_configuration, 1)
+                        .compare(Slice_build_memory_elementnb<ShaderConfiguration>(&l_value.shader_configuration, 1)));
         assert_true(l_deserialized_asset.specific_parameters.compare(l_value.specific_parameters));
         l_shader.free();
     }
@@ -46,7 +46,8 @@ inline void render_asset_binary_serialization_deserialization_test()
     }
 
     SliceN<ShaderParameter::Type, 2> l_material_parameters_memory_arr{ShaderParameter::Type::TEXTURE_GPU, ShaderParameter::Type::UNIFORM_HOST};
-    Slice<int8> l_material_parameters_memory = slice_from_slicen(&l_material_parameters_memory_arr).build_asint8();
+    Slice<ShaderParameter::Type> l_material_parameters_memory_slice = slice_from_slicen(&l_material_parameters_memory_arr);
+    Slice<int8> l_material_parameters_memory = Slice_build_asint8(&l_material_parameters_memory_slice);
     SliceN<SliceIndex, 2> l_chunks_arr{SliceIndex::build(0, sizeof(ShaderParameter::Type)), SliceIndex::build(sizeof(ShaderParameter::Type), sizeof(ShaderParameter::Type))};
     Slice<SliceIndex> l_chunkds = slice_from_slicen(&l_chunks_arr);
     VaryingSlice l_material_parameters_varying = VaryingSlice::build(l_material_parameters_memory, l_chunkds);
@@ -70,9 +71,9 @@ struct AssetRessourceTestContext
 
     inline static AssetRessourceTestContext allocate()
     {
-        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+        GPUContext l_gpu_ctx = GPUContext::allocate(Slice_build_default<GPUExtension>());
         D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 0});
-        String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+        String l_asset_database_path = asset_database_test_initialize(Slice_int8_build_rawstr("asset.db"));
         DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
         AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_connection);
         RenderRessourceAllocator2 l_render_ressource_allocator = RenderRessourceAllocator2::allocate();
@@ -93,7 +94,7 @@ struct AssetRessourceTestContext
     {
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
-        String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+        String l_asset_database_path = asset_database_test_initialize(Slice_int8_build_rawstr("asset.db"));
         this->database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
         this->asset_database = AssetDatabase::allocate(this->database_connection);
         l_asset_database_path.free();
@@ -143,8 +144,8 @@ struct CachedCompiledShaders
             }\n
             );
 
-        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+        ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+        ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
         CachedCompiledShaders l_return;
 
@@ -189,8 +190,8 @@ struct AssetRessource_TestAssertion
             assert_true(l_material_parameter_dependencies.Size == p_material_textures.Size);
             for (loop(i, 0, l_material_parameter_dependencies.Size))
             {
-                TextureRessource& l_texture_ressource = p_ctx.render_ressource_allocator.texture_unit.textures.pool.get(l_material_parameter_dependencies.get(i).dependency);
-                assert_ressource(p_ctx.render_ressource_allocator.texture_unit.textures, l_texture_ressource, p_material_textures.get(i));
+                TextureRessource& l_texture_ressource = p_ctx.render_ressource_allocator.texture_unit.textures.pool.get(Slice_get(&l_material_parameter_dependencies, i)->dependency);
+                assert_ressource(p_ctx.render_ressource_allocator.texture_unit.textures, l_texture_ressource, *Slice_get(&p_material_textures, i));
             }
         }
         else
@@ -255,8 +256,8 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
                                  Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
         uint32 l_indices[14 * 3] = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
 
-        Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
-        Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
+        Slice<Vertex> l_vertices_span = Slice_build_memory_elementnb<Vertex>(l_vertices, 14);
+        Slice<uint32> l_indices_span = Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3);
 
         hash_t l_vertex_shader_id = 12;
         ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(Span<int8>::allocate_slice(p_cached_compiled_shader.vertex_dummy_shader.slice));
@@ -283,8 +284,8 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
 
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8_memory_singleelement<hash_t>(&l_material_texture_id));
             l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -300,11 +301,9 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset}, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
 
-        Token(TextureRessource) l_material_texture_ressource =
-            l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies
-                .get_vector(l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies)
-                .get(0)
-                .dependency;
+        Slice<MaterialRessource::DynamicDependency> l_material_dynamic_dependencies = l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies.get_vector(
+            l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies);
+        Token(TextureRessource) l_material_texture_ressource = Slice_get(&l_material_dynamic_dependencies, 0)->dependency;
 
         MaterialRessource::Asset l_material_asset_2;
         {
@@ -312,8 +311,8 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8_memory_singleelement<hash_t>(&l_material_texture_id));
             l_material_asset_2 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -460,8 +459,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
             2,
         };
 
-        Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 1);
-        Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 3);
+        Slice<Vertex> l_vertices_span = Slice_build_memory_elementnb<Vertex>(l_vertices, 1);
+        Slice<uint32> l_indices_span = Slice_build_memory_elementnb<uint32>(l_indices, 3);
 
         hash_t l_vertex_shader_id = 12;
         ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(Span<int8>::allocate_slice(p_cached_compiled_shaders.vertex_dummy_shader.slice));
@@ -487,8 +486,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8_memory_singleelement<hash_t>(&l_material_texture_id));
             l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -503,11 +502,9 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
             ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset}, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
 
-        Token(TextureRessource) l_material_texture_ressource =
-            l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies
-                .get_vector(l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies)
-                .get(0)
-                .dependency;
+        Slice<MaterialRessource::DynamicDependency> l_material_ressource_dynamic_dependencies = l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies.get_vector(
+            l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies);
+        Token(TextureRessource) l_material_texture_ressource = Slice_get(&l_material_ressource_dynamic_dependencies, 0)->dependency;
 
         {
             SliceN<AssetRessource_TestAssertion::AssertRessource, 1> l_assert_material_texure{AssetRessource_TestAssertion::AssertRessource{l_material_texture_id, 1, 0}};
@@ -542,12 +539,12 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
 {
     AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
 
-    const Slice<int8> l_vertex_shader_path = slice_int8_build_rawstr("shader/v.vert");
-    const Slice<int8> l_fragment_shader_path = slice_int8_build_rawstr("shader/f.frag");
-    const Slice<int8> l_shader_path = slice_int8_build_rawstr("shader");
-    const Slice<int8> l_texture_path = slice_int8_build_rawstr("texture");
-    const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
-    const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
+    const Slice<int8> l_vertex_shader_path = Slice_int8_build_rawstr("shader/v.vert");
+    const Slice<int8> l_fragment_shader_path = Slice_int8_build_rawstr("shader/f.frag");
+    const Slice<int8> l_shader_path = Slice_int8_build_rawstr("shader");
+    const Slice<int8> l_texture_path = Slice_int8_build_rawstr("texture");
+    const Slice<int8> l_material_path = Slice_int8_build_rawstr("material");
+    const Slice<int8> l_mesh_path = Slice_int8_build_rawstr("mesh");
 
     const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
     const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
@@ -568,12 +565,13 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
         MaterialRessource::Asset l_material_asset;
         {
             SliceN<hash_t, 1> tmp_texture_ids{l_texture_id};
+            Slice<hash_t> tmp_texture_ids_slice = slice_from_slicen(&tmp_texture_ids);
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), slice_from_slicen(&tmp_texture_ids).build_asint8());
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8(&tmp_texture_ids_slice));
             l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -584,8 +582,8 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
             Vertex l_vertices[14] = {};
             uint32 l_indices[14 * 3] = {};
 
-            Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
-            Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
+            Slice<Vertex> l_vertices_span = Slice_build_memory_elementnb<Vertex>(l_vertices, 14);
+            Slice<uint32> l_indices_span = Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3);
 
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
@@ -647,12 +645,12 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
 {
     AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
 
-    const Slice<int8> l_vertex_shader_path = slice_int8_build_rawstr("shader/v.vert");
-    const Slice<int8> l_fragment_shader_path = slice_int8_build_rawstr("shader/f.frag");
-    const Slice<int8> l_shader_path = slice_int8_build_rawstr("shader");
-    const Slice<int8> l_texture_path = slice_int8_build_rawstr("texture");
-    const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
-    const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
+    const Slice<int8> l_vertex_shader_path = Slice_int8_build_rawstr("shader/v.vert");
+    const Slice<int8> l_fragment_shader_path = Slice_int8_build_rawstr("shader/f.frag");
+    const Slice<int8> l_shader_path = Slice_int8_build_rawstr("shader");
+    const Slice<int8> l_texture_path = Slice_int8_build_rawstr("texture");
+    const Slice<int8> l_material_path = Slice_int8_build_rawstr("material");
+    const Slice<int8> l_mesh_path = Slice_int8_build_rawstr("mesh");
 
     const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
     const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
@@ -673,12 +671,13 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
         MaterialRessource::Asset l_material_asset;
         {
             SliceN<hash_t, 1> tmp_material_textures_arr{HashSlice(l_texture_path)};
+            Slice<hash_t> tmp_material_textures_arr_slice = slice_from_slicen(&tmp_material_textures_arr);
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), slice_from_slicen(&tmp_material_textures_arr).build_asint8());
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8(&tmp_material_textures_arr_slice));
             l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -689,8 +688,8 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
             Vertex l_vertices[14] = {};
             uint32 l_indices[14 * 3] = {};
 
-            Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
-            Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
+            Slice<Vertex> l_vertices_span = Slice_build_memory_elementnb<Vertex>(l_vertices, 14);
+            Slice<uint32> l_indices_span = Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3);
 
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
@@ -748,12 +747,12 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
 {
     AssetRessourceTestContext l_ctx = AssetRessourceTestContext::allocate();
 
-    const Slice<int8> l_vertex_shader_path = slice_int8_build_rawstr("shader/v.vert");
-    const Slice<int8> l_fragment_shader_path = slice_int8_build_rawstr("shader/f.frag");
-    const Slice<int8> l_shader_path = slice_int8_build_rawstr("shader");
-    const Slice<int8> l_texture_path = slice_int8_build_rawstr("texture");
-    const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
-    const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
+    const Slice<int8> l_vertex_shader_path = Slice_int8_build_rawstr("shader/v.vert");
+    const Slice<int8> l_fragment_shader_path = Slice_int8_build_rawstr("shader/f.frag");
+    const Slice<int8> l_shader_path = Slice_int8_build_rawstr("shader");
+    const Slice<int8> l_texture_path = Slice_int8_build_rawstr("texture");
+    const Slice<int8> l_material_path = Slice_int8_build_rawstr("material");
+    const Slice<int8> l_mesh_path = Slice_int8_build_rawstr("mesh");
 
     const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
     const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
@@ -774,12 +773,13 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
         MaterialRessource::Asset l_material_asset;
         {
             SliceN<hash_t, 1> tmp_material_texture_arr{HashSlice(l_texture_path)};
+            Slice<hash_t> tmp_material_texture_slice = slice_from_slicen(&tmp_material_texture_arr);
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
-            l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), slice_from_slicen(&tmp_material_texture_arr).build_asint8());
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_obj), l_material_parameter_temp.slice);
+            l_varying_vector.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_tex), Slice_build_asint8(&tmp_material_texture_slice));
             l_material_asset = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
@@ -790,8 +790,8 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
             Vertex l_vertices[14] = {};
             uint32 l_indices[14 * 3] = {};
 
-            Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
-            Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
+            Slice<Vertex> l_vertices_span = Slice_build_memory_elementnb<Vertex>(l_vertices, 14);
+            Slice<uint32> l_indices_span = Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3);
 
             l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
         }
@@ -842,7 +842,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
-        assert_true(tk_eq(l_material_2, l_material));
+        assert_true(token_equals(l_material_2, l_material));
 
         assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 0);
         assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_allocation_events.Size == 0);
@@ -879,7 +879,6 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
 
     l_ctx.free();
 };
-
 
 int main()
 {

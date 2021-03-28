@@ -37,7 +37,7 @@ struct RessourceComposition
                 for (loop_reverse(i, 0, p_ressource_allocation_events.Size))
                 {
                     auto& l_event = p_ressource_allocation_events.get(i);
-                    if (tk_eq(l_event.allocated_ressource, l_counted_element->token))
+                    if (token_equals(l_event.allocated_ressource, l_counted_element->token))
                     {
                         l_event.asset.free();
                         p_ressource_allocation_events.erase_element_at_always(i);

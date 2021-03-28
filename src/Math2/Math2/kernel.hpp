@@ -2,37 +2,37 @@
 
 inline int8 Math::equals(const float32 p_left, const float32 p_right)
 {
-    return fabsf(p_left - p_right) <= Limits::tol_f;
+    return fabsf(p_left - p_right) <= Limits_TOL_f;
 };
 
 inline int8 Math::nequals(const float32 p_left, const float32 p_right)
 {
-    return fabsf(p_left - p_right) > Limits::tol_f;
+    return fabsf(p_left - p_right) > Limits_TOL_f;
 };
 
 inline int8 Math::lower_eq(const float32 p_left, const float32 p_right)
 {
-    return (p_left - p_right) <= Limits::tol_f;
+    return (p_left - p_right) <= Limits_TOL_f;
 };
 
 inline int8 Math::lower(const float32 p_left, const float32 p_right)
 {
-    return (p_left - p_right) < Limits::tol_f;
+    return (p_left - p_right) < Limits_TOL_f;
 };
 
 inline int8 Math::greater_eq(const float32 p_left, const float32 p_right)
 {
-    return (p_left - p_right) >= Limits::tol_f;
+    return (p_left - p_right) >= Limits_TOL_f;
 };
 
 inline int8 Math::greater(const float32 p_left, const float32 p_right)
 {
-    return (p_left - p_right) > Limits::tol_f;
+    return (p_left - p_right) > Limits_TOL_f;
 };
 
 inline int16 Math::sign(const float32 p_value)
 {
-    if (p_value <= -Limits::tol_f)
+    if (p_value <= -Limits_TOL_f)
     {
         return -1;
     }
@@ -44,11 +44,11 @@ inline int16 Math::sign(const float32 p_value)
 
 inline float32 Math::clamp_f32(const float32 p_value, const float32 p_left, const float32 p_right)
 {
-    if (p_value >= (p_right + Limits::tol_f))
+    if (p_value >= (p_right + Limits_TOL_f))
     {
         return p_right;
     }
-    else if (p_value <= (p_left + Limits::tol_f))
+    else if (p_value <= (p_left + Limits_TOL_f))
     {
         return p_left;
     }
@@ -237,7 +237,7 @@ inline float32 v3f::angle_unsigned_normalized(const v3f& p_end_normalized) const
 inline int8 v3f::anglesign(const v3f& p_end, const v3f& p_ref_axis) const
 {
     float32 l_dot = this->cross(p_end).dot(p_ref_axis);
-    return l_dot >= Limits::tol_f ? 1 : -1;
+    return l_dot >= Limits_TOL_f ? 1 : -1;
 };
 
 inline v3f v3f::rotate(const quat& p_rotation) const
@@ -267,17 +267,17 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 #endif
 
     float32 l_costtheta = this->dot(p_to);
-    if (l_costtheta >= Math_const::one_f - Limits::tol_f)
+    if (l_costtheta >= Math_const::one_f - Limits_TOL_f)
     {
         return quat_const::IDENTITY;
     }
 
     v3f l_rotation_axis;
 
-    if (l_costtheta < -Math_const::one_f + Limits::tol_f)
+    if (l_costtheta < -Math_const::one_f + Limits_TOL_f)
     {
         l_rotation_axis = v3f_const::FORWARD.cross(*this);
-        if (l_rotation_axis.length() < Limits::tol_f)
+        if (l_rotation_axis.length() < Limits_TOL_f)
         {
             l_rotation_axis = v3f_const::RIGHT.cross(*this);
         }
@@ -294,12 +294,12 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 
 inline int8 v3ui::operator==(const v3ui& p_other) const
 {
-    return Slice<v3ui>::build_asint8_memory_singleelement(this).compare(Slice<v3ui>::build_asint8_memory_singleelement(&p_other));
+    return Slice_build_asint8_memory_singleelement<v3ui>(this).compare(Slice_build_asint8_memory_singleelement<v3ui>(&p_other));
 };
 
 inline int8 v3ui::operator!=(const v3ui& p_other) const
 {
-    return !Slice<v3ui>::build_asint8_memory_singleelement(this).compare(Slice<v3ui>::build_asint8_memory_singleelement(&p_other));
+    return !Slice_build_asint8_memory_singleelement<v3ui>(this).compare(Slice_build_asint8_memory_singleelement<v3ui>(&p_other));
 };
 
 inline v4f v4f::operator+(const v4f& p_other) const

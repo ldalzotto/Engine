@@ -24,60 +24,60 @@ struct ObjCompiler
         uimax l_begin_line_index = 0;
         for (loop(l_reader_index, 0, p_obj_content.Size))
         {
-            if (p_obj_content.get(l_reader_index) == '\n')
+            if (*Slice_get(&p_obj_content, l_reader_index) == '\n')
             {
-                Slice<int8> l_line = p_obj_content.slide_rv(l_begin_line_index);
+                Slice<int8> l_line = Slice_slide_rv(&p_obj_content, l_begin_line_index);
                 l_line.Size = l_reader_index - l_begin_line_index;
 
-                if (l_line.compare(slice_int8_build_rawstr("vn")))
+                if (l_line.compare(Slice_int8_build_rawstr("vn")))
                 {
                 }
-                else if (l_line.compare(slice_int8_build_rawstr("vt")))
+                else if (l_line.compare(Slice_int8_build_rawstr("vt")))
                 {
                     v2f l_uv;
 
                     uimax l_first_space, l_second_space;
-                    l_line.find(slice_int8_build_rawstr(" "), &l_first_space);
+                    l_line.find(Slice_int8_build_rawstr(" "), &l_first_space);
                     l_first_space += 1;
-                    l_line.slide_rv(l_first_space).find(slice_int8_build_rawstr(" "), &l_second_space);
+                    Slice_slide_rv(&l_line, l_first_space).find(Slice_int8_build_rawstr(" "), &l_second_space);
                     l_second_space += l_first_space + 1;
 
-                    l_uv.x = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1));
-                    l_uv.y = 1.0f - FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_line.Size));
+                    l_uv.x = FromString::afloat32(Slice_build_begin_end<int8>(l_line.Begin, l_first_space, l_second_space - 1));
+                    l_uv.y = 1.0f - FromString::afloat32(Slice_build_begin_end<int8>(l_line.Begin, l_second_space, l_line.Size));
 
                     l_uvs.push_back_element(l_uv);
                 }
-                else if (l_line.compare(slice_int8_build_rawstr("v")))
+                else if (l_line.compare(Slice_int8_build_rawstr("v")))
                 {
                     v3f l_local_position;
                     uimax l_first_space, l_second_space, l_third_space;
-                    l_line.find(slice_int8_build_rawstr(" "), &l_first_space);
+                    l_line.find(Slice_int8_build_rawstr(" "), &l_first_space);
                     l_first_space += 1;
-                    l_line.slide_rv(l_first_space).find(slice_int8_build_rawstr(" "), &l_second_space);
+                    Slice_slide_rv(&l_line, l_first_space).find(Slice_int8_build_rawstr(" "), &l_second_space);
                     l_second_space += l_first_space + 1;
-                    l_line.slide_rv(l_second_space).find(slice_int8_build_rawstr(" "), &l_third_space);
+                    Slice_slide_rv(&l_line, l_second_space).find(Slice_int8_build_rawstr(" "), &l_third_space);
                     l_third_space += l_second_space + 1;
 
-                    l_local_position.x = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1));
-                    l_local_position.y = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_third_space - 1));
-                    l_local_position.z = FromString::afloat32(Slice<int8>::build_begin_end(l_line.Begin, l_third_space, l_line.Size));
+                    l_local_position.x = FromString::afloat32(Slice_build_begin_end<int8>(l_line.Begin, l_first_space, l_second_space - 1));
+                    l_local_position.y = FromString::afloat32(Slice_build_begin_end<int8>(l_line.Begin, l_second_space, l_third_space - 1));
+                    l_local_position.z = FromString::afloat32(Slice_build_begin_end<int8>(l_line.Begin, l_third_space, l_line.Size));
 
                     l_positions.push_back_element(l_local_position);
                 }
 
-                else if (l_line.compare(slice_int8_build_rawstr("f")))
+                else if (l_line.compare(Slice_int8_build_rawstr("f")))
                 {
                     uimax l_first_space, l_second_space, l_third_space;
-                    l_line.find(slice_int8_build_rawstr(" "), &l_first_space);
+                    l_line.find(Slice_int8_build_rawstr(" "), &l_first_space);
                     l_first_space += 1;
-                    l_line.slide_rv(l_first_space).find(slice_int8_build_rawstr(" "), &l_second_space);
+                    Slice_slide_rv(&l_line, l_first_space).find(Slice_int8_build_rawstr(" "), &l_second_space);
                     l_second_space += l_first_space + 1;
-                    l_line.slide_rv(l_second_space).find(slice_int8_build_rawstr(" "), &l_third_space);
+                    Slice_slide_rv(&l_line, l_second_space).find(Slice_int8_build_rawstr(" "), &l_third_space);
                     l_third_space += l_second_space + 1;
 
-                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_first_space, l_second_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
-                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_second_space, l_third_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
-                    process_obj_face(Slice<int8>::build_begin_end(l_line.Begin, l_third_space, l_line.Size), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice_build_begin_end<int8>(l_line.Begin, l_first_space, l_second_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice_build_begin_end<int8>(l_line.Begin, l_second_space, l_third_space - 1), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
+                    process_obj_face(Slice_build_begin_end<int8>(l_line.Begin, l_third_space, l_line.Size), l_vertices_indexed, l_positions, l_uvs, out_vertices, out_indices);
 
                     // l_line.substr(l_first_space, l_second_space - l_first_space).
                 }
@@ -95,13 +95,13 @@ struct ObjCompiler
                                         Vector<uint32>& out_indices)
     {
         uimax l_first_slash, l_second_slash;
-        p_face.find(slice_int8_build_rawstr("/"), &l_first_slash);
+        p_face.find(Slice_int8_build_rawstr("/"), &l_first_slash);
         l_first_slash += 1;
-        p_face.slide_rv(l_first_slash).find(slice_int8_build_rawstr("/"), &l_second_slash);
+        Slice_slide_rv(&p_face, l_first_slash).find(Slice_int8_build_rawstr("/"), &l_second_slash);
         l_second_slash += l_first_slash + 1;
 
-        uimax l_position_index = FromString::auimax(Slice<int8>::build_begin_end(p_face.Begin, 0, l_first_slash - 1)) - 1;
-        uimax l_uv_index = FromString::auimax(Slice<int8>::build_begin_end(p_face.Begin, l_first_slash, l_second_slash - 1)) - 1;
+        uimax l_position_index = FromString::auimax(Slice_build_begin_end<int8>(p_face.Begin, 0, l_first_slash - 1)) - 1;
+        uimax l_uv_index = FromString::auimax(Slice_build_begin_end<int8>(p_face.Begin, l_first_slash, l_second_slash - 1)) - 1;
 
         VertexKey l_key;
         l_key.position_index = l_position_index;

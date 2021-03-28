@@ -81,7 +81,7 @@ inline Token(BoxColliderComponent) CollisionAllocator::allocate_box_collider_com
 
 inline Token(BoxColliderComponent) CollisionAllocator::allocate_box_collider_component_deferred(const Token(Node) p_scene_node, const BoxColliderComponentAsset& p_asset)
 {
-    Token(BoxColliderComponent) l_box_collider_token = this->box_colliders.alloc_element(BoxColliderComponent{1, p_scene_node, tk_b(BoxCollider, tokent_build_default())});
+    Token(BoxColliderComponent) l_box_collider_token = this->box_colliders.alloc_element(BoxColliderComponent{1, p_scene_node, token_build(BoxCollider, tokent_build_default())});
     this->box_colliders_waiting_for_allocation.push_back_element(l_box_collider_token);
     this->box_colliders_asset_waiting_for_allocation.push_back_element(p_asset);
     return l_box_collider_token;
@@ -94,7 +94,7 @@ inline BoxColliderComponent& CollisionAllocator::get_or_allocate_box_collider(Co
         for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
             Token(BoxColliderComponent) l_box_collider_token = this->box_colliders_waiting_for_allocation.get(i);
-            if (tk_eq(p_box_collider_token, l_box_collider_token))
+            if (token_equals(p_box_collider_token, l_box_collider_token))
             {
                 BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
                 l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
@@ -121,7 +121,7 @@ inline void CollisionAllocator::free_box_collider_component(Collision2& p_collis
         for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
             Token(BoxColliderComponent)& l_box_collider_token = this->box_colliders_waiting_for_allocation.get(i);
-            if (tk_eq(l_box_collider_token, p_box_collider_component))
+            if (token_equals(l_box_collider_token, p_box_collider_component))
             {
                 this->box_colliders_waiting_for_allocation.erase_element_at(i);
                 this->box_colliders_asset_waiting_for_allocation.erase_element_at(i);
@@ -141,7 +141,7 @@ inline v3f CollisionAllocator::box_collider_get_world_half_extend(Collision2& p_
         for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
             Token(BoxColliderComponent)& l_box_collider_token = this->box_colliders_waiting_for_allocation.get(i);
-            if (tk_eq(l_box_collider_token, p_box_collider_component))
+            if (token_equals(l_box_collider_token, p_box_collider_component))
             {
                 return this->box_colliders_asset_waiting_for_allocation.get(i).half_extend;
             }
@@ -158,7 +158,7 @@ inline int8 CollisionAllocator::box_collider_is_queued_for_detection(Collision2&
         for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
             Token(BoxColliderComponent)& l_box_collider_token = this->box_colliders_waiting_for_allocation.get(i);
-            if (tk_eq(l_box_collider_token, p_box_collider_component))
+            if (token_equals(l_box_collider_token, p_box_collider_component))
             {
                 return 0;
             }

@@ -26,22 +26,22 @@ struct MaterialViewerEngineUnit
     {
         MaterialViewerEngineUnit l_return{};
         l_return.set_sefault_values();
-        l_return.shared = MutexNative<SharedRessources>::allocate();
+        l_return.shared = MutexNative_allocate<SharedRessources>();
         return l_return;
     };
 
     inline void set_sefault_values()
     {
-        this->engine_execution_unit = tk_bd(EngineExecutionUnit);
-        this->material_node_meshrenderer = tk_bd(MeshRendererComponent);
-        this->camera_node = tk_bd(Node);
-        this->material_node = tk_bd(Node);
+        this->engine_execution_unit = token_build_default(EngineExecutionUnit);
+        this->material_node_meshrenderer = token_build_default(MeshRendererComponent);
+        this->camera_node = token_build_default(Node);
+        this->material_node = token_build_default(Node);
     };
 
     inline void free(EngineRunnerThread& p_engine_runner)
     {
         this->stop(p_engine_runner);
-        this->shared.free();
+        MutexNative_free(&this->shared);
     };
 
     inline void start(EngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
@@ -69,7 +69,7 @@ struct MaterialViewerEngineUnit
 
     inline void set_new_material(const hash_t p_new_material)
     {
-        this->shared.acquire([&](SharedRessources& p_shared) {
+        MutexNative_acquire(&this->shared, [&](SharedRessources& p_shared) {
           p_shared.change_requested = 1;
           p_shared.material_hash = p_new_material;
         });
@@ -77,7 +77,7 @@ struct MaterialViewerEngineUnit
 
     inline void set_new_mesh(const hash_t p_new_mesh)
     {
-        this->shared.acquire([&](SharedRessources& p_shared) {
+        MutexNative_acquire(&this->shared, [&](SharedRessources& p_shared) {
           p_shared.change_requested = 1;
           p_shared.mesh_hash = p_new_mesh;
         });
@@ -96,10 +96,10 @@ struct MaterialViewerEngineUnit
                 thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
                 NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
             }
-            thiz->shared.acquire([&](SharedRessources& p_shared){
+            MutexNative_acquire(&thiz->shared, [&](SharedRessources& p_shared){
               if (p_shared.change_requested)
               {
-                  if (tk_v(thiz->material_node_meshrenderer) != -1)
+                  if (token_get_value(thiz->material_node_meshrenderer) != -1)
                   {
                       NodeRemoveMeshRenderer(p_engine, thiz->material_node);
                   }
@@ -117,7 +117,7 @@ struct MaterialViewerEngineUnit
     {
         RemoveNode(p_engine, thiz->camera_node);
         RemoveNode(p_engine, thiz->material_node);
-        thiz->material_node_meshrenderer = tk_bd(MeshRendererComponent);
+        thiz->material_node_meshrenderer = token_build_default(MeshRendererComponent);
         thiz->is_running = 0;
     };
 };
@@ -260,7 +260,7 @@ struct MaterialViewerWindow
         this->widgets.db_file_label->setText(this->view.database_file);
 
         QByteArray l_database_file_path_arr = this->view.database_file.toLocal8Bit();
-        Slice<int8> l_database_file_path = slice_int8_build_rawstr(l_database_file_path_arr.data());
+        Slice<int8> l_database_file_path = Slice_int8_build_rawstr(l_database_file_path_arr.data());
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_file_path);
         if (DatabaseConnection_is_valid_silent(l_connection))
         {
@@ -339,7 +339,7 @@ struct MaterialViewerEditor
         l_callbacks.closure = this;
         l_callbacks.on_database_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
-            thiz->material_viewer_engine_unit.restart(thiz->engine_runner, slice_int8_build_rawstr(thiz->material_viewer_window.view.database_file.toLocal8Bit().data()), 400, 400);
+            thiz->material_viewer_engine_unit.restart(thiz->engine_runner, Slice_int8_build_rawstr(thiz->material_viewer_window.view.database_file.toLocal8Bit().data()), 400, 400);
         };
         l_callbacks.on_material_selected = [](auto, void* p_editor) {
             MaterialViewerEditor* thiz = (MaterialViewerEditor*)p_editor;
@@ -371,7 +371,7 @@ struct MaterialViewerEditor
             return;
         }
 
-        this->material_viewer_engine_unit.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.selected_material.toLocal8Bit().data())));
-        this->material_viewer_engine_unit.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.slected_mesh.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_material(HashSlice(Slice_int8_build_rawstr(this->material_viewer_window.view.selected_material.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_mesh(HashSlice(Slice_int8_build_rawstr(this->material_viewer_window.view.slected_mesh.toLocal8Bit().data())));
     };
 };

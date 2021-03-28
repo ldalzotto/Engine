@@ -33,14 +33,14 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (l_asset_path.find(Slice_int8_build_rawstr("."), &l_last_dot_index))
     {
-        l_asset_path.slide(l_last_dot_index + 1);
+        Slice_slide(&l_asset_path, l_last_dot_index + 1);
     };
 
     if (l_asset_path.Size > 0)
     {
-        if (l_asset_path.compare(slice_int8_build_rawstr("vert")))
+        if (l_asset_path.compare(Slice_int8_build_rawstr("vert")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
@@ -55,7 +55,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
                 return 1;
             };
         }
-        else if (l_asset_path.compare(slice_int8_build_rawstr("frag")))
+        else if (l_asset_path.compare(Slice_int8_build_rawstr("frag")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
@@ -70,7 +70,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
                 return 1;
             }
         }
-        else if (l_asset_path.compare(slice_int8_build_rawstr("obj")))
+        else if (l_asset_path.compare(Slice_int8_build_rawstr("obj")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             Vector<Vertex> l_vertices = Vector<Vertex>::allocate(0);
@@ -85,7 +85,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             *out_asset_compiled = AssetCompiled::build(AssetType::MESH, l_mesh_asset.allocated_binary);
             return 1;
         }
-        else if (l_asset_path.compare(slice_int8_build_rawstr("jpg")) || l_asset_path.compare(slice_int8_build_rawstr("png")))
+        else if (l_asset_path.compare(Slice_int8_build_rawstr("jpg")) || l_asset_path.compare(Slice_int8_build_rawstr("png")))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
 
@@ -101,7 +101,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             *out_asset_compiled = AssetCompiled::build(AssetType::TEXTURE, l_texture_asset.allocated_binary);
             return 1;
         }
-        else if (l_asset_path.compare(slice_int8_build_rawstr("json")))
+        else if (l_asset_path.compare(Slice_int8_build_rawstr("json")))
         {
             AssetCompiled l_compiled_asset = AssetCompiled::build_default();
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
@@ -143,14 +143,14 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (l_asset_path.find(Slice_int8_build_rawstr("."), &l_last_dot_index))
     {
-        l_asset_path.slide(l_last_dot_index + 1);
+        Slice_slide(&l_asset_path, l_last_dot_index + 1);
     };
 
     if (l_asset_path.Size > 0)
     {
-        if (l_asset_path.compare(slice_int8_build_rawstr("json")))
+        if (l_asset_path.compare(Slice_int8_build_rawstr("json")))
         {
             Span<int8> l_compiled_dependencies;
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
@@ -188,7 +188,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
                                                                    AssetMetadataDatabase& p_asset_metadata_database, const Slice<int8>& p_root_path, const Slice<int8>& p_relative_asset_path)
 {
     int8 l_return = 0;
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice<int8>::build_begin_end("\0", 0, 1));
+    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice_build_begin_end<int8>("\0", 0, 1));
     File l_asset_file = File::open_silent(l_asset_full_path.slice);
     if (l_asset_file.is_valid())
     {

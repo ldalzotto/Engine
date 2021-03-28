@@ -6,7 +6,7 @@ template <class KeyType_t> struct HashMap_HashFn
 {
     inline static hash_t Hashmap_HashFn_Hash(const KeyType_t& p_key, const uimax p_modulo)
     {
-        return HashSlice(Slice<KeyType_t>::build_memory_elementnb((KeyType_t*)&p_key, 1)) % p_modulo;
+        return HashSlice(Slice_build_memory_elementnb<KeyType_t>((KeyType_t*)&p_key, 1)) % p_modulo;
     };
 };
 

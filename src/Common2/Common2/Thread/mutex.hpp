@@ -1,42 +1,47 @@
 #pragma once
 
-template <class ElementType> struct MutexNative
+template <class type_element> struct MutexNative
 {
-    ElementType _data;
+    type_element _data;
     HANDLE _mutex;
+};
 
-    inline static MutexNative<ElementType> allocate()
-    {
-        MutexNative<ElementType> l_mutex{};
-        l_mutex._mutex = CreateMutex(NULL, 0, NULL);
-#if __DEBUG
-        assert_true(l_mutex._mutex != NULL);
-#endif
-        return l_mutex;
-    };
+#define MutexNative_get_data(thiz) (thiz)->_data
+#define MutexNative_get_mutex(thiz) (thiz)->_mutex
 
-    inline void free()
-    {
-        DWORD l_wait = WaitForSingleObject(this->_mutex, INFINITE);
+template <class type_element>
+inline MutexNative<type_element> MutexNative_allocate()
+{
+    MutexNative<type_element> l_mutex{};
+    l_mutex._mutex = CreateMutex(NULL, 0, NULL);
 #if __DEBUG
-        assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
+    assert_true(l_mutex._mutex != NULL);
 #endif
-        BOOL l_ch = CloseHandle(this->_mutex);
-#if __DEBUG
-        assert_true(l_ch);
-#endif
-    };
+    return l_mutex;
+};
 
-    template <class t_WithFunc> inline void acquire(const t_WithFunc& p_with)
-    {
-        DWORD l_wait = WaitForSingleObject(this->_mutex, INFINITE);
+template <class type_element>
+inline void MutexNative_free(MutexNative<type_element>* thiz)
+{
+    DWORD l_wait = WaitForSingleObject(MutexNative_get_mutex(thiz), INFINITE);
 #if __DEBUG
-        assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
+    assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
 #endif
-        p_with(_data);
-        BOOL l_rm = ReleaseMutex(this->_mutex);
+    BOOL l_ch = CloseHandle(MutexNative_get_mutex(thiz));
 #if __DEBUG
-        assert_true(l_rm);
+    assert_true(l_ch);
 #endif
-    };
+};
+
+template <class type_element, class func_with> inline void MutexNative_acquire(MutexNative<type_element>* thiz, CB(func_with) p_with)
+{
+    DWORD l_wait = WaitForSingleObject(MutexNative_get_mutex(thiz), INFINITE);
+#if __DEBUG
+    assert_true(l_wait != WAIT_ABANDONED && l_wait != WAIT_TIMEOUT && l_wait != WAIT_FAILED);
+#endif
+    p_with(thiz->_data);
+    BOOL l_rm = ReleaseMutex(MutexNative_get_mutex(thiz));
+#if __DEBUG
+    assert_true(l_rm);
+#endif
 };

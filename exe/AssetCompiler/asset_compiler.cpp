@@ -6,12 +6,12 @@ int main(int32 argc, int8** argv)
 {
     if (argc > 1)
     {
-        Slice<int8*> l_args = Slice<int8*>::build_memory_elementnb(argv, argc);
+        Slice<int8*> l_args = Slice_build_memory_elementnb<int8*>(argv, argc);
         if (l_args.Size >= 4)
         {
-            Slice<int8> l_asset_database_path = slice_int8_build_rawstr(l_args.get(1));
-            Slice<int8> l_root_path = slice_int8_build_rawstr(l_args.get(2));
-            Slice<int8> l_asset_relative_path = slice_int8_build_rawstr(l_args.get(3));
+            Slice<int8> l_asset_database_path = Slice_int8_build_rawstr(*Slice_get(&l_args, 1));
+            Slice<int8> l_root_path = Slice_int8_build_rawstr(*Slice_get(&l_args, 2));
+            Slice<int8> l_asset_relative_path = Slice_int8_build_rawstr(*Slice_get(&l_args, 3));
 
             ShaderCompiler l_shader_compiled = ShaderCompiler::allocate();
             DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path);

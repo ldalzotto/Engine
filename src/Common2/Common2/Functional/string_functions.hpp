@@ -7,18 +7,18 @@ struct FromString
         if (p_string.Size > 0)
         {
             uimax l_dot_index;
-            if (p_string.find(slice_int8_build_rawstr("."), &l_dot_index))
+            if (p_string.find(Slice_int8_build_rawstr("."), &l_dot_index))
             {
-                if (p_string.get(0) == '-')
+                if (*Slice_get(&p_string, 0) == '-')
                 {
                     float32 l_return = 0.0f;
                     for (loop(i, l_dot_index + 1, p_string.Size))
                     {
-                        l_return += (float32)((p_string.get(i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
+                        l_return += (float32)((*Slice_get(&p_string, i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
                     }
                     for (loop_reverse(i, 1, l_dot_index))
                     {
-                        l_return += (float32)((p_string.get(i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
+                        l_return += (float32)((*Slice_get(&p_string, i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
                     }
                     return -1.0f * l_return;
                 }
@@ -27,11 +27,11 @@ struct FromString
                     float32 l_return = 0.0f;
                     for (loop(i, l_dot_index + 1, p_string.Size))
                     {
-                        l_return += (float32)((p_string.get(i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
+                        l_return += (float32)((*Slice_get(&p_string, i) - '0') * (1.0f / (pow(10, (double)i - l_dot_index))));
                     }
                     for (loop_reverse(i, 0, l_dot_index))
                     {
-                        l_return += (float32)((p_string.get(i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
+                        l_return += (float32)((*Slice_get(&p_string, i) - '0') * (pow(10, l_dot_index - 1 - (double)i)));
                     }
                     return l_return;
                 }
@@ -46,7 +46,7 @@ struct FromString
         uimax l_value = 0;
         for (loop(i, 0, p_string.Size))
         {
-            l_value += (uimax)((p_string.get(i) - '0') * (uimax)pow(10, ((double)p_string.Size - 1) - i));
+            l_value += (uimax)((*Slice_get(&p_string, i) - '0') * (uimax)pow(10, ((double)p_string.Size - 1) - i));
         }
         return l_value;
     };
@@ -56,7 +56,7 @@ struct FromString
         uint8 l_value = 0;
         for (loop(i, 0, p_string.Size))
         {
-            l_value += (uint8)((p_string.get(i) - '0') * (uint8)pow(10, ((double)p_string.Size - 1) - i));
+            l_value += (uint8)((*Slice_get(&p_string, i) - '0') * (uint8)pow(10, ((double)p_string.Size - 1) - i));
         }
         return l_value;
     };
@@ -64,7 +64,7 @@ struct FromString
 
 struct ToString
 {
-    static constexpr uimax float32str_size = ((CHAR_BIT * sizeof(Limits::tol_f) / 3) + 3);
+    static constexpr uimax float32str_size = ((CHAR_BIT * sizeof(Limits_TOL_f) / 3) + 3);
     static constexpr uimax uimaxstr_size = ((CHAR_BIT * sizeof(uimax) / 3) + 3);
 
     inline static Slice<int8> afloat32(const float32 p_value, const Slice<int8>& out)
@@ -93,7 +93,7 @@ struct ToString
         // l_char_nb += 1;
         // l_char_nb += sprintf(out.Begin + l_char_nb, "%i", l_right);
 
-        return Slice<int8>::build_memory_elementnb(out.Begin, l_char_nb);
+        return Slice_build_memory_elementnb<int8>(out.Begin, l_char_nb);
     };
 
     inline static Slice<int8> auimax(const uimax p_value, const Slice<int8>& out)
@@ -114,7 +114,7 @@ struct ToString
 #pragma warning(pop)
 #endif
 
-        return Slice<int8>::build_memory_elementnb(out.Begin, l_char_nb);
+        return Slice_build_memory_elementnb<int8>(out.Begin, l_char_nb);
     };
 
     inline static void auimax_append(const uimax p_value, String& p_str)

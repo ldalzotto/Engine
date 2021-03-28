@@ -90,23 +90,23 @@ inline void obb::extract_vertices(Slice<v3f>* in_out_vertices) const
     l_rad_delta[1] = this->axis.Points2D[1] * this->box.radiuses.Points[1];
     l_rad_delta[2] = this->axis.Points2D[2] * this->box.radiuses.Points[2];
 
-    in_out_vertices->get(0) = this->box.center + l_rad_delta[0] + l_rad_delta[1] + l_rad_delta[2];
-    in_out_vertices->get(1) = this->box.center + l_rad_delta[0] - l_rad_delta[1] + l_rad_delta[2];
-    in_out_vertices->get(2) = this->box.center + l_rad_delta[0] + l_rad_delta[1] - l_rad_delta[2];
-    in_out_vertices->get(3) = this->box.center + l_rad_delta[0] - l_rad_delta[1] - l_rad_delta[2];
+    *Slice_get(in_out_vertices, 0) = this->box.center + l_rad_delta[0] + l_rad_delta[1] + l_rad_delta[2];
+    *Slice_get(in_out_vertices, 1) = this->box.center + l_rad_delta[0] - l_rad_delta[1] + l_rad_delta[2];
+    *Slice_get(in_out_vertices, 2) = this->box.center + l_rad_delta[0] + l_rad_delta[1] - l_rad_delta[2];
+    *Slice_get(in_out_vertices, 3) = this->box.center + l_rad_delta[0] - l_rad_delta[1] - l_rad_delta[2];
 
-    in_out_vertices->get(4) = this->box.center - l_rad_delta[0] + l_rad_delta[1] + l_rad_delta[2];
-    in_out_vertices->get(5) = this->box.center - l_rad_delta[0] - l_rad_delta[1] + l_rad_delta[2];
-    in_out_vertices->get(6) = this->box.center - l_rad_delta[0] + l_rad_delta[1] - l_rad_delta[2];
-    in_out_vertices->get(7) = this->box.center - l_rad_delta[0] - l_rad_delta[1] - l_rad_delta[2];
+    *Slice_get(in_out_vertices, 4) = this->box.center - l_rad_delta[0] + l_rad_delta[1] + l_rad_delta[2];
+    *Slice_get(in_out_vertices, 5) = this->box.center - l_rad_delta[0] - l_rad_delta[1] + l_rad_delta[2];
+    *Slice_get(in_out_vertices, 6) = this->box.center - l_rad_delta[0] + l_rad_delta[1] - l_rad_delta[2];
+    *Slice_get(in_out_vertices, 7) = this->box.center - l_rad_delta[0] - l_rad_delta[1] - l_rad_delta[2];
 };
 
 inline int8 obb::overlap(const obb& p_other) const
 {
     v3f p_left_points_arr[8];
     v3f p_right_points_arr[8];
-    Slice<v3f> p_left_points = Slice<v3f>::build_memory_elementnb(p_left_points_arr, 8);
-    Slice<v3f> p_right_points = Slice<v3f>::build_memory_elementnb(p_right_points_arr, 8);
+    Slice<v3f> p_left_points = Slice_build_memory_elementnb<v3f>(p_left_points_arr, 8);
+    Slice<v3f> p_right_points = Slice_build_memory_elementnb<v3f>(p_right_points_arr, 8);
 
     this->extract_vertices(&p_left_points);
     p_other.extract_vertices(&p_right_points);
@@ -352,7 +352,7 @@ inline void GeometryUtil::collapse_points_to_axis_min_max(const v3f& p_axis, con
 
     for (uimax i = 0; i < p_points.Size; i++)
     {
-        float32 l_proj = p_points.get(i).dot(p_axis);
+        float32 l_proj = Slice_get(&p_points, i)->dot(p_axis);
         if (Math::lower(l_proj, *out_min))
         {
             *out_min = l_proj;

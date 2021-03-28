@@ -48,12 +48,12 @@ inline static SQLiteReturnCode handleSQLiteError_silent(SQLiteReturnCode p_retur
 #if __DEBUG
     if (SQLiteReturnCode_get(p_return) != SQLITE_OK)
     {
-        String l_error_message = String::allocate_elements(slice_int8_build_rawstr("SQLITE ERROR : "));
+        String l_error_message = String::allocate_elements(Slice_int8_build_rawstr("SQLITE ERROR : "));
         sqlite3_errstr(SQLiteReturnCode_get(p_return));
         if (*p_connection)
         {
-            l_error_message.append(slice_int8_build_rawstr(" : "));
-            l_error_message.append(slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
+            l_error_message.append(Slice_int8_build_rawstr(" : "));
+            l_error_message.append(Slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
         }
         printf("%s\n", l_error_message.get_memory());
         l_error_message.free();
@@ -78,12 +78,12 @@ inline static SQLiteReturnCode handleStepError(SQLiteReturnCode p_step_return, s
     int32 l_return_code = SQLiteReturnCode_get(p_step_return);
     if (l_return_code != SQLITE_BUSY && l_return_code != SQLITE_DONE && l_return_code != SQLITE_ROW)
     {
-        String l_error_message = String::allocate_elements(slice_int8_build_rawstr("SQLITE ERROR : "));
+        String l_error_message = String::allocate_elements(Slice_int8_build_rawstr("SQLITE ERROR : "));
         sqlite3_errstr(l_return_code);
         if (*p_connection)
         {
-            l_error_message.append(slice_int8_build_rawstr(" : "));
-            l_error_message.append(slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
+            l_error_message.append(Slice_int8_build_rawstr(" : "));
+            l_error_message.append(Slice_int8_build_rawstr(sqlite3_errmsg((sqlite3*)*p_connection)));
         }
         printf("%s\n", l_error_message.get_memory());
         l_error_message.free();
@@ -141,7 +141,7 @@ struct SQLiteQueryLayout
     inline static SQLiteQueryLayout build_default()
     {
         SQLiteQueryLayout l_return;
-        l_return.types_slice = Slice<SQLiteQueryPrimitiveTypes>::build_default();
+        l_return.types_slice = Slice_build_default<SQLiteQueryPrimitiveTypes>();
         return l_return;
     };
 
@@ -274,7 +274,7 @@ struct SQLiteQueryBinder
     {
 #if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
-        assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::INT64);
+        assert_true(*Slice_get(&this->binded_parameter_layout->types_slice, this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::INT64);
 #endif
         DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_bind_int64(this->binded_statement, this->bind_counter, p_value)), &p_connection.connection);
         this->bind_counter += 1;
@@ -284,7 +284,7 @@ struct SQLiteQueryBinder
     {
 #if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
-        assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::TEXT);
+        assert_true(*Slice_get(&this->binded_parameter_layout->types_slice, this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
 
         DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_bind_text(this->binded_statement, this->bind_counter, p_text.Begin, (int32)p_text.Size, NULL)),
@@ -296,7 +296,7 @@ struct SQLiteQueryBinder
     {
 #if __DEBUG
         assert_true(this->binded_parameter_layout != NULL);
-        assert_true(this->binded_parameter_layout->types_slice.get(this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::BLOB);
+        assert_true(*Slice_get(&this->binded_parameter_layout->types_slice, this->bind_counter - 1) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif
         DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_bind_blob(this->binded_statement, this->bind_counter, p_blob.Begin, (int32)p_blob.Size, NULL)),
                                                     &p_connection.connection);
@@ -328,7 +328,7 @@ struct SQLiteResultSet
     {
 #if __DEBUG
         assert_true(this->binded_return_layout != NULL);
-        assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::INT64);
+        assert_true(*Slice_get(&this->binded_return_layout->types_slice, p_index) == SQLiteQueryPrimitiveTypes::INT64);
 #endif
         return sqlite3_column_int64(this->binded_statement, p_index);
     };
@@ -337,20 +337,20 @@ struct SQLiteResultSet
     {
 #if __DEBUG
         assert_true(this->binded_return_layout != NULL);
-        assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::TEXT);
+        assert_true(*Slice_get(&this->binded_return_layout->types_slice, p_index) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size));
+        return Span<int8>::allocate_slice(Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size));
     };
 
     inline Span<int8> get_blob(const int8 p_index)
     {
 #if __DEBUG
         assert_true(this->binded_return_layout != NULL);
-        assert_true(this->binded_return_layout->types_slice.get(p_index) == SQLiteQueryPrimitiveTypes::BLOB);
+        assert_true(*Slice_get(&this->binded_return_layout->types_slice, p_index) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size));
+        return Span<int8>::allocate_slice(Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size));
     };
 };
 
@@ -380,7 +380,7 @@ struct SQliteQueryExecution
 inline int8 DatabaseConnection_is_valid_silent(DatabaseConnection& p_database_connection)
 {
     const int8* l_query = MULTILINE(drop table if exists __validation_check; create table __validation_check(c1 interger primary key); drop table __validation_check;);
-    SQLiteQuery l_query_sqlite = SQLiteQuery::allocate_silent(p_database_connection, slice_int8_build_rawstr(l_query));
+    SQLiteQuery l_query_sqlite = SQLiteQuery::allocate_silent(p_database_connection, Slice_int8_build_rawstr(l_query));
     int8 l_return = l_query_sqlite.is_valid();
     if (l_return)
     {

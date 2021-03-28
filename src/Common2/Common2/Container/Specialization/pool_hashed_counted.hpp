@@ -93,7 +93,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 
         inline static IncrementOrAllocateStateMachine build(PoolHashedCounted<KeyType, ElementType>& thiz)
         {
-            return IncrementOrAllocateStateMachine{&thiz, State::START, tk_bd(ElementType)};
+            return IncrementOrAllocateStateMachine{&thiz, State::START, token_build_default(ElementType)};
         };
 
         inline void start(const KeyType& p_key)

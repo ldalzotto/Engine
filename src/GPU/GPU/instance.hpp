@@ -131,7 +131,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     const int8* l_validation_layers_str[1] = {"VK_LAYER_KHRONOS_validation"};
     // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
-    Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb(l_validation_layers_str, 1);
+    Slice<const int8*> l_validation_layers = Slice_build_memory_elementnb<const int8*>(l_validation_layers_str, 1);
 
     Span<VkLayerProperties> l_available_layers = vk::enumerateInstanceLayerProperties();
     for (loop(i, 0, l_validation_layers.Size))
@@ -139,7 +139,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         int8 l_layer_match = 0;
         for (loop(j, 0, l_available_layers.Capacity))
         {
-            if (slice_int8_build_rawstr(l_validation_layers.get(i)).compare(slice_int8_build_rawstr(l_available_layers.get(j).layerName)))
+            if (Slice_int8_build_rawstr(*Slice_get(&l_validation_layers, i)).compare(Slice_int8_build_rawstr(l_available_layers.get(j).layerName)))
             {
                 l_layer_match = 1;
                 break;
@@ -165,7 +165,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     for (loop(i, 0, p_required_instance_extensions.Size))
     {
-        switch (p_required_instance_extensions.get(i))
+        switch (*Slice_get(&p_required_instance_extensions, i))
         {
         case GPUExtension::WINDOW_PRESENT:
             l_window_present_enabled = 1;

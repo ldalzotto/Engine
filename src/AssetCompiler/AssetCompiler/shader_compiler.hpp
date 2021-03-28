@@ -186,7 +186,7 @@ struct ShaderCompiled
 
     inline Slice<int8> get_compiled_binary()
     {
-        return Slice<int8>::build_memory_elementnb((int8*)glslang_program_SPIRV_get_ptr(this->program), glslang_program_SPIRV_get_size(this->program) * sizeof(unsigned int));
+        return Slice_build_memory_elementnb<int8>((int8*)glslang_program_SPIRV_get_ptr(this->program), glslang_program_SPIRV_get_size(this->program) * sizeof(unsigned int));
     };
 };
 

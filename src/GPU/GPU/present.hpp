@@ -105,15 +105,15 @@ struct GPUPresent_2DQuad
         Slice<_vertex> l_2D_quad_vertices = slice_from_slicen(&l_2D_quad_vertices_arr);
 
         GPUPresent_2DQuad l_return;
-        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(l_2D_quad_vertices.build_asint8().Size,
+        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(Slice_build_asint8(&l_2D_quad_vertices).Size,
                                                                                  (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
-        BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_vertices, l_2D_quad_vertices.build_asint8());
+        BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_vertices, Slice_build_asint8(&l_2D_quad_vertices));
 
         SliceN<uint32, 6> l_indices_arr{0, 1, 2, 0, 3, 1};
         Slice<uint32> l_indices = slice_from_slicen(&l_indices_arr);
         l_return.d2_quad_indices_image_indices = p_buffer_memory.allocator.allocate_buffergpu(
-            l_indices.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
-        BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_indices_image_indices, l_indices.build_asint8());
+            Slice_build_asint8(&l_indices).Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+        BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_indices_image_indices, Slice_build_asint8(&l_indices));
 
         return l_return;
     };

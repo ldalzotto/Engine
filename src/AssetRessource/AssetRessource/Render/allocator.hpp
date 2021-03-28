@@ -466,7 +466,7 @@ struct ShaderRessourceUnit
         allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const ShaderRessource::Asset& p_asset, const ShaderRessource::Dependencies& p_dependencies)
     {
         Token(ShaderRessource) l_shader_module_ressource =
-            this->shaders.push_back_element(p_id, ShaderRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, tk_bd(ShaderIndex), p_dependencies});
+            this->shaders.push_back_element(p_id, ShaderRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, token_build_default(ShaderIndex), p_dependencies});
         this->shaders_allocation_events.push_back_element(ShaderRessource::AllocationEvent{p_asset, l_shader_module_ressource});
         return l_shader_module_ressource;
     };
@@ -665,7 +665,7 @@ struct MaterialRessourceUnit
         allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const MaterialRessource::Asset& p_asset, const MaterialRessource::Dependencies& p_dependencies)
     {
         Token(MaterialRessource) l_shader_module_ressource =
-            this->materials.push_back_element(p_id, MaterialRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, tk_bd(Material), p_dependencies});
+            this->materials.push_back_element(p_id, MaterialRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, token_build_default(Material), p_dependencies});
         this->materials_allocation_events.push_back_element(MaterialRessource::AllocationEvent{p_asset, l_shader_module_ressource});
         return l_shader_module_ressource;
     };
@@ -718,7 +718,7 @@ struct MaterialRessourceComposition
             for (loop(i, 0, l_dynamic_textures.Capacity))
             {
                 l_dynamic_textures.get(i) =
-                    MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_inline(p_texture_unit, p_inline_input.texture_dependencies_input.get(i))};
+                    MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_inline(p_texture_unit, *Slice_get(&p_inline_input.texture_dependencies_input, i))};
             }
             l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
             l_dynamic_textures.free();
@@ -737,7 +737,7 @@ struct MaterialRessourceComposition
         for (loop(i, 0, l_dynamic_textures.Capacity))
         {
             l_dynamic_textures.get(i) =
-                MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_database(p_texture_unit, p_inline_input.texture_dependencies_input.get(i))};
+                MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_database(p_texture_unit, *Slice_get(&p_inline_input.texture_dependencies_input, i))};
         }
         l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
         l_dynamic_textures.free();
@@ -801,7 +801,7 @@ struct MaterialRessourceComposition
             Slice<MaterialRessource::DynamicDependency> l_material_dynamic_dependencies = p_unit.material_dynamic_dependencies.get_vector(l_material_ressource.dependencies.dynamic_dependencies);
             for (loop(i, 0, l_material_dynamic_dependencies.Size))
             {
-                p_texture_unit.release_ressource(l_material_dynamic_dependencies.get(i).dependency);
+                p_texture_unit.release_ressource(Slice_get(&l_material_dynamic_dependencies, i)->dependency);
             }
             p_unit.material_dynamic_dependencies.release_vector(l_material_ressource.dependencies.dynamic_dependencies);
             break;
@@ -813,7 +813,7 @@ struct MaterialRessourceComposition
             Slice<MaterialRessource::DynamicDependency> l_material_dynamic_dependencies = p_unit.material_dynamic_dependencies.get_vector(l_material_ressource.dependencies.dynamic_dependencies);
             for (loop(i, 0, l_material_dynamic_dependencies.Size))
             {
-                p_texture_unit.release_ressource(l_material_dynamic_dependencies.get(i).dependency);
+                p_texture_unit.release_ressource(Slice_get(&l_material_dynamic_dependencies, i)->dependency);
             }
 
             p_unit.materials.pool.release_element(p_material_ressource);

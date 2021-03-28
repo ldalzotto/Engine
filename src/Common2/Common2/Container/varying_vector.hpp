@@ -59,7 +59,7 @@ struct VaryingVector
 
     template <class ElementType> inline void push_back_element(const ElementType& p_element)
     {
-        this->push_back(Slice<int8>::build_memory_elementnb(cast(int8*, &p_element), sizeof(ElementType)));
+        this->push_back(Slice_build_memory_elementnb<int8>((int8*)&p_element, sizeof(ElementType)));
     };
 
     inline void pop_back()
@@ -190,22 +190,24 @@ struct VaryingVector
     inline void element_writeto(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element)
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
-        Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
+        Slice<int8> l_updated_chunk_slice = Slice_build_asint8_memory_elementnb<int8>(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size);
+        Slice<int8> l_updated_chunk_slice_offsetted = Slice_slide_rv(&l_updated_chunk_slice, p_insertion_offset);
 
-        l_updated_chunk_slice.copy_memory(p_inserted_element);
+        l_updated_chunk_slice_offsetted.copy_memory(p_inserted_element);
     };
 
     inline void element_movememory(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element)
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
-        Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
-        l_updated_chunk_slice.move_memory(p_inserted_element);
+        Slice<int8> l_updated_chunk_slice = Slice_build_asint8_memory_elementnb<int8>(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size);
+        Slice<int8> l_updated_chunk_slice_offsetted = Slice_slide_rv(&l_updated_chunk_slice, p_insertion_offset);
+        l_updated_chunk_slice_offsetted.move_memory(p_inserted_element);
     };
 
     inline Slice<int8> get_element(const uimax p_index)
     {
         SliceIndex& l_chunk = this->chunks.get(p_index);
-        return Slice<int8>::build_memory_offset_elementnb(this->memory.get_memory(), l_chunk.Begin, l_chunk.Size);
+        return Slice_build_memory_offset_elementnb<int8>(this->memory.get_memory(), l_chunk.Begin, l_chunk.Size);
     };
 
     inline Slice<int8> get_last_element()
@@ -215,7 +217,8 @@ struct VaryingVector
 
     template <class ElementType> inline Slice<ElementType> get_element_typed(const uimax p_index)
     {
-        return slice_cast<ElementType>(this->get_element(p_index));
+        Slice<int8> l_element_slice = this->get_element(p_index);
+        return Slice_cast<ElementType>(&l_element_slice);
     };
 
     inline VaryingSlice to_varying_slice()

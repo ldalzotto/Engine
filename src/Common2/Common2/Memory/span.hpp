@@ -19,7 +19,7 @@ template <class ElementType> struct Span
     inline static Span<ElementType> build_default()
     {
         Span<ElementType> l_return;
-        l_return.slice = Slice<ElementType>::build_default();
+        l_return.slice = Slice_build_default<ElementType>();
         return l_return;
     };
 
@@ -30,13 +30,13 @@ template <class ElementType> struct Span
 
     inline static Span<ElementType> allocate(const uimax p_capacity)
     {
-        return Span<ElementType>{p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType)))};
+        return Span<ElementType>{p_capacity, (ElementType*)heap_malloc(p_capacity * sizeof(ElementType))};
     };
 
     inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements.Size);
-        l_span.slice.copy_memory(Slice<ElementType>::build_memory_elementnb((ElementType*)p_elements.Begin, p_elements.Size));
+        l_span.slice.copy_memory(Slice_build_memory_elementnb<ElementType>((ElementType*)p_elements.Begin, p_elements.Size));
         return l_span;
     };
 
@@ -57,7 +57,7 @@ template <class ElementType> struct Span
 
     inline static Span<ElementType> callocate(const uimax p_capacity)
     {
-        return Span<ElementType>{p_capacity, cast(ElementType*, heap_calloc(p_capacity * sizeof(ElementType)))};
+        return Span<ElementType>{p_capacity, (ElementType*)heap_calloc(p_capacity * sizeof(ElementType))};
     };
 
     inline ElementType& get(const uimax p_index)
@@ -72,7 +72,7 @@ template <class ElementType> struct Span
     {
         if (p_new_capacity > this->Capacity)
         {
-            ElementType* l_newMemory = (ElementType*)heap_realloc(cast(int8*, this->Memory), p_new_capacity * sizeof(ElementType));
+            ElementType* l_newMemory = (ElementType*)heap_realloc((int8*)this->Memory, p_new_capacity * sizeof(ElementType));
             if (l_newMemory != NULL)
             {
                 *this = Span<ElementType>::build(l_newMemory, p_new_capacity);
@@ -119,7 +119,7 @@ template <class ElementType> struct Span
 
     inline void free()
     {
-        heap_free(cast(int8*, this->Memory));
+        heap_free((int8*)this->Memory);
         *this = Span<ElementType>::build(NULL, 0);
     };
 };

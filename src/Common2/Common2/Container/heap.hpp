@@ -514,5 +514,5 @@ inline SliceIndex* HeapPaged::get_sliceindex_only(const HeapPagedToken& p_token)
 inline void HeapPaged::create_new_page()
 {
     SliceIndex l_chunk_slice = SliceIndex::build(0, this->PageSize);
-    this->FreeChunks.push_back_element(Slice<SliceIndex>::build_memory_elementnb(&l_chunk_slice, 1));
+    this->FreeChunks.push_back_element(Slice_build_memory_elementnb<SliceIndex>(&l_chunk_slice, 1));
 }

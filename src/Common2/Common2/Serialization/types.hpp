@@ -30,19 +30,19 @@ struct PrimitiveSerializedTypes
 
     inline static PrimitiveSerializedTypes::Type get_type_from_string(const Slice<int8>& p_str)
     {
-        if (slice_int8_build_rawstr("FLOAT32").compare(p_str))
+        if (Slice_int8_build_rawstr("FLOAT32").compare(p_str))
         {
             return PrimitiveSerializedTypes::Type::FLOAT32;
         }
-        else if (slice_int8_build_rawstr("FLOAT32_2").compare(p_str))
+        else if (Slice_int8_build_rawstr("FLOAT32_2").compare(p_str))
         {
             return PrimitiveSerializedTypes::Type::FLOAT32_2;
         }
-        else if (slice_int8_build_rawstr("FLOAT32_3").compare(p_str))
+        else if (Slice_int8_build_rawstr("FLOAT32_3").compare(p_str))
         {
             return PrimitiveSerializedTypes::Type::FLOAT32_3;
         }
-        else if (slice_int8_build_rawstr("FLOAT32_4").compare(p_str))
+        else if (Slice_int8_build_rawstr("FLOAT32_4").compare(p_str))
         {
             return PrimitiveSerializedTypes::Type::FLOAT32_4;
         }

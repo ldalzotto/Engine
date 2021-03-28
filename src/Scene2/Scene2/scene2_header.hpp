@@ -98,7 +98,7 @@ struct SceneTree
 
 namespace Scene_const
 {
-const Token(Node) root_node = tk_b(Node, 0);
+const Token(Node) root_node = token_build(Node, 0);
 };
 
 /*

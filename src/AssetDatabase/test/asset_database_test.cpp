@@ -3,36 +3,36 @@
 
 inline void asset_blob_insert_read_write()
 {
-    String l_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+    String l_database_path = asset_database_test_initialize(Slice_int8_build_rawstr("asset.db"));
     DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_connection);
 
     {
-        Slice<int8> l_path = slice_int8_build_rawstr("pathtest");
+        Slice<int8> l_path = Slice_int8_build_rawstr("pathtest");
         SliceN<uimax, 3> l_data_arr{0, 1, 2};
         Slice<uimax> l_data = slice_from_slicen(&l_data_arr);
-        hash_t l_inserted_id = l_asset_database.insert_asset_blob(l_connection, l_path, l_data.build_asint8());
+        hash_t l_inserted_id = l_asset_database.insert_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
-        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        assert_true(Slice_build_asint8(&l_data).compare(l_retrieved_data.slice));
         l_retrieved_data.free();
 
         //insert_or_update_asset_blob -> doing update
         l_data_arr= SliceN<uimax, 3>{3, 4, 5};
         l_data = slice_from_slicen(&l_data_arr);
-        l_inserted_id =  l_asset_database.insert_or_update_asset_blob(l_connection, l_path, l_data.build_asint8());
+        l_inserted_id =  l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
-        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        assert_true(Slice_build_asint8(&l_data).compare(l_retrieved_data.slice));
         l_retrieved_data.free();
     }
 
     //insert_or_update_asset_blob -> doing insert
     {
-        Slice<int8> l_path = slice_int8_build_rawstr("pathtest2");
+        Slice<int8> l_path = Slice_int8_build_rawstr("pathtest2");
         SliceN<uimax, 3> l_data_arr{0, 1, 2};
         Slice<uimax> l_data = slice_from_slicen(&l_data_arr);
-        hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, l_data.build_asint8());
+        hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
-        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        assert_true(Slice_build_asint8(&l_data).compare(l_retrieved_data.slice));
         l_retrieved_data.free();
     }
 
@@ -43,18 +43,18 @@ inline void asset_blob_insert_read_write()
 
 inline void asset_dependencies_blob_read_write()
 {
-    String l_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
+    String l_database_path = asset_database_test_initialize(Slice_int8_build_rawstr("asset.db"));
     DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
     AssetDatabase l_asset_database = AssetDatabase::allocate(l_connection);
     // insert select
     {
-        Slice<int8> l_path = slice_int8_build_rawstr("pathtest2");
+        Slice<int8> l_path = Slice_int8_build_rawstr("pathtest2");
         SliceN<uimax, 3> l_data_arr{0, 1, 2};
         Slice<uimax> l_data = slice_from_slicen(&l_data_arr);
         hash_t l_inserted_id = HashSlice(l_path);
-        l_asset_database.insert_asset_dependencies_blob(l_connection, l_path, l_data.build_asint8());
+        l_asset_database.insert_asset_dependencies_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_dependencies_blob(l_connection, l_inserted_id);
-        assert_true(l_data.build_asint8().compare(l_retrieved_data.slice));
+        assert_true(Slice_build_asint8(&l_data).compare(l_retrieved_data.slice));
         l_retrieved_data.free();
     }
     l_asset_database.free(l_connection);

@@ -101,7 +101,7 @@ struct EngineRunnerThread
     inline void start()
     {
         this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{EngineRunnerThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
+        this->thread_input = Thread::MainInput{EngineRunnerThread::main, Slice_build_begin_end<int8*>(&this->thread_input_args, 0, 1)};
         this->thread = Thread::spawn_thread(this->thread_input);
     };
 
@@ -115,13 +115,13 @@ struct EngineRunnerThread
                                                                      const EngineExecutionUnit::CleanupCallback& p_cleanup_cb)
     {
         Token(EngineExecutionUnit) l_engine;
-        this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
+        BarrierTwoStep_ask_and_wait_for_sync_1(&this->synchronization.start_of_step_barrier);
         {
             l_engine = this->engines.alloc_element(EngineExecutionUnit{});
             this->engine_synchronisation.alloc_element(EngineSyncrhonisation{});
             this->allocation_events.push_back_element(EngineAllocationEvent{l_engine, String::allocate_elements(p_asset_database), p_width, p_height, p_step_cb, p_cleanup_cb});
         }
-        this->synchronization.start_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&this->synchronization.start_of_step_barrier);
 
         return l_engine;
     };
@@ -132,65 +132,65 @@ struct EngineRunnerThread
         {
         }
         EngineExecutionUnit* l_engine_execution_unit;
-        this->synchronization.end_of_step_barrier.ask_and_wait_for_sync_1();
+        BarrierTwoStep_ask_and_wait_for_sync_1(&this->synchronization.end_of_step_barrier);
         {
             l_engine_execution_unit = &this->engines.get(p_engine_exectuion_unit);
         }
-        this->synchronization.end_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&this->synchronization.end_of_step_barrier);
         return l_engine_execution_unit;
     };
 
     template <class t_Callback> inline void sync_start_of_step(const t_Callback& p_callback)
     {
-        this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
+        BarrierTwoStep_ask_and_wait_for_sync_1(&this->synchronization.start_of_step_barrier);
         {
             p_callback();
         }
-        this->synchronization.start_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&this->synchronization.start_of_step_barrier);
     };
 
     template <class t_Callback> inline void sync_end_of_step(const t_Callback& p_callback)
     {
-        this->synchronization.end_of_step_barrier.ask_and_wait_for_sync_1();
+        BarrierTwoStep_ask_and_wait_for_sync_1(&this->synchronization.end_of_step_barrier);
         {
             p_callback();
         }
-        this->synchronization.end_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&this->synchronization.end_of_step_barrier);
     };
 
     template <class t_StartOfStepCallback, class t_EndOfStepCallback>
     inline void sync_step_loop(const t_StartOfStepCallback& p_start_of_step_callback, const t_EndOfStepCallback& p_end_of_step_callback, int8* p_exit)
     {
-        this->synchronization.start_of_step_barrier.ask_for_sync_1();
+        BarrierTwoStep_ask_for_sync_1(&this->synchronization.start_of_step_barrier);
         while (!(*p_exit))
         {
-            this->synchronization.start_of_step_barrier.wait_for_sync_1();
+            BarrierTwoStep_wait_for_sync_1(&this->synchronization.start_of_step_barrier);
             {
                 p_start_of_step_callback();
             }
-            this->synchronization.end_of_step_barrier.ask_for_sync_1();
-            this->synchronization.start_of_step_barrier.notify_sync_2();
-            this->synchronization.end_of_step_barrier.wait_for_sync_1();
+            BarrierTwoStep_ask_for_sync_1(&this->synchronization.end_of_step_barrier);
+            BarrierTwoStep_notify_sync_2(&this->synchronization.start_of_step_barrier);
+            BarrierTwoStep_wait_for_sync_1(&this->synchronization.end_of_step_barrier);
             {
                 p_end_of_step_callback();
             }
-            this->synchronization.end_of_step_barrier.notify_sync_2();
-            this->synchronization.start_of_step_barrier.ask_for_sync_1();
+            BarrierTwoStep_notify_sync_2(&this->synchronization.end_of_step_barrier);
+            BarrierTwoStep_ask_for_sync_1(&this->synchronization.start_of_step_barrier);
         }
-        this->synchronization.start_of_step_barrier.wait_for_sync_1();
-        this->synchronization.end_of_step_barrier.ask_for_sync_1();
-        this->synchronization.start_of_step_barrier.notify_sync_2();
-        this->synchronization.end_of_step_barrier.wait_for_sync_1();
-        this->synchronization.end_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_wait_for_sync_1(&this->synchronization.start_of_step_barrier);
+        BarrierTwoStep_ask_for_sync_1(&this->synchronization.end_of_step_barrier);
+        BarrierTwoStep_notify_sync_2(&this->synchronization.start_of_step_barrier);
+        BarrierTwoStep_wait_for_sync_1(&this->synchronization.end_of_step_barrier);
+        BarrierTwoStep_notify_sync_2(&this->synchronization.end_of_step_barrier);
     };
 
     // /!\ WARNING - this doesn't guarantee that a full frame have passed by.
     template <class t_EndOfFrameFunc> inline void sync_engine_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
     {
-        EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_execution_unit_token));
-        l_engine_sync.end_of_frame.ask_and_wait_for_sync_1();
+        EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from(EngineSyncrhonisation, p_execution_unit_token));
+        BarrierTwoStep_ask_and_wait_for_sync_1(&l_engine_sync.end_of_frame);
         p_callback();
-        l_engine_sync.end_of_frame.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&l_engine_sync.end_of_frame);
     };
 
     template <class t_EndOfFrameFunc> inline void sync_engine_wait_for_one_whole_frame_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
@@ -209,21 +209,21 @@ struct EngineRunnerThread
 
     inline void free_engine_execution_unit_sync(const Token(EngineExecutionUnit) p_engine_execution_unit)
     {
-        this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
-        this->synchronization.end_of_step_barrier.ask_for_sync_1();
+        BarrierTwoStep_ask_and_wait_for_sync_1(&this->synchronization.start_of_step_barrier);
+        BarrierTwoStep_ask_for_sync_1(&this->synchronization.end_of_step_barrier);
         {
             this->engines.get(p_engine_execution_unit).close();
         }
-        this->synchronization.start_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_notify_sync_2(&this->synchronization.start_of_step_barrier);
 
-        this->synchronization.end_of_step_barrier.wait_for_sync_1();
-        this->synchronization.end_of_step_barrier.notify_sync_2();
+        BarrierTwoStep_wait_for_sync_1(&this->synchronization.end_of_step_barrier);
+        BarrierTwoStep_notify_sync_2(&this->synchronization.end_of_step_barrier);
     };
 
   private:
     inline static int8 main(const Slice<int8*>& p_args)
     {
-        EngineRunnerThread* thiz = (EngineRunnerThread*)p_args.get(0);
+        EngineRunnerThread* thiz = (EngineRunnerThread*)*Slice_get(&p_args, 0);
 
         while (true)
         {
@@ -243,9 +243,9 @@ struct EngineRunnerThread
 
     inline void step()
     {
-        if (!this->synchronization.start_of_step_barrier.is_opened())
+        if (!BarrierTwoStep_is_opened(&this->synchronization.start_of_step_barrier))
         {
-            this->synchronization.start_of_step_barrier.notify_sync_1_and_wait_for_sync_2();
+            BarrierTwoStep_notify_sync_1_and_wait_for_sync_2(&this->synchronization.start_of_step_barrier);
         }
 
         for (loop(i, 0, this->allocation_events.Size))
@@ -257,7 +257,7 @@ struct EngineRunnerThread
             l_configuration.render_size.y = l_event.height;
 
             this->engines.get(l_event.token).allocate(l_configuration, l_event.external_loop_callback, l_event.cleanup_callback);
-            this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, l_event.token)).spawned = 1;
+            this->engine_synchronisation.get(token_build_from(EngineSyncrhonisation, l_event.token)).spawned = 1;
 
             l_event.free();
         }
@@ -269,15 +269,15 @@ struct EngineRunnerThread
             {
                 p_engine.free();
                 this->engines.release_element(p_engine_token);
-                this->engine_synchronisation.release_element(tk_bf(EngineSyncrhonisation, p_engine_token));
+                this->engine_synchronisation.release_element(token_build_from(EngineSyncrhonisation, p_engine_token));
             }
             else
             {
                 p_engine.single_frame_no_block();
-                EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_engine_token));
-                if (!l_engine_sync.end_of_frame.is_opened())
+                EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from(EngineSyncrhonisation, p_engine_token));
+                if (!BarrierTwoStep_is_opened(&l_engine_sync.end_of_frame))
                 {
-                    l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
+                    BarrierTwoStep_notify_sync_1_and_wait_for_sync_2(&l_engine_sync.end_of_frame);
                 }
             }
         });
@@ -297,9 +297,9 @@ struct EngineRunnerThread
             Thread::wait(Thread::get_current_thread(), (uimax)((float)l_min_time * 0.0009999f));
         }
 
-        if (!this->synchronization.end_of_step_barrier.is_opened())
+        if (!BarrierTwoStep_is_opened(&this->synchronization.end_of_step_barrier))
         {
-            this->synchronization.end_of_step_barrier.notify_sync_1_and_wait_for_sync_2();
+            BarrierTwoStep_notify_sync_1_and_wait_for_sync_2(&this->synchronization.end_of_step_barrier);
         }
     };
 
@@ -322,6 +322,5 @@ struct EngineRunnerThread
             p_engine.free();
         });
         this->engines.free();
-
     };
 };

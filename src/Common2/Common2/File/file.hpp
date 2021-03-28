@@ -133,9 +133,9 @@ inline uimax FileNative::get_modification_ts(const FileHandle& p_file_handle)
 #if __DEBUG
     assert_true(l_filetime_return);
 #endif
-    uimax l_ct = FILETIME_to_mics(l_creation_time);
-    uimax l_at = FILETIME_to_mics(l_last_access_time);
-    uimax l_wt = FILETIME_to_mics(l_last_write_time);
+    uimax l_ct = FILETIME_to_mics(&l_creation_time);
+    uimax l_at = FILETIME_to_mics(&l_last_access_time);
+    uimax l_wt = FILETIME_to_mics(&l_last_write_time);
 
     uimax l_return = l_ct;
     if (l_at >= l_return)

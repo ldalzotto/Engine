@@ -215,7 +215,7 @@ inline void WindowAllocator::free(const Token(Window) p_window)
 
     for (loop(i, 0, g_native_to_window.Size))
     {
-        if (tk_eq(g_native_to_window.get(i).window, p_window))
+        if (token_equals(g_native_to_window.get(i).window, p_window))
         {
             WindowNative::destroy_window(g_native_to_window.get(i).native_window);
             AppNativeEvent::remove_appevent_listener(g_native_to_window.get(i).native_window);

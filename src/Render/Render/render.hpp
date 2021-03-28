@@ -196,7 +196,7 @@ inline void D3RendererHeap::free()
 
 inline void D3RendererHeap::link_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material)
 {
-    this->shaders_to_materials.element_push_back_element(tk_bf(Slice<Token(Material)>, p_shader), p_material);
+    this->shaders_to_materials.element_push_back_element(token_build_from(Slice<Token(Material)>, p_shader), p_material);
 };
 
 inline void D3RendererHeap::unlink_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material)
@@ -204,7 +204,7 @@ inline void D3RendererHeap::unlink_shader_with_material(const Token(ShaderIndex)
     auto l_materials = this->get_materials_from_shader(p_shader);
     for (loop(i, 0, l_materials.get_size()))
     {
-        if (tk_eq(l_materials.get(i), p_material))
+        if (token_equals(l_materials.get(i), p_material))
         {
             l_materials.erase_element_at_always(i);
             return;
@@ -225,12 +225,12 @@ inline void D3RendererHeap::get_materials_and_renderableobject_linked_to_shader(
 
 inline PoolOfVector<Token(Material)>::Element_ShadowVector D3RendererHeap::get_materials_from_shader(const Token(ShaderIndex) p_shader)
 {
-    return this->shaders_to_materials.get_element_as_shadow_vector(tk_bf(Slice<Token(Material)>, p_shader));
+    return this->shaders_to_materials.get_element_as_shadow_vector(token_build_from(Slice<Token(Material)>, p_shader));
 };
 
 inline void D3RendererHeap::link_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object)
 {
-    this->material_to_renderable_objects.element_push_back_element(tk_bf(Slice<Token(RenderableObject)>, p_material), p_renderable_object);
+    this->material_to_renderable_objects.element_push_back_element(token_build_from(Slice<Token(RenderableObject)>, p_material), p_renderable_object);
 };
 
 inline void D3RendererHeap::unlink_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object)
@@ -238,7 +238,7 @@ inline void D3RendererHeap::unlink_material_with_renderable_object(const Token(M
     auto l_linked_renderable_objects = this->get_renderableobjects_from_material(p_material);
     for (loop(i, 0, l_linked_renderable_objects.get_size()))
     {
-        if (tk_eq(l_linked_renderable_objects.get(i), p_renderable_object))
+        if (token_equals(l_linked_renderable_objects.get(i), p_renderable_object))
         {
             l_linked_renderable_objects.erase_element_at_always(i);
             return;
@@ -248,7 +248,7 @@ inline void D3RendererHeap::unlink_material_with_renderable_object(const Token(M
 
 inline PoolOfVector<Token(RenderableObject)>::Element_ShadowVector D3RendererHeap::get_renderableobjects_from_material(const Token(Material) p_material)
 {
-    return this->material_to_renderable_objects.get_element_as_shadow_vector(tk_bf(Slice<Token(RenderableObject)>, p_material));
+    return this->material_to_renderable_objects.get_element_as_shadow_vector(token_build_from(Slice<Token(RenderableObject)>, p_material));
 };
 
 inline void D3RendererHeap::push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
@@ -290,14 +290,14 @@ inline void D3RendererAllocator::free_shader(const Token(ShaderIndex) p_shader)
 
     for (loop_reverse(j, 0, this->heap.shaders_indexed.Size))
     {
-        if (tk_eq(this->heap.shaders_indexed.get(j), p_shader))
+        if (token_equals(this->heap.shaders_indexed.get(j), p_shader))
         {
             this->heap.shaders_indexed.erase_element_at_always(j);
             break;
         }
     }
-    
-    this->heap.shaders_to_materials.release_vector(tk_bf(Slice<Token(Material)>, p_shader));
+
+    this->heap.shaders_to_materials.release_vector(token_build_from(Slice<Token(Material)>, p_shader));
     this->heap.shaders.release_element(p_shader);
 };
 
@@ -309,7 +309,7 @@ inline Token(Material) D3RendererAllocator::allocate_material(const Material& p_
 
 inline void D3RendererAllocator::free_material(const Token(Material) p_material)
 {
-    this->heap.material_to_renderable_objects.release_vector(tk_bf(Slice<Token(RenderableObject)>, p_material));
+    this->heap.material_to_renderable_objects.release_vector(token_build_from(Slice<Token(RenderableObject)>, p_material));
     this->heap.materials.release_element(p_material);
 };
 
@@ -332,7 +332,7 @@ inline void D3RendererAllocator::free_renderable_object(const Token(RenderableOb
 {
     for (loop_reverse(i, 0, this->heap.model_update_events.Size))
     {
-        if (tk_eq(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
+        if (token_equals(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
         {
             this->heap.model_update_events.erase_element_at_always(i);
         }
@@ -348,12 +348,12 @@ struct D3RendererAllocatorComposition
         allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
     {
         Mesh l_mesh;
-        Slice<int8> l_initial_vertices_binary = p_initial_vertices.build_asint8();
+        Slice<int8> l_initial_vertices_binary = Slice_build_asint8(&p_initial_vertices);
         l_mesh.vertices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_vertices_binary.Size,
                                                                               (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.vertices_buffer, l_initial_vertices_binary);
 
-        Slice<int8> l_initial_indices_binary = p_initial_indices.build_asint8();
+        Slice<int8> l_initial_indices_binary = Slice_build_asint8(&p_initial_indices);
         l_mesh.indices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_indices_binary.Size,
                                                                              (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.indices_buffer, l_initial_indices_binary);
@@ -499,12 +499,10 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
     {
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
     }
-    if(p_allocate_info.color_attachment_sample)
+    if (p_allocate_info.color_attachment_sample)
     {
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
     }
-
-
 
     SliceN<RenderPassAttachment, 2> l_attachments = {
         RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |
@@ -536,31 +534,32 @@ inline void ColorStep::free(GPUContext& p_gpu_context)
 
 inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
 {
+    Slice<ShaderParameter> l_global_shader_parameters = p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters);
     p_gpu_context.buffer_memory.allocator.host_buffers
-        .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                 .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                 .memory)
+        .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(Slice_get(&l_global_shader_parameters, 0)->uniform_host).memory)
         .get_mapped_effective_memory()
-        .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+        .copy_memory(Slice_build_asint8_memory_singleelement<Camera>(&p_camera));
 };
 
 inline void ColorStep::set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
 {
-    this->get_camera(p_gpu_context).get(0).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
+    Slice<Camera> l_cameras = this->get_camera(p_gpu_context);
+    Slice_get(&l_cameras, 0)->projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
 };
 
 inline void ColorStep::set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
 {
-    this->get_camera(p_gpu_context).get(0).view = m44f::view(p_world_position, p_forward, p_up);
+    Slice<Camera> l_cameras = this->get_camera(p_gpu_context);
+    Slice_get(&l_cameras, 0)->view = m44f::view(p_world_position, p_forward, p_up);
 };
 
 inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)
 {
-    return slice_cast<Camera>(p_gpu_context.buffer_memory.allocator.host_buffers
-                                  .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                                           .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                                           .memory)
-                                  .get_mapped_effective_memory());
+    Slice<ShaderParameter> l_global_shader_parameters = p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters);
+    Slice<int8> l_camera_memory = p_gpu_context.buffer_memory.allocator.host_buffers
+                                      .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(Slice_get(&l_global_shader_parameters, 0)->uniform_host).memory)
+                                      .get_mapped_effective_memory();
+    return Slice_cast<Camera>(&l_camera_memory);
 };
 
 inline D3Renderer D3Renderer::allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
@@ -592,7 +591,7 @@ inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
                 .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
                 .get_mapped_effective_memory();
 
-        l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
+        l_mapped_memory.copy_memory(Slice_build_asint8_memory_singleelement<m44f>(&l_event.model_matrix));
     };
 
     this->heap().model_update_events.clear();

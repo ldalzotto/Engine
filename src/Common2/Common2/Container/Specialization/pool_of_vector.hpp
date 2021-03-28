@@ -30,9 +30,9 @@ template <class ElementType> struct PoolOfVector
 
     inline int8 is_token_free(const PoolOfVectorToken<ElementType> p_token)
     {
-        for (vector_loop(&this->FreeBlocks, i))
+        for (loop(i, 0, this->FreeBlocks.Size))
         {
-            if (tk_eq(this->FreeBlocks.get(i), p_token))
+            if (token_equals(this->FreeBlocks.get(i), p_token))
             {
                 return 1;
             }
@@ -51,7 +51,7 @@ template <class ElementType> struct PoolOfVector
         {
             PoolOfVectorToken<ElementType> l_token = this->FreeBlocks.get(this->FreeBlocks.Size - 1);
             this->FreeBlocks.pop_back();
-            this->Memory.element_push_back_array(tk_v(l_token), p_initial_elements);
+            this->Memory.element_push_back_array(token_get_value(l_token), p_initial_elements);
             return l_token;
         }
         else
@@ -82,7 +82,7 @@ template <class ElementType> struct PoolOfVector
         this->token_not_free_check(p_token);
 #endif
 
-        this->Memory.element_clear(tk_v(p_token));
+        this->Memory.element_clear(token_get_value(p_token));
         this->FreeBlocks.push_back_element(p_token);
     };
 
@@ -92,7 +92,7 @@ template <class ElementType> struct PoolOfVector
         this->token_not_free_check(p_token);
 #endif
 
-        return this->Memory.get(tk_v(p_token));
+        return this->Memory.get(token_get_value(p_token));
     };
 
     inline void element_push_back_element(const PoolOfVectorToken<ElementType> p_token, const ElementType& p_element)
@@ -101,7 +101,7 @@ template <class ElementType> struct PoolOfVector
         this->token_not_free_check(p_token);
 #endif
 
-        this->Memory.element_push_back_element(tk_v(p_token), p_element);
+        this->Memory.element_push_back_element(token_get_value(p_token), p_element);
     };
 
     inline void element_erase_element_at(const PoolOfVectorToken<ElementType> p_token, const uimax p_index)
@@ -109,7 +109,7 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_erase_element_at(tk_v(p_token), p_index);
+        this->Memory.element_erase_element_at(token_get_value(p_token), p_index);
     };
 
     inline void element_erase_element_at_always(const PoolOfVectorToken<ElementType> p_token, const uimax p_index)
@@ -117,7 +117,7 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_erase_element_at_always(tk_v(p_token), p_index);
+        this->Memory.element_erase_element_at_always(token_get_value(p_token), p_index);
     };
 
     inline void element_clear(const PoolOfVectorToken<ElementType> p_token)
@@ -126,7 +126,7 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_clear(tk_v(p_token));
+        this->Memory.element_clear(token_get_value(p_token));
     };
 
     struct Element_ShadowVector
@@ -146,7 +146,8 @@ template <class ElementType> struct PoolOfVector
 
         inline ElementType& sv_func_get(const uimax p_index)
         {
-            return this->pool_of_vector->get_vector(this->index).get(p_index);
+            Slice<ElementType> l_nested_vector = this->pool_of_vector->get_vector(this->index);
+            return *Slice_get(&l_nested_vector, p_index);
         };
 
         inline void sv_func_push_back_element(const ElementType& p_element)

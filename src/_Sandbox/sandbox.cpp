@@ -42,8 +42,8 @@ struct SandboxTestUtil
 
 inline void resize_test()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/resize_test/asset.db"));
+    String l_database_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(Slice_int8_build_rawstr("/resize_test/asset.db"));
     {
     }
     EngineConfiguration l_configuration{};
@@ -90,8 +90,8 @@ inline void engine_thread_test()
     EngineRunnerThread l_thread = EngineRunnerThread::allocate();
     l_thread.start();
 
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/thread_test/asset.db"));
+    String l_database_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(Slice_int8_build_rawstr("/thread_test/asset.db"));
 
     struct s_engine_cb
     {
@@ -212,7 +212,7 @@ struct BoxCollisionSandboxEnvironment
 
     inline static BoxCollisionSandboxEnvironment build_default()
     {
-        return BoxCollisionSandboxEnvironment{tk_bd(Node), tk_bd(ColliderDetector), tk_bd(Node), tk_bd(BoxColliderComponent)};
+        return BoxCollisionSandboxEnvironment{token_build_default(Node), token_build_default(ColliderDetector), token_build_default(Node), token_build_default(BoxColliderComponent)};
     };
 
     inline void step(EngineExternalStep p_step, Engine& p_engine)
@@ -232,8 +232,8 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
-                    assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_ENTER);
+                    assert_true(token_equals(Slice_get(&l_0_trigger_events, 0)->other, l_static_node_boxcollider.box_collider));
+                    assert_true(Slice_get(&l_0_trigger_events, 0)->state == Trigger::State::TRIGGER_ENTER);
                 }
                 break;
                 case 3:
@@ -244,8 +244,8 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
-                    assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_STAY);
+                    assert_true(token_equals(Slice_get(&l_0_trigger_events, 0)->other, l_static_node_boxcollider.box_collider));
+                    assert_true(Slice_get(&l_0_trigger_events, 0)->state == Trigger::State::TRIGGER_STAY);
                 }
                 break;
                 case 7:
@@ -253,8 +253,8 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
-                    assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_EXIT);
+                    assert_true(token_equals(Slice_get(&l_0_trigger_events, 0)->other, l_static_node_boxcollider.box_collider));
+                    assert_true(Slice_get(&l_0_trigger_events, 0)->state == Trigger::State::TRIGGER_EXIT);
                 }
                 break;
                 case 8:
@@ -262,8 +262,8 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
-                    assert_true(l_0_trigger_events.get(0).state == Trigger::State::NONE);
+                    assert_true(token_equals(Slice_get(&l_0_trigger_events, 0)->other, l_static_node_boxcollider.box_collider));
+                    assert_true(Slice_get(&l_0_trigger_events, 0)->state == Trigger::State::NONE);
                 }
                 break;
                 }
@@ -279,12 +279,12 @@ struct BoxCollisionSandboxEnvironment
 
                 Token(BoxColliderComponent) l_node_1_box_collider_component =
                     p_engine.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(p_engine.collision, this->moving_node, BoxColliderComponentAsset{v3f_const::ONE});
-                p_engine.scene.add_node_component_by_value(this->moving_node, NodeComponent::build(BoxColliderComponent::Type, tk_v(l_node_1_box_collider_component)));
+                p_engine.scene.add_node_component_by_value(this->moving_node, NodeComponent::build(BoxColliderComponent::Type, token_get_value(l_node_1_box_collider_component)));
                 this->moving_node_collider_detector = p_engine.scene_middleware.collision_middleware.allocator.attach_collider_detector(p_engine.collision, l_node_1_box_collider_component);
 
                 this->static_node_boxcollider_component =
                     p_engine.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(p_engine.collision, this->static_node, BoxColliderComponentAsset{v3f_const::ONE});
-                p_engine.scene.add_node_component_by_value(this->static_node, NodeComponent::build(BoxColliderComponent::Type, tk_v(this->static_node_boxcollider_component)));
+                p_engine.scene.add_node_component_by_value(this->static_node, NodeComponent::build(BoxColliderComponent::Type, token_get_value(this->static_node_boxcollider_component)));
             }
             else if (FrameCount(p_engine) == 2 || FrameCount(p_engine) == 3 || FrameCount(p_engine) == 4 || FrameCount(p_engine) == 5 || FrameCount(p_engine) == 6 || FrameCount(p_engine) == 7)
             {
@@ -309,8 +309,8 @@ struct BoxCollisionSandboxEnvironment
 
 inline void boxcollision()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/boxcollision/asset.db"));
+    String l_database_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(Slice_int8_build_rawstr("/boxcollision/asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase();
@@ -333,8 +333,8 @@ inline void boxcollision()
 
 namespace D3RendererCubeSandboxEnvironment_Const
 {
-const hash_t block_1x1_material = HashSlice(slice_int8_build_rawstr("block_1x1_material.json"));
-const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"));
+const hash_t block_1x1_material = HashSlice(Slice_int8_build_rawstr("block_1x1_material.json"));
+const hash_t block_1x1_obj = HashSlice(Slice_int8_build_rawstr("block_1x1.obj"));
 } // namespace D3RendererCubeSandboxEnvironment_Const
 
 struct D3RendererCubeSandboxEnvironment
@@ -408,10 +408,10 @@ struct D3RendererCubeSandboxEnvironment
         {
             if (p_engine.clock.framecount == 20 || p_engine.clock.framecount == 40)
             {
-                String l_image_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-                l_image_path.append(slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
+                String l_image_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+                l_image_path.append(Slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
                 ToString::auimax_append(p_engine.clock.framecount, l_image_path);
-                l_image_path.append(slice_int8_build_rawstr(".jpg"));
+                l_image_path.append(Slice_int8_build_rawstr(".jpg"));
 
                 SandboxTestUtil::render_texture_compare(p_engine, l_image_path.to_slice_with_null_termination());
 
@@ -431,8 +431,8 @@ struct D3RendererCubeSandboxEnvironment
 
 inline void d3renderer_cube()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
+    String l_database_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(Slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
     {
     }
     EngineConfiguration l_configuration{};

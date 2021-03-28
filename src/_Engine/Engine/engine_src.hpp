@@ -81,21 +81,22 @@ struct Engine
 
         if (!p_configuration.headless)
         {
-            l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, slice_int8_build_rawstr(""));
-            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
-            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
-            l_engine.present = GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
-                                                        WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
-                                                        l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
-                                                            .get_vector(l_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(l_engine.renderer.color_step.pass).attachment_textures)
-                                                            .get(0),
-                                                        l_quad_blit_vert.slice, l_quad_blit_frag.slice);
+            l_engine.window = WindowAllocator::allocate(p_configuration.render_size.x, p_configuration.render_size.y, Slice_int8_build_rawstr(""));
+            Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(Slice_int8_build_rawstr("internal/quad_blit.vert")));
+            Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(Slice_int8_build_rawstr("internal/quad_blit.frag")));
+
+            Slice<Token(TextureGPU)> l_color_step_textures = l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures.get_vector(
+                l_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(l_engine.renderer.color_step.pass).attachment_textures);
+
+            l_engine.present =
+                GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator, WindowAllocator::get_window(l_engine.window).handle,
+                                     v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1}, *Slice_get(&l_color_step_textures, 0), l_quad_blit_vert.slice, l_quad_blit_frag.slice);
             l_quad_blit_vert.free();
             l_quad_blit_frag.free();
         }
         else
         {
-            l_engine.window = tk_bd(Window);
+            l_engine.window = token_build_default(Window);
             l_engine.present = {0};
         }
 
@@ -141,7 +142,7 @@ struct Engine
 struct EngineExternalStepCallback
 {
     void* closure;
-    typedef void(*cb_t)(EngineExternalStep, Engine&, void*);
+    typedef void (*cb_t)(EngineExternalStep, Engine&, void*);
     cb_t cb;
     inline void step(EngineExternalStep p_step, Engine& p_engine)
     {

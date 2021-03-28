@@ -14,7 +14,7 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 inline void gpu_buffer_allocation()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
 
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
 
@@ -23,24 +23,25 @@ inline void gpu_buffer_allocation()
 #endif
 
     const uimax l_tested_uimax_array[3] = {10, 20, 30};
-    Slice<uimax> l_tested_uimax_slice = Slice<uimax>::build_memory_elementnb((uimax*)l_tested_uimax_array, 3);
+    Slice<uimax> l_tested_uimax_slice = Slice_build_memory_elementnb<uimax>((uimax*)l_tested_uimax_array, 3);
 
     // allocating and releasing a BufferHost
     {
         uimax l_value = 20;
-        Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(l_tested_uimax_slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().compare(l_tested_uimax_slice.build_asint8()));
+        Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(Slice_build_asint8(&l_tested_uimax_slice), BufferUsageFlag::TRANSFER_READ);
+        assert_true(l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().compare(Slice_build_asint8(&l_tested_uimax_slice)));
         // We can write manually
-        l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().get(1) = 25;
+        Slice<int8> l_buffer_memory_slice = l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory();
+        *Slice_get(&l_buffer_memory_slice, 1) = 25;
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_host_token);
     }
 
     // allocating and releasing a BufferGPU
     {
         Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(
-            l_tested_uimax_slice.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
+            Slice_build_asint8(&l_tested_uimax_slice).Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
 
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice.build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, Slice_build_asint8(&l_tested_uimax_slice));
 
         BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
         // We force command buffer submit just for the test
@@ -60,7 +61,7 @@ inline void gpu_buffer_allocation()
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(l_tested_uimax_slice.build_asint8()));
+        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(Slice_build_asint8(&l_tested_uimax_slice)));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu);
@@ -71,8 +72,8 @@ inline void gpu_buffer_allocation()
     {
         assert_true(l_buffer_memory.events.write_buffer_host_to_buffer_gpu_events.Size == 0);
 
-        Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(l_tested_uimax_slice.build_asint8().Size, BufferUsageFlag::TRANSFER_WRITE);
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice.build_asint8());
+        Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(Slice_build_asint8(&l_tested_uimax_slice).Size, BufferUsageFlag::TRANSFER_WRITE);
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, Slice_build_asint8(&l_tested_uimax_slice));
 
         // it creates an gpu write event that will be consumed the next step
         assert_true(l_buffer_memory.events.write_buffer_host_to_buffer_gpu_events.Size == 1);
@@ -94,7 +95,7 @@ inline void gpu_buffer_allocation()
 
 inline void gpu_image_allocation()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
 
 #ifdef RENDER_DOC_DEBUG
@@ -103,10 +104,10 @@ inline void gpu_image_allocation()
 
     const uimax l_pixels_count = 16 * 16;
     color l_pixels[l_pixels_count];
-    Slice<color> l_pixels_slize = Slice<color>::build_memory_elementnb(l_pixels, l_pixels_count);
+    Slice<color> l_pixels_slize = Slice_build_memory_elementnb<color>(l_pixels, l_pixels_count);
     for (loop(i, 1, l_pixels_slize.Size))
     {
-        l_pixels_slize.get(i) = color{(uint8)i, (uint8)i, (uint8)i, (uint8)i};
+        *Slice_get(&l_pixels_slize, i) = color{(uint8)i, (uint8)i, (uint8)i, (uint8)i};
     }
 
     ImageFormat l_imageformat;
@@ -122,10 +123,10 @@ inline void gpu_image_allocation()
     {
         l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_READ;
         Token(ImageHost) l_image_host_token =
-            BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_pixels_slize.build_asint8(), l_imageformat);
+            BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, Slice_build_asint8(&l_pixels_slize), l_imageformat);
         ImageHost& l_image_host = l_buffer_memory.allocator.host_images.get(l_image_host_token);
 
-        assert_true(l_image_host.get_mapped_memory().compare(l_pixels_slize.build_asint8()));
+        assert_true(l_image_host.get_mapped_memory().compare(Slice_build_asint8(&l_pixels_slize)));
 
         BufferAllocatorComposition::free_image_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_host_token);
     }
@@ -135,7 +136,7 @@ inline void gpu_image_allocation()
         l_imageformat.imageUsage = (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE);
         Token(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
 
-        BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), l_pixels_slize.build_asint8());
+        BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), Slice_build_asint8(&l_pixels_slize));
 
         BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
         // We force command buffer submit just for the test
@@ -155,7 +156,7 @@ inline void gpu_image_allocation()
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
 
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(l_pixels_slize.build_asint8()));
+        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(Slice_build_asint8(&l_pixels_slize)));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_image_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu);
@@ -168,7 +169,7 @@ inline void gpu_image_allocation()
 
         l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_WRITE;
         Token(ImageGPU) l_image_gpu = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_imageformat);
-        BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), l_pixels_slize.build_asint8());
+        BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), Slice_build_asint8(&l_pixels_slize));
 
         // it creates an gpu write event that will be consumed the next
         assert_true(l_buffer_memory.events.write_buffer_host_to_image_gpu_events.Size == 1);
@@ -194,7 +195,7 @@ inline void gpu_image_allocation()
 */
 inline void gpu_renderpass_clear()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
 
@@ -218,7 +219,7 @@ inline void gpu_renderpass_clear()
         l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
         GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
-        l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+        l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice_build_memory_elementnb<v4f>(l_clear_values, 2));
         l_graphics_binder.end_render_pass();
 
         l_gpu_context.submit_graphics_binder(l_graphics_binder);
@@ -231,11 +232,12 @@ inline void gpu_renderpass_clear()
     BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
     l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
 
-    Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+    Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
+    Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
     for (loop(i, 0, l_color_attachment_value_pixels.Size))
     {
-        assert_true(l_color_attachment_value_pixels.get(i).sRGB_to_linear() == l_clear_color);
+        assert_true(Slice_get(&l_color_attachment_value_pixels, i)->sRGB_to_linear() == l_clear_color);
     }
 
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
@@ -263,7 +265,7 @@ inline void gpu_renderpass_clear()
 */
 inline void gpu_draw()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -286,11 +288,12 @@ inline void gpu_draw()
 
         SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
                                                  vertex_position{v3f{0.0f, 0.5f, 0.0f}},  vertex_position{v3f{0.5f, 0.0f, 0.0f}},  vertex_position{v3f{0.0f, 0.0f, 0.0f}}};
+        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            slice_from_slicen(&l_vertices).build_asint8().Size,
+            Slice_build_asint8(&l_vertices_slice).Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, Slice_build_asint8(&l_vertices_slice));
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -340,8 +343,8 @@ inline void gpu_draw()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -385,7 +388,7 @@ inline void gpu_draw()
                 l_colors.get(i) = l_multiplied_color_texture_color;
             }
             l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout,
-                                                                    l_attachments.get(0).image_format, l_colors.slice.build_asint8());
+                                                                    l_attachments.get(0).image_format, Slice_build_asint8(&l_colors.slice));
             l_colors.free();
         }
 
@@ -415,7 +418,7 @@ inline void gpu_draw()
 
             l_graphics_binder.bind_material(l_global_material);
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice_build_memory_elementnb<v4f>(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -447,32 +450,33 @@ inline void gpu_draw()
             l_buffer_memory.allocator.device.command_buffer.submit();
             l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
         }
-        Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+        Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
+        Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
         color l_first_draw_awaited_color =
             ((l_global_color + l_mat_1_base_color + l_mat_1_added_color) * (l_multiplied_color_texture_color.to_color_f().sRGB_to_linear())).linear_to_sRGB().to_uint8_color();
         color l_second_draw_awaited_color =
             ((l_global_color + l_mat_2_base_color + l_mat_2_added_color) * (l_multiplied_color_texture_color.to_color_f().sRGB_to_linear())).linear_to_sRGB().to_uint8_color();
 
-        assert_true(l_color_attachment_value_pixels.get(0) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(1) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(2) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(3) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 0) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 1) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 2) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 3) == l_clear_color.linear_to_sRGB());
 
-        assert_true(l_color_attachment_value_pixels.get(4) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(5) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(6) == l_clear_color.linear_to_sRGB());
-        assert_true(l_color_attachment_value_pixels.get(7) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 4) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 5) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 6) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 7) == l_clear_color.linear_to_sRGB());
 
-        assert_true(l_color_attachment_value_pixels.get(8) == l_first_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(9) == l_clear_color.linear_to_sRGB());
-        assert_true(l_color_attachment_value_pixels.get(10) == l_second_draw_awaited_color);
-        assert_true(l_color_attachment_value_pixels.get(11) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 8) == l_first_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 9) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 10) == l_second_draw_awaited_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 11) == l_clear_color.linear_to_sRGB());
 
-        assert_true(l_color_attachment_value_pixels.get(12) == l_clear_color.linear_to_sRGB());
-        assert_true(l_color_attachment_value_pixels.get(13) == l_clear_color.linear_to_sRGB());
-        assert_true(l_color_attachment_value_pixels.get(14) == l_clear_color.linear_to_sRGB());
-        assert_true(l_color_attachment_value_pixels.get(15) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 12) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 13) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 14) == l_clear_color.linear_to_sRGB());
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 15) == l_clear_color.linear_to_sRGB());
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);
@@ -512,7 +516,7 @@ inline void gpu_draw()
 */
 inline void gpu_depth_compare_test()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -536,11 +540,12 @@ inline void gpu_depth_compare_test()
 
         SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
                                                  vertex_position{v3f{0.0f, 0.5f, 0.1f}},  vertex_position{v3f{0.5f, 0.0f, 0.1f}},  vertex_position{v3f{-0.5f, -0.5f, 0.1f}}};
+        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            slice_from_slicen(&l_vertices).build_asint8().Size,
+            Slice_build_asint8(&l_vertices_slice).Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, Slice_build_asint8(&l_vertices_slice));
 
         // Token(BufferHost) l_vertex_buffer =  l_buffer_allocator.allocate_bufferhost(l_vertices_slice.build_asint8(), BufferUsageFlag::VERTEX);
 
@@ -587,8 +592,8 @@ inline void gpu_depth_compare_test()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -621,7 +626,7 @@ inline void gpu_depth_compare_test()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice_build_memory_elementnb<v4f>(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -655,52 +660,54 @@ inline void gpu_depth_compare_test()
         }
 
         {
-            Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+            Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
+            Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
             color l_first_draw_awaited_color = v4f{1.0f, 0.0f, 0.0f, 0.0f}.sRGB_to_linear().to_uint8_color();
             color l_second_draw_awaited_color = v4f{0.0f, 1.0f, 0.0f, 0.0f}.sRGB_to_linear().to_uint8_color();
 
-            assert_true(l_color_attachment_value_pixels.get(0) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(1) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(2) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(3) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 0) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 1) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 2) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 3) == l_clear_color.linear_to_sRGB());
 
-            assert_true(l_color_attachment_value_pixels.get(4) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(5) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(6) == l_second_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(7) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 4) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 5) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 6) == l_second_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 7) == l_clear_color.linear_to_sRGB());
 
-            assert_true(l_color_attachment_value_pixels.get(8) == l_first_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(9) == l_second_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(10) == l_second_draw_awaited_color);
-            assert_true(l_color_attachment_value_pixels.get(11) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 8) == l_first_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 9) == l_second_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 10) == l_second_draw_awaited_color);
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 11) == l_clear_color.linear_to_sRGB());
 
-            assert_true(l_color_attachment_value_pixels.get(12) == l_clear_color.linear_to_sRGB());
-            assert_true(l_color_attachment_value_pixels.get(13) == l_clear_color.linear_to_sRGB());
-            assert_true(l_color_attachment_value_pixels.get(14) == l_clear_color.linear_to_sRGB());
-            assert_true(l_color_attachment_value_pixels.get(15) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 12) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 13) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 14) == l_clear_color.linear_to_sRGB());
+            assert_true(*Slice_get(&l_color_attachment_value_pixels, 15) == l_clear_color.linear_to_sRGB());
 
-            Slice<uint16> l_depth_attachment_value_pixels = slice_cast<uint16>(l_buffer_memory.allocator.host_buffers.get(l_depth_attachment_value).get_mapped_memory());
+            Slice<int8> l_depth_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_depth_attachment_value).get_mapped_memory();
+            Slice<uint16> l_depth_attachment_value_pixels = Slice_cast<uint16>(&l_depth_attachment_value_pixels_slice_int8);
 
-            assert_true(l_depth_attachment_value_pixels.get(0) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(1) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(2) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(3) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 0) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 1) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 2) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 3) == uint16_max);
 
-            assert_true(l_depth_attachment_value_pixels.get(4) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(5) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(6) == 13107);
-            assert_true(l_depth_attachment_value_pixels.get(7) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 4) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 5) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 6) == 13107);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 7) == uint16_max);
 
-            assert_true(l_depth_attachment_value_pixels.get(8) == 0);
-            assert_true(l_depth_attachment_value_pixels.get(9) == 13107);
-            assert_true(l_depth_attachment_value_pixels.get(10) == 13107);
-            assert_true(l_depth_attachment_value_pixels.get(11) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 8) == 0);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 9) == 13107);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 10) == 13107);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 11) == uint16_max);
 
-            assert_true(l_depth_attachment_value_pixels.get(12) == uint16_max);
-            assert_true(l_depth_attachment_value_pixels.get(13) == uint16_max);
-            assert_true(l_depth_attachment_value_pixels.get(14) == uint16_max);
-            assert_true(l_depth_attachment_value_pixels.get(15) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 12) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 13) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 14) == uint16_max);
+            assert_true(*Slice_get(&l_depth_attachment_value_pixels, 15) == uint16_max);
         }
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
@@ -740,7 +747,7 @@ inline void gpu_depth_compare_test()
 */
 inline void gpu_draw_indexed()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -762,16 +769,19 @@ inline void gpu_draw_indexed()
 
         SliceN<vertex_position, 4> l_vertices = {vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.0f, 0.0f}},
                                                  vertex_position{v3f{0.5f, 0.5f, 0.0f}}};
+        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
+
         SliceN<uint32, 6> l_indices = {0, 1, 2, 0, 3, 1};
+        Slice<uint32> l_indices_slice = slice_from_slicen(&l_indices);
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            slice_from_slicen(&l_vertices).build_asint8().Size,
+            Slice_build_asint8(&l_vertices_slice).Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, Slice_build_asint8(&l_vertices_slice));
 
         Token(BufferGPU) l_indices_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            slice_from_slicen(&l_indices).build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::INDEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_indices_buffer, slice_from_slicen(&l_indices).build_asint8());
+            Slice_build_asint8(&l_indices_slice).Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::INDEX));
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_indices_buffer, Slice_build_asint8(&l_indices_slice));
 
         Token(Shader) l_first_shader;
         Token(ShaderLayout) l_first_shader_layout;
@@ -803,8 +813,8 @@ inline void gpu_draw_indexed()
                                                             \n
                                                         }\n);
 
-            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -830,7 +840,7 @@ inline void gpu_draw_indexed()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice_build_memory_elementnb<v4f>(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -854,29 +864,30 @@ inline void gpu_draw_indexed()
             l_buffer_memory.allocator.device.command_buffer.submit();
             l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
         }
-        Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+        Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
+        Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
         color l_white = color{uint8_max, uint8_max, uint8_max, uint8_max};
 
-        assert_true(l_color_attachment_value_pixels.get(0) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(1) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(2) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(3) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 0) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 1) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 2) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 3) == l_clear_color);
 
-        assert_true(l_color_attachment_value_pixels.get(4) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(5) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(6) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(7) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 4) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 5) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 6) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 7) == l_clear_color);
 
-        assert_true(l_color_attachment_value_pixels.get(8) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(9) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(10) == l_white);
-        assert_true(l_color_attachment_value_pixels.get(11) == l_white);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 8) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 9) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 10) == l_white);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 11) == l_white);
 
-        assert_true(l_color_attachment_value_pixels.get(12) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(13) == l_clear_color);
-        assert_true(l_color_attachment_value_pixels.get(14) == l_white);
-        assert_true(l_color_attachment_value_pixels.get(15) == l_white);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 12) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 13) == l_clear_color);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 14) == l_white);
+        assert_true(*Slice_get(&l_color_attachment_value_pixels, 15) == l_white);
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
 
@@ -912,7 +923,7 @@ inline void gpu_draw_indexed()
 */
 inline void gpu_texture_mapping()
 {
-    GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_gpu_context = GPUContext::allocate(Slice_build_default<GPUExtension>());
     BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
     GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
@@ -938,11 +949,12 @@ inline void gpu_texture_mapping()
 
         SliceN<vertex, 6> l_vertices = {vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}, vertex{v3f{-0.5f, -0.5f, 0.0f}, v2f{0.0f, 0.0f}},
                                         vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, 0.5f, 0.0f}, v2f{1.0f, 1.0f}},  vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}};
+        Slice<vertex> l_vertices_slice = slice_from_slicen(&l_vertices);
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
-            slice_from_slicen(&l_vertices).build_asint8().Size,
+            Slice_build_asint8(&l_vertices_slice).Size,
             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ | (BufferUsageFlags)BufferUsageFlag::VERTEX));
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, slice_from_slicen(&l_vertices).build_asint8());
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer, Slice_build_asint8(&l_vertices_slice));
 
         /*
         Token(TextureGPU) l_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(l_buffer_allocator, l_graphics_allocator,
@@ -950,7 +962,7 @@ inline void gpu_texture_mapping()
                         (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE |
         (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)));
 
-        Token(ImageGPU) l_texture_image = l_graphics_allocator.heap.textures_gpu.get(l_texture).Image;
+        Token(ImageGPU) l_texture_image = l_graphics_allocator.heap.textures_gpu.Slice_get(l_texture).Image;
         */
 
         Span<color> l_texture_pixels = Span<color>::allocate(l_render_extends.x * l_render_extends.y);
@@ -965,13 +977,14 @@ inline void gpu_texture_mapping()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            SliceN<ShaderLayout::VertexInputParameter, 2>l_shader_vertex_input_primitives_arr{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
-                                                          ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
+            SliceN<ShaderLayout::VertexInputParameter, 2> l_shader_vertex_input_primitives_arr{
+                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
+                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives =
+                Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
 
-            SliceN<ShaderLayoutParameterType, 1>l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters =
-                Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
+            SliceN<ShaderLayoutParameterType, 1> l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
 
@@ -1007,8 +1020,8 @@ inline void gpu_texture_mapping()
 						}\n
 						);
 
-            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+            ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+            ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
             l_vertex_first_shader_module = l_graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
             l_fragment_first_shader_module = l_graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -1025,7 +1038,7 @@ inline void gpu_texture_mapping()
 
         Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
         l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format,
-                                                          l_texture_pixels.slice.build_asint8());
+                                                          Slice_build_asint8(&l_texture_pixels.slice));
 
         color l_clear_color = color{0, 0, 0, 0};
 
@@ -1038,7 +1051,7 @@ inline void gpu_texture_mapping()
 
             GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
 
-            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+            l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice_build_memory_elementnb<v4f>(l_clear_values, 2));
 
             l_graphics_binder.bind_shader(l_graphics_allocator.heap.shaders.get(l_first_shader));
 
@@ -1065,7 +1078,8 @@ inline void gpu_texture_mapping()
             l_buffer_memory.allocator.device.command_buffer.submit();
             l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
         }
-        Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+        Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
+        Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
         assert_true(l_color_attachment_value_pixels.compare(l_texture_pixels.slice));
 
@@ -1096,7 +1110,7 @@ inline void gpu_texture_mapping()
 inline void gpu_present()
 {
     v3ui l_window_size = v3ui{100, 100, 1};
-    Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
+    Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, Slice_int8_build_rawstr(""));
     Window& l_window = WindowAllocator::get_window(l_window_token);
 
     SliceN<GPUExtension, 1> l_gpu_extension_arr{GPUExtension::WINDOW_PRESENT};
@@ -1124,8 +1138,8 @@ inline void gpu_present()
                                                 layout(location = 0) out vec4 outColor; \n
 
                                                 void main() { outColor = texture(texSampler, uv); } \n );
-    ShaderCompiled l_vertex_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-    ShaderCompiled l_fragment_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+    ShaderCompiled l_vertex_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+    ShaderCompiled l_fragment_compilder = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
@@ -1139,8 +1153,9 @@ inline void gpu_present()
                                                                            (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
 
     // ShowWindow(hwnd, SW_NORMAL);
-    GPUPresent l_gpu_present = GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_window.handle, v3ui{l_window.client_width, l_window.client_height, 1}, l_render_target_texture,
-                                                    l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
+    GPUPresent l_gpu_present =
+        GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_window.handle, v3ui{l_window.client_width, l_window.client_height, 1},
+                             l_render_target_texture, l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
 
     assert_true(l_gpu_present.device.surface_capacilities.currentExtent.width == l_window.client_width);
     assert_true(l_gpu_present.device.surface_capacilities.currentExtent.height == l_window.client_height);
@@ -1157,7 +1172,7 @@ inline void gpu_present()
         }
         Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
-                                           l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
+                                           l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), Slice_build_asint8(&l_render_target_color.slice));
         l_render_target_color.free();
 
         l_gpu_context.buffer_step_and_submit();
@@ -1178,7 +1193,7 @@ inline void gpu_present()
 
         Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
-            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
+                                           l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), Slice_build_asint8(&l_render_target_color.slice));
 
         l_render_target_color.free();
 
@@ -1229,7 +1244,6 @@ inline void gpu_present()
 
     WindowAllocator::free(l_window_token);
 };
-
 
 int main()
 {

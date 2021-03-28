@@ -46,22 +46,22 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
         return VK_FALSE;
         break;
     case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        l_severity.append(slice_int8_build_rawstr("[Info] - "));
+        l_severity.append(Slice_int8_build_rawstr("[Info] - "));
         break;
     case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        l_severity.append(slice_int8_build_rawstr("[Warn] - "));
+        l_severity.append(Slice_int8_build_rawstr("[Warn] - "));
         break;
     case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        l_severity.append(slice_int8_build_rawstr("[Error] - "));
+        l_severity.append(Slice_int8_build_rawstr("[Error] - "));
         is_error = 1;
         break;
     case VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
         is_error = 1;
         break;
     }
-    l_severity.append(slice_int8_build_rawstr("validation layer: "));
-    l_severity.append(slice_int8_build_rawstr(pCallbackData->pMessage));
-    l_severity.append(slice_int8_build_rawstr("\n"));
+    l_severity.append(Slice_int8_build_rawstr("validation layer: "));
+    l_severity.append(Slice_int8_build_rawstr(pCallbackData->pMessage));
+    l_severity.append(Slice_int8_build_rawstr("\n"));
     printf("%s\n", l_severity.get_memory());
 
     l_severity.free();

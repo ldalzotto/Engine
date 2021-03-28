@@ -15,13 +15,13 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 inline void bufferstep_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice_build_default<GPUExtension>());
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}});
 
     Vertex l_test_vertices_raw[2];
     uint32 l_indices[2];
-    Slice<Vertex> l_test_vertices = Slice<Vertex>::build_memory_elementnb(l_test_vertices_raw, 2);
-    Slice<uint32> l_test_indices = Slice<uint32>::build_memory_elementnb(l_indices, 2);
+    Slice<Vertex> l_test_vertices = Slice_build_memory_elementnb<Vertex>(l_test_vertices_raw, 2);
+    Slice<uint32> l_test_indices = Slice_build_memory_elementnb<uint32>(l_indices, 2);
 
     Token(RenderableObject) l_renderable_object =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
@@ -37,7 +37,7 @@ inline void bufferstep_test()
     assert_true(l_ctx.buffer_memory.allocator.host_buffers
                     .get(l_ctx.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderer.allocator.heap.renderable_objects.get(l_renderable_object).model).memory)
                     .get_mapped_memory()
-                    .compare(Slice<m44f>::build_asint8_memory_singleelement(&m44f_const::IDENTITY)));
+                    .compare(Slice_build_asint8_memory_singleelement<m44f>(&m44f_const::IDENTITY)));
 
     Token(RenderableObject) l_renderable_object2 =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
@@ -57,23 +57,23 @@ inline void bufferstep_test()
 
 inline void shader_linkto_material_allocation_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice_build_default<GPUExtension>());
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
 
     {
         // When ShaderIndex are freed, the token value of the ShaderIndex is taken to also delete the link between ShaderIndex and Material.
-        ShaderIndex l_shader_index_executed_after = {5, tk_bd(Shader), tk_bd(ShaderLayout)};
+        ShaderIndex l_shader_index_executed_after = {5, token_build_default(Shader), token_build_default(ShaderLayout)};
         Token(ShaderIndex) l_shader_index_executed_after_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_after);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 1);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
 
-        ShaderIndex l_shader_index_executed_before = {1, tk_bd(Shader), tk_bd(ShaderLayout)};
+        ShaderIndex l_shader_index_executed_before = {1, token_build_default(Shader), token_build_default(ShaderLayout)};
         Token(ShaderIndex) l_shader_index_executed_before_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_before);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 2);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_before_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from(Slice<Token(Material)>, l_shader_index_executed_before_token)).Size == 0);
 
         l_renderer.allocator.free_shader(l_shader_index_executed_after_token);
         l_renderer.allocator.free_shader(l_shader_index_executed_before_token);
@@ -85,7 +85,7 @@ inline void shader_linkto_material_allocation_test()
 
 inline void draw_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice_build_default<GPUExtension>());
     D3Renderer l_renderer = D3Renderer::allocate(l_ctx, ColorStep::AllocateInfo{v3ui{8, 8, 1}, 1});
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
@@ -129,8 +129,8 @@ inline void draw_test()
 				}\n
 				);
 
-    ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
-    ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
+    ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, Slice_int8_build_rawstr(p_vertex_litteral));
+    ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, Slice_int8_build_rawstr(p_fragment_litteral));
 
     Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
     Token(ShaderModule) l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
@@ -175,13 +175,17 @@ inline void draw_test()
                                  Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
         uint32 l_indices[14 * 3] = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
         l_obj_1 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(
-            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14), Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
+            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+                                                                                                   Slice_build_memory_elementnb<Vertex>(l_vertices, 14), Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3));
         l_obj_2 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(
-            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14), Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
+            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+                                                                                                   Slice_build_memory_elementnb<Vertex>(l_vertices, 14), Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3));
         l_obj_3 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(
-            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14), Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
+            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+                                                                                                   Slice_build_memory_elementnb<Vertex>(l_vertices, 14), Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3));
         l_obj_4 = D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(
-            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14), Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
+            l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator,
+                                                                                                   Slice_build_memory_elementnb<Vertex>(l_vertices, 14), Slice_build_memory_elementnb<uint32>(l_indices, 14 * 3));
     }
 
     m44f l_model = m44f::trs(v3f{2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
@@ -226,110 +230,111 @@ inline void draw_test()
         l_ctx.buffer_memory.allocator.device.command_buffer.wait_for_completion();
     }
 
-    Slice<color> l_color_attachment = slice_cast<color>(l_ctx.buffer_memory.allocator.host_buffers.get(l_color_attachment_token).get_mapped_memory());
+    Slice<int8> l_color_attachment_slice_int8 = l_ctx.buffer_memory.allocator.host_buffers.get(l_color_attachment_token).get_mapped_memory();
+    Slice<color> l_color_attachment = Slice_cast<color>(&l_color_attachment_slice_int8);
 
     {
         int l_index = 0;
         for (; l_index <= 7; l_index++)
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
         }
         {
             for (loop(i, 0, 2))
             {
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
-                assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+                assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
                 l_index += 1;
             }
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
-            l_index += 1;
-        }
-        {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
-            l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{uint8_max, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, uint8_max, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{uint8_max, 0, 0, uint8_max});
             l_index += 1;
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+        }
+        {
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, uint8_max, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
+            l_index += 1;
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
         for (loop(i, 0, 7))
         {
-            assert_true(l_color_attachment.get(l_index) == color{0, 0, 0, uint8_max});
+            assert_true(*Slice_get(&l_color_attachment, l_index) == color{0, 0, 0, uint8_max});
             l_index += 1;
         }
     }

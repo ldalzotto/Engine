@@ -18,7 +18,7 @@ template <class ElementType> struct Pool
 
     inline static Pool<ElementType> allocate(const uimax p_memory_capacity)
     {
-        return Pool<ElementType>{Vector<ElementType>::allocate(p_memory_capacity), Vector<Token(ElementType)>::build_zero_size(cast(Token(ElementType)*, NULL), 0)};
+        return Pool<ElementType>{Vector<ElementType>::allocate(p_memory_capacity), Vector<Token(ElementType)>::build_zero_size((Token(ElementType)*)NULL, 0)};
     };
 
     inline void free()
@@ -54,9 +54,9 @@ template <class ElementType> struct Pool
 
     inline int8 is_element_free(const Token(ElementType) p_token)
     {
-        for (vector_loop(&this->free_blocks, i))
+        for (loop(i, 0, this->free_blocks.Size))
         {
-            if (tk_v(this->free_blocks.get(i)) == tk_v(p_token))
+            if (token_get_value(this->free_blocks.get(i)) == token_get_value(p_token))
             {
                 return 1;
             };
@@ -71,7 +71,7 @@ template <class ElementType> struct Pool
         this->element_free_check(p_token);
 #endif
 
-        return this->memory.get(tk_v(p_token));
+        return this->memory.get(token_get_value(p_token));
     };
 
     inline Token(ElementType) alloc_element_empty()
@@ -95,7 +95,7 @@ template <class ElementType> struct Pool
         {
             Token(ElementType) l_availble_token = this->free_blocks.get(this->free_blocks.Size - 1);
             this->free_blocks.pop_back();
-            this->memory.get(tk_v(l_availble_token)) = p_element;
+            this->memory.get(token_get_value(l_availble_token)) = p_element;
             return l_availble_token;
         }
         else

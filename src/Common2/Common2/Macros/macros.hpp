@@ -3,14 +3,13 @@
 #define COMA ,
 #define SEMICOLON ;
 #define STR(V1) #V1
-#define CONCAT_2(V1, V2) V1##V2
-#define CONCAT_3(V1, V2, V3) V1##V2##V3
+#define CAT_2(V1, V2) V1##V2
+#define CAT_2_(V1, V2) CAT_2(V1, V2)
+#define CAT_3(V1, V2, V3) CAT_2_(V1, CAT_2(V2, V3))
+#define CAT_3_(V1, V2, V3) CAT_3(V1, V2, V3)
 
 #define LINE_RETURN \n
 #define MULTILINE(...) #__VA_ARGS__
-
-#define cast(Type, Value) ((Type)(Value))
-#define castv(Type, Value) *(Type*)(&Value)
 
 #define loop(Iteratorname, BeginNumber, EndNumber)                                                                                                                                                     \
     uimax Iteratorname = BeginNumber;                                                                                                                                                                  \
@@ -26,21 +25,4 @@
     Iteratorname != ((uimax)BeginNumber - 1);                                                                                                                                                          \
     --Iteratorname
 
-#define vector_loop(VectorVariable, Iteratorname)                                                                                                                                                      \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (VectorVariable)->Size;                                                                                                                                                             \
-    Iteratorname++
-#define vector_loop_reverse(VectorVariable, Iteratorname)                                                                                                                                              \
-    uimax Iteratorname = (VectorVariable)->Size - 1;                                                                                                                                                   \
-    Iteratorname != ((uimax)-1);                                                                                                                                                                       \
-    --Iteratorname
-
-#define pool_loop(PoolVariable, Iteratorname)                                                                                                                                                          \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (PoolVariable)->get_size();                                                                                                                                                         \
-    Iteratorname++
-
-#define varyingvector_loop(VaryingVectorVariable, Iteratorname)                                                                                                                                        \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (VaryingVectorVariable)->get_size();                                                                                                                                                \
-    Iteratorname++
+#define CB(name) const name##&

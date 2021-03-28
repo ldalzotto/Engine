@@ -560,7 +560,7 @@ inline Slice<int8> TransferDeviceHeap::get_element_as_slice(const TransferDevice
 {
     HeapPagedGPU& l_heap = this->gpu_heaps.get(p_token.heap_index);
     SliceIndex* l_slice_index = l_heap.heap.get_sliceindex_only(p_token.heap_paged_token);
-    return Slice<int8>::build_memory_offset_elementnb(l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).mapped_memory, l_slice_index->Begin, l_slice_index->Size);
+    return Slice_build_memory_offset_elementnb<int8>(l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).mapped_memory, l_slice_index->Begin, l_slice_index->Size);
 };
 
 inline SliceOffset<int8> TransferDeviceHeap::get_element_gcmemory_and_offset(const TransferDeviceHeapToken& p_token)
@@ -595,7 +595,7 @@ inline void TransferDevice::free()
 
 inline MappedHostMemory MappedHostMemory::build_default()
 {
-    return MappedHostMemory{Slice<int8>::build_begin_end(NULL, 0, 0)};
+    return MappedHostMemory{Slice_build_begin_end<int8>(NULL, 0, 0)};
 };
 
 inline void MappedHostMemory::map(TransferDevice& p_transfer_device, const TransferDeviceHeapToken& p_memory)
@@ -1132,36 +1132,36 @@ inline void BufferEvents::free()
 
 inline void BufferEvents::remove_buffer_host_references(const Token(BufferHost) p_buffer_host)
 {
-    for (vector_loop_reverse(&this->write_buffer_host_to_buffer_gpu_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_host_to_buffer_gpu_events.Size))
     {
         WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
-        if (tk_eq(l_event.source_buffer, p_buffer_host))
+        if (token_equals(l_event.source_buffer, p_buffer_host))
         {
             // The source buffer is already supposed to be disposed
             this->write_buffer_host_to_buffer_gpu_events.erase_element_at_always(i);
         }
     }
-    for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_gpu_to_buffer_host_events.Size))
     {
         WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
-        if (tk_eq(l_event.target_buffer, p_buffer_host))
+        if (token_equals(l_event.target_buffer, p_buffer_host))
         {
             this->write_buffer_gpu_to_buffer_host_events.erase_element_at_always(i);
         }
     }
-    for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_host_to_image_gpu_events.Size))
     {
         WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
-        if (tk_eq(l_event.source_buffer, p_buffer_host))
+        if (token_equals(l_event.source_buffer, p_buffer_host))
         {
             // The source buffer is already supposed to be disposed
             this->write_buffer_host_to_image_gpu_events.erase_element_at_always(i);
         }
     }
-    for (vector_loop_reverse(&this->write_image_gpu_to_buffer_host_events, i))
+    for (loop_reverse(i, 0, this->write_image_gpu_to_buffer_host_events.Size))
     {
         WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
-        if (tk_eq(l_event.target_buffer, p_buffer_host))
+        if (token_equals(l_event.target_buffer, p_buffer_host))
         {
             this->write_image_gpu_to_buffer_host_events.erase_element_at_always(i);
         }
@@ -1170,19 +1170,19 @@ inline void BufferEvents::remove_buffer_host_references(const Token(BufferHost) 
 
 inline void BufferEvents::remove_buffer_gpu_references(const Token(BufferGPU) p_buffer_gpu)
 {
-    for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_gpu_to_buffer_host_events.Size))
     {
         WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
-        if (tk_eq(l_event.source_buffer, p_buffer_gpu))
+        if (token_equals(l_event.source_buffer, p_buffer_gpu))
         {
             this->write_buffer_gpu_to_buffer_host_events.erase_element_at_always(i);
         }
     }
 
-    for (vector_loop_reverse(&this->write_buffer_host_to_buffer_gpu_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_host_to_buffer_gpu_events.Size))
     {
         WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
-        if (tk_eq(l_event.target_buffer, p_buffer_gpu))
+        if (token_equals(l_event.target_buffer, p_buffer_gpu))
         {
             if (l_event.source_buffer_dispose)
             {
@@ -1195,10 +1195,10 @@ inline void BufferEvents::remove_buffer_gpu_references(const Token(BufferGPU) p_
 
 inline void BufferEvents::remove_image_host_references(const Token(ImageHost) p_image_host)
 {
-    for (vector_loop_reverse(&this->image_host_allocate_events, i))
+    for (loop_reverse(i, 0, this->image_host_allocate_events.Size))
     {
         AllocatedImageHost& l_event = this->image_host_allocate_events.get(i);
-        if (tk_eq(l_event.image, p_image_host))
+        if (token_equals(l_event.image, p_image_host))
         {
             this->image_host_allocate_events.erase_element_at_always(i);
         }
@@ -1207,10 +1207,10 @@ inline void BufferEvents::remove_image_host_references(const Token(ImageHost) p_
 
 inline void BufferEvents::remove_image_gpu_references(const Token(ImageGPU) p_image_gpu)
 {
-    for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
+    for (loop_reverse(i, 0, this->write_buffer_host_to_image_gpu_events.Size))
     {
         WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
-        if (tk_eq(l_event.target_image, p_image_gpu))
+        if (token_equals(l_event.target_image, p_image_gpu))
         {
             if (l_event.source_buffer_dispose)
             {
@@ -1220,19 +1220,19 @@ inline void BufferEvents::remove_image_gpu_references(const Token(ImageGPU) p_im
         }
     }
 
-    for (vector_loop_reverse(&this->write_image_gpu_to_buffer_host_events, i))
+    for (loop_reverse(i, 0, this->write_image_gpu_to_buffer_host_events.Size))
     {
         WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
-        if (tk_eq(l_event.source_image, p_image_gpu))
+        if (token_equals(l_event.source_image, p_image_gpu))
         {
             this->write_image_gpu_to_buffer_host_events.erase_element_at_always(i);
         }
     }
 
-    for (vector_loop_reverse(&this->image_gpu_allocate_events, i))
+    for (loop_reverse(i, 0, this->image_gpu_allocate_events.Size))
     {
         AllocatedImageGPU& l_event = this->image_gpu_allocate_events.get(i);
-        if (tk_eq(l_event.image, p_image_gpu))
+        if (token_equals(l_event.image, p_image_gpu))
         {
             this->image_gpu_allocate_events.erase_element_at_always(i);
         }

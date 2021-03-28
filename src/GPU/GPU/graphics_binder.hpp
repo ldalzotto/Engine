@@ -81,7 +81,7 @@ struct GraphicsBinder
         Slice<ShaderParameter> l_material_parameters = this->graphics_allocator.heap.material_parameters.get_vector(p_material.parameters);
         for (loop(i, 0, l_material_parameters.Size))
         {
-            _cmd_bind_shader_parameter(*this->binded_shader_layout, l_material_parameters.get(i), this->material_set_count);
+            _cmd_bind_shader_parameter(*this->binded_shader_layout, *Slice_get(&l_material_parameters, i), this->material_set_count);
             this->material_set_count += 1;
         }
     };
@@ -164,7 +164,7 @@ struct GraphicsBinder
         l_renderpass_begin.renderPass = this->binded_graphics_pass->render_pass.render_pass;
 
         Slice<Token(TextureGPU)> l_attachments = this->graphics_allocator.heap.renderpass_attachment_textures.get_vector(this->binded_graphics_pass->attachment_textures);
-        ImageFormat& l_target_format = this->buffer_allocator.gpu_images.get(this->graphics_allocator.heap.textures_gpu.get(l_attachments.get(0)).Image).format;
+        ImageFormat& l_target_format = this->buffer_allocator.gpu_images.get(this->graphics_allocator.heap.textures_gpu.get(*Slice_get(&l_attachments, 0)).Image).format;
 
         l_renderpass_begin.renderArea = VkRect2D{VkOffset2D{0, 0}, VkExtent2D{(uint32_t)l_target_format.extent.x, (uint32_t)l_target_format.extent.y}};
         l_renderpass_begin.clearValueCount = (uint32)p_clear_values.Size;

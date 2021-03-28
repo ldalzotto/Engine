@@ -35,7 +35,7 @@ struct JSONDeserializer
 
     inline static JSONDeserializer allocate_default()
     {
-        return JSONDeserializer{Slice<int8>::build_default(), Slice<int8>::build_default(), Vector<FieldNode>::allocate(0), (uimax)-1};
+        return JSONDeserializer{Slice_build_default<int8>(), Slice_build_default<int8>(), Vector<FieldNode>::allocate(0), (uimax)-1};
     };
 
     inline static JSONDeserializer allocate(const Slice<int8>& p_source, const Slice<int8>& p_parent_cursor)
@@ -47,9 +47,10 @@ struct JSONDeserializer
     {
         JSONUtil::remove_spaces(p_source);
         uimax l_start_index;
-        p_source.to_slice().find(slice_int8_build_rawstr("{"), &l_start_index);
+        p_source.to_slice().find(Slice_int8_build_rawstr("{"), &l_start_index);
         l_start_index += 1;
-        return allocate(p_source.to_slice(), p_source.to_slice().slide_rv(l_start_index));
+        Slice<int8> l_source_slice = p_source.to_slice();
+        return allocate(p_source.to_slice(), Slice_slide_rv(&l_source_slice, l_start_index));
     };
 
     inline JSONDeserializer clone()
@@ -70,19 +71,19 @@ struct JSONDeserializer
         if (this->find_next_field_whole_value(&l_next_field_whole_value))
         {
             String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
-            l_field_name_json.append(slice_int8_build_rawstr("\""));
-            l_field_name_json.append(slice_int8_build_rawstr(p_field_name));
-            l_field_name_json.append(slice_int8_build_rawstr("\":"));
+            l_field_name_json.append(Slice_int8_build_rawstr("\""));
+            l_field_name_json.append(Slice_int8_build_rawstr(p_field_name));
+            l_field_name_json.append(Slice_int8_build_rawstr("\":"));
 
             if (l_next_field_whole_value.compare(l_field_name_json.to_slice()))
             {
-                Slice<int8> l_next_field_value_with_quotes = l_next_field_whole_value.slide_rv(l_field_name_json.get_length());
+                Slice<int8> l_next_field_value_with_quotes = Slice_slide_rv(&l_next_field_whole_value, l_field_name_json.get_length());
 
                 FieldNode l_field_node;
                 uimax l_field_value_delta;
-                if (l_next_field_value_with_quotes.slide_rv(1).find(slice_int8_build_rawstr("\""), &l_field_value_delta))
+                if (Slice_slide_rv(&l_next_field_value_with_quotes, 1).find(Slice_int8_build_rawstr("\""), &l_field_value_delta))
                 {
-                    l_field_node.value = l_next_field_value_with_quotes.slide_rv(1);
+                    l_field_node.value = Slice_slide_rv(&l_next_field_value_with_quotes, 1);
                     l_field_node.value.Size = l_field_value_delta;
                     l_field_node.whole_field = l_next_field_whole_value;
 
@@ -108,14 +109,14 @@ struct JSONDeserializer
         Slice<int8> l_compared_slice = this->get_current_slice_cursor();
 
         String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
-        l_field_name_json.append(slice_int8_build_rawstr("\""));
-        l_field_name_json.append(slice_int8_build_rawstr(p_field_name));
-        l_field_name_json.append(slice_int8_build_rawstr("\":"));
+        l_field_name_json.append(Slice_int8_build_rawstr("\""));
+        l_field_name_json.append(Slice_int8_build_rawstr(p_field_name));
+        l_field_name_json.append(Slice_int8_build_rawstr("\":"));
 
         FieldNode l_field_node;
         if (find_next_json_field(l_compared_slice, l_field_name_json.to_slice(), '{', '}', &l_field_node.whole_field, &l_field_node.value))
         {
-            l_field_node.value.slide(1); // for '{'
+            Slice_slide(&l_field_node.value, 1); // for '{'
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
             this->stack_fields.push_back_element(l_field_node);
@@ -137,9 +138,9 @@ struct JSONDeserializer
         Slice<int8> l_compared_slice = this->get_current_slice_cursor();
 
         String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
-        l_field_name_json.append(slice_int8_build_rawstr("\""));
-        l_field_name_json.append(slice_int8_build_rawstr(p_field_name));
-        l_field_name_json.append(slice_int8_build_rawstr("\":"));
+        l_field_name_json.append(Slice_int8_build_rawstr("\""));
+        l_field_name_json.append(Slice_int8_build_rawstr(p_field_name));
+        l_field_name_json.append(Slice_int8_build_rawstr("\":"));
 
         FieldNode l_field_node;
         if (find_next_json_field(l_compared_slice, l_field_name_json.to_slice(), '[', ']', &l_field_node.whole_field, &l_field_node.value))
@@ -169,7 +170,7 @@ struct JSONDeserializer
 
         Slice<int8> l_compared_slice = this->get_current_slice_cursor();
 
-        Slice<int8> l_field_name_json_slice = slice_int8_build_rawstr("{");
+        Slice<int8> l_field_name_json_slice = Slice_int8_build_rawstr("{");
 
         FieldNode l_field_node;
         if (find_next_json_field(l_compared_slice, l_field_name_json_slice, '{', '}', &l_field_node.whole_field, &l_field_node.value))
@@ -232,16 +233,16 @@ struct JSONDeserializer
         // This can occur if the field is in the middle of a JSON Object.
         // This if statement is mendatory because if the field is at the first position of the JSON
         // object, then there is no unexpected int8acter. So we handle both cases;
-        if (out_field_whole_value->Size > 0 && (out_field_whole_value->get(0) == ',' || out_field_whole_value->get(0) == '{'))
+        if (out_field_whole_value->Size > 0 && (*Slice_get(out_field_whole_value, 0) == ',' || *Slice_get(out_field_whole_value, 0) == '{'))
         {
-            out_field_whole_value->slide(1);
+            Slice_slide(out_field_whole_value, 1);
         }
 
-        // then we get the next field
+        // then we Slice_get the next field
 
         uimax l_new_field_index;
 
-        if (out_field_whole_value->find(slice_int8_build_rawstr(","), &l_new_field_index) || out_field_whole_value->find(slice_int8_build_rawstr("}"), &l_new_field_index))
+        if (out_field_whole_value->find(Slice_int8_build_rawstr(","), &l_new_field_index) || out_field_whole_value->find(Slice_int8_build_rawstr("}"), &l_new_field_index))
         {
             out_field_whole_value->Size = l_new_field_index;
             return 1;
@@ -258,8 +259,8 @@ struct JSONDeserializer
         {
             for (uimax i = 0; i < this->stack_fields.Size; i++)
             {
-                l_compared_slice.slide(this->stack_fields.get(i).whole_field.Size);
-                l_compared_slice.slide(1); // for getting after ","
+                Slice_slide(&l_compared_slice, this->stack_fields.get(i).whole_field.Size);
+                Slice_slide(&l_compared_slice, 1); // for getting after ","
             }
         }
         return l_compared_slice;
@@ -270,17 +271,17 @@ struct JSONDeserializer
     {
         if (p_source.compare(p_field_name))
         {
-            Slice<int8> l_object_value = p_source.slide_rv(p_field_name.Size);
+            Slice<int8> l_object_value = Slice_slide_rv(&p_source, p_field_name.Size);
 
             uimax l_openedbrace_count = 1;
             uimax l_object_string_iterator = 1;
             while (l_openedbrace_count != 0 && l_object_string_iterator < l_object_value.Size)
             {
-                if (l_object_value.get(l_object_string_iterator) == value_begin_delimiter)
+                if (*Slice_get(&l_object_value, l_object_string_iterator) == value_begin_delimiter)
                 {
                     l_openedbrace_count += 1;
                 }
-                else if (l_object_value.get(l_object_string_iterator) == value_end_delimiter)
+                else if (*Slice_get(&l_object_value, l_object_string_iterator) == value_end_delimiter)
                 {
                     l_openedbrace_count -= 1;
                 }
@@ -303,14 +304,14 @@ struct JSONDeserializer
 
     inline static int8 find_next_json_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
     {
-        if (p_source.compare(slice_int8_build_rawstr("\"")))
+        if (p_source.compare(Slice_int8_build_rawstr("\"")))
         {
             *out_plain_value_whole = p_source;
-            Slice<int8> l_plain_value_with_trail = p_source.slide_rv(1);
+            Slice<int8> l_plain_value_with_trail = Slice_slide_rv(&p_source, 1);
             uimax l_end_index;
-            if (l_plain_value_with_trail.find(slice_int8_build_rawstr("\""), &l_end_index))
+            if (l_plain_value_with_trail.find(Slice_int8_build_rawstr("\""), &l_end_index))
             {
-                *out_plain_value_only = Slice<int8>::build_begin_end(l_plain_value_with_trail.Begin, 0, l_end_index);
+                *out_plain_value_only = Slice_build_begin_end<int8>(l_plain_value_with_trail.Begin, 0, l_end_index);
                 out_plain_value_whole->Size = l_end_index + 2; // To add the "
                 return 1;
             }
@@ -370,40 +371,40 @@ struct JSONSerializer
 
     inline void start()
     {
-        this->output.append(slice_int8_build_rawstr("{\n"));
+        this->output.append(Slice_int8_build_rawstr("{\n"));
         this->current_indentation += 1;
     };
 
     inline void end()
     {
         this->remove_last_coma();
-        this->output.append(slice_int8_build_rawstr("}"));
+        this->output.append(Slice_int8_build_rawstr("}"));
         this->current_indentation -= 1;
     };
 
     inline void push_field(const Slice<int8>& p_name, const Slice<int8>& p_value)
     {
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("\""));
+        this->output.append(Slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": \""));
+        this->output.append(Slice_int8_build_rawstr("\": \""));
         this->output.append(p_value);
-        this->output.append(slice_int8_build_rawstr("\",\n"));
+        this->output.append(Slice_int8_build_rawstr("\",\n"));
     };
 
     inline void start_object(const Slice<int8>& p_name)
     {
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("\""));
+        this->output.append(Slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": {\n"));
+        this->output.append(Slice_int8_build_rawstr("\": {\n"));
         this->current_indentation += 1;
     };
 
     inline void start_object()
     {
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("{\n"));
+        this->output.append(Slice_int8_build_rawstr("{\n"));
         this->current_indentation += 1;
     };
 
@@ -412,15 +413,15 @@ struct JSONSerializer
         this->remove_last_coma();
         this->current_indentation -= 1;
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("},\n"));
+        this->output.append(Slice_int8_build_rawstr("},\n"));
     };
 
     inline void start_array(const Slice<int8>& p_name)
     {
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("\""));
+        this->output.append(Slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": [\n"));
+        this->output.append(Slice_int8_build_rawstr("\": [\n"));
         this->current_indentation += 1;
     };
 
@@ -429,7 +430,7 @@ struct JSONSerializer
         this->remove_last_coma();
         this->current_indentation -= 1;
         this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("],\n"));
+        this->output.append(Slice_int8_build_rawstr("],\n"));
     };
 
   private:
@@ -438,7 +439,7 @@ struct JSONSerializer
         String l_indentation = String::allocate(this->current_indentation);
         for (size_t i = 0; i < this->current_indentation; i++)
         {
-            l_indentation.append(slice_int8_build_rawstr(" "));
+            l_indentation.append(Slice_int8_build_rawstr(" "));
         }
         this->output.append(l_indentation.to_slice());
         l_indentation.free();

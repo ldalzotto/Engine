@@ -9,7 +9,7 @@ typedef int8* ptr_counter_t[MEM_LEAK_MAX_POINTER_COUNTER];
 
 // Not using mutex but a hash based nested table ?
 // -> NO, because some ressource may be allocated from one thread and dealocated a different one
-MutexNative<ptr_counter_t> ptr_counter = MutexNative<ptr_counter_t>::allocate();
+MutexNative<ptr_counter_t> ptr_counter = MutexNative_allocate<ptr_counter_t>();
 
 typedef LPVOID backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 
@@ -25,7 +25,7 @@ inline void capture_backtrace(const uimax p_ptr_index)
 inline int8* push_ptr_to_tracked(int8* p_ptr)
 {
     int8* l_return = NULL;
-    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+    MutexNative_acquire(&ptr_counter, [&](ptr_counter_t p_ptr_counter) {
         for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
             if (p_ptr_counter[i] == NULL)
@@ -49,7 +49,7 @@ inline int8* push_ptr_to_tracked(int8* p_ptr)
 inline void remove_ptr_to_tracked(int8* p_ptr)
 {
     int8 l_successful = 0;
-    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+    MutexNative_acquire(&ptr_counter, [&](ptr_counter_t p_ptr_counter) {
         for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
             if (p_ptr_counter[i] == p_ptr)
@@ -74,7 +74,7 @@ inline void remove_ptr_to_tracked(int8* p_ptr)
 inline void memleak_ckeck()
 {
 #if __MEMLEAK
-    ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+    MutexNative_acquire(&ptr_counter, [&](ptr_counter_t p_ptr_counter) {
         for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
         {
             if (p_ptr_counter[i] != NULL)
@@ -189,9 +189,4 @@ inline int8* memory_move_safe(int8* p_dst, const uimax p_dst_size, const int8* p
 inline int8 memory_compare(const int8* p_source, const int8* p_compared, const uimax p_size)
 {
     return ::memcmp(p_source, p_compared, p_size) == 0;
-};
-
-template <class ElementType> inline uimax memory_offset_bytes(const uimax p_size)
-{
-    return sizeof(ElementType) * p_size;
 };

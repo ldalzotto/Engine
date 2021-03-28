@@ -8,10 +8,10 @@ struct Sort
     {
         for (loop(i, p_start_index, p_slice.Size))
         {
-            ElementType& l_left = p_slice.get(i);
+            ElementType& l_left = *Slice_get(&p_slice, i);
             for (loop(j, i, p_slice.Size))
             {
-                ElementType& l_right = p_slice.get(j);
+                ElementType& l_right = *Slice_get(&p_slice, j);
                 if (p_compare_slot(l_left, l_right))
                 {
                     ElementType l_left_tmp = l_left;

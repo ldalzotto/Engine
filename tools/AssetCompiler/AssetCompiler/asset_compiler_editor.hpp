@@ -77,7 +77,7 @@ struct AssetCompilationThread
     inline void start()
     {
         this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
+        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::Slice_build_begin_end(&this->thread_input_args, 0, 1)};
         this->thread = Thread::spawn_thread(this->thread_input);
         this->is_running = 1;
     };
@@ -106,7 +106,7 @@ struct AssetCompilationThread
 
     inline static int8 main(const Slice<int8*>& p_args)
     {
-        AssetCompilationThread* thiz = (AssetCompilationThread*)p_args.get(0);
+        AssetCompilationThread* thiz = (AssetCompilationThread*)*Slice_get(&p_args, 0);
         return thiz->_main();
     };
 
@@ -281,7 +281,7 @@ struct AssetCompilerWindow
     {
         for (loop(i, 0, this->view.compilation_passes.Size))
         {
-            if (tk_eq(this->view.compilation_passes.get(i), p_asset_compilation_token.pass_token))
+            if (token_equals(this->view.compilation_passes.get(i), p_asset_compilation_token.pass_token))
             {
                 this->widgets.asset_compilation_passes.get(i).set_asset_compilation_result(p_asset_compilation_token.index, p_result);
                 break;
@@ -383,7 +383,7 @@ struct AssetCompilerEditor
         l_asset_compiler_window_cb.closure = this;
         l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
-            AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"),
+            AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, Slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"),
                                                                                   thiz->asset_folder_root, in_out_asset_compilation_pass);
         };
         l_asset_compiler_window_cb.on_go_button_pushed = [](AssetCompilerWindow* p_window, void* p_closure) {

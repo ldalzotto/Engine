@@ -57,8 +57,8 @@ inline void slice_span_test()
         SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
         l_span_sizet.slice.copy_memory_at_index_2(1, slice_from_slicen(&l_slice_1), slice_from_slicen(&l_slice_2));
 
-        assert_true(l_span_sizet.slice.slide_rv(1).compare(slice_from_slicen(&l_slice_1)));
-        assert_true(l_span_sizet.slice.slide_rv(5).compare(slice_from_slicen(&l_slice_2)));
+        assert_true(Slice_slide_rv(&l_span_sizet.slice, 1).compare(slice_from_slicen(&l_slice_1)));
+        assert_true(Slice_slide_rv(&l_span_sizet.slice, 5).compare(slice_from_slicen(&l_slice_2)));
 
         l_span_sizet.free();
     }
@@ -80,7 +80,7 @@ inline void vector_test()
     {
         uimax l_old_size = l_vector_sizet.Size;
         uimax l_elements[5] = {0, 1, 2, 3, 4};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 5);
 
         l_vector_sizet.push_back_array(l_elements_slice);
         assert_true(l_vector_sizet.Size == l_old_size + 5);
@@ -110,7 +110,7 @@ inline void vector_test()
     {
         uimax l_old_size = l_vector_sizet.Size;
         uimax l_elements[5] = {0, 1, 2, 3, 4};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 5);
         l_vector_sizet.insert_array_at(l_elements_slice, 0);
         assert_true(l_vector_sizet.Size == l_old_size + 5);
         for (loop_int16(i, 0, 5))
@@ -127,11 +127,11 @@ inline void vector_test()
         // Middle insertion
         for (loop_int16(i, 3, 8))
         {
-            assert_true((l_vector_sizet.get(i)) == l_elements[i - cast(uimax, 3)]);
+            assert_true((l_vector_sizet.get(i)) == l_elements[i - (uimax)3]);
         }
         for (loop_int16(i, 8, 10))
         {
-            assert_true((l_vector_sizet.get(i)) == l_elements[i - cast(uimax, 5)]);
+            assert_true((l_vector_sizet.get(i)) == l_elements[i - (uimax)5]);
         }
     }
 
@@ -144,7 +144,7 @@ inline void vector_test()
         assert_true(l_vector_sizet.get(7) == l_element);
         assert_true(l_vector_sizet.Size == l_old_size + 1);
 
-        l_vector_sizet.insert_element_at(cast(uimax, 20), 9);
+        l_vector_sizet.insert_element_at((uimax)20, 9);
     }
 
     // vector_erase_element_at
@@ -303,7 +303,7 @@ inline void pool_test()
         uimax l_element = 3;
         Token(uimax) l_token = l_pool_sizet.alloc_element(l_element);
 
-        assert_true(tk_v(l_token) == 0);
+        assert_true(token_get_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
     }
 
@@ -321,15 +321,15 @@ inline void pool_test()
         uimax l_element = 4;
         Token(uimax) l_token = l_pool_sizet.alloc_element(l_element);
 
-        l_pool_sizet.alloc_element(cast(uimax, 10));
-        l_pool_sizet.release_element(l_pool_sizet.alloc_element(cast(uimax, 10)));
-        l_pool_sizet.alloc_element(cast(uimax, 10));
+        l_pool_sizet.alloc_element((uimax)10);
+        l_pool_sizet.release_element(l_pool_sizet.alloc_element((uimax)10));
+        l_pool_sizet.alloc_element((uimax)10);
 
-        assert_true(tk_v(l_token) == 0);
+        assert_true(token_get_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
     }
 
-    for (pool_loop(&l_pool_sizet, i))
+    for (loop(i, 0, l_pool_sizet.get_size()))
     {
         l_pool_sizet.get(Token(uimax){i});
     }
@@ -350,12 +350,13 @@ inline void varyingslice_test()
                                                          SliceIndex::build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex::build(sizeof(uimax) * 4, sizeof(uimax))};
     const Slice<SliceIndex> l_varying_slice_indices = slice_from_slicen(&l_varying_slice_indices_arr);
 
-    VaryingSlice l_varying_slice = VaryingSlice::build(l_varying_slice_memory.build_asint8(), l_varying_slice_indices);
+    VaryingSlice l_varying_slice = VaryingSlice::build(Slice_build_asint8(&l_varying_slice_memory), l_varying_slice_indices);
 
     assert_true(l_varying_slice.get_size() == l_varying_slice_indices.Size);
     for (loop(i, 0, l_varying_slice.get_size()))
     {
-        assert_true(l_varying_slice.get_element_typed<uimax>(i).get(0) == l_varying_slice_memory.get(i));
+        Slice<uimax> l_varying_slice_element = l_varying_slice.get_element_typed<uimax>(i);
+        assert_true(*Slice_get(&l_varying_slice_element, 0) == *Slice_get(&l_varying_slice_memory, i));
     }
 };
 
@@ -368,7 +369,7 @@ inline void varyingvector_test()
         assert_true(l_varyingvector.memory.Size == 0);
 
         const int8* l_10_element = "abcdefhikl";
-        Slice<int8> l_slice = Slice<int8>::build_memory_elementnb((int8*)l_10_element, 10);
+        Slice<int8> l_slice = Slice_build_memory_elementnb<int8>((int8*)l_10_element, 10);
         l_varyingvector.push_back(l_slice);
 
         assert_true(l_varyingvector.get_size() == 1);
@@ -393,9 +394,9 @@ inline void varyingvector_test()
         Slice<int8> l_element_inserted = l_varyingvector.get_element(l_inserted_index);
 
         assert_true(l_element_inserted.Size == sizeof(uimax));
-        assert_true(memory_compare(cast(const int8*, &l_element), l_element_inserted.Begin, l_element_inserted.Size));
+        assert_true(memory_compare((const int8*)&l_element, l_element_inserted.Begin, l_element_inserted.Size));
 
-        Slice<uimax> l_casted_slice = slice_cast<uimax>(l_element_inserted);
+        Slice<uimax> l_casted_slice = Slice_cast<uimax>(&l_element_inserted);
         assert_true(l_casted_slice.Size == 1);
     }
 
@@ -414,15 +415,17 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
         l_varyingvector.erase_element_at(2);
         assert_true(l_varyingvector.get_size() == 4);
 
-        assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 3);
-        assert_true(l_varyingvector.get_element_typed<uimax>(3).get(0) == 4);
+        Slice<uimax> tmp_varyingvector_element = l_varyingvector.get_element_typed<uimax>(2);
+        assert_true(*Slice_get(&tmp_varyingvector_element, 0) == 3);
+        tmp_varyingvector_element = l_varyingvector.get_element_typed<uimax>(3);
+        assert_true(*Slice_get(&tmp_varyingvector_element, 0) == 4);
     }
 
     l_varyingvector.free();
@@ -432,7 +435,7 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
@@ -440,8 +443,10 @@ inline void varyingvector_test()
         l_varyingvector.erase_element_at_always(l_varyingvector.get_size() - 1);
         assert_true(l_varyingvector.get_size() == 3);
 
-        assert_true(l_varyingvector.get_element_typed<uimax>(1).get(0) == 1);
-        assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 3);
+        Slice<uimax> tmp_varyingvector_element = l_varyingvector.get_element_typed<uimax>(1);
+        assert_true(*Slice_get(&tmp_varyingvector_element, 0) == 1);
+        tmp_varyingvector_element = l_varyingvector.get_element_typed<uimax>(2);
+        assert_true(*Slice_get(&tmp_varyingvector_element, 0) == 3);
     }
 
     l_varyingvector.free();
@@ -451,14 +456,15 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
         l_varyingvector.erase_array_at(2, 2);
         assert_true(l_varyingvector.get_size() == 3);
 
-        assert_true(l_varyingvector.get_element_typed<uimax>(2).get(0) == 4);
+        Slice<uimax> l_varyingvector_element = l_varyingvector.get_element_typed<uimax>(2);
+        assert_true(*Slice_get(&l_varyingvector_element, 0) == 4);
     }
 
     l_varyingvector.free();
@@ -468,29 +474,33 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         uimax l_inserset_number = 30;
-        Slice<int8> l_expansion_slice = Slice<uimax>::build_asint8_memory_elementnb(&l_inserset_number, 1);
+        Slice<int8> l_expansion_slice = Slice_build_asint8_memory_elementnb<uimax>(&l_inserset_number, 1);
         l_varyingvector.element_expand_with_value(2, l_expansion_slice);
 
-        Slice<uimax> l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get_element(2));
+        Slice<int8> tmp_l_varyingvector_element = l_varyingvector.get_element(2);
+        Slice<uimax> l_sizet_element_2 = Slice_cast<uimax>(&tmp_l_varyingvector_element);
         assert_true(l_sizet_element_2.Size == 2);
-        assert_true(l_sizet_element_2.get(1) == l_inserset_number);
+        assert_true(*Slice_get(&l_sizet_element_2, 1) == l_inserset_number);
 
         {
-            uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get_element(3));
+            Slice<int8> l_varyingvector_element = l_varyingvector.get_element(3);
+            uimax* l_sizet_element_3 = Slice_cast_singleelement<uimax>(&l_varyingvector_element);
             assert_true(*l_sizet_element_3 == 3);
         }
 
         l_varyingvector.element_shrink(2, sizeof(uimax));
-        l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get_element(2));
+        tmp_l_varyingvector_element = l_varyingvector.get_element(2);
+        l_sizet_element_2 = Slice_cast<uimax>(&tmp_l_varyingvector_element);
         assert_true(l_sizet_element_2.Size == 1);
-        assert_true(l_sizet_element_2.get(0) == 2);
+        assert_true(*Slice_get(&l_sizet_element_2, 0) == 2);
 
         {
-            uimax* l_sizet_element_3 = slice_cast_singleelement<uimax>(l_varyingvector.get_element(3));
+            Slice<int8> l_varyingvector_element = l_varyingvector.get_element(3);
+            uimax* l_sizet_element_3 = Slice_cast_singleelement<uimax>(&l_varyingvector_element);
             assert_true(*l_sizet_element_3 == 3);
         }
     }
@@ -502,18 +512,18 @@ inline void varyingvector_test()
         uimax l_element_2 = 30;
 
         l_varyingvector.element_expand(2, sizeof(uimax) * 3);
-        l_varyingvector.element_writeto(2, 0, Slice<uimax>::build_asint8_memory_singleelement(&l_element_0));
-        l_varyingvector.element_writeto(2, 2 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_2));
-        l_varyingvector.element_writeto(2, 1 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_1));
+        l_varyingvector.element_writeto(2, 0, Slice_build_asint8_memory_singleelement<uimax>(&l_element_0));
+        l_varyingvector.element_writeto(2, 2 * sizeof(uimax), Slice_build_asint8_memory_singleelement<uimax>(&l_element_2));
+        l_varyingvector.element_writeto(2, 1 * sizeof(uimax), Slice_build_asint8_memory_singleelement<uimax>(&l_element_1));
 
         Slice<int8> l_varyingvector_element_2 = l_varyingvector.get_element(2);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.Begin) == l_element_0);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin) == l_element_1);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin) == l_element_2);
+        assert_true(*(uimax*)l_varyingvector_element_2.Begin == l_element_0);
+        assert_true(*(uimax*)Slice_slide_rv(&l_varyingvector_element_2, sizeof(uimax)).Begin == l_element_1);
+        assert_true(*(uimax*)Slice_slide_rv(&l_varyingvector_element_2, 2 * sizeof(uimax)).Begin == l_element_2);
     }
 
     {
-        for (varyingvector_loop(&l_varyingvector, i))
+        for (loop(i, 0, l_varyingvector.get_size()))
         {
             l_varyingvector.get_element(i);
         }
@@ -534,7 +544,7 @@ inline void vectorofvector_test()
         Span<uimax> l_sizets = Span<uimax>::allocate(10);
         for (loop(i, 0, l_sizets.Capacity))
         {
-            l_sizets.slice.get(i) = i;
+            *Slice_get(&l_sizets.slice, i) = i;
         }
 
         l_vectorofvector_uimax.push_back();
@@ -548,7 +558,7 @@ inline void vectorofvector_test()
         assert_true(l_vectorofvector_uimax.get_vectorheader(l_requested_index)->Capacity == l_sizets.Capacity);
         for (loop(i, 0, l_sizets.Capacity))
         {
-            assert_true(l_element.get(i) == i);
+            assert_true(*Slice_get(&l_element, i) == i);
         }
 
         l_sizets.free();
@@ -566,20 +576,20 @@ inline void vectorofvector_test()
             l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
             Slice<uimax> l_element_nested = l_vectorofvector_uimax.get(l_index);
             assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            assert_true(*Slice_get(&l_element_nested, 0) == l_element);
 
             l_element = 35;
             l_vectorofvector_uimax.element_clear(l_index);
             l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
             assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            assert_true(*Slice_get(&l_element_nested, 0) == l_element);
         }
     }
 
     // vectorofvector_element_insert_element_at
     {
         uimax l_elements[3] = {100, 120, 140};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 3);
         l_vectorofvector_uimax.push_back_element(l_elements_slice);
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
 
@@ -588,16 +598,16 @@ inline void vectorofvector_test()
 
         Slice<uimax> l_vector = l_vectorofvector_uimax.get(l_index);
         assert_true(l_vector.Size == 4);
-        assert_true(l_vector.get(0) == l_elements[0]);
-        assert_true(l_vector.get(1) == l_inserted_element);
-        assert_true(l_vector.get(2) == l_elements[1]);
-        assert_true(l_vector.get(3) == l_elements[2]);
+        assert_true(*Slice_get(&l_vector, 0) == l_elements[0]);
+        assert_true(*Slice_get(&l_vector, 1) == l_inserted_element);
+        assert_true(*Slice_get(&l_vector, 2) == l_elements[1]);
+        assert_true(*Slice_get(&l_vector, 3) == l_elements[2]);
     }
 
     // vectorofvector_element_erase_element_at
     {
         uimax l_elements[3] = {100, 120, 140};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 3);
         l_vectorofvector_uimax.push_back_element(l_elements_slice);
 
         // uimax l_inserted_element = 200;
@@ -605,22 +615,22 @@ inline void vectorofvector_test()
         l_vectorofvector_uimax.element_erase_element_at(l_index, 1);
         Slice<uimax> l_vector = l_vectorofvector_uimax.get(l_index);
         assert_true(l_vector.Size == 2);
-        assert_true(l_vector.get(0) == l_elements[0]);
-        assert_true(l_vector.get(1) == l_elements[2]);
+        assert_true(*Slice_get(&l_vector, 0) == l_elements[0]);
+        assert_true(*Slice_get(&l_vector, 1) == l_elements[2]);
     }
 
     // vectorofvector_element_push_back_array
     {
         uimax l_initial_elements[3] = {1, 2, 3};
         {
-            Slice<uimax> l_initial_elements_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements, 3);
+            Slice<uimax> l_initial_elements_slice = Slice_build_memory_elementnb<uimax>(l_initial_elements, 3);
             l_vectorofvector_uimax.push_back_element(l_initial_elements_slice);
         }
 
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
 
         uimax l_elements[3] = {100, 120, 140};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 3);
 
         uimax l_old_size = 0;
         {
@@ -635,11 +645,11 @@ inline void vectorofvector_test()
             assert_true(l_vector_element.Size == l_old_size + 3);
             for (loop(i, 0, 3))
             {
-                assert_true(l_vector_element.get(i) == l_initial_elements[i]);
+                assert_true(*Slice_get(&l_vector_element, i) == l_initial_elements[i]);
             }
             for (loop(i, l_old_size, l_old_size + 3))
             {
-                assert_true(l_vector_element.get(i) == l_elements[i - l_old_size]);
+                assert_true(*Slice_get(&l_vector_element, i) == l_elements[i - l_old_size]);
             }
         }
 
@@ -651,14 +661,14 @@ inline void vectorofvector_test()
             assert_true(l_vector_element.Size == 8);
             for (loop(i, 0, 3))
             {
-                assert_true(l_vector_element.get(i) == l_initial_elements[i]);
+                assert_true(*Slice_get(&l_vector_element, i) == l_initial_elements[i]);
             }
 
-            assert_true(l_vector_element.get(3) == l_elements[0]);
-            assert_true(l_vector_element.get(4) == l_elements[2]);
-            assert_true(l_vector_element.get(5) == l_elements[0]);
-            assert_true(l_vector_element.get(6) == l_elements[1]);
-            assert_true(l_vector_element.get(7) == l_elements[2]);
+            assert_true(*Slice_get(&l_vector_element, 3) == l_elements[0]);
+            assert_true(*Slice_get(&l_vector_element, 4) == l_elements[2]);
+            assert_true(*Slice_get(&l_vector_element, 5) == l_elements[0]);
+            assert_true(*Slice_get(&l_vector_element, 6) == l_elements[1]);
+            assert_true(*Slice_get(&l_vector_element, 7) == l_elements[2]);
         }
 
         l_vectorofvector_uimax.element_clear(l_index);
@@ -667,9 +677,9 @@ inline void vectorofvector_test()
             Slice<uimax> l_vector_element = l_vectorofvector_uimax.get(l_index);
             assert_true(l_vector_element.Size == 3);
             assert_true(l_vectorofvector_uimax.get_vectorheader(l_index)->Capacity == 8);
-            assert_true(l_vector_element.get(0) == l_elements[0]);
-            assert_true(l_vector_element.get(1) == l_elements[1]);
-            assert_true(l_vector_element.get(2) == l_elements[2]);
+            assert_true(*Slice_get(&l_vector_element, 0) == l_elements[0]);
+            assert_true(*Slice_get(&l_vector_element, 1) == l_elements[1]);
+            assert_true(*Slice_get(&l_vector_element, 2) == l_elements[2]);
         }
     }
 
@@ -694,9 +704,9 @@ inline void vectorofvector_test()
         uimax l_initial_elements_0[3] = {1, 2, 3};
         uimax l_initial_elements_1[3] = {4, 5, 6};
         {
-            Slice<uimax> l_initial_elements_0_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_0, 3);
+            Slice<uimax> l_initial_elements_0_slice = Slice_build_memory_elementnb<uimax>(l_initial_elements_0, 3);
             l_vectorofvector_uimax.push_back_element(l_initial_elements_0_slice);
-            Slice<uimax> l_initial_elements_1_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_1, 3);
+            Slice<uimax> l_initial_elements_1_slice = Slice_build_memory_elementnb<uimax>(l_initial_elements_1, 3);
             l_vectorofvector_uimax.push_back_element(l_initial_elements_1_slice);
         }
 
@@ -707,8 +717,9 @@ inline void vectorofvector_test()
             assert_true(l_shadow.get(3) == 9);
             assert_true(l_shadow.get(2) == l_initial_elements_0[2]);
 
-            assert_true(l_vectorofvector_uimax.get(1).get(0) == l_initial_elements_1[0]);
-            assert_true(l_vectorofvector_uimax.get(1).get(1) == l_initial_elements_1[1]);
+            Slice<uimax> l_vectorofvector_uimax_element = l_vectorofvector_uimax.get(1);
+            assert_true(*Slice_get(&l_vectorofvector_uimax_element, 0) == l_initial_elements_1[0]);
+            assert_true(*Slice_get(&l_vectorofvector_uimax_element, 1) == l_initial_elements_1[1]);
         }
     }
 
@@ -728,12 +739,12 @@ inline void poolofvector_test()
 
         Slice<uimax> l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 1);
-        assert_true(l_vector_mem.get(0) == l_element);
+        assert_true(*Slice_get(&l_vector_mem, 0) == l_element);
 
         l_pool_of_vector.release_vector(l_vector_0);
 
         PoolOfVectorToken<uimax> l_vector_0_new = l_pool_of_vector.alloc_vector();
-        assert_true(tk_v(l_vector_0_new) == tk_v(l_vector_0));
+        assert_true(token_get_value(l_vector_0_new) == token_get_value(l_vector_0));
         l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 0);
     }
@@ -741,14 +752,14 @@ inline void poolofvector_test()
     // poolofvector_alloc_vector_with_values
     {
         uimax l_elements[3] = {100, 200, 300};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
+        Slice<uimax> l_elements_slice = Slice_build_memory_elementnb<uimax>(l_elements, 3);
         PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector_with_values(l_elements_slice);
 
         Slice<uimax> l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 3);
         for (loop(i, 0, 3))
         {
-            assert_true(l_vector_mem.get(i) == l_elements[i]);
+            assert_true(*Slice_get(&l_vector_mem, i) == l_elements[i]);
         }
     }
 
@@ -792,8 +803,8 @@ inline void poolofvector_test()
 
         Slice<uimax> l_shadow_vector_0_slice = l_shadow_vector_0.to_slice();
         assert_true(l_shadow_vector_0_slice.Size == 2);
-        assert_true(l_shadow_vector_0_slice.get(0) == l_el_0);
-        assert_true(l_shadow_vector_0_slice.get(1) == l_el_1);
+        assert_true(*Slice_get(&l_shadow_vector_0_slice, 0) == l_el_0);
+        assert_true(*Slice_get(&l_shadow_vector_0_slice, 1) == l_el_1);
     }
 
     l_pool_of_vector.free();
@@ -867,15 +878,15 @@ inline void ntree_test()
 {
     NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
 
-    Token(uimax) l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
-    l_uimax_tree.push_value(cast(uimax, 1), l_root);
-    Token(uimax) l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-    Token(uimax) l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+    Token(uimax) l_root = l_uimax_tree.push_root_value((uimax)0);
+    l_uimax_tree.push_value((uimax)1, l_root);
+    Token(uimax) l_2_node = l_uimax_tree.push_value((uimax)2, l_root);
+    Token(uimax) l_3_node = l_uimax_tree.push_value((uimax)3, l_root);
 
-    l_uimax_tree.push_value(cast(uimax, 4), l_2_node);
-    l_uimax_tree.push_value(cast(uimax, 5), l_2_node);
+    l_uimax_tree.push_value((uimax)4, l_2_node);
+    l_uimax_tree.push_value((uimax)5, l_2_node);
 
-    Token(uimax) l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
+    Token(uimax) l_6_node = l_uimax_tree.push_value((uimax)6, l_3_node);
 
     {
         assert_true(l_uimax_tree.Memory.get_size() == 7);
@@ -885,15 +896,15 @@ inline void ntree_test()
         {
             NTree<uimax>::Resolve l_root_element = l_uimax_tree.get(l_root);
             assert_true((*l_root_element.Element) == 0);
-            assert_true(tk_v(l_root_element.Node->parent) == (token_t)-1);
-            assert_true(tk_v(l_root_element.Node->index) == (token_t)0);
-            assert_true(tk_v(l_root_element.Node->childs) != (token_t)-1);
+            assert_true(token_get_value(l_root_element.Node->parent) == (token_t)-1);
+            assert_true(token_get_value(l_root_element.Node->index) == (token_t)0);
+            assert_true(token_get_value(l_root_element.Node->childs) != (token_t)-1);
 
             Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
             assert_true(l_childs_indices.Size == 3);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(tk_bf(uimax, l_childs_indices.get(i))) == i + 1);
+                assert_true(l_uimax_tree.get_value(token_build_from(uimax, *Slice_get(&l_childs_indices, i))) == i + 1);
             }
         }
 
@@ -901,15 +912,15 @@ inline void ntree_test()
         {
             NTree<uimax>::Resolve l_2_element = l_uimax_tree.get(l_2_node);
             assert_true((*l_2_element.Element) == 2);
-            assert_true(tk_v(l_2_element.Node->parent) == (token_t)0);
-            assert_true(tk_v(l_2_element.Node->index) == (token_t)2);
-            assert_true(tk_v(l_2_element.Node->childs) != (token_t)-1);
+            assert_true(token_get_value(l_2_element.Node->parent) == (token_t)0);
+            assert_true(token_get_value(l_2_element.Node->index) == (token_t)2);
+            assert_true(token_get_value(l_2_element.Node->childs) != (token_t)-1);
 
             Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
             assert_true(l_childs_indices.Size == 2);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(tk_bf(uimax, l_childs_indices.get(i))) == i + 4);
+                assert_true(l_uimax_tree.get_value(token_build_from(uimax, *Slice_get(&l_childs_indices, i))) == i + 4);
             }
         }
     }
@@ -918,7 +929,7 @@ inline void ntree_test()
     {
         uimax l_counter = 0;
 
-        l_uimax_tree.traverse3(tk_b(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+        l_uimax_tree.traverse3(token_build(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
             l_counter += 1;
             *(p_node.Element) += 1;
         });
@@ -933,7 +944,7 @@ inline void ntree_test()
 
     // removal test
     {
-        l_uimax_tree.remove_node_recursively(tk_bf(NTreeNode, l_2_node));
+        l_uimax_tree.remove_node_recursively(token_build_from(NTreeNode, l_2_node));
 
         NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
         Slice<Token(NTreeNode)> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
@@ -941,7 +952,7 @@ inline void ntree_test()
 
         {
             uimax l_counter = 0;
-            l_uimax_tree.traverse3(tk_b(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+            l_uimax_tree.traverse3(token_build(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
                 l_counter += 1;
                 *p_node.Element += 1;
             });
@@ -952,21 +963,21 @@ inline void ntree_test()
 
     // add_child
     {
-        l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-        Token(uimax) l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
-        Token(uimax) l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        l_2_node = l_uimax_tree.push_value((uimax)2, l_root);
+        Token(uimax) l_2_1_node = l_uimax_tree.push_value((uimax)3, l_2_node);
+        Token(uimax) l_2_2_node = l_uimax_tree.push_value((uimax)3, l_2_node);
 
         assert_true(l_uimax_tree.add_child(l_3_node, l_2_2_node));
 
-        Slice<Token(NTreeNode)> l_2_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_2_node));
+        Slice<Token(NTreeNode)> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from(NTreeNode, l_2_node));
         assert_true(l_2_node_childs.Size == 1);
-        assert_true(tk_v(l_2_node_childs.get(0)) == tk_v(l_2_1_node));
+        assert_true(token_get_value(*Slice_get(&l_2_node_childs, 0)) == token_get_value(l_2_1_node));
 
-        Slice<Token(NTreeNode)> l_3_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_3_node));
+        Slice<Token(NTreeNode)> l_3_node_childs = l_uimax_tree.get_childs_from_node(token_build_from(NTreeNode, l_3_node));
         assert_true(l_3_node_childs.Size == 2);
-        assert_true(tk_v(l_3_node_childs.get(1)) == tk_v(l_2_2_node));
+        assert_true(token_get_value(*Slice_get(&l_3_node_childs, 1)) == token_get_value(l_2_2_node));
 
-        assert_true(tk_v(l_uimax_tree.get(l_2_2_node).Node->parent) == tk_v(l_3_node));
+        assert_true(token_get_value(l_uimax_tree.get(l_2_2_node).Node->parent) == token_get_value(l_3_node));
     }
 
     l_uimax_tree.free();
@@ -1005,9 +1016,10 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
 
     for (loop(i, 0, p_heap_paged->FreeChunks.varying_vector.get_size()))
     {
+        Slice<SliceIndex> l_heap_paged_freechunks_slice = p_heap_paged->FreeChunks.get(i);
         for (loop(j, 0, p_heap_paged->FreeChunks.get(i).Size))
         {
-            l_calculated_size += p_heap_paged->FreeChunks.get(i).get(j).Size;
+            l_calculated_size += Slice_get(&l_heap_paged_freechunks_slice, j)->Size;
         }
     }
 
@@ -1021,7 +1033,7 @@ inline void assert_heap_memory_alignement(const uimax p_alignment, const HeapA::
 
 inline void sort_test(){{uimax l_sizet_array[10] = {10, 9, 8, 2, 7, 4, 10, 35, 9, 4};
 uimax l_sorted_sizet_array[10] = {35, 10, 10, 9, 9, 8, 7, 4, 4, 2};
-Slice<uimax> l_slice = Slice<uimax>::build_memory_elementnb(l_sizet_array, 10);
+Slice<uimax> l_slice = Slice_build_memory_elementnb<uimax>(l_sizet_array, 10);
 
 struct TestSorter
 {
@@ -1195,7 +1207,7 @@ inline void string_test()
 
     // append
     {
-        l_str.append(slice_int8_build_rawstr("ABC"));
+        l_str.append(Slice_int8_build_rawstr("ABC"));
         assert_true(l_str.get_length() == 3);
         assert_true(l_str.get(0) == 'A');
         assert_true(l_str.get(1) == 'B');
@@ -1203,7 +1215,7 @@ inline void string_test()
     }
 
     {
-        l_str.insert_array_at(slice_int8_build_rawstr("DEA"), 2);
+        l_str.insert_array_at(Slice_int8_build_rawstr("DEA"), 2);
         assert_true(l_str.get_length() == 6);
         assert_true(l_str.get(2) == 'D');
         assert_true(l_str.get(3) == 'E');
@@ -1214,23 +1226,23 @@ inline void string_test()
     {
         Slice<int8> l_slice = l_str.to_slice();
         assert_true(l_slice.Size == 6);
-        assert_true(l_slice.get(1) == 'B');
-        assert_true(l_slice.get(5) == 'C');
+        assert_true(*Slice_get(&l_slice, 1) == 'B');
+        assert_true(*Slice_get(&l_slice, 5) == 'C');
     }
 
     l_str.free();
     l_str = String::allocate(l_initial_string_capacity);
-    l_str.append(slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch."));
+    l_str.append(Slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch."));
 
     // find
     {
         uimax l_index;
-        assert_true(l_str.to_slice().find(slice_int8_build_rawstr("efor"), &l_index) == 1);
+        assert_true(l_str.to_slice().find(Slice_int8_build_rawstr("efor"), &l_index) == 1);
         assert_true(l_index == 27);
 
         // no found
         l_index = 0;
-        assert_true(l_str.to_slice().find(slice_int8_build_rawstr("eforc"), &l_index) == 0);
+        assert_true(l_str.to_slice().find(Slice_int8_build_rawstr("eforc"), &l_index) == 0);
     }
 
     l_str.free();
@@ -1238,10 +1250,10 @@ inline void string_test()
 
 inline void fromstring_test()
 {
-    assert_true(FromString::afloat32(slice_int8_build_rawstr("245.689")) == 245.689f);
-    assert_true(FromString::afloat32(slice_int8_build_rawstr("-245.689")) == -245.689f);
-    assert_true(FromString::afloat32(slice_int8_build_rawstr("245689.0")) == 245689.f);
-    assert_true(FromString::afloat32(slice_int8_build_rawstr("-245689.0")) == -245689.f);
+    assert_true(FromString::afloat32(Slice_int8_build_rawstr("245.689")) == 245.689f);
+    assert_true(FromString::afloat32(Slice_int8_build_rawstr("-245.689")) == -245.689f);
+    assert_true(FromString::afloat32(Slice_int8_build_rawstr("245689.0")) == 245689.f);
+    assert_true(FromString::afloat32(Slice_int8_build_rawstr("-245689.0")) == -245689.f);
 };
 
 inline void deserialize_json_test(){{
@@ -1255,7 +1267,7 @@ inline void deserialize_json_test(){{
         ]
     });
 
-String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
 JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
 JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
@@ -1301,7 +1313,7 @@ l_json_str.free();
     const int8* l_json = "{"
                          "\"nodes\":[]}";
 
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
@@ -1323,7 +1335,7 @@ l_json_str.free();
                          "\"z\" : \"16.705424\""
                          "}";
 
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
@@ -1347,7 +1359,7 @@ l_json_str.free();
                          "\"z\" : \"16.705424\""
                          "}";
 
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
     l_deserialized.next_field("x");
     assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
@@ -1364,7 +1376,7 @@ l_json_str.free();
     const int8* l_json =
         "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
 
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
@@ -1399,7 +1411,7 @@ l_json_str.free();
 // array with values
 {
     const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
@@ -1422,7 +1434,7 @@ l_json_str.free();
 {
     const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
 
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_json_str = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 
     assert_true(l_deserialized.next_field("field"));
@@ -1492,46 +1504,46 @@ inline void serialize_json_test()
                          "}";
 
     int8 l_float_buffer[ToString::float32str_size];
-    Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
+    Slice<int8> l_float_buffer_slice = Slice_build_asint8_memory_elementnb<int8>(l_float_buffer, ToString::float32str_size);
 
     JSONSerializer l_serializer = JSONSerializer::allocate_default();
     l_serializer.start();
 
-    l_serializer.start_object(slice_int8_build_rawstr("local_position"));
-    l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(16.55f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(16.65f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(16.75f, l_float_buffer_slice));
+    l_serializer.start_object(Slice_int8_build_rawstr("local_position"));
+    l_serializer.push_field(Slice_int8_build_rawstr("x"), ToString::afloat32(16.55f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("y"), ToString::afloat32(16.65f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("z"), ToString::afloat32(16.75f, l_float_buffer_slice));
     l_serializer.end_object();
 
-    l_serializer.start_object(slice_int8_build_rawstr("local_position2"));
-    l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(17.55f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(17.65f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(17.75f, l_float_buffer_slice));
+    l_serializer.start_object(Slice_int8_build_rawstr("local_position2"));
+    l_serializer.push_field(Slice_int8_build_rawstr("x"), ToString::afloat32(17.55f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("y"), ToString::afloat32(17.65f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("z"), ToString::afloat32(17.75f, l_float_buffer_slice));
     l_serializer.end_object();
 
-    l_serializer.start_array(slice_int8_build_rawstr("nodes"));
-
-    l_serializer.start_object();
-    l_serializer.start_object(slice_int8_build_rawstr("local_position"));
-    l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(10.55f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(10.65f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(10.75f, l_float_buffer_slice));
-    l_serializer.end_object();
-    l_serializer.end_object();
+    l_serializer.start_array(Slice_int8_build_rawstr("nodes"));
 
     l_serializer.start_object();
-    l_serializer.start_object(slice_int8_build_rawstr("local_position"));
-    l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(11.55f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(11.65f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(11.75f, l_float_buffer_slice));
+    l_serializer.start_object(Slice_int8_build_rawstr("local_position"));
+    l_serializer.push_field(Slice_int8_build_rawstr("x"), ToString::afloat32(10.55f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("y"), ToString::afloat32(10.65f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("z"), ToString::afloat32(10.75f, l_float_buffer_slice));
     l_serializer.end_object();
     l_serializer.end_object();
 
     l_serializer.start_object();
-    l_serializer.start_object(slice_int8_build_rawstr("local_position"));
-    l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(12.55f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(12.65f, l_float_buffer_slice));
-    l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(12.75f, l_float_buffer_slice));
+    l_serializer.start_object(Slice_int8_build_rawstr("local_position"));
+    l_serializer.push_field(Slice_int8_build_rawstr("x"), ToString::afloat32(11.55f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("y"), ToString::afloat32(11.65f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("z"), ToString::afloat32(11.75f, l_float_buffer_slice));
+    l_serializer.end_object();
+    l_serializer.end_object();
+
+    l_serializer.start_object();
+    l_serializer.start_object(Slice_int8_build_rawstr("local_position"));
+    l_serializer.push_field(Slice_int8_build_rawstr("x"), ToString::afloat32(12.55f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("y"), ToString::afloat32(12.65f, l_float_buffer_slice));
+    l_serializer.push_field(Slice_int8_build_rawstr("z"), ToString::afloat32(12.75f, l_float_buffer_slice));
     l_serializer.end_object();
     l_serializer.end_object();
 
@@ -1540,7 +1552,7 @@ inline void serialize_json_test()
     l_serializer.end();
 
     JSONUtil::remove_spaces(l_serializer.output.Memory);
-    String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    String l_compared_json = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONUtil::remove_spaces(l_compared_json.Memory);
 
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
@@ -1556,10 +1568,11 @@ inline void serialize_deserialize_binary_test()
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
 
-    BinarySerializer::slice(&l_binary_data, l_slice.build_asint8());
+    BinarySerializer::slice(&l_binary_data, Slice_build_asint8(&l_slice));
 
     BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
-    Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
+    Slice<int8> tmp_l_deserializer_slice = l_deserializer.slice();
+    Slice<uimax> l_slice_deserialized = Slice_cast<uimax>(&tmp_l_deserializer_slice);
 
     assert_true(l_slice.Size == l_slice_deserialized.Size);
     assert_true(l_slice.compare(l_slice_deserialized));
@@ -1569,8 +1582,8 @@ inline void serialize_deserialize_binary_test()
 
 inline void file_test()
 {
-    String l_file_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_file_path.append(slice_int8_build_rawstr("file_test.txt"));
+    String l_file_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_file_path.append(Slice_int8_build_rawstr("file_test.txt"));
 
     {
         File l_tmp_file = File::create_or_open(l_file_path.to_slice());
@@ -1597,8 +1610,8 @@ inline void file_test()
 
 inline void database_test()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("asset.db"));
+    String l_database_path = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+    l_database_path.append(Slice_int8_build_rawstr("asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase();
@@ -1608,7 +1621,7 @@ inline void database_test()
     {
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
 
-        SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY);)));
+        SQLiteQuery l_query = SQLiteQuery::allocate(l_connection, Slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY);)));
 
         SQliteQueryExecution::execute_sync(l_connection, l_query.statement, []() {
         });
@@ -1628,7 +1641,7 @@ inline void database_test()
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_database_path.to_slice());
 
         SQLiteQuery l_table_creation_query =
-            SQLiteQuery::allocate(l_connection, slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY, num integer, txt text, data blob);)));
+            SQLiteQuery::allocate(l_connection, Slice_int8_build_rawstr(MULTILINE(create table if not exists test(id integer PRIMARY KEY, num integer, txt text, data blob);)));
 
         SQliteQueryExecution::execute_sync(l_connection, l_table_creation_query.statement, []() {
         });
@@ -1637,7 +1650,7 @@ inline void database_test()
         SliceN<SQLiteQueryPrimitiveTypes, 4> l_parameter_layout_arr = {SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT,
                                                                        SQLiteQueryPrimitiveTypes::BLOB};
         SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(slice_from_slicen(&l_parameter_layout_arr));
-        SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
+        SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, Slice_int8_build_rawstr(
 				MULTILINE(
 						insert into test(id, num, txt, data)
 						values( ?, ?, ?, ?);
@@ -1648,10 +1661,10 @@ inline void database_test()
         l_binder.bind_sqlitepreparedquery(l_insersion_query, l_connection);
         l_binder.bind_int64(10, l_connection);
         l_binder.bind_int64(20, l_connection);
-        l_binder.bind_text(slice_int8_build_rawstr("test"), l_connection);
+        l_binder.bind_text(Slice_int8_build_rawstr("test"), l_connection);
 
         uimax l_value = 30;
-        l_binder.bind_blob(Slice<uimax>::build_asint8_memory_singleelement(&l_value), l_connection);
+        l_binder.bind_blob(Slice_build_asint8_memory_singleelement<uimax>(&l_value), l_connection);
 
         SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []() {
         });
@@ -1661,7 +1674,7 @@ inline void database_test()
         SliceN<SQLiteQueryPrimitiveTypes, 3> l_return_layout_arr =
             SliceN<SQLiteQueryPrimitiveTypes, 3>{SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB};
         SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(slice_from_slicen(&l_return_layout_arr));
-        SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, slice_int8_build_rawstr(
+        SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, Slice_int8_build_rawstr(
 				MULTILINE(
 						select num, txt, data from test where test.id = ?;
 				)
@@ -1682,8 +1695,8 @@ inline void database_test()
         });
 
         assert_true(l_retrieved_id == 20);
-        assert_true(l_retrieved_str.slice.compare(slice_int8_build_rawstr("test")));
-        assert_true(l_retrieved_value.slice.compare(Slice<uimax>::build_asint8_memory_singleelement(&l_value)));
+        assert_true(l_retrieved_str.slice.compare(Slice_int8_build_rawstr("test")));
+        assert_true(l_retrieved_value.slice.compare(Slice_build_asint8_memory_singleelement<uimax>(&l_value)));
 
         l_retrieved_str.free();
         l_retrieved_value.free();
@@ -1698,8 +1711,8 @@ inline void database_test()
     // Wrong file silent
 
     {
-        String l_non_db_file = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-        l_non_db_file.append(slice_int8_build_rawstr("non_db_file.txt"));
+        String l_non_db_file = String::allocate_elements(Slice_int8_build_rawstr(ASSET_FOLDER_PATH));
+        l_non_db_file.append(Slice_int8_build_rawstr("non_db_file.txt"));
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_non_db_file.to_slice());
         assert_true(DatabaseConnection_is_valid_silent(l_connection) == 0);
         l_connection.free();
@@ -1714,10 +1727,10 @@ inline void thread_test()
         inline static int8 main(const Slice<int8*>& p_args)
         {
             assert_true(p_args.Size == 2);
-            assert_true(*(int8*)p_args.get(0) == 0);
-            assert_true(*(int32*)p_args.get(1) == 5);
+            assert_true(**Slice_get(&p_args, 0) == 0);
+            assert_true(**Slice_get(&p_args, 1) == 5);
 
-            *(int8*)p_args.get(0) = 1;
+            **Slice_get(&p_args, 0) = 1;
 
             return 0;
         };
@@ -1746,14 +1759,14 @@ inline void barrier_test()
 
         inline static int8 main(const Slice<int8*>& p_args)
         {
-            thread_1* l_thread = (thread_1*)p_args.get(0);
-            l_thread->barrier->ask_and_wait_for_sync_1();
+            thread_1* l_thread = (thread_1*)*Slice_get(&p_args, 0);
+            BarrierTwoStep_ask_and_wait_for_sync_1(l_thread->barrier);
             l_thread->order_result->push_back_element(1);
-            l_thread->barrier->notify_sync_2();
+            BarrierTwoStep_notify_sync_2(l_thread->barrier);
 
-            l_thread->barrier->ask_and_wait_for_sync_1();
+            BarrierTwoStep_ask_and_wait_for_sync_1(l_thread->barrier);
             l_thread->order_result->push_back_element(3);
-            l_thread->barrier->notify_sync_2();
+            BarrierTwoStep_notify_sync_2(l_thread->barrier);
 
             return 0;
         };
@@ -1766,19 +1779,19 @@ inline void barrier_test()
 
         inline static int8 main(const Slice<int8*>& p_args)
         {
-            thread_2* l_thread = (thread_2*)p_args.get(0);
+            thread_2* l_thread = (thread_2*)*Slice_get(&p_args, 0);
 
-            while (l_thread->barrier->is_opened())
+            while (BarrierTwoStep_is_opened(l_thread->barrier))
             {
             };
 
             l_thread->order_result->push_back_element(0);
-            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
+            BarrierTwoStep_notify_sync_1_and_wait_for_sync_2(l_thread->barrier);
             l_thread->order_result->push_back_element(2);
-            while (l_thread->barrier->is_opened())
+            while (BarrierTwoStep_is_opened(l_thread->barrier))
             {
             };
-            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
+            BarrierTwoStep_notify_sync_1_and_wait_for_sync_2(l_thread->barrier);
             l_thread->order_result->push_back_element(4);
 
             return 0;
@@ -1806,7 +1819,7 @@ inline void barrier_test()
 
 inline void native_window()
 {
-    Token(Window) l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    Token(Window) l_window = WindowAllocator::allocate(300, 300, Slice_int8_build_rawstr("TEST"));
     Window& l_allocated_window = WindowAllocator::get_window(l_window);
     assert_true(!l_allocated_window.is_closing);
 

@@ -25,7 +25,7 @@ struct ImgCompiler
     inline static void write_to_image(const Slice<int8>& p_path, const uint32 p_width, const uint32 p_height, const int8 p_channel_number, const Slice<int8>& p_pixels)
     {
 #if __DEBUG
-        p_path.assert_null_terminated();
+        Slice_assert_null_terminated(&p_path);
 #endif
         stbi_write_png(p_path.Begin, p_width, p_height, p_channel_number, p_pixels.Begin, p_width * p_channel_number * sizeof(int8));
     };
@@ -33,7 +33,7 @@ struct ImgCompiler
     inline static Span<int8> read_image(const Slice<int8>& p_path)
     {
 #if __DEBUG
-        p_path.assert_null_terminated();
+        Slice_assert_null_terminated(&p_path);
 #endif
 
         Span<int8> l_out;

@@ -15,6 +15,8 @@ enable_language(CXX)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
+else()
+    add_link_options(/NODEFAULTLIB:library)
 endif ()
 
 

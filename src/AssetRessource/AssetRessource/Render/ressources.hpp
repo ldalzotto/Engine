@@ -31,12 +31,12 @@ struct ShaderModuleRessource
 
     inline static ShaderModuleRessource build_inline_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(ShaderModule)};
+        return ShaderModuleRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default(ShaderModule)};
     };
 
     inline static ShaderModuleRessource build_database_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(ShaderModule)};
+        return ShaderModuleRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), token_build_default(ShaderModule)};
     };
 
     struct Asset
@@ -104,12 +104,12 @@ struct MeshRessource
 
     inline static MeshRessource build_inline_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Mesh)};
+        return MeshRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default(Mesh)};
     };
 
     inline static MeshRessource build_database_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), tk_bd(Mesh)};
+        return MeshRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), token_build_default(Mesh)};
     };
 
     struct Asset
@@ -130,8 +130,10 @@ struct MeshRessource
             {
                 Value l_value;
                 BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
-                l_value.initial_vertices = slice_cast<Vertex>(l_deserializer.slice());
-                l_value.initial_indices = slice_cast<uint32>(l_deserializer.slice());
+                Slice<int8> tmp_deserialized_slice = l_deserializer.slice();
+                l_value.initial_vertices = Slice_cast<Vertex>(&tmp_deserialized_slice);
+                tmp_deserialized_slice = l_deserializer.slice();
+                l_value.initial_indices = Slice_cast<uint32>(&tmp_deserialized_slice);
                 return l_value;
             };
         };
@@ -144,8 +146,8 @@ struct MeshRessource
         inline static Asset allocate_from_values(const Value& p_values)
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
-            BinarySerializer::slice(&l_binary, p_values.initial_vertices.build_asint8());
-            BinarySerializer::slice(&l_binary, p_values.initial_indices.build_asint8());
+            BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.initial_vertices));
+            BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.initial_indices));
             return build_from_binary(l_binary.Memory);
         };
     };
@@ -192,7 +194,8 @@ struct ShaderRessource
 
     inline static ShaderRessource build_from_id(const hash_t p_id)
     {
-        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(ShaderIndex), Dependencies{tk_bd(ShaderModuleRessource), tk_bd(ShaderModuleRessource)}};
+        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default(ShaderIndex),
+                               Dependencies{token_build_default(ShaderModuleRessource), token_build_default(ShaderModuleRessource)}};
     };
 
     struct Asset
@@ -209,7 +212,8 @@ struct ShaderRessource
             {
                 Value l_value;
                 BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_asset.allocated_binary.slice);
-                l_value.specific_parameters = slice_cast<ShaderLayoutParameterType>(l_deserializer.slice());
+                Slice<int8> l_deserialized_slice = l_deserializer.slice();
+                l_value.specific_parameters = Slice_cast<ShaderLayoutParameterType>(&l_deserialized_slice);
                 l_value.execution_order = *l_deserializer.type<uimax>();
                 l_value.shader_configuration = *l_deserializer.type<ShaderConfiguration>();
                 return l_value;
@@ -224,7 +228,7 @@ struct ShaderRessource
         inline static Asset allocate_from_values(const Value& p_values)
         {
             Vector<int8> l_binary = Vector<int8>::allocate(0);
-            BinarySerializer::slice(&l_binary, p_values.specific_parameters.build_asint8());
+            BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.specific_parameters));
             BinarySerializer::type(&l_binary, p_values.execution_order);
             BinarySerializer::type(&l_binary, p_values.shader_configuration);
             return build_from_binary(l_binary.Memory);
@@ -395,7 +399,7 @@ struct MaterialRessource
 
     static MaterialRessource build_from_id(const hash_t p_id)
     {
-        return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), tk_bd(Material)};
+        return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default(Material)};
     };
 
     struct Asset
@@ -418,7 +422,9 @@ struct MaterialRessource
 #if __DEBUG
                     assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::TEXTURE_GPU);
 #endif
-                    return slice_cast<hash_t>(this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type))).Begin;
+                    Slice<int8> l_parameter_slice = this->parameters.get_element(p_index);
+                    Slice<int8> l_parameter_slice_offsetted = Slice_slide_rv(&l_parameter_slice, sizeof(ShaderParameter::Type));
+                    return Slice_cast<hash_t>(&l_parameter_slice_offsetted).Begin;
                 };
 
                 inline Slice<int8> get_parameter_uniform_host_value(const uimax p_index)
@@ -426,19 +432,20 @@ struct MaterialRessource
 #if __DEBUG
                     assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::UNIFORM_HOST);
 #endif
-                    return this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type));
+                    Slice<int8> l_parameter_slice = this->parameters.get_element(p_index);
+                    return Slice_slide_rv(&l_parameter_slice, sizeof(ShaderParameter::Type));
                 };
 
                 inline static void add_parameter_texture(VaryingVector& p_parameters, const hash_t p_texture_hash)
                 {
                     ShaderParameter::Type l_type = ShaderParameter::Type::TEXTURE_GPU;
-                    p_parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_type), Slice<hash_t>::build_asint8_memory_singleelement(&p_texture_hash));
+                    p_parameters.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_type), Slice_build_asint8_memory_singleelement<hash_t>(&p_texture_hash));
                 };
 
                 inline static void add_parameter_hostbuffer(VaryingVector& p_parameters, const Slice<int8>& p_buffer)
                 {
                     ShaderParameter::Type l_type = ShaderParameter::Type::UNIFORM_HOST;
-                    p_parameters.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_type), p_buffer);
+                    p_parameters.push_back_2(Slice_build_asint8_memory_singleelement<ShaderParameter::Type>(&l_type), p_buffer);
                 };
             };
 
@@ -486,7 +493,8 @@ struct MaterialRessource
                 Value l_value;
                 l_value.shader = *p_deserializer.type<hash_t>();
                 l_value.shader_dependencies = ShaderRessource::AssetDependencies::Value::build_from_binarydeserializer(p_deserializer);
-                l_value.textures = slice_cast<hash_t>(p_deserializer.slice());
+                Slice<int8> l_serialized_slice = p_deserializer.slice();
+                l_value.textures = Slice_cast<hash_t>(&l_serialized_slice);
                 return l_value;
             };
 
@@ -500,7 +508,7 @@ struct MaterialRessource
             {
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);
-                BinarySerializer::slice(in_out_buffer, this->textures.build_asint8());
+                BinarySerializer::slice(in_out_buffer, Slice_build_asint8(&this->textures));
             };
         };
 

@@ -43,7 +43,7 @@ struct HeapMemory
     {
         HeapA::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
-        *out_chunk = Slice<int8>::build_memory_elementnb(&this->Memory.Memory[l_heap_allocated_element.Offset], p_element_size);
+        *out_chunk = Slice_build_memory_elementnb<int8>(&this->Memory.Memory[l_heap_allocated_element.Offset], p_element_size);
         return l_heap_allocated_element.token;
     };
 
@@ -54,7 +54,7 @@ struct HeapMemory
 
     template <class ELementType> inline Token(SliceIndex) allocate_element_typed(const ELementType* p_element)
     {
-        return this->allocate_element(Slice<ELementType>::build_asint8_memory_singleelement(p_element));
+        return this->allocate_element(Slice_build_asint8_memory_singleelement<ELementType>(p_element));
     };
 
     template <class ELementType> inline Token(SliceIndex) allocate_element_typed(const ELementType p_element)
@@ -70,12 +70,13 @@ struct HeapMemory
     inline Slice<int8> get(const Token(SliceIndex) p_chunk)
     {
         SliceIndex* l_chunk_slice = this->_Heap.get(p_chunk);
-        return Slice<int8>::build_memory_offset_elementnb(this->Memory.Memory, l_chunk_slice->Begin, l_chunk_slice->Size);
+        return Slice_build_memory_offset_elementnb<int8>(this->Memory.Memory, l_chunk_slice->Begin, l_chunk_slice->Size);
     };
 
     template <class ElementType> inline ElementType* get_typed(const Token(SliceIndex) p_chunk)
     {
-        return slice_cast_singleelement<ElementType>(this->get(p_chunk));
+        Slice<int8> l_heap_chunk = this->get(p_chunk);
+        return Slice_cast_singleelement<ElementType>(&l_heap_chunk);
     };
 
   private:

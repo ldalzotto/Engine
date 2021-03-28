@@ -31,7 +31,7 @@ inline void add_remove_setparent_node()
 
     Token(Node) l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
     {
-        assert_true(tk_v(l_node_1) == 1);
+        assert_true(token_get_value(l_node_1) == 1);
 
         NodeEntry l_node_1_value = l_scene.get_node(l_node_1);
         assert_true(l_node_1_value.has_parent() == 1);
@@ -46,8 +46,8 @@ inline void add_remove_setparent_node()
     {
         NodeEntry l_node_2_value = l_scene.get_node(l_node_2);
         NodeEntry l_node_3_value = l_scene.get_node(l_node_3);
-        assert_true(tk_eq(l_scene.get_node_parent(l_node_2_value).Node->index, l_node_1));
-        assert_true(tk_eq(l_scene.get_node_parent(l_node_3_value).Node->index, l_node_1));
+        assert_true(token_equals(l_scene.get_node_parent(l_node_2_value).Node->index, l_node_1));
+        assert_true(token_equals(l_scene.get_node_parent(l_node_3_value).Node->index, l_node_1));
         assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_1)).Size == 2);
     }
 
@@ -64,7 +64,7 @@ inline void add_remove_setparent_node()
         l_scene.tree.add_child(l_scene.get_node(l_node_1), l_scene.get_node(l_node_3));
         assert_true(l_scene.get_node(l_node_3).Element->state.haschanged_thisframe == 1);
         assert_true(l_scene.get_node(l_node_5).Element->state.haschanged_thisframe == 1);
-        assert_true(tk_eq(l_scene.get_node(l_node_3).Node->parent, l_scene.get_node(l_node_1).Node->index));
+        assert_true(token_equals(l_scene.get_node(l_node_3).Node->parent, l_scene.get_node(l_node_1).Node->index));
     }
 
     // remove node
@@ -110,7 +110,7 @@ inline void add_remove_component()
         // One component removed event have been generated
         assert_true(l_scene.component_removed_events.Size == 1);
         assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
-        assert_true(tk_eq(l_scene.component_removed_events.get(0).node, l_node_1));
+        assert_true(token_equals(l_scene.component_removed_events.get(0).node, l_node_1));
     }
 
     {
@@ -136,9 +136,9 @@ inline void add_remove_component()
 
         assert_true(l_scene.component_removed_events.Size == 2);
         assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
-        assert_true(tk_eq(l_scene.component_removed_events.get(0).node, l_node_1));
+        assert_true(token_equals(l_scene.component_removed_events.get(0).node, l_node_1));
         assert_true(l_scene.component_removed_events.get(1).value.type == ComponentTest2::Type);
-        assert_true(tk_eq(l_scene.component_removed_events.get(1).node, l_node_1));
+        assert_true(token_equals(l_scene.component_removed_events.get(1).node, l_node_1));
 
         l_scene.step();
     }
@@ -215,7 +215,7 @@ inline void math_hierarchy()
 {
     Scene l_scene = Scene::allocate_default();
 
-    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
+    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build(Node, 0));
     Token(Node) l_node_2 = l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
     Token(Node) l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
 
@@ -347,36 +347,36 @@ inline void json_deserialization()
 {
 #if 1
     String l_scene_json_string = String::allocate(0);
-    l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
+    l_scene_json_string.append(Slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
     JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string.Memory);
     SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
     SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
 
     // we check if the tree structure is respected
     {
-        NTree<transform>::Resolve l_first = l_scene_asset_tree.nodes.get(tk_b(transform, 1));
+        NTree<transform>::Resolve l_first = l_scene_asset_tree.nodes.get(token_build(transform, 1));
         assert_true(l_first.Element->operator==(transform{v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f}}));
         Slice<Token(SliceIndex)> l_first_components = l_scene_asset_tree.get_components(l_first);
         assert_true(l_first_components.Size == 1);
-        CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(l_first_components.get(0));
+        CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(*Slice_get(&l_first_components, 0));
         assert_true(l_camera_component->i0 == 10.0f);
         assert_true(l_camera_component->i1 == 20.0f);
         assert_true(l_scene_asset_tree.nodes.get_childs(l_first.Node->childs).Size == 0);
     }
 
     {
-        NTree<transform>::Resolve l_second = l_scene_asset_tree.nodes.get(tk_b(transform, 2));
+        NTree<transform>::Resolve l_second = l_scene_asset_tree.nodes.get(token_build(transform, 2));
         assert_true(l_second.Element->operator==(transform{v3f{2.0f, 2.0f, 2.0f}, quat{2.0f, 2.0f, 2.0f, 2.0f}, v3f{2.0f, 2.0f, 2.0f}}));
         Slice<Token(SliceIndex)> l_second_components = l_scene_asset_tree.get_components(l_second);
         assert_true(l_second_components.Size == 1);
-        CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(l_second_components.get(0));
+        CameraTestComponent* l_camera_component = l_scene_asset_tree.get_component_typed<CameraTestComponent>(*Slice_get(&l_second_components, 0));
         assert_true(l_camera_component->i0 == 20.0f);
         assert_true(l_camera_component->i1 == 30.0f);
         assert_true(l_scene_asset_tree.nodes.get_childs(l_second.Node->childs).Size == 2);
     }
 
     {
-        NTree<transform>::Resolve l_2_1 = l_scene_asset_tree.nodes.get(tk_b(transform, 3));
+        NTree<transform>::Resolve l_2_1 = l_scene_asset_tree.nodes.get(token_build(transform, 3));
         assert_true(l_2_1.Element->operator==(transform{v3f{3.0f, 3.0f, 3.0f}, quat{3.0f, 3.0f, 3.0f, 3.0f}, v3f{3.0f, 3.0f, 3.0f}}));
         Slice<Token(SliceIndex)> l_2_1_components = l_scene_asset_tree.get_components(l_2_1);
         assert_true(l_2_1_components.Size == 0);
@@ -384,11 +384,11 @@ inline void json_deserialization()
     }
 
     {
-        NTree<transform>::Resolve l_2_1_1 = l_scene_asset_tree.nodes.get(tk_b(transform, 4));
+        NTree<transform>::Resolve l_2_1_1 = l_scene_asset_tree.nodes.get(token_build(transform, 4));
         assert_true(l_2_1_1.Element->operator==(transform{v3f{4.0f, 4.0f, 4.0f}, quat{4.0f, 4.0f, 4.0f, 4.0f}, v3f{4.0f, 4.0f, 4.0f}}));
         Slice<Token(SliceIndex)> l_2_1_1_components = l_scene_asset_tree.get_components(l_2_1_1);
         assert_true(l_2_1_1_components.Size == 1);
-        MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(l_2_1_1_components.get(0));
+        MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(*Slice_get(&l_2_1_1_components, 0));
         assert_true(l_mesh_renderer_test_component->i0 == 40.0f);
         assert_true(l_mesh_renderer_test_component->i1 == 60.0f);
         assert_true(l_mesh_renderer_test_component->i2 == 80.0f);
@@ -396,11 +396,11 @@ inline void json_deserialization()
     }
 
     {
-        NTree<transform>::Resolve l_2_2 = l_scene_asset_tree.nodes.get(tk_b(transform, 5));
+        NTree<transform>::Resolve l_2_2 = l_scene_asset_tree.nodes.get(token_build(transform, 5));
         assert_true(l_2_2.Element->operator==(transform{v3f{5.0f, 5.0f, 5.0f}, quat{5.0f, 5.0f, 5.0f, 5.0f}, v3f{5.0f, 5.0f, 5.0f}}));
         Slice<Token(SliceIndex)> l_2_2_components = l_scene_asset_tree.get_components(l_2_2);
         assert_true(l_2_2_components.Size == 1);
-        MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(l_2_2_components.get(0));
+        MeshRendererTestComponent* l_mesh_renderer_test_component = l_scene_asset_tree.get_component_typed<MeshRendererTestComponent>(*Slice_get(&l_2_2_components, 0));
         assert_true(l_mesh_renderer_test_component->i0 == 50.0f);
         assert_true(l_mesh_renderer_test_component->i1 == 70.0f);
         assert_true(l_mesh_renderer_test_component->i2 == 90.0f);
@@ -408,7 +408,7 @@ inline void json_deserialization()
     }
 
     int16 l_counter = 0;
-    l_scene_asset_tree.nodes.traverse3(tk_b(NTreeNode, 0), [&l_counter](const auto&) { l_counter += 1; });
+    l_scene_asset_tree.nodes.traverse3(token_build(NTreeNode, 0), [&l_counter](const auto&) { l_counter += 1; });
 
     assert_true(l_counter == 6);
 
@@ -421,14 +421,14 @@ inline void scenetreeasset_merge()
 {
 #if 1
     String l_scene_json_string = String::allocate(0);
-    l_scene_json_string.append(slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
+    l_scene_json_string.append(Slice_int8_build_rawstr(SceneJSONTestAsset::scene_json));
     JSONDeserializer l_serailizer = JSONDeserializer::start(l_scene_json_string.Memory);
     SceneAsset l_scene_asset_tree = SceneAsset::allocate_default();
     SceneJSON_TO_SceneAsset::json_to_SceneAsset<SceneJSONTestAsset>(l_serailizer, &l_scene_asset_tree);
 
     Scene l_scene = Scene::allocate_default();
 
-    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
+    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build(Node, 0));
     l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
     Token(Node) l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
 
@@ -444,21 +444,22 @@ inline void scenetreeasset_merge()
 
     assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 1);
 
-    Token(Node) l_sub_tree_root = l_scene.get_node_childs(l_scene.get_node(l_node_3)).get(0);
+    Slice<Token(Node)> l_node_3_childs = l_scene.get_node_childs(l_scene.get_node(l_node_3));
+    Token(Node) l_sub_tree_root = *Slice_get(&l_node_3_childs, 0);
     Slice<Token(Node)> l_sub_tree_root_childs = l_scene.get_node_childs(l_scene.get_node(l_sub_tree_root));
     {
-        NodeEntry l_first = l_scene.get_node(l_sub_tree_root_childs.get(0));
+        NodeEntry l_first = l_scene.get_node(*Slice_get(&l_sub_tree_root_childs, 0));
         assert_true(l_first.Element->local_transform == transform{v3f{1.0f, 1.0f, 1.0f}, quat{1.0f, 1.0f, 1.0f, 1.0f}, v3f{1.0f, 1.0f, 1.0f}});
-        NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(tk_bf(Node, l_first.Node->index));
+        NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(token_build_from(Node, l_first.Node->index));
         assert_true(l_camera_component->type == CameraTestComponent::Type);
         assert_true(l_camera_component->resource == 0);
         assert_true(l_scene.get_node_childs(l_first).Size == 0);
     }
 
     {
-        NodeEntry l_second = l_scene.get_node(l_sub_tree_root_childs.get(1));
+        NodeEntry l_second = l_scene.get_node(*Slice_get(&l_sub_tree_root_childs, 1));
         assert_true(l_second.Element->local_transform == transform{v3f{2.0f, 2.0f, 2.0f}, quat{2.0f, 2.0f, 2.0f, 2.0f}, v3f{2.0f, 2.0f, 2.0f}});
-        NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(tk_bf(Node, l_second.Node->index));
+        NodeComponent* l_camera_component = l_scene.get_node_component_typed<CameraTestComponent>(token_build_from(Node, l_second.Node->index));
         assert_true(l_camera_component->type == CameraTestComponent::Type);
         assert_true(l_camera_component->resource == 1);
 
@@ -466,16 +467,16 @@ inline void scenetreeasset_merge()
         assert_true(l_second_childs.Size == 2);
 
         {
-            NodeEntry l_2_1 = l_scene.get_node(l_second_childs.get(0));
+            NodeEntry l_2_1 = l_scene.get_node(*Slice_get(&l_second_childs, 0));
             assert_true(l_2_1.Element->local_transform == transform{v3f{3.0f, 3.0f, 3.0f}, quat{3.0f, 3.0f, 3.0f, 3.0f}, v3f{3.0f, 3.0f, 3.0f}});
 
             Slice<Token(Node)> l_2_1_childs = l_scene.get_node_childs(l_2_1);
             assert_true(l_2_1_childs.Size == 1);
 
             {
-                NodeEntry l_2_1_1 = l_scene.get_node(l_2_1_childs.get(0));
+                NodeEntry l_2_1_1 = l_scene.get_node(*Slice_get(&l_2_1_childs, 0));
                 assert_true(l_2_1_1.Element->local_transform == transform{v3f{4.0f, 4.0f, 4.0f}, quat{4.0f, 4.0f, 4.0f, 4.0f}, v3f{4.0f, 4.0f, 4.0f}});
-                NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(tk_bf(Node, l_2_1_1.Node->index));
+                NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(token_build_from(Node, l_2_1_1.Node->index));
                 assert_true(l_camera_component->type == MeshRendererTestComponent::Type);
                 assert_true(l_camera_component->resource == 2);
                 assert_true(l_scene.get_node_childs(l_2_1_1).Size == 0);
@@ -483,9 +484,9 @@ inline void scenetreeasset_merge()
         }
 
         {
-            NodeEntry l_2_2 = l_scene.get_node(l_second_childs.get(1));
+            NodeEntry l_2_2 = l_scene.get_node(*Slice_get(&l_second_childs, 1));
             assert_true(l_2_2.Element->local_transform == transform{v3f{5.0f, 5.0f, 5.0f}, quat{5.0f, 5.0f, 5.0f, 5.0f}, v3f{5.0f, 5.0f, 5.0f}});
-            NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(tk_bf(Node, l_2_2.Node->index));
+            NodeComponent* l_camera_component = l_scene.get_node_component_typed<MeshRendererTestComponent>(token_build_from(Node, l_2_2.Node->index));
             assert_true(l_camera_component->type == MeshRendererTestComponent::Type);
             assert_true(l_camera_component->resource == 3);
             assert_true(l_scene.get_node_childs(l_2_2).Size == 0);
@@ -504,7 +505,7 @@ inline void scene_to_sceneasset()
 {
     Scene l_scene = Scene::allocate_default();
 
-    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, tk_b(Node, 0));
+    Token(Node) l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build(Node, 0));
     Token(Node) l_node_2 = l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
     Token(Node) l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
 
@@ -529,18 +530,18 @@ inline void scene_to_sceneasset()
                                       }
                                   });
 
-    Slice<Token(SliceIndex)> l_1_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 0)));
+    Slice<Token(SliceIndex)> l_1_components = l_scene_asset.get_components(l_scene_asset.nodes.get(token_build(transform, 0)));
     assert_true(l_1_components.Size == 2);
-    l_scene_asset.get_component_typed<CameraTestComponent>(l_1_components.get(0));
-    l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_1_components.get(1));
+    l_scene_asset.get_component_typed<CameraTestComponent>(*Slice_get(&l_1_components, 0));
+    l_scene_asset.get_component_typed<MeshRendererTestComponent>(*Slice_get(&l_1_components, 1));
 
-    Slice<Token(SliceIndex)> l_2_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 1)));
+    Slice<Token(SliceIndex)> l_2_components = l_scene_asset.get_components(l_scene_asset.nodes.get(token_build(transform, 1)));
     assert_true(l_2_components.Size == 1);
-    l_scene_asset.get_component_typed<CameraTestComponent>(l_2_components.get(0));
+    l_scene_asset.get_component_typed<CameraTestComponent>(*Slice_get(&l_2_components, 0));
 
-    Slice<Token(SliceIndex)> l_3_components = l_scene_asset.get_components(l_scene_asset.nodes.get(tk_b(transform, 2)));
+    Slice<Token(SliceIndex)> l_3_components = l_scene_asset.get_components(l_scene_asset.nodes.get(token_build(transform, 2)));
     assert_true(l_3_components.Size == 1);
-    l_scene_asset.get_component_typed<MeshRendererTestComponent>(l_3_components.get(0));
+    l_scene_asset.get_component_typed<MeshRendererTestComponent>(*Slice_get(&l_3_components, 0));
 
     l_scene_asset.free();
 

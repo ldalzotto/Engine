@@ -557,10 +557,10 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
 #endif
 
     VkAttachmentDescription l_attachments_raw[AttachmentCount];
-    Slice<VkAttachmentDescription> l_attachments = Slice<VkAttachmentDescription>::build_memory_elementnb(l_attachments_raw, AttachmentCount);
+    Slice<VkAttachmentDescription> l_attachments = Slice_build_memory_elementnb<VkAttachmentDescription>(l_attachments_raw, AttachmentCount);
 
     VkAttachmentReference l_color_attachments_ref_raw[AttachmentCount];
-    Slice<VkAttachmentReference> l_color_attachments_ref = Slice<VkAttachmentReference>::build_memory_elementnb(l_color_attachments_ref_raw, AttachmentCount);
+    Slice<VkAttachmentReference> l_color_attachments_ref = Slice_build_memory_elementnb<VkAttachmentReference>(l_color_attachments_ref_raw, AttachmentCount);
     uint8 l_color_attachments_ref_count = 0;
 
     VkAttachmentReference l_depth_attachment_reference;
@@ -570,7 +570,7 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
     for (loop(i, 0, AttachmentCount))
     {
 
-        VkAttachmentDescription& l_attachment_description = l_attachments.get(i);
+        VkAttachmentDescription& l_attachment_description = *Slice_get(&l_attachments, i);
         l_attachment_description = VkAttachmentDescription{};
         l_attachment_description.format = p_attachments.get(i).image_format.format;
         l_attachment_description.samples = p_attachments.get(i).image_format.samples;
@@ -593,7 +593,7 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
         {
         case AttachmentType::COLOR:
         {
-            VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
+            VkAttachmentReference& l_attachment_reference = *Slice_get(&l_color_attachments_ref, l_color_attachments_ref_count);
             l_attachment_reference.attachment = (uint32)i;
             l_attachment_reference.layout = l_attachment_description.finalLayout;
             l_color_attachments_ref_count += 1;
@@ -601,7 +601,7 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
         break;
         case AttachmentType::KHR:
         {
-            VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
+            VkAttachmentReference& l_attachment_reference = *Slice_get(&l_color_attachments_ref, l_color_attachments_ref_count);
             l_attachment_reference.attachment = (uint32)i;
             l_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
             l_color_attachments_ref_count += 1;
@@ -831,12 +831,12 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
 
     VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
-    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build_begin_end(l_shader_stages, 0, 0);
+    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice_build_begin_end<VkPipelineShaderStageCreateInfo>(l_shader_stages, 0, 0);
 
     if (p_shader_allocate_info.vertex_shader.module != NULL)
     {
         l_shader_stages_slice.Size += 1;
-        VkPipelineShaderStageCreateInfo& l_vertex_stage = l_shader_stages_slice.get(0);
+        VkPipelineShaderStageCreateInfo& l_vertex_stage = *Slice_get(&l_shader_stages_slice, 0);
         l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
         l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
@@ -846,7 +846,7 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     if (p_shader_allocate_info.fragment_shader.module != NULL)
     {
         l_shader_stages_slice.Size += 1;
-        VkPipelineShaderStageCreateInfo& l_fragment_stage = l_shader_stages_slice.get(1);
+        VkPipelineShaderStageCreateInfo& l_fragment_stage = *Slice_get(&l_shader_stages_slice, 1);
         l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
         l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
@@ -1048,7 +1048,7 @@ struct GraphicsAllocator2
         Slice<Token(TextureGPU)> l_attached_textures = this->heap.renderpass_attachment_textures.get_vector(l_graphics_pass.attachment_textures);
         for (loop(i, 0, l_attached_textures.Size))
         {
-            this->free_texturegpu(p_transfer_device, l_attached_textures.get(i));
+            this->free_texturegpu(p_transfer_device, *Slice_get(&l_attached_textures, i));
         }
         this->heap.renderpass_attachment_textures.release_vector(l_graphics_pass.attachment_textures);
 
@@ -1175,7 +1175,7 @@ struct GraphicsAllocator2
 
         return GraphicsPass::allocate<AttachmentCount>(
             p_transfer_device, this->graphics_device,
-            this->heap.renderpass_attachment_textures.alloc_vector_with_values(Slice<Token(TextureGPU)>::build_memory_elementnb(l_tokenized_textures, AttachmentCount)), p_attachments,
+            this->heap.renderpass_attachment_textures.alloc_vector_with_values(Slice_build_memory_elementnb<Token(TextureGPU)>(l_tokenized_textures, AttachmentCount)), p_attachments,
             l_attachment_image_views);
     };
 };
@@ -1209,7 +1209,7 @@ struct GraphicsAllocatorComposition
         for (loop(i, 0, l_attachment_textures.Size))
         {
             BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events,
-                                                                                   p_graphics_allocator.heap.textures_gpu.get(l_attachment_textures.get(i)).Image);
+                                                                                   p_graphics_allocator.heap.textures_gpu.get(*Slice_get(&l_attachment_textures, i)).Image);
         }
 
         p_graphics_allocator.free_graphicspass(p_buffer_memory.allocator.device, p_graphics_pass);
@@ -1242,13 +1242,15 @@ struct GraphicsPassReader
     inline static Token(BufferHost)
         read_graphics_pass_attachment_to_bufferhost(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const GraphicsPass& p_graphics_pass, const uimax p_index)
     {
-        TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));
+        Slice<Token(TextureGPU)> l_attachment_textures = p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
+        TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(*Slice_get(&l_attachment_textures, p_index));
         return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
     };
     inline static Token(BufferHost) read_graphics_pass_attachment_to_bufferhost_with_imageformat(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
                                                                                                  const GraphicsPass& p_graphics_pass, const uimax p_index, ImageFormat* out_image_format)
     {
-        TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures).get(p_index));
+        Slice<Token(TextureGPU)> l_attachment_textures = p_graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_graphics_pass.attachment_textures);
+        TextureGPU& l_attachment = p_graphics_allocator.heap.textures_gpu.get(*Slice_get(&l_attachment_textures, p_index));
         *out_image_format = p_buffer_memory.allocator.gpu_images.get(l_attachment.Image).format;
         return BufferReadWrite::read_from_imagegpu_to_buffer(p_buffer_memory.allocator, p_buffer_memory.events, l_attachment.Image, p_buffer_memory.allocator.gpu_images.get(l_attachment.Image));
     };

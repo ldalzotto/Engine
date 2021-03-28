@@ -14,7 +14,7 @@ struct VaryingSlice
         uimax l_max_index = 0;
         for (loop(i, 0, p_chunks.Size))
         {
-            const SliceIndex& l_chunk = p_chunks.get(i);
+            const SliceIndex& l_chunk = *Slice_get(&p_chunks, i);
             if ((l_chunk.Begin + l_chunk.Size) >= l_max_index)
             {
                 l_max_index = (l_chunk.Begin + l_chunk.Size);
@@ -34,12 +34,13 @@ struct VaryingSlice
 
     inline Slice<int8> get_element(const uimax p_index)
     {
-        SliceIndex& l_chunk = this->chunks.get(p_index);
-        return Slice<int8>::build_memory_offset_elementnb(this->memory.Begin, l_chunk.Begin, l_chunk.Size);
+        SliceIndex& l_chunk = *Slice_get(&this->chunks, p_index);
+        return Slice_build_memory_offset_elementnb<int8>(this->memory.Begin, l_chunk.Begin, l_chunk.Size);
     };
 
     template <class ElementType> inline Slice<ElementType> get_element_typed(const uimax p_index)
     {
-        return slice_cast<ElementType>(this->get_element(p_index));
+        Slice<int8> l_element_slice = this->get_element(p_index);
+        return Slice_cast<ElementType>(&l_element_slice);
     };
 };
