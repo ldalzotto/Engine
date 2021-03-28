@@ -55,11 +55,13 @@ struct SceneAsset
         this->component_assets.push_back_empty(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size) + p_component_value_memory.Size);
         Slice<int8> l_element = this->component_assets.get_last_element();
 
-        l_element.copy_memory(Slice_build_asint8_memory_singleelement<component_t>((component_t*)&p_component_type));
+        Slice<int8> p_component_type_slice = Slice_build_asint8_memory_singleelement<component_t>((component_t*)&p_component_type);
+        Slice_copy_memory(&l_element, &p_component_type_slice);
         Slice_slide(&l_element, sizeof(SceneAssetComponent::type));
-        l_element.copy_memory(Slice_build_asint8_memory_singleelement<uimax>((uimax*)&p_component_value_memory.Size));
+        Slice<int8> l_p_component_value_memory_size_slice_int8 = Slice_build_asint8_memory_singleelement<uimax>((uimax*)&p_component_value_memory.Size);
+        Slice_copy_memory(&l_element, &l_p_component_value_memory_size_slice_int8);
         Slice_slide(&l_element, sizeof(SceneAssetComponent::value_size));
-        l_element.copy_memory(p_component_value_memory);
+        Slice_copy_memory(&l_element, &p_component_value_memory);
 
         this->node_to_components.element_push_back_element(token_get_value(p_node), token_build(SliceIndex, this->component_assets.get_size() - 1));
     };

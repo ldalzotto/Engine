@@ -294,12 +294,12 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
 
 inline int8 v3ui::operator==(const v3ui& p_other) const
 {
-    return Slice_build_asint8_memory_singleelement<v3ui>(this).compare(Slice_build_asint8_memory_singleelement<v3ui>(&p_other));
+    return memory_compare((int8*)this, (int8*)&p_other, sizeof(v3ui));
 };
 
 inline int8 v3ui::operator!=(const v3ui& p_other) const
 {
-    return !Slice_build_asint8_memory_singleelement<v3ui>(this).compare(Slice_build_asint8_memory_singleelement<v3ui>(&p_other));
+    return !memory_compare((int8*)this, (int8*)&p_other, sizeof(v3ui));
 };
 
 inline v4f v4f::operator+(const v4f& p_other) const

@@ -109,7 +109,7 @@ template <class ElementType> struct Vector
     inline int8 push_back_array(const Slice<ElementType>& p_elements)
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
-        this->Memory.slice.copy_memory_at_index(this->Size, p_elements);
+        Slice_copy_memory_at_index(&this->Memory.slice, this->Size, &p_elements);
         this->Size += p_elements.Size;
 
         return 1;
@@ -118,7 +118,7 @@ template <class ElementType> struct Vector
     inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
-        this->Memory.slice.copy_memory_at_index_2(this->Size, p_elements_0, p_elements_1);
+        Slice_copy_memory_at_index_2(&this->Memory.slice, this->Size, &p_elements_0, &p_elements_1);
         this->Size += (p_elements_0.Size + p_elements_1.Size);
 
         return 1;
@@ -286,12 +286,12 @@ template <class ElementType> struct Vector
 
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {
-        this->Memory.slice.move_memory_down(this->Size - p_break_index, p_break_index, p_move_delta);
+        Slice_move_memory_down(&this->Memory.slice, this->Size - p_break_index, p_break_index, p_move_delta);
     };
 
     inline void move_memory_up(const uimax p_break_index, const uimax p_move_delta)
     {
-        this->Memory.slice.move_memory_up(this->Size - p_break_index, p_break_index, p_move_delta);
+        Slice_move_memory_up(&this->Memory.slice, this->Size - p_break_index, p_break_index, p_move_delta);
     };
 
     inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
@@ -308,7 +308,7 @@ template <class ElementType> struct Vector
     {
         this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
         this->move_memory_down(p_index, p_elements.Size);
-        this->Memory.slice.copy_memory_at_index(p_index, p_elements);
+        Slice_copy_memory_at_index(&this->Memory.slice, p_index, &p_elements);
 
         this->Size += p_elements.Size;
 

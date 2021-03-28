@@ -9,7 +9,7 @@ inline void render_asset_binary_serialization_deserialization_test()
     {
         ShaderModuleRessource::Asset l_shader_modules = ShaderModuleRessource::Asset::allocate_from_values(ShaderModuleRessource::Asset::Value{l_slice_int8});
         ShaderModuleRessource::Asset::Value l_shader_module_value = ShaderModuleRessource::Asset::Value::build_from_asset(l_shader_modules);
-        assert_true(l_shader_module_value.compiled_shader.compare(l_slice_int8));
+        assert_true(l_shader_module_value.compiled_shader.Slice_compare(l_slice_int8));
         l_shader_modules.free();
     }
     {
@@ -19,8 +19,8 @@ inline void render_asset_binary_serialization_deserialization_test()
         ShaderRessource::Asset::Value l_deserialized_asset = ShaderRessource::Asset::Value::build_from_asset(l_shader);
         assert_true(l_deserialized_asset.execution_order == l_value.execution_order);
         assert_true(Slice_build_memory_elementnb<ShaderConfiguration>(&l_deserialized_asset.shader_configuration, 1)
-                        .compare(Slice_build_memory_elementnb<ShaderConfiguration>(&l_value.shader_configuration, 1)));
-        assert_true(l_deserialized_asset.specific_parameters.compare(l_value.specific_parameters));
+                        .Slice_compare(Slice_build_memory_elementnb<ShaderConfiguration>(&l_value.shader_configuration, 1)));
+        assert_true(l_deserialized_asset.specific_parameters.Slice_compare(l_value.specific_parameters));
         l_shader.free();
     }
     SliceN<Vertex, 2> l_initial_vertices_arr{Vertex{v3f{1.0f, 2.0f, 3.0f}, v2f{1.0f, 1.0f}}};
@@ -31,8 +31,8 @@ inline void render_asset_binary_serialization_deserialization_test()
         MeshRessource::Asset::Value l_value = MeshRessource::Asset::Value{l_initial_vertices, l_initial_indices};
         MeshRessource::Asset l_mesh = MeshRessource::Asset::allocate_from_values(l_value);
         MeshRessource::Asset::Value l_deserialized_value = MeshRessource::Asset::Value::build_from_asset(l_mesh);
-        assert_true(l_deserialized_value.initial_vertices.compare(l_initial_vertices));
-        assert_true(l_deserialized_value.initial_indices.compare(l_initial_indices));
+        assert_true(l_deserialized_value.initial_vertices.Slice_compare(l_initial_vertices));
+        assert_true(l_deserialized_value.initial_indices.Slice_compare(l_initial_indices));
         l_mesh.free();
     }
     {
@@ -41,7 +41,7 @@ inline void render_asset_binary_serialization_deserialization_test()
         TextureRessource::Asset::Value l_deserialized_value = TextureRessource::Asset::Value::build_from_asset(l_texture);
         assert_true(l_deserialized_value.size == l_value.size);
         assert_true(l_deserialized_value.channel_nb == 4);
-        assert_true(l_deserialized_value.pixels.compare(l_value.pixels));
+        assert_true(l_deserialized_value.pixels.Slice_compare(l_value.pixels));
         l_texture.free();
     }
 
@@ -55,8 +55,8 @@ inline void render_asset_binary_serialization_deserialization_test()
         MaterialRessource::Asset::Value l_value = MaterialRessource::Asset::Value{l_material_parameters_varying};
         MaterialRessource::Asset l_material = MaterialRessource::Asset::allocate_from_values(l_value);
         MaterialRessource::Asset::Value l_deserialized_value = MaterialRessource::Asset::Value::build_from_asset(l_material);
-        assert_true(l_deserialized_value.parameters.parameters.memory.compare(l_material_parameters_varying.memory));
-        assert_true(l_deserialized_value.parameters.parameters.chunks.compare(l_material_parameters_varying.chunks));
+        assert_true(l_deserialized_value.parameters.parameters.memory.Slice_compare(l_material_parameters_varying.memory));
+        assert_true(l_deserialized_value.parameters.parameters.chunks.Slice_compare(l_material_parameters_varying.chunks));
         l_material.free();
     }
 };

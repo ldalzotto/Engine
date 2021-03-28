@@ -136,10 +136,12 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     Span<VkLayerProperties> l_available_layers = vk::enumerateInstanceLayerProperties();
     for (loop(i, 0, l_validation_layers.Size))
     {
+        Slice<int8> l_validation_layer = Slice_int8_build_rawstr(*Slice_get(&l_validation_layers, i));
         int8 l_layer_match = 0;
         for (loop(j, 0, l_available_layers.Capacity))
         {
-            if (Slice_int8_build_rawstr(*Slice_get(&l_validation_layers, i)).compare(Slice_int8_build_rawstr(l_available_layers.get(j).layerName)))
+            Slice<int8> l_available_layer = Slice_int8_build_rawstr(l_available_layers.get(j).layerName);
+            if (Slice_compare(&l_validation_layer, &l_available_layer))
             {
                 l_layer_match = 1;
                 break;

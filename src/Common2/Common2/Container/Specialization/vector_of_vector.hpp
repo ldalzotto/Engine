@@ -22,8 +22,9 @@ struct VectorOfVector_VectorHeader
     {
         Span<int8> l_allocated_element = Span<int8>::allocate(sizeof(VectorOfVector_VectorHeader) + p_vector_slice.Size);
         VectorOfVector_VectorHeader l_vector_header = build(p_vector_size, p_vector_size);
-        l_allocated_element.slice.copy_memory_at_index(0, Slice_build_asint8_memory_elementnb<VectorOfVector_VectorHeader>(&l_vector_header, 1));
-        l_allocated_element.slice.copy_memory_at_index(sizeof(l_vector_header), p_vector_slice);
+        Slice<int8> l_vector_header_slice = Slice_build_asint8_memory_elementnb<VectorOfVector_VectorHeader>(&l_vector_header, 1);
+        Slice_copy_memory_at_index(&l_allocated_element.slice, 0, &l_vector_header_slice);
+        Slice_copy_memory_at_index(&l_allocated_element.slice, sizeof(VectorOfVector_VectorHeader), &p_vector_slice);
         return l_allocated_element;
     };
 

@@ -50,8 +50,8 @@ inline void asset_metatadata_get_by_type()
         AssetMetadataDatabase::Paths l_paths = l_ctx.assetmetadata_database.get_all_path_from_type(l_ctx.connection, l_type_1);
 
         assert_true(l_paths.data.Size == 2);
-        assert_true(l_paths.data.get(0).slice.compare(l_path_1));
-        assert_true(l_paths.data.get(1).slice.compare(l_path_2));
+        assert_true(l_paths.data.get(0).slice.Slice_compare(l_path_1));
+        assert_true(l_paths.data.get(1).slice.Slice_compare(l_path_2));
 
         l_paths.free();
     }
@@ -155,11 +155,11 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
         l_raw_file.free();
 
         Span<int8> l_shader_module_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("shad.frag")));
-        assert_true(l_shader_module_compiled.slice.compare(l_shader.get_compiled_binary()));
+        assert_true(l_shader_module_compiled.slice.Slice_compare(l_shader.get_compiled_binary()));
 
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("shad.frag")));
-        assert_true(l_metadata.type.slice.compare(AssetType_Const::SHADER_MODULE_NAME));
-        assert_true(l_metadata.path.slice.compare(Slice_int8_build_rawstr("shad.frag")));
+        assert_true(l_metadata.type.slice.Slice_compare(AssetType_Const::SHADER_MODULE_NAME));
+        assert_true(l_metadata.path.slice.Slice_compare(Slice_int8_build_rawstr("shad.frag")));
         l_metadata.free();
 
         l_shader_module_compiled.free();
@@ -212,13 +212,13 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
         assert_true(l_shader_value.execution_order == 1001);
         assert_true(l_shader_value.shader_configuration.zwrite == 0);
         assert_true(l_shader_value.shader_configuration.ztest == ShaderConfiguration::CompareOp::Always);
-        assert_true(l_shader_value.specific_parameters.compare(slice_from_slicen(&l_shader_layout_arr)));
+        assert_true(l_shader_value.specific_parameters.Slice_compare(slice_from_slicen(&l_shader_layout_arr)));
 
         l_shader_ressource_compiled.free();
 
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("shader_asset_test.json")));
-        assert_true(l_metadata.type.slice.compare(AssetType_Const::SHADER_NAME));
-        assert_true(l_metadata.path.slice.compare(Slice_int8_build_rawstr("shader_asset_test.json")));
+        assert_true(l_metadata.type.slice.Slice_compare(AssetType_Const::SHADER_NAME));
+        assert_true(l_metadata.path.slice.Slice_compare(Slice_int8_build_rawstr("shader_asset_test.json")));
         l_metadata.free();
     }
     {
@@ -280,8 +280,8 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
     }
     {
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("material_asset_test.json")));
-        assert_true(l_metadata.type.slice.compare(AssetType_Const::MATERIAL_NAME));
-        assert_true(l_metadata.path.slice.compare(Slice_int8_build_rawstr("material_asset_test.json")));
+        assert_true(l_metadata.type.slice.Slice_compare(AssetType_Const::MATERIAL_NAME));
+        assert_true(l_metadata.path.slice.Slice_compare(Slice_int8_build_rawstr("material_asset_test.json")));
         l_metadata.free();
     }
     {
@@ -331,15 +331,15 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
                                                            Vertex{l_positions[1], l_uvs[12]}, Vertex{l_positions[1], l_uvs[13]}};
         SliceN<uint32, 36> l_indices = {0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7};
 
-        assert_true(l_mesh_value.initial_vertices.compare(slice_from_slicen(&l_vertices)));
-        assert_true(l_mesh_value.initial_indices.compare(slice_from_slicen(&l_indices)));
+        assert_true(l_mesh_value.initial_vertices.Slice_compare(slice_from_slicen(&l_vertices)));
+        assert_true(l_mesh_value.initial_indices.Slice_compare(slice_from_slicen(&l_indices)));
 
         l_mesh_ressource_compiled.free();
     }
     {
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("cube.obj")));
-        assert_true(l_metadata.type.slice.compare(AssetType_Const::MESH_NAME));
-        assert_true(l_metadata.path.slice.compare(Slice_int8_build_rawstr("cube.obj")));
+        assert_true(l_metadata.type.slice.Slice_compare(AssetType_Const::MESH_NAME));
+        assert_true(l_metadata.path.slice.Slice_compare(Slice_int8_build_rawstr("cube.obj")));
         l_metadata.free();
     }
 
@@ -370,13 +370,13 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
                                                color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
                                                color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX}};
 
-        assert_true(l_pixels.compare(slice_from_slicen(&l_awaited_pixels_arr)));
+        assert_true(l_pixels.Slice_compare(slice_from_slicen(&l_awaited_pixels_arr)));
         l_texture_ressource_compiled.free();
     }
     {
         AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(Slice_int8_build_rawstr("texture.png")));
-        assert_true(l_metadata.type.slice.compare(AssetType_Const::TEXTURE_NAME));
-        assert_true(l_metadata.path.slice.compare(Slice_int8_build_rawstr("texture.png")));
+        assert_true(l_metadata.type.slice.Slice_compare(AssetType_Const::TEXTURE_NAME));
+        assert_true(l_metadata.path.slice.Slice_compare(Slice_int8_build_rawstr("texture.png")));
         l_metadata.free();
     }
 

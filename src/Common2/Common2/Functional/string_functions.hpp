@@ -2,12 +2,13 @@
 
 struct FromString
 {
-    inline static float32 afloat32(Slice<int8> p_string)
+    inline static float32 afloat32(const Slice<int8>& p_string)
     {
         if (p_string.Size > 0)
         {
+            Slice<int8> l_point = Slice_int8_build_rawstr(".");
             uimax l_dot_index;
-            if (p_string.find(Slice_int8_build_rawstr("."), &l_dot_index))
+            if (Slice_find(&p_string, &l_point, &l_dot_index))
             {
                 if (*Slice_get(&p_string, 0) == '-')
                 {

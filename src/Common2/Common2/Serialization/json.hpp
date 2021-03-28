@@ -5,7 +5,7 @@ namespace JSONUtil
 inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int8>& p_awaited_type)
 {
 #if __DEBUG
-    assert_true(p_type.compare(p_awaited_type));
+    assert_true(Slice_compare(&p_type, &p_awaited_type));
 #endif
     return p_type;
 };
@@ -46,10 +46,11 @@ struct JSONDeserializer
     inline static JSONDeserializer start(Vector<int8>& p_source)
     {
         JSONUtil::remove_spaces(p_source);
-        uimax l_start_index;
-        p_source.to_slice().find(Slice_int8_build_rawstr("{"), &l_start_index);
-        l_start_index += 1;
         Slice<int8> l_source_slice = p_source.to_slice();
+        Slice<int8> l_token = Slice_int8_build_rawstr("{");
+        uimax l_start_index;
+        Slice_find(&l_source_slice, &l_token, &l_start_index);
+        l_start_index += 1;
         return allocate(p_source.to_slice(), Slice_slide_rv(&l_source_slice, l_start_index));
     };
 
@@ -75,15 +76,18 @@ struct JSONDeserializer
             l_field_name_json.append(Slice_int8_build_rawstr(p_field_name));
             l_field_name_json.append(Slice_int8_build_rawstr("\":"));
 
-            if (l_next_field_whole_value.compare(l_field_name_json.to_slice()))
-            {
-                Slice<int8> l_next_field_value_with_quotes = Slice_slide_rv(&l_next_field_whole_value, l_field_name_json.get_length());
+            Slice<int8> l_field_name_json_slice = l_field_name_json.to_slice();
 
+            if (Slice_compare(&l_next_field_whole_value, &l_field_name_json_slice))
+            {
+                Slice<int8> l_back_slash = Slice_int8_build_rawstr("\"");
+                Slice<int8> l_next_field_value_with_quotes = Slice_slide_rv(&l_next_field_whole_value, l_field_name_json.get_length());
+                Slice<int8> l_next_field_value_with_quotes_without_first = Slice_slide_rv(&l_next_field_value_with_quotes, 1);
                 FieldNode l_field_node;
                 uimax l_field_value_delta;
-                if (Slice_slide_rv(&l_next_field_value_with_quotes, 1).find(Slice_int8_build_rawstr("\""), &l_field_value_delta))
+                if (Slice_find(&l_next_field_value_with_quotes_without_first, &l_back_slash, &l_field_value_delta))
                 {
-                    l_field_node.value = Slice_slide_rv(&l_next_field_value_with_quotes, 1);
+                    l_field_node.value = l_next_field_value_with_quotes_without_first;
                     l_field_node.value.Size = l_field_value_delta;
                     l_field_node.whole_field = l_next_field_whole_value;
 
@@ -240,9 +244,10 @@ struct JSONDeserializer
 
         // then we Slice_get the next field
 
+        Slice<int8> l_comma = Slice_int8_build_rawstr(",");
+        Slice<int8> l_token = Slice_int8_build_rawstr("}");
         uimax l_new_field_index;
-
-        if (out_field_whole_value->find(Slice_int8_build_rawstr(","), &l_new_field_index) || out_field_whole_value->find(Slice_int8_build_rawstr("}"), &l_new_field_index))
+        if (Slice_find(out_field_whole_value, &l_comma, &l_new_field_index) || Slice_find(out_field_whole_value, &l_token, &l_new_field_index))
         {
             out_field_whole_value->Size = l_new_field_index;
             return 1;
@@ -269,7 +274,7 @@ struct JSONDeserializer
     inline static int8 find_next_json_field(const Slice<int8>& p_source, const Slice<int8>& p_field_name, const int8 value_begin_delimiter, const int8 value_end_delimiter,
                                             Slice<int8>* out_object_whole_field, Slice<int8>* out_object_value_only)
     {
-        if (p_source.compare(p_field_name))
+        if (Slice_compare(&p_source, &p_field_name))
         {
             Slice<int8> l_object_value = Slice_slide_rv(&p_source, p_field_name.Size);
 
@@ -304,12 +309,13 @@ struct JSONDeserializer
 
     inline static int8 find_next_json_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
     {
-        if (p_source.compare(Slice_int8_build_rawstr("\"")))
+        Slice<int8> l_backslach = Slice_int8_build_rawstr("\"");
+        if (Slice_compare(&p_source, &l_backslach))
         {
             *out_plain_value_whole = p_source;
             Slice<int8> l_plain_value_with_trail = Slice_slide_rv(&p_source, 1);
             uimax l_end_index;
-            if (l_plain_value_with_trail.find(Slice_int8_build_rawstr("\""), &l_end_index))
+            if (Slice_find(&l_plain_value_with_trail, &l_backslach, &l_end_index))
             {
                 *out_plain_value_only = Slice_build_begin_end<int8>(l_plain_value_with_trail.Begin, 0, l_end_index);
                 out_plain_value_whole->Size = l_end_index + 2; // To add the "

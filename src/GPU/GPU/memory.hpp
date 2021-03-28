@@ -616,7 +616,7 @@ inline void MappedHostMemory::unmap(TransferDevice& p_device)
 
 inline void MappedHostMemory::copy_from(const Slice<int8>& p_from)
 {
-    this->memory.copy_memory(p_from);
+    Slice_copy_memory(&this->memory, &p_from);
 };
 
 inline int8 MappedHostMemory::is_mapped()
@@ -816,7 +816,7 @@ inline void ImageHost::free(TransferDevice& p_transfer_device)
 
 inline void ImageHost::push(const Slice<int8>& p_from)
 {
-    this->memory.memory.copy_memory(p_from);
+    Slice_copy_memory(&this->memory.memory, &p_from);
 };
 
 inline Slice<int8>& ImageHost::get_mapped_memory()

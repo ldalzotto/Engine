@@ -36,14 +36,14 @@ template <class ElementType> struct Span
     inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements.Size);
-        l_span.slice.copy_memory(Slice_build_memory_elementnb<ElementType>((ElementType*)p_elements.Begin, p_elements.Size));
+        Slice_copy_memory(&l_span.slice, &p_elements);
         return l_span;
     };
 
     inline static Span<ElementType> allocate_slice_2(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements_1.Size + p_elements_2.Size);
-        l_span.slice.copy_memory_at_index_2(0, p_elements_1, p_elements_2);
+        Slice_copy_memory_at_index_2(&l_span.slice, 0, &p_elements_1, &p_elements_2);
         return l_span;
     };
 
@@ -51,7 +51,7 @@ template <class ElementType> struct Span
     inline static Span<ElementType> allocate_slice_3(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2, const Slice<ElementType>& p_elements_3)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements_1.Size + p_elements_2.Size + p_elements_3.Size);
-        l_span.slice.copy_memory_at_index_3(0, p_elements_1, p_elements_2, p_elements_3);
+        Slice_copy_memory_at_index_3(&l_span.slice, 0, &p_elements_1, &p_elements_2, &p_elements_3);
         return l_span;
     };
 

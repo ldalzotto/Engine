@@ -193,7 +193,7 @@ struct VaryingVector
         Slice<int8> l_updated_chunk_slice = Slice_build_asint8_memory_elementnb<int8>(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size);
         Slice<int8> l_updated_chunk_slice_offsetted = Slice_slide_rv(&l_updated_chunk_slice, p_insertion_offset);
 
-        l_updated_chunk_slice_offsetted.copy_memory(p_inserted_element);
+        Slice_copy_memory(&l_updated_chunk_slice_offsetted, &p_inserted_element);
     };
 
     inline void element_movememory(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element)
@@ -201,7 +201,7 @@ struct VaryingVector
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
         Slice<int8> l_updated_chunk_slice = Slice_build_asint8_memory_elementnb<int8>(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size);
         Slice<int8> l_updated_chunk_slice_offsetted = Slice_slide_rv(&l_updated_chunk_slice, p_insertion_offset);
-        l_updated_chunk_slice_offsetted.move_memory(p_inserted_element);
+        Slice_move_memory(&l_updated_chunk_slice_offsetted, &p_inserted_element);
     };
 
     inline Slice<int8> get_element(const uimax p_index)

@@ -50,7 +50,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void zero()
     {
-        this->Slots.slice.zero();
+        Slice_zero(&this->Slots.slice);
     };
 
     inline void free()

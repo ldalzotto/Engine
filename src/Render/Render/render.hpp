@@ -535,10 +535,11 @@ inline void ColorStep::free(GPUContext& p_gpu_context)
 inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
 {
     Slice<ShaderParameter> l_global_shader_parameters = p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters);
-    p_gpu_context.buffer_memory.allocator.host_buffers
-        .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(Slice_get(&l_global_shader_parameters, 0)->uniform_host).memory)
-        .get_mapped_effective_memory()
-        .copy_memory(Slice_build_asint8_memory_singleelement<Camera>(&p_camera));
+    Slice<int8> l_p_camera_slice_int8 = Slice_build_asint8_memory_singleelement<Camera>(&p_camera);
+    Slice<int8> l_target_camera_buffer = p_gpu_context.buffer_memory.allocator.host_buffers
+                                             .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(Slice_get(&l_global_shader_parameters, 0)->uniform_host).memory)
+                                             .get_mapped_effective_memory();
+    Slice_copy_memory(&l_target_camera_buffer, &l_p_camera_slice_int8);
 };
 
 inline void ColorStep::set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
@@ -586,12 +587,13 @@ inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
     {
         auto& l_event = this->heap().model_update_events.get(i);
 
+        Slice<int8> l_model_matrix_slice_int8 = Slice_build_asint8_memory_singleelement<m44f>(&l_event.model_matrix);
         Slice<int8> l_mapped_memory =
             p_gpu_context.buffer_memory.allocator.host_buffers
                 .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
                 .get_mapped_effective_memory();
 
-        l_mapped_memory.copy_memory(Slice_build_asint8_memory_singleelement<m44f>(&l_event.model_matrix));
+        Slice_copy_memory(&l_mapped_memory, &l_model_matrix_slice_int8);
     };
 
     this->heap().model_update_events.clear();

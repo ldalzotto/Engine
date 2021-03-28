@@ -668,7 +668,7 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
 
 #if __DEBUG
     l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
-    l_graphics_pass.attachement_layout.slice.copy_memory_at_index(0, slice_from_slicen(&p_render_pass_attachments));
+    l_graphics_pass.attachement_layout.slice.Slice_copy_memory_at_index(0, slice_from_slicen(&p_render_pass_attachments));
 #endif
     vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 

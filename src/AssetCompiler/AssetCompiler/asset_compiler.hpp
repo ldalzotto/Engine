@@ -28,19 +28,30 @@ struct AssetCompiled
     };
 };
 
+namespace AssetCompiler_Const
+{
+static const Slice<int8> dot = Slice_int8_build_rawstr(".");
+static const Slice<int8> vert = Slice_int8_build_rawstr("vert");
+static const Slice<int8> frag = Slice_int8_build_rawstr("frag");
+static const Slice<int8> obj = Slice_int8_build_rawstr("obj");
+static const Slice<int8> jpg = Slice_int8_build_rawstr("jpg");
+static const Slice<int8> png = Slice_int8_build_rawstr("png");
+static const Slice<int8> json = Slice_int8_build_rawstr("json");
+}; // namespace AssetCompiler_Const
+
 inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler, const File& p_asset_file, AssetCompiled* out_asset_compiled)
 {
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(Slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (Slice_find(&l_asset_path, &AssetCompiler_Const::dot, &l_last_dot_index))
     {
         Slice_slide(&l_asset_path, l_last_dot_index + 1);
     };
 
     if (l_asset_path.Size > 0)
     {
-        if (l_asset_path.compare(Slice_int8_build_rawstr("vert")))
+        if (Slice_compare(&l_asset_path, &AssetCompiler_Const::vert))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
@@ -55,7 +66,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
                 return 1;
             };
         }
-        else if (l_asset_path.compare(Slice_int8_build_rawstr("frag")))
+        else if (Slice_compare(&l_asset_path, &AssetCompiler_Const::frag))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
@@ -70,7 +81,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
                 return 1;
             }
         }
-        else if (l_asset_path.compare(Slice_int8_build_rawstr("obj")))
+        else if (Slice_compare(&l_asset_path,  &AssetCompiler_Const::obj))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             Vector<Vertex> l_vertices = Vector<Vertex>::allocate(0);
@@ -85,7 +96,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             *out_asset_compiled = AssetCompiled::build(AssetType::MESH, l_mesh_asset.allocated_binary);
             return 1;
         }
-        else if (l_asset_path.compare(Slice_int8_build_rawstr("jpg")) || l_asset_path.compare(Slice_int8_build_rawstr("png")))
+        else if (Slice_compare(&l_asset_path, &AssetCompiler_Const::jpg) || Slice_compare(&l_asset_path, &AssetCompiler_Const::png))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
 
@@ -101,7 +112,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             *out_asset_compiled = AssetCompiled::build(AssetType::TEXTURE, l_texture_asset.allocated_binary);
             return 1;
         }
-        else if (l_asset_path.compare(Slice_int8_build_rawstr("json")))
+        else if (Slice_compare(&l_asset_path, &AssetCompiler_Const::json))
         {
             AssetCompiled l_compiled_asset = AssetCompiled::build_default();
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
@@ -143,14 +154,14 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(Slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (Slice_find(&l_asset_path, &AssetCompiler_Const::dot, &l_last_dot_index))
     {
         Slice_slide(&l_asset_path, l_last_dot_index + 1);
     };
 
     if (l_asset_path.Size > 0)
     {
-        if (l_asset_path.compare(Slice_int8_build_rawstr("json")))
+        if (Slice_compare(&l_asset_path, &AssetCompiler_Const::json))
         {
             Span<int8> l_compiled_dependencies;
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
@@ -227,6 +238,5 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
 
     return l_return;
 };
-
 
 #include "./asset_compiler_pass.hpp"

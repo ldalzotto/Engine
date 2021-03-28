@@ -30,25 +30,38 @@ struct PrimitiveSerializedTypes
 
     inline static PrimitiveSerializedTypes::Type get_type_from_string(const Slice<int8>& p_str)
     {
-        if (Slice_int8_build_rawstr("FLOAT32").compare(p_str))
+        Slice<int8> l_float_32 = Slice_int8_build_rawstr("FLOAT32");
+        if (Slice_compare(&l_float_32, &p_str))
         {
             return PrimitiveSerializedTypes::Type::FLOAT32;
         }
-        else if (Slice_int8_build_rawstr("FLOAT32_2").compare(p_str))
-        {
-            return PrimitiveSerializedTypes::Type::FLOAT32_2;
-        }
-        else if (Slice_int8_build_rawstr("FLOAT32_3").compare(p_str))
-        {
-            return PrimitiveSerializedTypes::Type::FLOAT32_3;
-        }
-        else if (Slice_int8_build_rawstr("FLOAT32_4").compare(p_str))
-        {
-            return PrimitiveSerializedTypes::Type::FLOAT32_4;
-        }
         else
         {
-            abort();
+            Slice<int8> l_float_32_2 = Slice_int8_build_rawstr("FLOAT32_2");
+            if (Slice_compare(&l_float_32_2, &p_str))
+            {
+                return PrimitiveSerializedTypes::Type::FLOAT32_2;
+            }
+            else
+            {
+                Slice<int8> l_float_32_3 = Slice_int8_build_rawstr("FLOAT32_3");
+                if (Slice_compare(&l_float_32_3, &p_str))
+                {
+                    return PrimitiveSerializedTypes::Type::FLOAT32_3;
+                }
+                else
+                {
+                    Slice<int8> l_float_32_4 = Slice_int8_build_rawstr("FLOAT32_4");
+                    if (Slice_compare(&l_float_32_4, &p_str))
+                    {
+                        return PrimitiveSerializedTypes::Type::FLOAT32_4;
+                    }
+                    else
+                    {
+                        abort();
+                    }
+                }
+            }
         }
     };
 };

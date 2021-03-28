@@ -33,16 +33,16 @@ inline void slice_span_test()
         l_span_sizet.get(1) = 5;
         l_span_sizet.get(3) = 10;
 
-        l_span_sizet.slice.move_memory_down(1, 3, 1);
+        Slice_move_memory_down(&l_span_sizet.slice, 1, 3, 1);
         assert_true(l_span_sizet.get(4) == 10);
 
-        l_span_sizet.slice.move_memory_up(1, 4, 2);
+        Slice_move_memory_up(&l_span_sizet.slice, 1, 4, 2);
         assert_true(l_span_sizet.get(2) == 10);
 
         assert_true(l_span_sizet.get(0) == 3);
         assert_true(l_span_sizet.get(1) == 5);
 
-        l_span_sizet.slice.move_memory_up(2, 2, 2);
+        Slice_move_memory_up(&l_span_sizet.slice, 2, 2, 2);
 
         assert_true(l_span_sizet.get(0) == 10);
         assert_true(l_span_sizet.get(1) == 10);
@@ -53,20 +53,25 @@ inline void slice_span_test()
     {
         l_span_sizet = Span<uimax>::allocate(10);
 
-        SliceN<uimax, 4> l_slice_1 = {0, 1, 2, 3};
-        SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
-        l_span_sizet.slice.copy_memory_at_index_2(1, slice_from_slicen(&l_slice_1), slice_from_slicen(&l_slice_2));
+        SliceN<uimax, 4> l_slicen_1 = {0, 1, 2, 3};
+        Slice<uimax> l_slice_1 = slice_from_slicen(&l_slicen_1);
+        SliceN<uimax, 4> l_slicen_2 = {5, 6, 7, 8};
+        Slice<uimax> l_slice_2 = slice_from_slicen(&l_slicen_2);
+        Slice_copy_memory_at_index_2(&l_span_sizet.slice, 1, &l_slice_1, &l_slice_2);
 
-        assert_true(Slice_slide_rv(&l_span_sizet.slice, 1).compare(slice_from_slicen(&l_slice_1)));
-        assert_true(Slice_slide_rv(&l_span_sizet.slice, 5).compare(slice_from_slicen(&l_slice_2)));
+        Slice<uimax> l_span_sizet_offsetted = Slice_slide_rv(&l_span_sizet.slice, 1);
+        assert_true(Slice_compare(&l_span_sizet_offsetted, &l_slice_1));
+        l_span_sizet_offsetted = Slice_slide_rv(&l_span_sizet.slice, 5);
+        assert_true(Slice_compare(&l_span_sizet_offsetted, &l_slice_2));
 
         l_span_sizet.free();
     }
     {
-        SliceN<uimax, 4> l_slice = {15, 26, 78, 10};
-        l_span_sizet = Span<uimax>::allocate_slice(slice_from_slicen(&l_slice));
+        SliceN<uimax, 4> l_slicen = {15, 26, 78, 10};
+        Slice<uimax> l_slice = slice_from_slicen(&l_slicen);
+        l_span_sizet = Span<uimax>::allocate_slice(l_slice);
         assert_true(l_span_sizet.Capacity == 4);
-        assert_true(l_span_sizet.slice.compare(slice_from_slicen(&l_slice)));
+        assert_true(Slice_compare(&l_span_sizet.slice, &l_slice));
 
         l_span_sizet.free();
     }
@@ -375,7 +380,7 @@ inline void varyingvector_test()
         assert_true(l_varyingvector.get_size() == 1);
         Slice<int8> l_element_0 = l_varyingvector.get_element(0);
         assert_true(l_element_0.Size == 10);
-        assert_true(l_slice.compare(l_element_0));
+        assert_true(Slice_compare(&l_slice, &l_element_0));
     }
 
     // push_back_empty
@@ -1236,13 +1241,16 @@ inline void string_test()
 
     // find
     {
+        Slice<int8> l_comparison_slice = Slice_int8_build_rawstr("efor");
+        Slice<int8> l_str_slice = l_str.to_slice();
         uimax l_index;
-        assert_true(l_str.to_slice().find(Slice_int8_build_rawstr("efor"), &l_index) == 1);
+        assert_true(Slice_find(&l_str_slice, &l_comparison_slice, &l_index) == 1);
         assert_true(l_index == 27);
 
         // no found
+        l_comparison_slice = Slice_int8_build_rawstr("eforc");
         l_index = 0;
-        assert_true(l_str.to_slice().find(Slice_int8_build_rawstr("eforc"), &l_index) == 0);
+        assert_true(Slice_find(&l_str_slice, &l_comparison_slice, &l_index) == 0);
     }
 
     l_str.free();
@@ -1555,7 +1563,9 @@ inline void serialize_json_test()
     String l_compared_json = String::allocate_elements(Slice_int8_build_rawstr(l_json));
     JSONUtil::remove_spaces(l_compared_json.Memory);
 
-    assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
+    Slice<int8> l_compared_json_slice = l_compared_json.to_slice();
+    Slice<int8> l_serializer_output_slice = l_serializer.output.to_slice();
+    assert_true(Slice_compare(&l_compared_json_slice, &l_serializer_output_slice));
 
     l_compared_json.free();
     l_serializer.free();
@@ -1575,7 +1585,7 @@ inline void serialize_deserialize_binary_test()
     Slice<uimax> l_slice_deserialized = Slice_cast<uimax>(&tmp_l_deserializer_slice);
 
     assert_true(l_slice.Size == l_slice_deserialized.Size);
-    assert_true(l_slice.compare(l_slice_deserialized));
+    assert_true(Slice_compare(&l_slice, &l_slice_deserialized));
 
     l_binary_data.free();
 };
@@ -1601,7 +1611,7 @@ inline void file_test()
     l_file.write_file(l_source_buffer);
     l_file.read_file(&l_buffer);
 
-    assert_true(l_buffer.compare(l_source_buffer));
+    assert_true(Slice_compare(&l_buffer, &l_source_buffer));
 
     l_file.erase();
 
@@ -1657,13 +1667,16 @@ inline void database_test()
 				)
 		), l_parameter_layout, SQLiteQueryLayout::build_default());
 
+        Slice<int8> l_inserted_text = Slice_int8_build_rawstr("test");
+
         SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
         l_binder.bind_sqlitepreparedquery(l_insersion_query, l_connection);
         l_binder.bind_int64(10, l_connection);
         l_binder.bind_int64(20, l_connection);
-        l_binder.bind_text(Slice_int8_build_rawstr("test"), l_connection);
+        l_binder.bind_text(l_inserted_text, l_connection);
 
         uimax l_value = 30;
+        Slice<int8> l_value_slice_int8 = Slice_build_asint8_memory_singleelement<uimax>(&l_value);
         l_binder.bind_blob(Slice_build_asint8_memory_singleelement<uimax>(&l_value), l_connection);
 
         SQliteQueryExecution::execute_sync(l_connection, l_insersion_query.statement, []() {
@@ -1695,8 +1708,8 @@ inline void database_test()
         });
 
         assert_true(l_retrieved_id == 20);
-        assert_true(l_retrieved_str.slice.compare(Slice_int8_build_rawstr("test")));
-        assert_true(l_retrieved_value.slice.compare(Slice_build_asint8_memory_singleelement<uimax>(&l_value)));
+        assert_true(Slice_compare(&l_retrieved_str.slice, &l_inserted_text));
+        assert_true(Slice_compare(&l_retrieved_value.slice, &l_value_slice_int8));
 
         l_retrieved_str.free();
         l_retrieved_value.free();
@@ -1811,8 +1824,10 @@ inline void barrier_test()
     Thread::wait_for_end_and_terminate(l_tt1, -1);
     Thread::wait_for_end_and_terminate(l_tt2, -1);
 
-    SliceN<int8, 4> l_awaited_result = {0, 1, 2, 3};
-    assert_true(l_order_result.to_slice().compare(slice_from_slicen(&l_awaited_result)));
+    Slice<int8> l_order_result_slice = l_order_result.to_slice();
+    SliceN<int8, 4> l_awaited_result_n = {0, 1, 2, 3};
+    Slice<int8> l_awaited_result_slice = slice_from_slicen(&l_awaited_result_n);
+    assert_true(Slice_compare(&l_order_result_slice, &l_awaited_result_slice));
 
     l_order_result.free();
 };

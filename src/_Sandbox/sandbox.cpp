@@ -17,7 +17,7 @@ struct SandboxTestUtil
 
 
         Span<int8> l_image = ImgCompiler::read_image(p_compared_image_path);
-        assert_true(l_rendertarget_texture_value.compare(l_image.slice));
+        assert_true(l_rendertarget_texture_value.Slice_compare(l_image.slice));
         l_image.free();
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,

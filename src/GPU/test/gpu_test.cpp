@@ -24,12 +24,14 @@ inline void gpu_buffer_allocation()
 
     const uimax l_tested_uimax_array[3] = {10, 20, 30};
     Slice<uimax> l_tested_uimax_slice = Slice_build_memory_elementnb<uimax>((uimax*)l_tested_uimax_array, 3);
+    Slice<int8> l_tested_uimax_slice_int8 = Slice_build_asint8(&l_tested_uimax_slice);
 
     // allocating and releasing a BufferHost
     {
         uimax l_value = 20;
         Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(Slice_build_asint8(&l_tested_uimax_slice), BufferUsageFlag::TRANSFER_READ);
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory().compare(Slice_build_asint8(&l_tested_uimax_slice)));
+        Slice<int8> l_buffer_host_token_memory = l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory();
+        assert_true(Slice_compare(&l_buffer_host_token_memory, &l_tested_uimax_slice_int8));
         // We can write manually
         Slice<int8> l_buffer_memory_slice = l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory();
         *Slice_get(&l_buffer_memory_slice, 1) = 25;
@@ -61,7 +63,7 @@ inline void gpu_buffer_allocation()
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(Slice_build_asint8(&l_tested_uimax_slice)));
+        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().Slice_compare(Slice_build_asint8(&l_tested_uimax_slice)));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu);
@@ -126,7 +128,7 @@ inline void gpu_image_allocation()
             BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, Slice_build_asint8(&l_pixels_slize), l_imageformat);
         ImageHost& l_image_host = l_buffer_memory.allocator.host_images.get(l_image_host_token);
 
-        assert_true(l_image_host.get_mapped_memory().compare(Slice_build_asint8(&l_pixels_slize)));
+        assert_true(l_image_host.get_mapped_memory().Slice_compare(Slice_build_asint8(&l_pixels_slize)));
 
         BufferAllocatorComposition::free_image_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_host_token);
     }
@@ -156,7 +158,7 @@ inline void gpu_image_allocation()
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
 
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().compare(Slice_build_asint8(&l_pixels_slize)));
+        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().Slice_compare(Slice_build_asint8(&l_pixels_slize)));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_image_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu);
@@ -1081,7 +1083,7 @@ inline void gpu_texture_mapping()
         Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
         Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
-        assert_true(l_color_attachment_value_pixels.compare(l_texture_pixels.slice));
+        assert_true(l_color_attachment_value_pixels.Slice_compare(l_texture_pixels.slice));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);

@@ -28,7 +28,7 @@ struct HeapMemory
     {
         HeapA::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_bytes->Size, &l_heap_allocated_element));
-        this->Memory.slice.copy_memory_at_index(l_heap_allocated_element.Offset, *p_element_bytes);
+        Slice_copy_memory_at_index(&this->Memory.slice, l_heap_allocated_element.Offset, p_element_bytes);
         return l_heap_allocated_element.token;
     };
 

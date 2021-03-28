@@ -7,111 +7,6 @@ template <class type_element> struct Slice
 {
     uimax Size;
     type_element* Begin;
-
-    inline int8 compare(const Slice<type_element>& p_other) const
-    {
-        return memory_compare((int8*)this->Begin, (int8*)p_other.Begin, p_other.Size * sizeof(type_element));
-    };
-
-    inline int8 find(const Slice<type_element>& p_other, uimax* out_index) const
-    {
-#if __DEBUG
-        if (p_other.Size > this->Size)
-        {
-            abort();
-        }
-#endif
-
-        Slice<type_element> l_target_slice = *this;
-        if (l_target_slice.compare(p_other))
-        {
-            *out_index = 0;
-            return 1;
-        };
-
-        for (uimax i = 1; i < this->Size - p_other.Size + 1; i++)
-        {
-            Slice_slide(&l_target_slice, 1);
-            if (l_target_slice.compare(p_other))
-            {
-                *out_index = i;
-                return 1;
-            };
-        };
-
-        *out_index = -1;
-        return 0;
-    };
-
-    inline int8* move_memory(const Slice<type_element>& p_source)
-    {
-#if __DEBUG
-        return memory_move_safe((int8*)this->Begin, this->Size * sizeof(type_element), (int8*)p_source.Begin, p_source.Size * sizeof(type_element));
-#else
-        return memory_move((int8*)this->Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
-#endif
-    };
-
-    inline void move_memory_down(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
-    {
-        Slice<type_element> l_target = Slice_build_memory_offset_elementnb<type_element>(this->Begin, p_break_index + p_move_delta, p_moved_block_size);
-#if __DEBUG
-        Slice_bound_inside_check(this, &l_target);
-#endif
-        Slice<type_element> l_source = Slice_build_begin_end<type_element>(this->Begin, p_break_index, p_break_index + p_moved_block_size);
-        l_target.move_memory(l_source);
-    };
-
-    inline void move_memory_up(const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
-    {
-        Slice<type_element> l_target = Slice_build_memory_offset_elementnb<type_element>(this->Begin, p_break_index - p_move_delta, p_moved_block_size);
-#if __DEBUG
-        Slice_bound_inside_check(this, &l_target);
-#endif
-        Slice<type_element> l_source = Slice_build_begin_end<type_element>(this->Begin, p_break_index, p_break_index + p_moved_block_size);
-        l_target.move_memory(l_source);
-    };
-
-    inline int8* copy_memory(const Slice<type_element>& p_elements)
-    {
-#if __DEBUG
-        return memory_cpy_safe((int8*)this->Begin, this->Size * sizeof(type_element), (int8*)p_elements.Begin, p_elements.Size * sizeof(type_element));
-#else
-        return memory_cpy((int8*)this->Begin, (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
-#endif
-    };
-
-    inline void copy_memory_at_index(const uimax p_copy_index, const Slice<type_element>& p_elements)
-    {
-        Slice<type_element> l_target = Slice_build_memory_elementnb<type_element>(this->Begin + p_copy_index, p_elements.Size);
-
-#if __DEBUG
-        Slice_bound_inside_check(this, &l_target);
-#endif
-
-        l_target.copy_memory(p_elements);
-    };
-
-    inline void copy_memory_at_index_2(const uimax p_copy_index, const Slice<type_element>& p_elements_1, const Slice<type_element>& p_elements_2)
-    {
-        this->copy_memory_at_index(p_copy_index, p_elements_1);
-        this->copy_memory_at_index(p_copy_index + p_elements_1.Size, p_elements_2);
-    };
-
-    inline void copy_memory_at_index_3(const uimax p_copy_index, const Slice<type_element>& p_elements_1, const Slice<type_element>& p_elements_2, const Slice<type_element>& p_elements_3)
-    {
-        this->copy_memory_at_index_2(p_copy_index, p_elements_1, p_elements_2);
-        this->copy_memory_at_index(p_copy_index + p_elements_1.Size + p_elements_2.Size, p_elements_3);
-    };
-
-    inline void zero()
-    {
-#if __DEBUG
-        memory_zero_safe((int8*)this->Begin, this->Size * sizeof(type_element), this->Size * sizeof(type_element));
-#else
-        memory_zero((int8*)this->Begin, this->Size * sizeof(ElementType));
-#endif
-    };
 };
 
 template <class type_element> inline void Slice_bound_inside_check(const Slice<type_element>* thiz, const Slice<type_element>* p_tested_slice)
@@ -197,8 +92,7 @@ template <class type_element> inline Slice<int8> Slice_build_asint8_memory_singl
     return Slice<int8>{sizeof(type_element), (int8*)p_memory};
 };
 
-template <class type_element>
-inline static type_element* Slice_get(Slice<type_element>* thiz, const uimax p_index)
+template <class type_element> inline static type_element* Slice_get(Slice<type_element>* thiz, const uimax p_index)
 {
 #if __DEBUG
     Slice_bound_check(thiz, p_index);
@@ -206,14 +100,12 @@ inline static type_element* Slice_get(Slice<type_element>* thiz, const uimax p_i
     return &thiz->Begin[p_index];
 };
 
-template <class type_element>
-inline const type_element* Slice_get(const Slice<type_element>* thiz, const uimax p_index)
+template <class type_element> inline const type_element* Slice_get(const Slice<type_element>* thiz, const uimax p_index)
 {
     return Slice_get((Slice<type_element>*)thiz, p_index);
 };
 
-template <class type_element>
-inline static void Slice_slide(Slice<type_element>* thiz, const uimax p_offset_index)
+template <class type_element> inline static void Slice_slide(Slice<type_element>* thiz, const uimax p_offset_index)
 {
 #if __DEBUG
     Slice_bound_check(thiz, p_offset_index);
@@ -223,16 +115,14 @@ inline static void Slice_slide(Slice<type_element>* thiz, const uimax p_offset_i
     thiz->Size -= p_offset_index;
 };
 
-template <class type_element>
-inline static Slice<type_element> Slice_slide_rv(Slice<type_element>* thiz, const uimax p_offset_index)
+template <class type_element> inline static Slice<type_element> Slice_slide_rv(Slice<type_element>* thiz, const uimax p_offset_index)
 {
     Slice<type_element> l_return = *thiz;
     Slice_slide(&l_return, p_offset_index);
     return l_return;
 };
 
-template <class type_element>
-inline static Slice<type_element> Slice_slide_rv(const Slice<type_element>* thiz, const uimax p_offset_index)
+template <class type_element> inline static Slice<type_element> Slice_slide_rv(const Slice<type_element>* thiz, const uimax p_offset_index)
 {
     return Slice_slide_rv((Slice<type_element>*)thiz, p_offset_index);
 };
@@ -247,6 +137,119 @@ template <class type_casted> inline Slice<type_casted> Slice_cast(const Slice<in
 #endif
 
     return Slice<type_casted>{(uimax)p_slice->Size / sizeof(type_casted), (type_casted*)p_slice->Begin};
+};
+
+template <class type_element> inline static int8 Slice_compare(Slice<type_element>* thiz, const Slice<type_element>* p_other)
+{
+    return memory_compare((int8*)thiz->Begin, (int8*)p_other->Begin, p_other->Size * sizeof(type_element));
+};
+
+template <class type_element> inline static int8 Slice_compare(const Slice<type_element>* thiz, const Slice<type_element>* p_other)
+{
+    return Slice_compare((Slice<type_element>*)thiz, p_other);
+};
+
+template <class type_element> inline static int8 Slice_find(const Slice<type_element>* thiz, const Slice<type_element>* p_other, uimax* out_index)
+{
+#if __DEBUG
+    if (p_other->Size > thiz->Size)
+    {
+        abort();
+    }
+#endif
+
+    Slice<type_element> l_target_slice = *thiz;
+    if (Slice_compare(&l_target_slice, p_other))
+    {
+        *out_index = 0;
+        return 1;
+    };
+
+    for (uimax i = 1; i < thiz->Size - p_other->Size + 1; i++)
+    {
+        Slice_slide(&l_target_slice, 1);
+        if (Slice_compare(&l_target_slice, p_other))
+        {
+            *out_index = i;
+            return 1;
+        };
+    };
+
+    *out_index = -1;
+    return 0;
+};
+
+template <class type_element> inline static int8* Slice_move_memory(Slice<type_element>* thiz, const Slice<type_element>* p_source)
+{
+#if __DEBUG
+    return memory_move_safe((int8*)thiz->Begin, thiz->Size * sizeof(type_element), (int8*)p_source->Begin, p_source->Size * sizeof(type_element));
+#else
+    return memory_move((int8*)thiz->Begin, (int8*)p_source->Begin, p_source->Size * sizeof(type_element));
+#endif
+};
+
+template <class type_element> inline static void Slice_move_memory_down(Slice<type_element>* thiz, const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
+{
+    Slice<type_element> l_target = Slice_build_memory_offset_elementnb<type_element>(thiz->Begin, p_break_index + p_move_delta, p_moved_block_size);
+#if __DEBUG
+    Slice_bound_inside_check(thiz, &l_target);
+#endif
+    Slice<type_element> l_source = Slice_build_begin_end<type_element>(thiz->Begin, p_break_index, p_break_index + p_moved_block_size);
+    Slice_move_memory(&l_target, &l_source);
+};
+
+template <class type_element> inline static void Slice_move_memory_up(Slice<type_element>* thiz, const uimax p_moved_block_size, const uimax p_break_index, const uimax p_move_delta)
+{
+    Slice<type_element> l_target = Slice_build_memory_offset_elementnb<type_element>(thiz->Begin, p_break_index - p_move_delta, p_moved_block_size);
+#if __DEBUG
+    Slice_bound_inside_check(thiz, &l_target);
+#endif
+    Slice<type_element> l_source = Slice_build_begin_end<type_element>(thiz->Begin, p_break_index, p_break_index + p_moved_block_size);
+    Slice_move_memory(&l_target, &l_source);
+};
+
+template <class type_element> inline static int8* Slice_copy_memory(Slice<type_element>* thiz, const Slice<type_element>* p_elements)
+{
+#if __DEBUG
+    return memory_cpy_safe((int8*)thiz->Begin, thiz->Size * sizeof(type_element), (int8*)p_elements->Begin, p_elements->Size * sizeof(type_element));
+#else
+    return memory_cpy((int8*)thiz->Begin, (int8*)p_elements->Begin, p_elements->Size * sizeof(type_element));
+#endif
+};
+
+template <class type_element> inline static void Slice_copy_memory_at_index(Slice<type_element>* thiz, const uimax p_copy_index, const Slice<type_element>* p_elements)
+{
+    Slice<type_element> l_target = Slice_build_memory_elementnb<type_element>(thiz->Begin + p_copy_index, p_elements->Size);
+
+#if __DEBUG
+    Slice_bound_inside_check(thiz, &l_target);
+#endif
+
+    Slice_copy_memory(&l_target, p_elements);
+};
+
+template <class type_element>
+inline static void Slice_copy_memory_at_index_2(Slice<type_element>* thiz, const uimax p_copy_index, const Slice<type_element>* p_elements_1, const Slice<type_element>* p_elements_2)
+{
+    Slice_copy_memory_at_index(thiz, p_copy_index, p_elements_1);
+    Slice_copy_memory_at_index(thiz, p_copy_index + p_elements_1->Size, p_elements_2);
+};
+
+template <class type_element>
+inline static void Slice_copy_memory_at_index_3(Slice<type_element>* thiz, const uimax p_copy_index, const Slice<type_element>* p_elements_1, const Slice<type_element>* p_elements_2,
+                                                const Slice<type_element>* p_elements_3)
+{
+    Slice_copy_memory_at_index_2(thiz, p_copy_index, p_elements_1, p_elements_2);
+    Slice_copy_memory_at_index(thiz, p_copy_index + p_elements_1->Size + p_elements_2->Size, p_elements_3);
+};
+
+template <class type_element> inline static void Slice_zero(Slice<type_element>* thiz)
+{
+#if __DEBUG
+    memory_zero_safe((int8*)thiz->Begin, thiz->Size * sizeof(type_element), thiz->Size * sizeof(type_element));
+#else
+    memory_zero((int8*)thiz->Begin, thiz->Size * sizeof(type_element));
+#endif
 };
 
 template <class type_casted> inline type_casted* Slice_cast_singleelement(const Slice<int8>* p_slice)

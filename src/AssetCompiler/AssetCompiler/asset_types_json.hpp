@@ -48,17 +48,23 @@ inline const Slice<int8> AssetType_getName(const AssetType p_asset_type)
     }
 };
 
+namespace AssetJSON_Const
+{
+const Slice<int8> SHADER = Slice_int8_build_rawstr("SHADER");
+const Slice<int8> MATERIAL = Slice_int8_build_rawstr("MATERIAL");
+} // namespace AssetJSON_Const
+
 struct AssetJSON
 {
     inline static AssetType get_value_of_asset_json(JSONDeserializer* p_json_deserializer, JSONDeserializer* out_val_deserializer)
     {
         p_json_deserializer->next_field("type");
         AssetType l_type = AssetType::UNDEFINED;
-        if (p_json_deserializer->get_currentfield().value.compare(Slice_int8_build_rawstr("SHADER")))
+        if (Slice_compare(&p_json_deserializer->get_currentfield().value, &AssetJSON_Const::SHADER))
         {
             l_type = AssetType::SHADER;
         }
-        else if (p_json_deserializer->get_currentfield().value.compare(Slice_int8_build_rawstr("MATERIAL")))
+        else if (Slice_compare(&p_json_deserializer->get_currentfield().value, &AssetJSON_Const::MATERIAL))
         {
             l_type = AssetType::MATERIAL;
         }
@@ -76,19 +82,33 @@ struct AssetJSON
     };
 };
 
+namespace ShaderAssetJSON_Const
+{
+const Slice<int8> TEXTURE_FRAGMENT = Slice_int8_build_rawstr("TEXTURE_FRAGMENT");
+const Slice<int8> UNIFORM_BUFFER_VERTEX_FRAGMENT = Slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX_FRAGMENT");
+const Slice<int8> UNIFORM_BUFFER_VERTEX = Slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX");
+
+const Slice<int8> Always = Slice_int8_build_rawstr("Always");
+const Slice<int8> LessOrEqual = Slice_int8_build_rawstr("LessOrEqual");
+const Slice<int8> Greater = Slice_int8_build_rawstr("Greater");
+const Slice<int8> NotEqual = Slice_int8_build_rawstr("NotEqual");
+const Slice<int8> GreaterOrEqual = Slice_int8_build_rawstr("GreaterOrEqual");
+const Slice<int8> Invalid = Slice_int8_build_rawstr("Invalid");
+}; // namespace ShaderAssetJSON_Const
+
 struct ShaderAssetJSON
 {
     inline static ShaderLayoutParameterType slice_to_shaderlayoutparamtertype(const Slice<int8>& p_slice)
     {
-        if (p_slice.compare(Slice_int8_build_rawstr("TEXTURE_FRAGMENT")))
+        if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::TEXTURE_FRAGMENT))
         {
             return ShaderLayoutParameterType::TEXTURE_FRAGMENT;
         }
-        else if(p_slice.compare(Slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX_FRAGMENT")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::UNIFORM_BUFFER_VERTEX_FRAGMENT))
         {
             return ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
         }
-        else if(p_slice.compare(Slice_int8_build_rawstr("UNIFORM_BUFFER_VERTEX")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::UNIFORM_BUFFER_VERTEX))
         {
             return ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
         }
@@ -100,31 +120,27 @@ struct ShaderAssetJSON
 
     inline static ShaderConfiguration::CompareOp slice_to_compareop(const Slice<int8>& p_slice)
     {
-        if (p_slice.compare(Slice_int8_build_rawstr("Always")))
+        if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::Always))
         {
             return ShaderConfiguration::CompareOp::Always;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("LessOrEqual")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::LessOrEqual))
         {
             return ShaderConfiguration::CompareOp::LessOrEqual;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("Greater")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::Greater))
         {
             return ShaderConfiguration::CompareOp::Greater;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("NotEqual")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::NotEqual))
         {
             return ShaderConfiguration::CompareOp::NotEqual;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("GreaterOrEqual")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::GreaterOrEqual))
         {
             return ShaderConfiguration::CompareOp::GreaterOrEqual;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("Always")))
-        {
-            return ShaderConfiguration::CompareOp::Always;
-        }
-        else if (p_slice.compare(Slice_int8_build_rawstr("Invalid")))
+        else if (Slice_compare(&p_slice, &ShaderAssetJSON_Const::Invalid))
         {
             return ShaderConfiguration::CompareOp::Invalid;
         }
@@ -203,19 +219,26 @@ struct ShaderAssetJSON
     };
 };
 
+namespace MaterialAssetJSON_Const
+{
+const Slice<int8> UNIFORM_HOST = Slice_int8_build_rawstr("UNIFORM_HOST");
+const Slice<int8> UNIFORM_GPU = Slice_int8_build_rawstr("UNIFORM_GPU");
+const Slice<int8> TEXTURE_GPU = Slice_int8_build_rawstr("TEXTURE_GPU");
+}; // namespace MaterialAssetJSON_Const
+
 struct MaterialAssetJSON
 {
     inline static ShaderParameter::Type slice_to_shaderparametertype(const Slice<int8>& p_slice)
     {
-        if (p_slice.compare(Slice_int8_build_rawstr("UNIFORM_HOST")))
+        if (Slice_compare(&p_slice, &MaterialAssetJSON_Const::UNIFORM_HOST))
         {
             return ShaderParameter::Type::UNIFORM_HOST;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("UNIFORM_GPU")))
+        else if (Slice_compare(&p_slice, &MaterialAssetJSON_Const::UNIFORM_GPU))
         {
             return ShaderParameter::Type::UNIFORM_GPU;
         }
-        else if (p_slice.compare(Slice_int8_build_rawstr("TEXTURE_GPU")))
+        else if (Slice_compare(&p_slice, &MaterialAssetJSON_Const::TEXTURE_GPU))
         {
             return ShaderParameter::Type::TEXTURE_GPU;
         }
@@ -342,7 +365,7 @@ struct MaterialAssetJSON
             {
                 l_parameter_deserializer.next_field("type");
                 Slice<int8> l_material_parameter_type = l_parameter_deserializer.get_currentfield().value;
-                if (l_material_parameter_type.compare(Slice_int8_build_rawstr("TEXTURE_GPU")))
+                if (Slice_compare(&l_material_parameter_type, &MaterialAssetJSON_Const::TEXTURE_GPU))
                 {
                     l_parameter_deserializer.next_field("val");
                     l_textures.push_back_element(HashSlice(l_parameter_deserializer.get_currentfield().value));
