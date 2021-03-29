@@ -58,19 +58,15 @@ inline Token(ColliderDetector) CollisionHeap2::allocate_colliderdetector(const T
     return l_collider_detector_token;
 };
 
-inline void CollisionHeap2::free_colliderdetector(const Token(BoxCollider) p_box_collider, const Token(ColliderDetector) p_collider_detector){
-
-    {ColliderDetector& l_collider_detector = this->collider_detectors.get(p_collider_detector);
-this->collider_detectors_events_2.release_vector(l_collider_detector.collision_events);
-this->collider_detectors.release_element(p_collider_detector);
-}
-
+inline void CollisionHeap2::free_colliderdetector(const Token(BoxCollider) p_box_collider, const Token(ColliderDetector) p_collider_detector)
 {
+    ColliderDetector& l_collider_detector = this->collider_detectors.get(p_collider_detector);
+    this->collider_detectors_events_2.release_vector(l_collider_detector.collision_events);
+    this->collider_detectors.release_element(p_collider_detector);
+
     this->get_colliderdetector_from_boxcollider(p_box_collider) = tk_bd(ColliderDetector);
     // this->box_colliders_to_collider_detector.release_element(token_cast_p(Token(ColliderDetector), p_box_collider));
-}
-}
-;
+};
 
 inline Token(BoxCollider) CollisionHeap2::allocate_boxcollider(const BoxCollider& p_box_collider)
 {
@@ -86,6 +82,12 @@ inline void CollisionHeap2::push_boxcollider_transform(Token(BoxCollider) p_boxc
 };
 
 inline void CollisionHeap2::free_boxcollider(const Token(BoxCollider) p_box_collider)
+{
+    this->box_colliders.release_element(p_box_collider);
+    this->box_colliders_to_collider_detector.release_element(tk_bf(Token(ColliderDetector), p_box_collider));
+};
+
+inline void CollisionHeap2::free_boxcollider_with_detector(const Token(BoxCollider) p_box_collider)
 {
     Token(ColliderDetector)& l_collider_detector = this->get_colliderdetector_from_boxcollider(p_box_collider);
     if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
@@ -318,21 +320,21 @@ inline void CollisionDetectionStep::exit_collision(CollisionHeap2& p_collision_h
 
 inline void CollisionDetectionStep::remove_references_to_colliderdetector(CollisionHeap2& p_collision_heap, const Token(ColliderDetector) p_collider_detector)
 {
-    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
+    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
         return tk_eq(l_intsersrection_event.detector, p_collider_detector);
     });
 
-    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
-      return tk_eq(l_intsersrection_event.detector, p_collider_detector);
+    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
+        return tk_eq(l_intsersrection_event.detector, p_collider_detector);
     });
 
-    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_disabled_collider){
-      Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
-      if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
-      {
-          return true;
-      }
-      return false;
+    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_disabled_collider) {
+        Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
+        if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)) && tk_eq(l_collider_detector, p_collider_detector))
+        {
+            return true;
+        }
+        return false;
     });
 };
 
@@ -385,12 +387,15 @@ inline void CollisionDetectionStep::process_deleted_colliders(CollisionHeap2& p_
     for (vector_loop(&this->deleted_colliders_from_last_step, i))
     {
         Token(BoxCollider)& l_deleted_collider = this->deleted_colliders_from_last_step.get(i);
+
+        /*
         Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_deleted_collider);
         if (tk_neq(l_collider_detector, tk_b(ColliderDetector, -1)))
         {
             this->remove_references_to_colliderdetector(p_collision_heap, l_collider_detector);
             p_collision_heap.free_colliderdetector(l_deleted_collider, l_collider_detector);
         }
+        */
 
         p_collision_heap.box_colliders.get(l_deleted_collider).enabled = false;
         this->remove_references_to_boxcollider(l_deleted_collider);
@@ -576,6 +581,7 @@ inline void CollisionDetectionStep::free_deleted_colliders(CollisionHeap2& p_col
     for (vector_loop(&this->deleted_colliders_from_last_step, i))
     {
         p_collision_heap.free_boxcollider(this->deleted_colliders_from_last_step.get(i));
+        // p_collision_heap.free_boxcollider_with_detector(this->deleted_colliders_from_last_step.get(i));
     }
     this->deleted_colliders_from_last_step.clear();
 };
@@ -619,16 +625,29 @@ struct Collision2
         this->collision_detection_step.push_collider_for_process(p_moved_collider);
     };
 
-    inline void free_collider(const Token(BoxCollider) p_moved_collider)
-    {
+    inline void free_box_collider(const Token(BoxCollider) p_moved_collider){
         this->collision_detection_step.push_collider_for_deletion(p_moved_collider);
     };
 
+    inline void free_boxcollider_with_collider_detector(const Token(BoxCollider) p_moved_collider)
+    {
+        Token(ColliderDetector) l_collider_detector = this->collision_heap.get_colliderdetector_from_boxcollider(p_moved_collider);
+
+        if (tk_neq(l_collider_detector, tk_bd(ColliderDetector)))
+        {
+            this->collision_detection_step.push_collider_detector_for_deletion(p_moved_collider, l_collider_detector);
+        }
+
+        this->collision_detection_step.push_collider_for_deletion(p_moved_collider);
+    };
+
+    // TODO -> remove
     inline BoxCollider get_box_collider_copy(const Token(BoxCollider) p_box_collider)
     {
         return this->collision_heap.box_colliders.get(p_box_collider);
     };
 
+    // TODO -> remove
     inline int8 is_collider_queued_for_detection(const Token(BoxCollider) p_box_collider)
     {
         for (loop(i, 0, this->collision_detection_step.in_colliders_processed.Size))

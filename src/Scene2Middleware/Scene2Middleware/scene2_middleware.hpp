@@ -6,6 +6,7 @@
 #include "AssetRessource/asset_ressource.hpp"
 
 #include "./Middlewares/collision.hpp"
+#include "./Middlewares/collision_v2.hpp"
 #include "./Middlewares/render.hpp"
 
 /*

@@ -240,7 +240,7 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
+    for (loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);
         if (l_free_chunk.Size > p_size)
@@ -277,7 +277,7 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
+    for (loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
     // for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);

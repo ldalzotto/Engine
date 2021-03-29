@@ -130,7 +130,7 @@ inline void CollisionAllocator::free_box_collider_component(Collision2& p_collis
     };
 
     Token(BoxCollider) l_box_collider = this->box_colliders.get(p_box_collider_component).box_collider;
-    p_collision.free_collider(l_box_collider);
+    p_collision.free_boxcollider_with_collider_detector(l_box_collider);
     this->box_colliders.release_element(p_box_collider_component);
 };
 

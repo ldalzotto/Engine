@@ -50,7 +50,7 @@ struct MeshRendererComponent
 
     inline static MeshRendererComponent build(const Token(Node) p_scene_node, const Dependencies& p_dependencies)
     {
-        return MeshRendererComponent{0, 1, p_scene_node, tk_bd(RenderableObject), p_dependencies};
+        return MeshRendererComponent{0, 0, p_scene_node, tk_bd(RenderableObject), p_dependencies};
     };
 
     struct AssetDependencies
@@ -132,7 +132,7 @@ struct RenderMiddleWare
             p_renderer.allocator.heap.link_material_with_renderable_object(p_render_ressource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material).material,
                                                                            l_mesh_renderer.renderable_object);
             l_mesh_renderer.allocated = 1;
-
+            l_mesh_renderer.force_update = 1;
             this->mesh_renderer_allocation_events.pop_back();
         }
     };

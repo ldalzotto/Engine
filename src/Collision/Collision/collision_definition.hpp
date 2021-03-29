@@ -63,6 +63,7 @@ struct CollisionHeap2
     Token(BoxCollider) allocate_boxcollider(const BoxCollider& p_box_collider);
     void push_boxcollider_transform(Token(BoxCollider) p_boxcollider, const transform_pa& p_world_transform);
     void free_boxcollider(const Token(BoxCollider) p_box_collider);
+    void free_boxcollider_with_detector(const Token(BoxCollider) p_box_collider);
 
     Token(ColliderDetector) & get_colliderdetector_from_boxcollider(const Token(BoxCollider) p_box_collider);
 

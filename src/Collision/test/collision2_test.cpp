@@ -86,9 +86,9 @@ inline void collision_test_01()
         assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
     }
 
-    l_collision.free_collider(l_box_collider_1);
-    l_collision.free_collider(l_box_collider_2);
-    l_collision.free_collider(l_box_collider_3);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
     l_collision.free();
 }
@@ -164,7 +164,7 @@ inline void collision_test_02()
         assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
     }
 
-    l_collision.free_collider(l_box_collider_3);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
     // Taking deletion into account
     l_collision.step();
@@ -189,8 +189,8 @@ inline void collision_test_02()
         assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
     }
 
-    l_collision.free_collider(l_box_collider_1);
-    l_collision.free_collider(l_box_collider_2);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
 
     l_collision.free();
 }
@@ -306,7 +306,7 @@ inline void collision_test_03()
         assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
     }
 
-    l_collision.free_collider(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
 
     l_collision.step();
 
@@ -350,8 +350,8 @@ inline void collision_test_03()
         assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
     }
 
-    l_collision.free_collider(l_box_collider_2);
-    l_collision.free_collider(l_box_collider_3);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
     l_collision.free();
 }
@@ -398,7 +398,7 @@ inline void collision_test_04()
 
     l_collision.step();
 
-    l_collision.free_collider(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
     l_collision.free_colliderdetector(l_box_collider_2, l_box_collider_2_detector_handle);
 
     l_collision.step();
@@ -432,9 +432,9 @@ inline void collision_test_04()
         assert_true(tk_eq(l_box_collider_3_events.get(1).other, l_box_collider_2));
     }
 
-    l_collision.free_collider(l_box_collider_2);
-    l_collision.free_collider(l_box_collider_3);
-    l_collision.free_collider(l_box_collider_4);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_4);
 
     l_collision.free();
 }
@@ -481,9 +481,9 @@ inline void collision_test_05()
     l_collision.step();
 
     {
-        l_collision.free_collider(l_box_collider_1);
-        l_collision.free_collider(l_box_collider_2);
-        l_collision.free_collider(l_box_collider_3);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -497,9 +497,9 @@ inline void collision_test_05()
         l_collision.on_collider_moved(l_box_collider_2, l_box_collider_2_transform);
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
 
-        l_collision.free_collider(l_box_collider_1);
-        l_collision.free_collider(l_box_collider_2);
-        l_collision.free_collider(l_box_collider_3);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+        l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
@@ -513,7 +513,7 @@ inline void collision_test_05()
         assert_true(l_box_collider_1_events.Size == 0);
     }
 
-    l_collision.free_collider(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
 
     l_collision.free();
 };
@@ -599,9 +599,9 @@ inline void collision_test_06()
         assert_true(tk_eq(l_box_collider_1_events.get(1).other, l_box_collider_3));
     }
 
-    l_collision.free_collider(l_box_collider_1);
-    l_collision.free_collider(l_box_collider_2);
-    l_collision.free_collider(l_box_collider_3);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_1);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_2);
+    l_collision.free_boxcollider_with_collider_detector(l_box_collider_3);
 
     l_collision.free();
 };
