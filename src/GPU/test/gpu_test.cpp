@@ -29,7 +29,7 @@ inline void gpu_buffer_allocation()
     // allocating and releasing a BufferHost
     {
         uimax l_value = 20;
-        Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(Slice_build_asint8(&l_tested_uimax_slice), BufferUsageFlag::TRANSFER_READ);
+        Token(BufferHost) l_buffer_host_token = l_buffer_memory.allocator.allocate_bufferhost(l_tested_uimax_slice_int8, BufferUsageFlag::TRANSFER_READ);
         Slice<int8> l_buffer_host_token_memory = l_buffer_memory.allocator.host_buffers.get(l_buffer_host_token).get_mapped_memory();
         assert_true(Slice_compare(&l_buffer_host_token_memory, &l_tested_uimax_slice_int8));
         // We can write manually
@@ -41,9 +41,9 @@ inline void gpu_buffer_allocation()
     // allocating and releasing a BufferGPU
     {
         Token(BufferGPU) l_buffer_gpu = l_buffer_memory.allocator.allocate_buffergpu(
-            Slice_build_asint8(&l_tested_uimax_slice).Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
+            l_tested_uimax_slice_int8.Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE | (BufferUsageFlags)BufferUsageFlag::TRANSFER_READ));
 
-        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, Slice_build_asint8(&l_tested_uimax_slice));
+        BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice_int8);
 
         BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
         // We force command buffer submit just for the test
@@ -62,8 +62,8 @@ inline void gpu_buffer_allocation()
         l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
-
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().Slice_compare(Slice_build_asint8(&l_tested_uimax_slice)));
+        Slice<int8> l_host_buffer_slice = l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory();
+        assert_true(Slice_compare(&l_host_buffer_slice, &l_tested_uimax_slice_int8));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu);
@@ -107,6 +107,7 @@ inline void gpu_image_allocation()
     const uimax l_pixels_count = 16 * 16;
     color l_pixels[l_pixels_count];
     Slice<color> l_pixels_slize = Slice_build_memory_elementnb<color>(l_pixels, l_pixels_count);
+    Slice<int8> l_pixels_slize_int8 = Slice_build_asint8(&l_pixels_slize);
     for (loop(i, 1, l_pixels_slize.Size))
     {
         *Slice_get(&l_pixels_slize, i) = color{(uint8)i, (uint8)i, (uint8)i, (uint8)i};
@@ -125,10 +126,10 @@ inline void gpu_image_allocation()
     {
         l_imageformat.imageUsage = ImageUsageFlag::TRANSFER_READ;
         Token(ImageHost) l_image_host_token =
-            BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, Slice_build_asint8(&l_pixels_slize), l_imageformat);
+            BufferAllocatorComposition::allocate_imagehost_and_push_creation_event(l_buffer_memory.allocator, l_buffer_memory.events, l_pixels_slize_int8, l_imageformat);
         ImageHost& l_image_host = l_buffer_memory.allocator.host_images.get(l_image_host_token);
-
-        assert_true(l_image_host.get_mapped_memory().Slice_compare(Slice_build_asint8(&l_pixels_slize)));
+        Slice<int8> l_image_host_buffer = l_image_host.get_mapped_memory();
+        assert_true(Slice_compare(&l_image_host_buffer, &l_pixels_slize_int8));
 
         BufferAllocatorComposition::free_image_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_host_token);
     }
@@ -157,8 +158,8 @@ inline void gpu_image_allocation()
         l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
-
-        assert_true(l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory().Slice_compare(Slice_build_asint8(&l_pixels_slize)));
+        Slice<int8> l_read_buffer_mapped_memory = l_buffer_memory.allocator.host_buffers.get(l_read_buffer).get_mapped_memory();
+        assert_true(Slice_compare(&l_read_buffer_mapped_memory, &l_pixels_slize_int8));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_read_buffer);
         BufferAllocatorComposition::free_image_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu);
@@ -1083,7 +1084,7 @@ inline void gpu_texture_mapping()
         Slice<int8> l_color_attachment_value_pixels_slice_int8 = l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory();
         Slice<color> l_color_attachment_value_pixels = Slice_cast<color>(&l_color_attachment_value_pixels_slice_int8);
 
-        assert_true(l_color_attachment_value_pixels.Slice_compare(l_texture_pixels.slice));
+        assert_true(Slice_compare(&l_color_attachment_value_pixels, &l_texture_pixels.slice));
 
         BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_vertex_buffer);

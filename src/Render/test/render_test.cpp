@@ -34,10 +34,11 @@ inline void bufferstep_test()
     l_ctx.buffer_step_and_submit();
     l_ctx.wait_for_completion();
 
-    assert_true(l_ctx.buffer_memory.allocator.host_buffers
-                    .get(l_ctx.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderer.allocator.heap.renderable_objects.get(l_renderable_object).model).memory)
-                    .get_mapped_memory()
-                    .Slice_compare(Slice_build_asint8_memory_singleelement<m44f>(&m44f_const::IDENTITY)));
+    Slice<int8> l_model_buffer = l_ctx.buffer_memory.allocator.host_buffers
+        .get(l_ctx.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderer.allocator.heap.renderable_objects.get(l_renderable_object).model).memory)
+        .get_mapped_memory();
+    Slice<int8> l_identity = Slice_build_asint8_memory_singleelement<m44f>(&m44f_const::IDENTITY);
+    assert_true(Slice_compare(&l_model_buffer, &l_identity));
 
     Token(RenderableObject) l_renderable_object2 =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
