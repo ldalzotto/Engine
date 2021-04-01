@@ -1,5 +1,8 @@
 #pragma once
 
+/*
+    Allocates huge chunk of GPU memory and cut slice into it based on vulkan constraint.
+*/
 struct HeapPagedGPU
 {
     struct MemoryGPU
@@ -172,6 +175,9 @@ enum class ImageUsageFlag
 
 typedef uint8 ImageUsageFlags;
 
+/*
+    mipLevels and arrayLayers are not supported yet. They should always be equals to 1.
+*/
 struct ImageFormat
 {
     VkImageAspectFlags imageAspect;
@@ -262,7 +268,7 @@ struct ImageLayoutTransitionBarriers
 };
 
 /*
-    The BufferAllocator is the front layer that register and execute all allocation, copy of buffers.
+    The BufferAllocator allocates and holds token of vulkan buffer objects.
 */
 struct BufferAllocator
 {
@@ -299,6 +305,14 @@ struct BufferAllocator
     void free_imagegpu(const Token(ImageGPU) p_image_gpu);
 };
 
+/*
+    The BufferEvents stores all GPU operations that are deferred to be executed on a command buffer.
+    This includes :
+        1/ Image host and gpu allocation (because they need image layout transition)
+        2/ Writing buffer host to gpu
+        3/ Writing buffer gpu to host
+
+*/
 struct BufferEvents
 {
     Vector<Token(BufferHost)> garbage_host_buffers;
@@ -435,7 +449,6 @@ struct BufferCommandUtils
 
     static void cmd_revert_image_layout_from_transfer_src(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format);
 };
-
 
 inline HeapPagedGPU::MemoryGPU HeapPagedGPU::MemoryGPU::allocate(const gc_t p_transfer_device, const uint32 p_memory_type_index, const uimax p_memory_size)
 {
@@ -907,9 +920,8 @@ inline ImageLayoutTransitionBarriers ImageLayoutTransitionBarriers::allocate()
         ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                                                   VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
     const ImageLayoutTransitionBarrierConfiguration shader_readonly_to_colorattachement =
-        ImageLayoutTransitionBarrierConfiguration{
-        VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                                  VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     ImageLayoutTransitionBarriers l_barriers = ImageLayoutTransitionBarriers{
         Span<ImageLayoutTransitionBarrierConfiguration>::callocate(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount)};
@@ -1260,6 +1272,13 @@ inline void BufferStep::step(BufferAllocator& p_buffer_allocator, BufferEvents& 
 
     p_buffer_allocator.device.command_buffer.begin();
 
+    /*
+        /!\ It is very important that image host and gpu allocation events are processed before image copy operations because further events assume that the image layout of the image is the targetted
+       one.
+    */
+    /*
+     ImageLayout transition from unknown state to desired imageUsage.
+    */
     if (p_buffer_events.image_host_allocate_events.Size > 0)
     {
         for (loop(i, 0, p_buffer_events.image_host_allocate_events.Size))
@@ -1272,6 +1291,9 @@ inline void BufferStep::step(BufferAllocator& p_buffer_allocator, BufferEvents& 
         p_buffer_events.image_host_allocate_events.clear();
     }
 
+    /*
+      ImageLayout transition from unknown state to desired imageUsage.
+     */
     if (p_buffer_events.image_gpu_allocate_events.Size > 0)
     {
         for (loop(i, 0, p_buffer_events.image_gpu_allocate_events.Size))
@@ -1284,6 +1306,11 @@ inline void BufferStep::step(BufferAllocator& p_buffer_allocator, BufferEvents& 
         p_buffer_events.image_gpu_allocate_events.clear();
     }
 
+    /*
+        ImageLayout transition from desired imageUsage to transfert_dst.
+        Copy command.
+        ImageLayout transition from transfert_dst to desired imageUsage.
+    */
     if (p_buffer_events.write_buffer_host_to_image_gpu_events.Size > 0)
     {
         for (loop(i, 0, p_buffer_events.write_buffer_host_to_image_gpu_events.Size))
@@ -1300,6 +1327,11 @@ inline void BufferStep::step(BufferAllocator& p_buffer_allocator, BufferEvents& 
         p_buffer_events.write_buffer_host_to_image_gpu_events.clear();
     }
 
+    /*
+        ImageLayout transition from desired imageUsage to transfert_src.
+        Copy command.
+        ImageLayout transition from transfert_src to desired imageUsage.
+    */
     if (p_buffer_events.write_image_gpu_to_buffer_host_events.Size > 0)
     {
         for (loop(i, 0, p_buffer_events.write_image_gpu_to_buffer_host_events.Size))
@@ -1538,4 +1570,3 @@ inline void BufferCommandUtils::cmd_copy_buffer(const CommandBuffer& p_command_b
     l_buffer_copy.size = p_source_size;
     vkCmdCopyBuffer(p_command_buffer.command_buffer, p_source_buffer, p_target_buffer, 1, &l_buffer_copy);
 };
-
