@@ -448,12 +448,12 @@ inline void scene_object_movement()
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
 
         l_ctx.step(component_releaser);
-        assert_true(l_ctx.renderer.heap().model_update_events.get_size() == 1);
+        assert_true(l_ctx.renderer.events.model_update_events.get_size() == 1);
 
         l_ctx.scene.tree.set_localposition(l_ctx.scene.get_node(l_node_1), v3f{5.0f, 3.0f, 9.0f});
 
         l_ctx.step(component_releaser);
-        assert_true(l_ctx.renderer.heap().model_update_events.get_size() == 2);
+        assert_true(l_ctx.renderer.events.model_update_events.get_size() == 2);
 
         l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
         l_ctx.step(component_releaser);

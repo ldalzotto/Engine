@@ -21,6 +21,12 @@ struct ShaderIndex
     Token(ShaderLayout) shader_layout;
 };
 
+/*
+    Holds reference to a vertex and index GPU buffer.
+    It is up to the render module consumer to define the vertex buffer format. It must match with the shader vertex
+    input.
+    By default, mesh buffers are GPU allocated because we suppose that their vamue won't be modified often.
+*/
 struct Mesh
 {
     Token(BufferGPU) vertices_buffer;
@@ -28,12 +34,20 @@ struct Mesh
     uimax indices_count;
 };
 
+/*
+The renderable object is the representation of an object in 3D space with it's shape.
+It holds a reference to a Mesh and a model matrix. The model matrix is alaways host shader parameter because it's value
+is subject to change often.
+ */
 struct RenderableObject
 {
     Token(ShaderUniformBufferHostParameter) model;
     Token(Mesh) mesh;
 };
 
+/*
+ holds values of the render hierarchy.
+*/
 struct D3RendererHeap
 {
     Pool<ShaderIndex> shaders;
@@ -44,14 +58,6 @@ struct D3RendererHeap
     Vector<Token(ShaderIndex)> shaders_indexed;
     PoolOfVector<Token(Material)> shaders_to_materials;
     PoolOfVector<Token(RenderableObject)> material_to_renderable_objects;
-
-    struct RenderableObject_ModelUpdateEvent
-    {
-        Token(RenderableObject) renderable_object;
-        m44f model_matrix;
-    };
-
-    Vector<RenderableObject_ModelUpdateEvent> model_update_events;
 
     static D3RendererHeap allocate();
 
@@ -70,10 +76,11 @@ struct D3RendererHeap
     void unlink_material_with_renderable_object(const Token(Material) p_material, const Token(RenderableObject) p_renderable_object);
 
     PoolOfVector<Token(RenderableObject)>::Element_ShadowVector get_renderableobjects_from_material(const Token(Material) p_material);
-
-    void push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent);
 };
 
+/*
+    ensure the coherence of the render hierarchy (links between graphics objects).
+*/
 struct D3RendererAllocator
 {
     D3RendererHeap heap;
@@ -99,6 +106,24 @@ struct D3RendererAllocator
     void free_renderable_object(const Token(RenderableObject) p_rendereable_object);
 };
 
+struct D3RendererEvents
+{
+    struct RenderableObject_ModelUpdateEvent
+    {
+        Token(RenderableObject) renderable_object;
+        m44f model_matrix;
+    };
+
+    Vector<RenderableObject_ModelUpdateEvent> model_update_events;
+
+    static D3RendererEvents allocate();
+
+    void free();
+
+    void push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent);
+    void remove_renderableobject_references(const Token(RenderableObject) p_renderable_object);
+};
+
 namespace ColorStep_const
 {
 SliceN<ShaderLayoutParameterType, 1> shaderlayout_before = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
@@ -107,6 +132,7 @@ SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN
     ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0}, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)}};
 }; // namespace ColorStep_const
 
+// responsible of the graphics passes supported by the module.
 struct ColorStep
 {
     v3ui render_target_dimensions;
@@ -138,11 +164,14 @@ struct ColorStep
 };
 
 /*
+    The Render module is the 3D renderer of the engine. It registers all graphics objects and organize them in a hierarchy to call GPU graphics bindings against them.
     The D3Renderer is a structure that organize GPU graphics allocated data in a hierarchical way (Shader -> Material -> RenderableObject).
+    The render module creates an internal 2D render target texture and draw the hierachy to it every frame.
 */
 struct D3Renderer
 {
     D3RendererAllocator allocator;
+    D3RendererEvents events;
     ColorStep color_step;
 
     static D3Renderer allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info);
@@ -167,7 +196,6 @@ inline D3RendererHeap D3RendererHeap::allocate()
     l_heap.shaders_indexed = Vector<Token(ShaderIndex)>::allocate(0);
     l_heap.shaders_to_materials = PoolOfVector<Token(Material)>::allocate_default();
     l_heap.material_to_renderable_objects = PoolOfVector<Token(RenderableObject)>::allocate_default();
-    l_heap.model_update_events = Vector<RenderableObject_ModelUpdateEvent>::allocate(0);
     return l_heap;
 };
 
@@ -181,7 +209,6 @@ inline void D3RendererHeap::free()
     assert_true(this->shaders_indexed.empty());
     assert_true(!this->shaders_to_materials.has_allocated_elements());
     assert_true(!this->material_to_renderable_objects.has_allocated_elements());
-    assert_true(this->model_update_events.empty());
 #endif
 
     this->shaders.free();
@@ -191,7 +218,6 @@ inline void D3RendererHeap::free()
     this->shaders_indexed.free();
     this->shaders_to_materials.free();
     this->material_to_renderable_objects.free();
-    this->model_update_events.free();
 };
 
 inline void D3RendererHeap::link_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material)
@@ -251,11 +277,6 @@ inline PoolOfVector<Token(RenderableObject)>::Element_ShadowVector D3RendererHea
     return this->material_to_renderable_objects.get_element_as_shadow_vector(tk_bf(Slice<Token(RenderableObject)>, p_material));
 };
 
-inline void D3RendererHeap::push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
-{
-    this->model_update_events.push_back_element(p_modelupdateevent);
-};
-
 inline D3RendererAllocator D3RendererAllocator::allocate()
 {
     return D3RendererAllocator{D3RendererHeap::allocate()};
@@ -296,7 +317,7 @@ inline void D3RendererAllocator::free_shader(const Token(ShaderIndex) p_shader)
             break;
         }
     }
-    
+
     this->heap.shaders_to_materials.release_vector(tk_bf(Slice<Token(Material)>, p_shader));
     this->heap.shaders.release_element(p_shader);
 };
@@ -330,14 +351,6 @@ inline Token(RenderableObject) D3RendererAllocator::allocate_renderable_object(c
 
 inline void D3RendererAllocator::free_renderable_object(const Token(RenderableObject) p_rendereable_object)
 {
-    for (loop_reverse(i, 0, this->heap.model_update_events.Size))
-    {
-        if (tk_eq(this->heap.model_update_events.get(i).renderable_object, p_rendereable_object))
-        {
-            this->heap.model_update_events.erase_element_at_always(i);
-        }
-    }
-
     this->heap.renderable_objects.release_element(p_rendereable_object);
 };
 
@@ -404,10 +417,11 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                           const Token(RenderableObject) p_renderable_object)
+                                                           D3RendererEvents& p_render_events, const Token(RenderableObject) p_renderable_object)
     {
         RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
         GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, l_renderable_object.model);
+        p_render_events.remove_renderableobject_references(p_renderable_object);
         p_render_allocator.free_renderable_object(p_renderable_object);
     };
 
@@ -420,11 +434,11 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                    const Token(RenderableObject) p_renderable_object)
+                                                                    D3RendererEvents& p_render_events, const Token(RenderableObject) p_renderable_object)
     {
         RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
         free_mesh_with_buffers(p_buffer_memory, p_render_allocator, l_renderable_object.mesh);
-        free_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_renderable_object);
+        free_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_events, p_renderable_object);
     };
 
     inline static void free_renderable_object_external_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
@@ -461,7 +475,7 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                   const Token(ShaderIndex) p_shader)
+                                                                   D3RendererEvents& p_render_events, const Token(ShaderIndex) p_shader)
     {
         auto l_materials_to_remove = p_render_allocator.heap.get_materials_from_shader(p_shader);
 
@@ -475,7 +489,7 @@ struct D3RendererAllocatorComposition
             {
                 Token(RenderableObject) l_renderable_object_to_remove = l_renderable_objects_to_remove.get(j);
                 p_render_allocator.heap.unlink_material_with_renderable_object(l_material_to_remove, l_renderable_object_to_remove);
-                free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_renderable_object_to_remove);
+                free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_events, l_renderable_object_to_remove);
             }
 
             p_render_allocator.heap.unlink_shader_with_material(p_shader, l_material_to_remove);
@@ -484,6 +498,36 @@ struct D3RendererAllocatorComposition
 
         free_shader_with_shaderlayout(p_graphics_allocator, p_render_allocator, p_shader);
     };
+};
+
+inline D3RendererEvents D3RendererEvents::allocate()
+{
+    return D3RendererEvents{Vector<RenderableObject_ModelUpdateEvent>::allocate(0)};
+};
+
+inline void D3RendererEvents::free()
+{
+#if __DEBUG
+    assert_true(this->model_update_events.empty());
+#endif
+
+    this->model_update_events.free();
+};
+
+inline void D3RendererEvents::push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
+{
+    this->model_update_events.push_back_element(p_modelupdateevent);
+};
+
+inline void D3RendererEvents::remove_renderableobject_references(const Token(RenderableObject) p_renderable_object)
+{
+    for (loop_reverse(i, 0, this->model_update_events.Size))
+    {
+        if (tk_eq(this->model_update_events.get(i).renderable_object, p_renderable_object))
+        {
+            this->model_update_events.erase_element_at_always(i);
+        }
+    }
 };
 
 inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info)
@@ -499,12 +543,10 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
     {
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
     }
-    if(p_allocate_info.color_attachment_sample)
+    if (p_allocate_info.color_attachment_sample)
     {
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
     }
-
-
 
     SliceN<RenderPassAttachment, 2> l_attachments = {
         RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |
@@ -565,7 +607,7 @@ inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)
 
 inline D3Renderer D3Renderer::allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
 {
-    return D3Renderer{D3RendererAllocator::allocate(), ColorStep::allocate(p_gpu_context, p_allocation_info)};
+    return D3Renderer{D3RendererAllocator::allocate(), D3RendererEvents::allocate(), ColorStep::allocate(p_gpu_context, p_allocation_info)};
 };
 
 inline void D3Renderer::free(GPUContext& p_gpu_context)
@@ -573,6 +615,7 @@ inline void D3Renderer::free(GPUContext& p_gpu_context)
     this->buffer_step(p_gpu_context);
 
     this->allocator.free();
+    this->events.free();
     this->color_step.free(p_gpu_context);
 };
 
@@ -583,9 +626,9 @@ inline D3RendererHeap& D3Renderer::heap()
 
 inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
 {
-    for (loop(i, 0, this->heap().model_update_events.Size))
+    for (loop(i, 0, this->events.model_update_events.Size))
     {
-        auto& l_event = this->heap().model_update_events.get(i);
+        auto& l_event = this->events.model_update_events.get(i);
 
         Slice<int8> l_mapped_memory =
             p_gpu_context.buffer_memory.allocator.host_buffers
@@ -595,7 +638,7 @@ inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
         l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
     };
 
-    this->heap().model_update_events.clear();
+    this->events.model_update_events.clear();
 };
 
 inline void D3Renderer::graphics_step(GraphicsBinder& p_graphics_binder)
