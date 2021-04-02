@@ -770,9 +770,8 @@ inline void gpu_draw_indexed()
             v3f position;
         };
 
-        SliceN<vertex_position, 4> l_vertices = {vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.0f, 0.0f}},
-                                                 vertex_position{v3f{0.5f, 0.5f, 0.0f}}};
-        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
+        Declare_sized_slice(vertex_position, 4, l_vertices, l_vertices_slice, vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}},
+                                   vertex_position{v3f{0.0f, 0.0f, 0.0f}}, vertex_position{v3f{0.5f, 0.5f, 0.0f}});
 
         SliceN<uint32, 6> l_indices = {0, 1, 2, 0, 3, 1};
         Slice<uint32> l_indices_slice = slice_from_slicen(&l_indices);
@@ -849,7 +848,7 @@ inline void gpu_draw_indexed()
 
             l_graphics_binder.bind_index_buffer_gpu(l_buffer_memory.allocator.gpu_buffers.get(l_indices_buffer), BufferIndexType::UINT32);
             l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_memory.allocator.gpu_buffers.get(l_vertex_buffer));
-            l_graphics_binder.draw_indexed(l_indices.Size());
+            l_graphics_binder.draw_indexed(l_indices_slice.Size);
 
             l_graphics_binder.end_render_pass();
 

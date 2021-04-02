@@ -579,7 +579,8 @@ inline Slice<int8> TransferDeviceHeap::get_element_as_slice(const TransferDevice
 inline SliceOffset<int8> TransferDeviceHeap::get_element_gcmemory_and_offset(const TransferDeviceHeapToken& p_token)
 {
     HeapPagedGPU& l_heap = *Span_get(&this->gpu_heaps, p_token.heap_index);
-    return SliceOffset<int8>::build_from_sliceindex((int8*)l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).gpu_memory, *l_heap.heap.get_sliceindex_only(p_token.heap_paged_token));
+    return SliceOffset_build_from_sliceindex((int8*)l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).gpu_memory,
+                                                                l_heap.heap.get_sliceindex_only(p_token.heap_paged_token));
 };
 
 inline TransferDevice TransferDevice::allocate(const GPUInstance& p_instance)

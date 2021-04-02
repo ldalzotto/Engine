@@ -56,8 +56,8 @@ struct Engine
         l_engine.clock = Clock::allocate_default();
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
-        SliceN<GPUExtension, 1> tmp_gpu_extensions{GPUExtension::WINDOW_PRESENT};
-        l_engine.gpu_context = GPUContext::allocate(slice_from_slicen(&tmp_gpu_extensions));
+        Declare_sized_slice(GPUExtension, 1, tmp_gpu_extensions, tmp_gpu_extensions_slice, GPUExtension::WINDOW_PRESENT);
+        l_engine.gpu_context = GPUContext::allocate(tmp_gpu_extensions_slice);
         l_engine.renderer_ressource_allocator = RenderRessourceAllocator2::allocate();
         l_engine.scene = Scene::allocate_default();
         l_engine.scene_middleware = SceneMiddleware::allocate_default();

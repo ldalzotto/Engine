@@ -38,21 +38,21 @@ struct VaryingVector
 
     inline void push_back(const Slice<int8>& p_bytes)
     {
-        SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_bytes.Size);
+        SliceIndex l_chunk = SliceIndex_build(this->memory.Size, p_bytes.Size);
         this->memory.push_back_array(p_bytes);
         this->chunks.push_back_element(l_chunk);
     };
 
     inline void push_back_2(const Slice<int8>& p_bytes_1, const Slice<int8>& p_bytes_2)
     {
-        SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_bytes_1.Size + p_bytes_2.Size);
+        SliceIndex l_chunk = SliceIndex_build(this->memory.Size, p_bytes_1.Size + p_bytes_2.Size);
         this->memory.push_back_array_2(p_bytes_1, p_bytes_2);
         this->chunks.push_back_element(l_chunk);
     };
 
     inline void push_back_empty(const uimax p_slice_size)
     {
-        SliceIndex l_chunk = SliceIndex::build(this->memory.Size, p_slice_size);
+        SliceIndex l_chunk = SliceIndex_build(this->memory.Size, p_slice_size);
         this->memory.push_back_array_empty(p_slice_size);
         this->chunks.push_back_element(l_chunk);
     };
@@ -72,7 +72,7 @@ struct VaryingVector
     {
         SliceIndex& l_break_chunk = this->chunks.get(p_index);
         this->memory.insert_array_at(p_bytes, l_break_chunk.Begin);
-        this->chunks.insert_element_at(SliceIndex::build(l_break_chunk.Begin, p_bytes.Size), p_index);
+        this->chunks.insert_element_at(SliceIndex_build(l_break_chunk.Begin, p_bytes.Size), p_index);
 
         for (loop(i, p_index + 1, this->chunks.Size))
         {
@@ -108,7 +108,7 @@ struct VaryingVector
 
     inline void erase_array_at(const uimax p_index, const uimax p_element_nb)
     {
-        SliceIndex l_removed_chunk = SliceIndex::build_default();
+        SliceIndex l_removed_chunk = SliceIndex_build_default();
 
         for (loop(i, p_index, p_index + p_element_nb))
         {

@@ -101,13 +101,10 @@ struct D3RendererAllocator
 
 namespace ColorStep_const
 {
-SliceN<ShaderLayoutParameterType, 1> shaderlayout_before = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
-Slice<ShaderLayoutParameterType> shaderlayout_before_slice = slice_from_slicen(&shaderlayout_before);
-SliceN<ShaderLayoutParameterType, 1> shaderlayout_after = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
-Slice<ShaderLayoutParameterType> shaderlayout_after_slice = slice_from_slicen(&shaderlayout_after);
-SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN<ShaderLayout::VertexInputParameter, 2>{
-    ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0}, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)}};
-Slice<ShaderLayout::VertexInputParameter> shaderlayout_vertex_input_slice = slice_from_slicen(&shaderlayout_vertex_input);
+Declare_sized_slice(ShaderLayoutParameterType, 1, shaderlayout_before, shaderlayout_before_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
+Declare_sized_slice(ShaderLayoutParameterType, 1, shaderlayout_after, shaderlayout_after_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
+Declare_sized_slice(ShaderLayout::VertexInputParameter, 2, shaderlayout_vertex_input, shaderlayout_vertex_input_slice, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
+                    ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)});
 }; // namespace ColorStep_const
 
 struct ColorStep
@@ -442,8 +439,7 @@ struct D3RendererAllocatorComposition
                                                     const uimax p_execution_order, const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration,
                                                     const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
     {
-        Span<ShaderLayoutParameterType> l_span =
-            Span_allocate_slice_3(&ColorStep_const::shaderlayout_before_slice, &p_specific_parameters, &ColorStep_const::shaderlayout_after_slice);
+        Span<ShaderLayoutParameterType> l_span = Span_allocate_slice_3(&ColorStep_const::shaderlayout_before_slice, &p_specific_parameters, &ColorStep_const::shaderlayout_after_slice);
         Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span_allocate_slice(&ColorStep_const::shaderlayout_vertex_input_slice);
 
         ShaderIndex l_shader_index;

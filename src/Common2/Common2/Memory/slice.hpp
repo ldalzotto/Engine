@@ -308,6 +308,8 @@ template <class ElementType, uint32 Size_t> struct SliceN
     }
 };
 
+#define Declare_sized_slice(type_element, type_size, name_arr, name_slice, ...) type_element name_arr[type_size] = {__VA_ARGS__}; Slice<type_element> name_slice = {type_size, name_arr};
+
 template <class ElementType, uint32 Size_t> inline Slice<ElementType> slice_from_slicen(const SliceN<ElementType, Size_t>* p_slice_n)
 {
     return Slice<ElementType>{Size_t, (ElementType*)p_slice_n->Memory};
@@ -320,37 +322,39 @@ struct SliceIndex
 {
     uimax Begin;
     uimax Size;
-
-    inline static SliceIndex build(const uimax p_begin, const uimax p_size)
-    {
-        return SliceIndex{p_begin, p_size};
-    };
-
-    inline static SliceIndex build_default()
-    {
-        return build(0, 0);
-    };
-
-    inline void slice_two(const uimax p_break_point, SliceIndex* out_left, SliceIndex* out_right) const
-    {
-        uimax l_source_initial_size = this->Size;
-        *out_left = SliceIndex::build(this->Begin, p_break_point - this->Begin);
-        *out_right = SliceIndex::build(p_break_point, l_source_initial_size - out_left->Size);
-    };
 };
 
-template <class ElementType> struct SliceOffset
+inline static SliceIndex SliceIndex_build(const uimax p_begin, const uimax p_size)
+{
+    return SliceIndex{p_begin, p_size};
+};
+
+inline static SliceIndex SliceIndex_build_default()
+{
+    return SliceIndex_build(0, 0);
+};
+
+inline static void SliceIndex_slice_two(const SliceIndex* thiz, const uimax p_break_point, SliceIndex* out_left, SliceIndex* out_right)
+{
+    uimax l_source_initial_size = thiz->Size;
+    *out_left = SliceIndex_build(thiz->Begin, p_break_point - thiz->Begin);
+    *out_right = SliceIndex_build(p_break_point, l_source_initial_size - out_left->Size);
+};
+
+template <class type_element> struct SliceOffset
 {
     uimax Offset;
-    ElementType* Memory;
+    type_element* Memory;
+};
 
-    inline static SliceOffset<ElementType> build(ElementType* p_memory, const uimax p_offset)
-    {
-        return SliceOffset<ElementType>{p_offset, p_memory};
-    };
+template <class type_element>
+inline static SliceOffset<type_element> SliceOffset_build(type_element* p_memory, const uimax p_offset)
+{
+    return SliceOffset<type_element>{p_offset, p_memory};
+};
 
-    inline static SliceOffset<ElementType> build_from_sliceindex(ElementType* p_memory, const SliceIndex& p_slice_index)
-    {
-        return SliceOffset<ElementType>{p_slice_index.Begin, p_memory};
-    };
+template <class type_element>
+inline static SliceOffset<type_element> SliceOffset_build_from_sliceindex(type_element* p_memory, const SliceIndex* p_slice_index)
+{
+    return SliceOffset<type_element>{p_slice_index->Begin, p_memory};
 };
