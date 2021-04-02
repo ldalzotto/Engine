@@ -285,35 +285,7 @@ template <class type_casted> inline Slice<type_casted> Slice_cast_fixedelementnb
 #define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice
 #endif
 
-template <class ElementType, uint32 Size_t> struct SliceN
-{
-    ElementType Memory[Size_t];
-
-    inline uimax Size()
-    {
-        return Size_t;
-    };
-
-    inline ElementType& get(const uimax p_index)
-    {
-#if __DEBUG
-        assert_true(p_index < Size_t);
-#endif
-        return this->Memory[p_index];
-    };
-
-    inline const ElementType& get(const uimax p_index) const
-    {
-        return ((SliceN<ElementType, Size_t>*)this)->get(p_index);
-    }
-};
-
 #define Declare_sized_slice(type_element, type_size, name_arr, name_slice, ...) type_element name_arr[type_size] = {__VA_ARGS__}; Slice<type_element> name_slice = {type_size, name_arr};
-
-template <class ElementType, uint32 Size_t> inline Slice<ElementType> slice_from_slicen(const SliceN<ElementType, Size_t>* p_slice_n)
-{
-    return Slice<ElementType>{Size_t, (ElementType*)p_slice_n->Memory};
-};
 
 /*
     A SliceIndex is just a begin and end uimax

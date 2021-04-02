@@ -235,9 +235,12 @@ struct SwapChain
             l_image_format.format = l_swapchain_create.imageFormat;
             *Span_get(&p_swap_chain.swap_chain_images, i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, *Span_get(&l_images, i), l_image_format, 0});
 
-            *Span_get(&p_swap_chain.rendertarget_copy_pass, i) = p_graphics_allocator.allocate_graphicspass<1>(
-                p_buffer_memory.allocator.device, Span_get(&p_swap_chain.swap_chain_images, i), &p_buffer_memory.allocator.gpu_images.get(*Span_get(&p_swap_chain.swap_chain_images, i)),
-                SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
+            Declare_sized_slice(RenderPassAttachment, 1, l_renderpass_attachments_arr, l_renderpass_attachments_slice, RenderPassAttachment{AttachmentType::KHR, l_image_format});
+
+            Slice<Token(ImageGPU)> l_swap_chain_current_attachment_image_tokens = Slice_build_begin_end(Span_get(&p_swap_chain.swap_chain_images, i), 0, 1);
+            Slice<ImageGPU> l_swap_chain_current_attachment_images = Slice_build_begin_end(&p_buffer_memory.allocator.gpu_images.get(*Span_get(&p_swap_chain.swap_chain_images, i)), 0, 1);
+            *Span_get(&p_swap_chain.rendertarget_copy_pass, i) = p_graphics_allocator.allocate_graphicspass(p_buffer_memory.allocator.device, l_swap_chain_current_attachment_image_tokens,
+                                                                                                            l_swap_chain_current_attachment_images, l_renderpass_attachments_slice);
         }
         Span_free(&l_images);
 

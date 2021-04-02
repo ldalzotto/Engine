@@ -120,7 +120,7 @@ struct RenderPass
 {
     RenderPass_t render_pass;
 
-    template <uint8 AttachmentCount> static RenderPass allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments);
+    static RenderPass allocate(const GraphicsDevice& p_device, const Slice<RenderPassAttachment>& p_attachments);
 
     void free(const GraphicsDevice& p_device);
 };
@@ -140,9 +140,8 @@ struct GraphicsPass
     Token(Slice<Token(TextureGPU)>) attachment_textures;
     FrameBuffer_t frame_buffer;
 
-    template <uint32 AttachmentCount>
     static GraphicsPass allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
-                                 const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views);
+                                 const Slice<RenderPassAttachment>& p_render_pass_attachments, const VkImageView* p_attachment_image_views);
 
     void free(const GraphicsDevice& p_graphics_device);
 };
@@ -553,51 +552,48 @@ inline void TextureGPU::free(BufferMemory& p_buffer_memory)
     BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, this->Image);
 };
 
-template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
+inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const Slice<RenderPassAttachment>& p_attachments)
 {
 
 #if __DEBUG
-    assert_true(AttachmentCount >= 1);
+    assert_true(p_attachments.Size >= 1);
 #endif
 
-    VkAttachmentDescription l_attachments_raw[AttachmentCount];
-    Slice<VkAttachmentDescription> l_attachments = Slice_build_memory_elementnb<VkAttachmentDescription>(l_attachments_raw, AttachmentCount);
-
-    VkAttachmentReference l_color_attachments_ref_raw[AttachmentCount];
-    Slice<VkAttachmentReference> l_color_attachments_ref = Slice_build_memory_elementnb<VkAttachmentReference>(l_color_attachments_ref_raw, AttachmentCount);
+    Span<VkAttachmentDescription> l_attachments_raw = Span_allocate<VkAttachmentDescription>(p_attachments.Size);
+    Span<VkAttachmentReference> l_color_attachments_ref_raw = Span_allocate<VkAttachmentReference>(p_attachments.Size);
     uint8 l_color_attachments_ref_count = 0;
 
     VkAttachmentReference l_depth_attachment_reference;
 
     VkSubpassDescription l_subpass = VkSubpassDescription{};
 
-    for (loop(i, 0, AttachmentCount))
+    for (loop(i, 0, p_attachments.Size))
     {
-
-        VkAttachmentDescription& l_attachment_description = *Slice_get(&l_attachments, i);
+        const RenderPassAttachment* l_attachment = Slice_get(&p_attachments, i);
+        VkAttachmentDescription& l_attachment_description = *Span_get(&l_attachments_raw, i);
         l_attachment_description = VkAttachmentDescription{};
-        l_attachment_description.format = p_attachments.get(i).image_format.format;
-        l_attachment_description.samples = p_attachments.get(i).image_format.samples;
+        l_attachment_description.format = l_attachment->image_format.format;
+        l_attachment_description.samples = l_attachment->image_format.samples;
         l_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
         l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
         l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
         l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
         l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 
-        if (p_attachments.get(i).type == AttachmentType::KHR)
+        if (l_attachment->type == AttachmentType::KHR)
         {
             l_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         }
         else
         {
-            l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments.get(i).image_format.imageUsage);
+            l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment->image_format.imageUsage);
         }
 
-        switch (p_attachments.get(i).type)
+        switch (l_attachment->type)
         {
         case AttachmentType::COLOR:
         {
-            VkAttachmentReference& l_attachment_reference = *Slice_get(&l_color_attachments_ref, l_color_attachments_ref_count);
+            VkAttachmentReference& l_attachment_reference = *Span_get(&l_color_attachments_ref_raw, l_color_attachments_ref_count);
             l_attachment_reference.attachment = (uint32)i;
             l_attachment_reference.layout = l_attachment_description.finalLayout;
             l_color_attachments_ref_count += 1;
@@ -605,7 +601,7 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
         break;
         case AttachmentType::KHR:
         {
-            VkAttachmentReference& l_attachment_reference = *Slice_get(&l_color_attachments_ref, l_color_attachments_ref_count);
+            VkAttachmentReference& l_attachment_reference = *Span_get(&l_color_attachments_ref_raw, l_color_attachments_ref_count);
             l_attachment_reference.attachment = (uint32)i;
             l_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
             l_color_attachments_ref_count += 1;
@@ -624,18 +620,22 @@ template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const Gr
 
     l_subpass.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
     l_subpass.colorAttachmentCount = l_color_attachments_ref_count;
-    l_subpass.pColorAttachments = l_color_attachments_ref.Begin;
+    l_subpass.pColorAttachments = l_color_attachments_ref_raw.slice.Begin;
 
     VkRenderPassCreateInfo l_renderpass_create_info{};
     l_renderpass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    l_renderpass_create_info.attachmentCount = (uint32)l_attachments.Size;
-    l_renderpass_create_info.pAttachments = l_attachments.Begin;
+    l_renderpass_create_info.attachmentCount = (uint32)l_attachments_raw.Capacity;
+    l_renderpass_create_info.pAttachments = l_attachments_raw.slice.Begin;
     l_renderpass_create_info.subpassCount = 1;
     l_renderpass_create_info.pSubpasses = &l_subpass;
 
     RenderPass l_render_pass_object;
 
     vk_handle_result(vkCreateRenderPass(p_device.device, &l_renderpass_create_info, NULL, &l_render_pass_object.render_pass));
+
+    Span_free(&l_attachments_raw);
+    Span_free(&l_color_attachments_ref_raw);
+
     return l_render_pass_object;
 };
 
@@ -644,36 +644,34 @@ inline void RenderPass::free(const GraphicsDevice& p_device)
     vkDestroyRenderPass(p_device.device, this->render_pass, NULL);
 };
 
-template <uint32 AttachmentCount>
 inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
-                                           const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
+                                           const Slice<RenderPassAttachment>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
 {
 
 #if __DEBUG
-    v3ui l_extend = p_render_pass_attachments.get(0).image_format.extent;
-    for (loop(i, 1, AttachmentCount))
+    v3ui l_extend = Slice_get(&p_render_pass_attachments, 0)->image_format.extent;
+    for (loop(i, 1, p_render_pass_attachments.Size))
     {
-        assert_true(p_render_pass_attachments.get(i).image_format.extent == l_extend);
+        assert_true(Slice_get(&p_render_pass_attachments, i)->image_format.extent == l_extend);
     }
 #endif
 
-    RenderPass l_render_pass = RenderPass::allocate<AttachmentCount>(p_graphics_device, p_render_pass_attachments);
+    RenderPass l_render_pass = RenderPass::allocate(p_graphics_device, p_render_pass_attachments);
 
     VkFramebufferCreateInfo l_framebuffer_create{};
     l_framebuffer_create.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    l_framebuffer_create.attachmentCount = AttachmentCount;
+    l_framebuffer_create.attachmentCount = (uint32_t)p_render_pass_attachments.Size;
     l_framebuffer_create.pAttachments = p_attachment_image_views;
     l_framebuffer_create.layers = 1;
-    l_framebuffer_create.width = p_render_pass_attachments.get(0).image_format.extent.x;
-    l_framebuffer_create.height = p_render_pass_attachments.get(0).image_format.extent.y;
+    l_framebuffer_create.width = Slice_get(&p_render_pass_attachments, 0)->image_format.extent.x;
+    l_framebuffer_create.height = Slice_get(&p_render_pass_attachments, 0)->image_format.extent.y;
     l_framebuffer_create.renderPass = l_render_pass.render_pass;
 
     GraphicsPass l_graphics_pass;
 
 #if __DEBUG
-    Slice<RenderPassAttachment> p_render_pass_attachments_slice = slice_from_slicen(&p_render_pass_attachments);
-    l_graphics_pass.attachement_layout = Span_allocate<RenderPassAttachment>(AttachmentCount);
-    Slice_copy_memory_at_index(&l_graphics_pass.attachement_layout.slice, 0, &p_render_pass_attachments_slice);
+    l_graphics_pass.attachement_layout = Span_allocate<RenderPassAttachment>(p_render_pass_attachments.Size);
+    Slice_copy_memory_at_index(&l_graphics_pass.attachement_layout.slice, 0, &p_render_pass_attachments);
 #endif
     vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 
@@ -823,7 +821,8 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     for (loop(i, 0, l_vertex_input_attributes.Capacity))
     {
         const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = *Span_get(&p_shader_allocate_info.shader_layout.vertex_input_layout, i);
-        *Span_get(&l_vertex_input_attributes, i) = VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
+        *Span_get(&l_vertex_input_attributes, i) =
+            VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
     }
 
     VkVertexInputBindingDescription l_vertex_input_binding{0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX};
@@ -1039,11 +1038,10 @@ struct GraphicsAllocator2
         this->heap.textures_gpu.release_element(p_texture_gpu);
     };
 
-    template <uint8 AttachmentCount>
-    inline Token(GraphicsPass) allocate_graphicspass(const TransferDevice& p_transfer_device, const Token(ImageGPU) p_attachment_image_tokens[AttachmentCount],
-                                                     const ImageGPU p_attachment_images[AttachmentCount], const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
+    inline Token(GraphicsPass) allocate_graphicspass(const TransferDevice& p_transfer_device, const Slice<Token(ImageGPU)>& p_attachment_image_tokens, const Slice<ImageGPU>& p_attachment_images,
+                                                     const Slice<RenderPassAttachment>& p_attachments)
     {
-        return this->heap.graphics_pass.alloc_element(_allocate_graphics_pass<AttachmentCount>(p_transfer_device, p_attachment_image_tokens, p_attachment_images, p_attachments));
+        return this->heap.graphics_pass.alloc_element(_allocate_graphics_pass(p_transfer_device, p_attachment_image_tokens, p_attachment_images, p_attachments));
     };
 
     inline void free_graphicspass(const TransferDevice& p_transfer_device, const Token(GraphicsPass) p_graphics_pass)
@@ -1164,24 +1162,28 @@ struct GraphicsAllocator2
     };
 
   private:
-    template <uint8 AttachmentCount>
-    inline GraphicsPass _allocate_graphics_pass(const TransferDevice& p_transfer_device, const Token(ImageGPU) p_attachment_image_tokens[AttachmentCount],
-                                                const ImageGPU p_attachment_images[AttachmentCount], const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
+    inline GraphicsPass _allocate_graphics_pass(const TransferDevice& p_transfer_device, const Slice<Token(ImageGPU)>& p_attachment_image_tokens, const Slice<ImageGPU>& p_attachment_images,
+                                                const Slice<RenderPassAttachment>& p_attachments)
     {
-        TextureGPU l_attachment_textures[AttachmentCount];
-        ImageView_t l_attachment_image_views[AttachmentCount];
-        Token(TextureGPU) l_tokenized_textures[AttachmentCount];
-        for (loop(i, 0, AttachmentCount))
+        Span<TextureGPU> l_attachment_textures = Span_allocate<TextureGPU>(p_attachments.Size);
+        Span<ImageView_t> l_attachment_image_views = Span_allocate<ImageView_t>(p_attachments.Size);
+        Span<Token(TextureGPU)> l_tokenized_textures = Span_allocate<Token(TextureGPU)>(p_attachments.Size);
+        for (loop(i, 0, p_attachments.Size))
         {
-            l_tokenized_textures[i] = this->allocate_texturegpu(p_transfer_device, p_attachment_image_tokens[i], p_attachment_images[i], p_attachments.get(i).image_format);
-            l_attachment_textures[i] = this->heap.textures_gpu.get(l_tokenized_textures[i]);
-            l_attachment_image_views[i] = l_attachment_textures[i].ImageView;
+            *Span_get(&l_tokenized_textures, i) =
+                this->allocate_texturegpu(p_transfer_device, *Slice_get(&p_attachment_image_tokens, i), *Slice_get(&p_attachment_images, i), Slice_get(&p_attachments, i)->image_format);
+            *Span_get(&l_attachment_textures, i) = this->heap.textures_gpu.get(*Span_get(&l_tokenized_textures, i));
+            *Span_get(&l_attachment_image_views, i) = Span_get(&l_attachment_textures, i)->ImageView;
         };
 
-        return GraphicsPass::allocate<AttachmentCount>(
-            p_transfer_device, this->graphics_device,
-            this->heap.renderpass_attachment_textures.alloc_vector_with_values(Slice_build_memory_elementnb<Token(TextureGPU)>(l_tokenized_textures, AttachmentCount)), p_attachments,
-            l_attachment_image_views);
+        GraphicsPass l_graphics_pass = GraphicsPass::allocate(p_transfer_device, this->graphics_device, this->heap.renderpass_attachment_textures.alloc_vector_with_values(l_tokenized_textures.slice),
+                                                              p_attachments, l_attachment_image_views.slice.Begin);
+
+        Span_free(&l_attachment_textures);
+        Span_free(&l_attachment_image_views);
+        Span_free(&l_tokenized_textures);
+
+        return l_graphics_pass;
     };
 };
 
@@ -1191,20 +1193,23 @@ struct GraphicsAllocator2
 struct GraphicsAllocatorComposition
 {
 
-    template <uint8 AttachmentCount>
     inline static Token(GraphicsPass)
-        allocate_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
+        allocate_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Slice<RenderPassAttachment>& p_attachments)
     {
-        Token(ImageGPU) l_tokenized_images[AttachmentCount];
-        ImageGPU l_images[AttachmentCount];
+        Span<Token(ImageGPU)> l_tokenized_images = Span_allocate<Token(ImageGPU)>(p_attachments.Size);
+        Span<ImageGPU> l_images = Span_allocate<ImageGPU>(p_attachments.Size);
 
-        for (loop(i, 0, AttachmentCount))
+        for (loop(i, 0, p_attachments.Size))
         {
-            l_tokenized_images[i] = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, p_attachments.get(i).image_format);
-            l_images[i] = p_buffer_memory.allocator.gpu_images.get(l_tokenized_images[i]);
+            *Span_get(&l_tokenized_images, i) =
+                BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, Slice_get(&p_attachments, i)->image_format);
+            *Span_get(&l_images, i) = p_buffer_memory.allocator.gpu_images.get(*Span_get(&l_tokenized_images, i));
         }
 
-        return p_graphics_allocator.allocate_graphicspass<AttachmentCount>(p_buffer_memory.allocator.device, l_tokenized_images, l_images, p_attachments);
+        Token(GraphicsPass) l_graphics_pass = p_graphics_allocator.allocate_graphicspass(p_buffer_memory.allocator.device, l_tokenized_images.slice, l_images.slice, p_attachments);
+        Span_free(&l_tokenized_images);
+        Span_free(&l_images);
+        return l_graphics_pass;
     };
 
     inline static void free_graphicspass_with_associatedimages(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Token(GraphicsPass) p_graphics_pass)

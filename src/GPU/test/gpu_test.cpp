@@ -206,11 +206,11 @@ inline void gpu_renderpass_clear()
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
-    SliceN<RenderPassAttachment, 2> l_attachments = {
-        RenderPassAttachment{AttachmentType::COLOR,
-                             ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-        RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-    Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+    Declare_sized_slice(RenderPassAttachment, 2, l_attachments_arr, l_attachments,
+                        RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                  (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
+                        RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)});
+    Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_attachments);
 
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
 
@@ -278,20 +278,19 @@ inline void gpu_draw()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        Declare_sized_slice(RenderPassAttachment, 2, l_attachments_arr, l_attachments,
+                            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
+                            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)});
+        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
             v3f position;
         };
 
-        SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
-                                                 vertex_position{v3f{0.0f, 0.5f, 0.0f}},  vertex_position{v3f{0.5f, 0.0f, 0.0f}},  vertex_position{v3f{0.0f, 0.0f, 0.0f}}};
-        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
+        Declare_sized_slice(vertex_position, 6, l_vertices, l_vertices_slice, vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}},
+                            vertex_position{v3f{-1.0f, -1.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.0f, 0.0f}});
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             Slice_build_asint8(&l_vertices_slice).Size,
@@ -385,13 +384,13 @@ inline void gpu_draw()
 
         {
 
-            Span<color> l_colors = Span_allocate<color>(l_attachments.get(0).image_format.extent.x * l_attachments.get(0).image_format.extent.y);
+            Span<color> l_colors = Span_allocate<color>(Slice_get(&l_attachments, 0)->image_format.extent.x * Slice_get(&l_attachments, 0)->image_format.extent.y);
             for (loop(i, 0, l_colors.Capacity))
             {
                 *Span_get(&l_colors, i) = l_multiplied_color_texture_color;
             }
             l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout,
-                                                                    l_attachments.get(0).image_format, Slice_build_asint8(&l_colors.slice));
+                                                                    Slice_get(&l_attachments, 0)->image_format, Slice_build_asint8(&l_colors.slice));
             Span_free(&l_colors);
         }
 
@@ -529,21 +528,20 @@ inline void gpu_depth_compare_test()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT))}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        Declare_sized_slice(RenderPassAttachment, 2, l_attachments_arr, l_attachments,
+                            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
+                            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT))});
+        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
             v3f position;
         };
 
-        SliceN<vertex_position, 6> l_vertices = {vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}}, vertex_position{v3f{-1.0f, -1.0f, 0.0f}},
-                                                 vertex_position{v3f{0.0f, 0.5f, 0.1f}},  vertex_position{v3f{0.5f, 0.0f, 0.1f}},  vertex_position{v3f{-0.5f, -0.5f, 0.1f}}};
-        Slice<vertex_position> l_vertices_slice = slice_from_slicen(&l_vertices);
+        Declare_sized_slice(vertex_position, 6, l_vertices, l_vertices_slice, vertex_position{v3f{-1.0f, 1.0f, 0.0f}}, vertex_position{v3f{1.0f, -1.0f, 0.0f}},
+                            vertex_position{v3f{-1.0f, -1.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.5f, 0.1f}}, vertex_position{v3f{0.5f, 0.0f, 0.1f}}, vertex_position{v3f{-0.5f, -0.5f, 0.1f}});
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             Slice_build_asint8(&l_vertices_slice).Size,
@@ -759,22 +757,21 @@ inline void gpu_draw_indexed()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        Declare_sized_slice(RenderPassAttachment, 2, l_attachments_arr, l_attachments,
+                            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
+                            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)});
+        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
         {
             v3f position;
         };
 
-        Declare_sized_slice(vertex_position, 4, l_vertices, l_vertices_slice, vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}},
-                                   vertex_position{v3f{0.0f, 0.0f, 0.0f}}, vertex_position{v3f{0.5f, 0.5f, 0.0f}});
+        Declare_sized_slice(vertex_position, 4, l_vertices, l_vertices_slice, vertex_position{v3f{0.0f, 0.5f, 0.0f}}, vertex_position{v3f{0.5f, 0.0f, 0.0f}}, vertex_position{v3f{0.0f, 0.0f, 0.0f}},
+                            vertex_position{v3f{0.5f, 0.5f, 0.0f}});
 
-        SliceN<uint32, 6> l_indices = {0, 1, 2, 0, 3, 1};
-        Slice<uint32> l_indices_slice = slice_from_slicen(&l_indices);
+        Declare_sized_slice(uint32, 6, l_indices, l_indices_slice, 0, 1, 2, 0, 3, 1);
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             Slice_build_asint8(&l_vertices_slice).Size,
@@ -937,11 +934,11 @@ inline void gpu_texture_mapping()
     {
         v3ui l_render_extends = v3ui{16, 16, 1};
 
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                       (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        Declare_sized_slice(RenderPassAttachment, 2, l_attachments_arr, l_attachments,
+                            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                       (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
+                            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)});
+        Token(GraphicsPass) l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex
         {
@@ -949,9 +946,9 @@ inline void gpu_texture_mapping()
             v2f uv;
         };
 
-        SliceN<vertex, 6> l_vertices = {vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}, vertex{v3f{-0.5f, -0.5f, 0.0f}, v2f{0.0f, 0.0f}},
-                                        vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, 0.5f, 0.0f}, v2f{1.0f, 1.0f}},  vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}}};
-        Slice<vertex> l_vertices_slice = slice_from_slicen(&l_vertices);
+        Declare_sized_slice(vertex, 6, l_vertices, l_vertices_slice, vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}},
+                            vertex{v3f{-0.5f, -0.5f, 0.0f}, v2f{0.0f, 0.0f}}, vertex{v3f{-0.5f, 0.5f, 0.0f}, v2f{0.0f, 1.0f}}, vertex{v3f{0.5f, 0.5f, 0.0f}, v2f{1.0f, 1.0f}},
+                            vertex{v3f{0.5f, -0.5f, 0.0f}, v2f{1.0f, 0.0f}});
 
         Token(BufferGPU) l_vertex_buffer = l_buffer_memory.allocator.allocate_buffergpu(
             Slice_build_asint8(&l_vertices_slice).Size,
@@ -979,14 +976,12 @@ inline void gpu_texture_mapping()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            SliceN<ShaderLayout::VertexInputParameter, 2> l_shader_vertex_input_primitives_arr{
-                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
-                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
-            Slice<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives_slice = slice_from_slicen(&l_shader_vertex_input_primitives_arr);
+            Declare_sized_slice(ShaderLayout::VertexInputParameter, 2, l_shader_vertex_input_primitives_arr, l_shader_vertex_input_primitives_slice,
+                                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
+                                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)});
             Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span_allocate_slice(&l_shader_vertex_input_primitives_slice);
 
-            SliceN<ShaderLayoutParameterType, 1> l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
-            Slice<ShaderLayoutParameterType> l_first_shader_layout_parameters_slice = slice_from_slicen(&l_first_shader_layout_parameters_arr);
+            Declare_sized_slice(ShaderLayoutParameterType, 1, l_first_shader_layout_parameters_arr, l_first_shader_layout_parameters_slice, ShaderLayoutParameterType::TEXTURE_FRAGMENT);
             Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate_slice(&l_first_shader_layout_parameters_slice);
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
@@ -1040,8 +1035,8 @@ inline void gpu_texture_mapping()
         }
 
         Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
-        l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format,
-                                                          Slice_build_asint8(&l_texture_pixels.slice));
+        l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout),
+                                                          Slice_get(&l_attachments, 0)->image_format, Slice_build_asint8(&l_texture_pixels.slice));
 
         color l_clear_color = color{0, 0, 0, 0};
 
@@ -1061,7 +1056,7 @@ inline void gpu_texture_mapping()
             l_graphics_binder.bind_material(l_material);
 
             l_graphics_binder.bind_vertex_buffer_gpu(l_buffer_memory.allocator.gpu_buffers.get(l_vertex_buffer));
-            l_graphics_binder.draw(l_vertices.Size());
+            l_graphics_binder.draw(l_vertices_slice.Size);
 
             l_graphics_binder.pop_material_bind(l_material);
 
@@ -1116,8 +1111,8 @@ inline void gpu_present()
     Token(Window) l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, Slice_int8_build_rawstr(""));
     Window& l_window = WindowAllocator::get_window(l_window_token);
 
-    SliceN<GPUExtension, 1> l_gpu_extension_arr{GPUExtension::WINDOW_PRESENT};
-    GPUContext l_gpu_context = GPUContext::allocate(slice_from_slicen(&l_gpu_extension_arr));
+    Declare_sized_slice(GPUExtension, 1, l_gpu_extension_arr, l_gpu_extension_slice, GPUExtension::WINDOW_PRESENT);
+    GPUContext l_gpu_context = GPUContext::allocate(l_gpu_extension_slice);
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
 
     const int8* p_vertex_litteral = MULTILINE(#version 450 \n

@@ -670,9 +670,9 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
     const hash_t l_mesh_id = HashSlice(l_mesh_path);
 
     {
-        SliceN<ShaderLayoutParameterType, 2> l_shader_layout{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+        Declare_sized_slice(ShaderLayoutParameterType, 2, l_shader_layout_arr, l_shader_layout_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT);
         ShaderRessource::Asset l_shader_asset =
-            ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{slice_from_slicen(&l_shader_layout), 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
+            ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{l_shader_layout_slice, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         Span<int8> l_material_texture_span = Span_allocate<int8>(8 * 8 * 4);
         TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
@@ -680,8 +680,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
 
         MaterialRessource::Asset l_material_asset;
         {
-            SliceN<hash_t, 1> tmp_material_textures_arr{HashSlice(l_texture_path)};
-            Slice<hash_t> tmp_material_textures_arr_slice = slice_from_slicen(&tmp_material_textures_arr);
+            Declare_sized_slice(hash_t, 1, tmp_material_textures_arr, tmp_material_textures_arr_slice, HashSlice(l_texture_path));
             Span<int8> l_material_parameter_temp = Span_allocate<int8>(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
@@ -711,9 +710,9 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
-        SliceN<hash_t, 1> tmp_material_textures_arr{HashSlice(l_texture_path)};
+        Declare_sized_slice(hash_t, 1, tmp_material_textures_arr, tmp_material_textures_slice, HashSlice(l_texture_path));
         MaterialRessource::AssetDependencies l_material_asset_dependencies = MaterialRessource::AssetDependencies::allocate_from_values(MaterialRessource::AssetDependencies::Value{
-            HashSlice(l_shader_path), ShaderRessource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)}, slice_from_slicen(&tmp_material_textures_arr)});
+            HashSlice(l_shader_path), ShaderRessource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)}, tmp_material_textures_slice});
 
         l_ctx.asset_database.insert_asset_dependencies_blob(l_ctx.database_connection, l_material_path, l_material_asset_dependencies.allocated_binary.slice);
 
@@ -731,9 +730,10 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
             l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
         {
-            SliceN<AssetRessource_TestAssertion::AssertRessource, 1> l_material_assert_textures{AssetRessource_TestAssertion::AssertRessource{l_texture_id, 1, 0}};
-            AssetRessource_TestAssertion::assert_material_allocation(l_ctx, l_material, AssetRessource_TestAssertion::AssertRessource{l_material_id, 1, 0},
-                                                                     slice_from_slicen(&l_material_assert_textures), AssetRessource_TestAssertion::AssertRessource{l_shader_id, 1, 0},
+            Declare_sized_slice(AssetRessource_TestAssertion::AssertRessource, 1, l_material_assert_textures_arr, l_material_assert_textures_slice,
+                                AssetRessource_TestAssertion::AssertRessource{l_texture_id, 1, 0});
+            AssetRessource_TestAssertion::assert_material_allocation(l_ctx, l_material, AssetRessource_TestAssertion::AssertRessource{l_material_id, 1, 0}, l_material_assert_textures_slice,
+                                                                     AssetRessource_TestAssertion::AssertRessource{l_shader_id, 1, 0},
                                                                      AssetRessource_TestAssertion::AssertRessource{l_vertex_shader_id, 1, 0},
                                                                      AssetRessource_TestAssertion::AssertRessource{l_fragment_shader_id, 1, 0});
         }

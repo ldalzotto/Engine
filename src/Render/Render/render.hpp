@@ -503,17 +503,17 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
     }
 
-    SliceN<RenderPassAttachment, 2> l_attachments = {
+    Declare_sized_slice(
+        RenderPassAttachment, 2, l_attachments_arr, l_attachments,
         RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))},
         RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT |
-                                                                                                                                           (ImageUsageFlags)l_additional_attachment_usage_flags))}};
+                                                                                                                                           (ImageUsageFlags)l_additional_attachment_usage_flags))});
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
-    Slice<v4f> tmp_clear_values_slice = slice_from_slicen(&tmp_clear_values);
+    Declare_sized_slice(v4f, 2, tmp_clear_values, tmp_clear_values_slice, v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f});
     l_step.clear_values = Span_allocate_slice<v4f>(&tmp_clear_values_slice);
-    l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
+    l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
     Camera l_empty_camera{};
