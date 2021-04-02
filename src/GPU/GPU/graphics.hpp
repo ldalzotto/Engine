@@ -128,7 +128,8 @@ struct RenderPass
 typedef VkFramebuffer FrameBuffer_t;
 
 /*
-     The GraphicsPass is the RenderPass with the allocated attachment textures
+     The GraphicsPass is the render texture attachments that will be used for drawing.
+     Texture attachment supported are color attachment and depth attachment.
 */
 struct GraphicsPass
 {
@@ -149,7 +150,7 @@ struct GraphicsPass
 typedef VkPipelineLayout ShaderLayout_t;
 
 /*
-    The ShaderLayout indicate the format of all parameters of the Shader.
+    The ShaderLayout indicate the format of all parameters of the Shader (including vertex format).
     It can be seen as the Reflection object of a Shader.
 */
 struct ShaderLayout
@@ -223,6 +224,9 @@ struct ShaderAllocateInfo
     ShaderModule fragment_shader;
 };
 
+/*
+    A Shader is a program that is executed against a GraphicsPass and a set of ShaderParameters.
+*/
 struct Shader
 {
     VkPipeline shader;

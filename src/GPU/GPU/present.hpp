@@ -132,7 +132,11 @@ struct GPUPresent_2DQuad
     };
 };
 
-struct GPUPresent_SwapChain
+/*
+    The SwapChain render the input render texture to a present texture.
+    This structure allocates all GraphicsObjects necessary for the drawing to a present texture.
+*/
+struct SwapChain
 {
     VkSwapchainKHR swap_chain;
     Semafore swap_chain_next_image_semaphore;
@@ -147,11 +151,11 @@ struct GPUPresent_SwapChain
     Token(ShaderModule) image_copy_shader_fragment;
     Token(ShaderTextureGPUParameter) shader_parameter_texture;
 
-    inline static GPUPresent_SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+    inline static SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
                                                 const Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader,
                                                 const v3ui p_window_handle_dimensions)
     {
-        GPUPresent_SwapChain l_swap_chain;
+        SwapChain l_swap_chain;
         allocate_swap_chain_texture_independant(l_swap_chain, p_present_device, p_graphics_allocator, p_presented_texture, p_compiled_vertex_shader, p_compiled_fragment_shader);
         allocate_swap_chain_texture_dependendant(l_swap_chain, p_present_device, p_buffer_memory, p_graphics_allocator, p_window_handle_dimensions);
         return l_swap_chain;
@@ -170,7 +174,7 @@ struct GPUPresent_SwapChain
     };
 
   private:
-    inline static void allocate_swap_chain_texture_independant(GPUPresent_SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, GraphicsAllocator2& p_graphics_allocator,
+    inline static void allocate_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, GraphicsAllocator2& p_graphics_allocator,
                                                                const Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(p_present_device.device);
@@ -191,7 +195,7 @@ struct GPUPresent_SwapChain
             p_graphics_allocator.allocate_shadertexturegpu_parameter(ShaderLayoutParameterType::TEXTURE_FRAGMENT, p_presented_texture, p_graphics_allocator.heap.textures_gpu.get(p_presented_texture));
     };
 
-    inline static void free_swap_chain_texture_independant(GPUPresent_SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
+    inline static void free_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
                                                            GraphicsAllocator2& p_graphics_allocator)
     {
         p_swap_chain.swap_chain_next_image_semaphore.free(p_present_device.device);
@@ -203,7 +207,7 @@ struct GPUPresent_SwapChain
         p_graphics_allocator.free_shader_layout(p_swap_chain.image_copy_shader_layout);
     };
 
-    inline static void allocate_swap_chain_texture_dependendant(GPUPresent_SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
+    inline static void allocate_swap_chain_texture_dependendant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
                                                                 GraphicsAllocator2& p_graphics_allocator, const v3ui p_window_handle_dimensions)
     {
         p_swap_chain.swap_chain_dimensions =
@@ -258,7 +262,7 @@ struct GPUPresent_SwapChain
         }
     };
 
-    inline static void free_swap_chain_texture_dependant(GPUPresent_SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
+    inline static void free_swap_chain_texture_dependant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
                                                          GraphicsAllocator2& p_graphics_allocator)
     {
         vkDestroySwapchainKHR(p_present_device.device, p_swap_chain.swap_chain, NULL);
@@ -282,10 +286,13 @@ struct GPUPresent_SwapChain
     };
 };
 
+/*
+    The presentation is a direct usage of the GraphicsBinder.
+*/
 struct GPUPresent
 {
     GPUPresentDevice device;
-    GPUPresent_SwapChain swap_chain;
+    SwapChain swap_chain;
     uint32 current_swapchain_image_index;
     GPUPresent_2DQuad d2_quad;
 
@@ -295,7 +302,7 @@ struct GPUPresent
         GPUPresent l_gpu_present;
         l_gpu_present.device = GPUPresentDevice::allocate(p_gpu_instance, p_window_handle);
         l_gpu_present.swap_chain =
-            GPUPresent_SwapChain::allocate(l_gpu_present.device, p_buffer_memory, p_graphics_allocator, p_presented_texture, p_compiled_vertex_shader, p_compiled_fragment_shader, p_window_size);
+            SwapChain::allocate(l_gpu_present.device, p_buffer_memory, p_graphics_allocator, p_presented_texture, p_compiled_vertex_shader, p_compiled_fragment_shader, p_window_size);
         l_gpu_present.d2_quad = GPUPresent_2DQuad::allocate(p_buffer_memory);
         return l_gpu_present;
     };

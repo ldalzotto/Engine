@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-A  GraphicsBinder is a convenient way to properly setup the graphics command buffer.
+    A GraphicsBinder is a convenient way to properly use graphics objects inside the graphics command buffer.
 */
 struct GraphicsBinder
 {
