@@ -4,22 +4,22 @@ struct Clock
 {
     uimax framecount;
     float32 deltatime;
-
-    inline static Clock allocate_default()
-    {
-        return Clock{0, 0.0f};
-    };
-
-    inline void newframe()
-    {
-        this->framecount += 1;
-    }
-
-    inline void newupdate(float32 p_delta)
-    {
-        this->deltatime = p_delta;
-    }
 };
+
+inline static Clock Clock_allocate_default()
+{
+    return Clock{0, 0.0f};
+};
+
+inline void Clock_newframe(Clock* thiz)
+{
+    thiz->framecount += 1;
+}
+
+inline void Clock_newupdate(Clock* thiz, float32 p_delta)
+{
+    thiz->deltatime = p_delta;
+}
 
 // typedef uint64 time_t;
 

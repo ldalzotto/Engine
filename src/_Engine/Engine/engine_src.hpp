@@ -53,7 +53,7 @@ struct Engine
     {
         Engine l_engine;
         l_engine.abort_condition = 0;
-        l_engine.clock = Clock::allocate_default();
+        l_engine.clock = Clock_allocate_default();
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
         Declare_sized_slice(GPUExtension, 1, tmp_gpu_extensions, tmp_gpu_extensions_slice, GPUExtension::WINDOW_PRESENT);
@@ -154,7 +154,7 @@ struct EngineLoopFunctions
 {
     template <class ExternalCallbackStep> inline static void new_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
-        p_engine.clock.newframe();
+        Clock_newframe(&p_engine.clock);
 
         Window& l_window = WindowAllocator::get_window(p_engine.window);
         if (l_window.resize_event.ask)
@@ -172,12 +172,12 @@ struct EngineLoopFunctions
 
     inline static void new_frame_headless(Engine& p_engine)
     {
-        p_engine.clock.newframe();
+        Clock_newframe(&p_engine.clock);
     };
 
     template <class ExternalCallbackStep> inline static void update(Engine& p_engine, const float32 p_delta, ExternalCallbackStep& p_callback_step)
     {
-        p_engine.clock.newupdate(p_delta);
+        Clock_newupdate(&p_engine.clock, p_delta);
 
         p_callback_step.step(EngineExternalStep::BEFORE_COLLISION, p_engine);
 
