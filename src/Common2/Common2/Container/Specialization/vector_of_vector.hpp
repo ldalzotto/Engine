@@ -20,7 +20,7 @@ struct VectorOfVector_VectorHeader
 
     inline static Span<int8> allocate(const Slice<int8>& p_vector_slice, const uimax p_vector_size)
     {
-        Span<int8> l_allocated_element = Span<int8>::allocate(sizeof(VectorOfVector_VectorHeader) + p_vector_slice.Size);
+        Span<int8> l_allocated_element = Span_allocate<int8>(sizeof(VectorOfVector_VectorHeader) + p_vector_slice.Size);
         VectorOfVector_VectorHeader l_vector_header = build(p_vector_size, p_vector_size);
         Slice<int8> l_vector_header_slice = Slice_build_asint8_memory_elementnb<VectorOfVector_VectorHeader>(&l_vector_header, 1);
         Slice_copy_memory_at_index(&l_allocated_element.slice, 0, &l_vector_header_slice);

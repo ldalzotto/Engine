@@ -9,49 +9,49 @@ template <class ElementType> inline void assert_span_unitialized(Span<ElementTyp
 
 inline void slice_span_test()
 {
-    Span<uimax> l_span_sizet = Span<uimax>::build(NULL, 0);
+    Span<uimax> l_span_sizet = Span_build<uimax>(NULL, 0);
 
     // When resizing the span, new memory is allocated
     {
         uimax l_new_capacity = 10;
-        l_span_sizet.resize(10);
+        Span_resize(&l_span_sizet, 10);
         assert_true(l_span_sizet.Capacity == l_new_capacity);
         assert_true(l_span_sizet.Memory != NULL);
     }
 
     // When freeing the span, it's structure is resetted
     {
-        l_span_sizet.free();
+        Span_free(&l_span_sizet);
         assert_span_unitialized(&l_span_sizet);
     }
 
     // Move memory
     {
-        l_span_sizet.resize(10);
+        Span_resize(&l_span_sizet, 10);
 
-        l_span_sizet.get(0) = 3;
-        l_span_sizet.get(1) = 5;
-        l_span_sizet.get(3) = 10;
+        *Span_get(&l_span_sizet, 0) = 3;
+        *Span_get(&l_span_sizet, 1) = 5;
+        *Span_get(&l_span_sizet, 3) = 10;
 
         Slice_move_memory_down(&l_span_sizet.slice, 1, 3, 1);
-        assert_true(l_span_sizet.get(4) == 10);
+        assert_true(*Span_get(&l_span_sizet, 4) == 10);
 
         Slice_move_memory_up(&l_span_sizet.slice, 1, 4, 2);
-        assert_true(l_span_sizet.get(2) == 10);
+        assert_true(*Span_get(&l_span_sizet, 2) == 10);
 
-        assert_true(l_span_sizet.get(0) == 3);
-        assert_true(l_span_sizet.get(1) == 5);
+        assert_true(*Span_get(&l_span_sizet, 0) == 3);
+        assert_true(*Span_get(&l_span_sizet, 1) == 5);
 
         Slice_move_memory_up(&l_span_sizet.slice, 2, 2, 2);
 
-        assert_true(l_span_sizet.get(0) == 10);
-        assert_true(l_span_sizet.get(1) == 10);
+        assert_true(*Span_get(&l_span_sizet, 0) == 10);
+        assert_true(*Span_get(&l_span_sizet, 1) == 10);
     }
 
-    l_span_sizet.free();
+    Span_free(&l_span_sizet);
 
     {
-        l_span_sizet = Span<uimax>::allocate(10);
+        l_span_sizet = Span_allocate<uimax>(10);
 
         SliceN<uimax, 4> l_slicen_1 = {0, 1, 2, 3};
         Slice<uimax> l_slice_1 = slice_from_slicen(&l_slicen_1);
@@ -64,16 +64,16 @@ inline void slice_span_test()
         l_span_sizet_offsetted = Slice_slide_rv(&l_span_sizet.slice, 5);
         assert_true(Slice_compare(&l_span_sizet_offsetted, &l_slice_2));
 
-        l_span_sizet.free();
+        Span_free(&l_span_sizet);
     }
     {
         SliceN<uimax, 4> l_slicen = {15, 26, 78, 10};
         Slice<uimax> l_slice = slice_from_slicen(&l_slicen);
-        l_span_sizet = Span<uimax>::allocate_slice(l_slice);
+        l_span_sizet = Span_allocate_slice<uimax>(&l_slice);
         assert_true(l_span_sizet.Capacity == 4);
         assert_true(Slice_compare(&l_span_sizet.slice, &l_slice));
 
-        l_span_sizet.free();
+        Span_free(&l_span_sizet);
     }
 };
 
@@ -546,7 +546,7 @@ inline void vectorofvector_test()
 
     // vectorofvector_push_back vectorofvector_push_back_element
     {
-        Span<uimax> l_sizets = Span<uimax>::allocate(10);
+        Span<uimax> l_sizets = Span_allocate<uimax>(10);
         for (loop(i, 0, l_sizets.Capacity))
         {
             *Slice_get(&l_sizets.slice, i) = i;
@@ -566,7 +566,7 @@ inline void vectorofvector_test()
             assert_true(*Slice_get(&l_element, i) == i);
         }
 
-        l_sizets.free();
+        Span_free(&l_sizets);
     }
 
     // vectorofvector_element_push_back_element
@@ -1698,8 +1698,8 @@ inline void database_test()
         l_binder.bind_int64(10, l_connection);
 
         int64 l_retrieved_id = 0;
-        Span<int8> l_retrieved_str = Span<int8>::build_default();
-        Span<int8> l_retrieved_value = Span<int8>::build_default();
+        Span<int8> l_retrieved_str = Span_build_default<int8>();
+        Span<int8> l_retrieved_value = Span_build_default<int8>();
         SQliteQueryExecution::execute_sync(l_connection, l_select_query.statement, [&l_select_query, &l_retrieved_id, &l_retrieved_str, &l_retrieved_value]() {
             SQLiteResultSet l_result_set = SQLiteResultSet::build_from_prepared_query(l_select_query);
             l_retrieved_id = l_result_set.get_int64(0);
@@ -1711,8 +1711,8 @@ inline void database_test()
         assert_true(Slice_compare(&l_retrieved_str.slice, &l_inserted_text));
         assert_true(Slice_compare(&l_retrieved_value.slice, &l_value_slice_int8));
 
-        l_retrieved_str.free();
-        l_retrieved_value.free();
+        Span_free(&l_retrieved_str);
+        Span_free(&l_retrieved_value);
 
         l_select_query.free(l_connection);
 

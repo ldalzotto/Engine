@@ -436,7 +436,6 @@ struct BufferCommandUtils
     static void cmd_revert_image_layout_from_transfer_src(const CommandBuffer& p_command_buffer, const VkImage p_image, const ImageFormat& p_format);
 };
 
-
 inline HeapPagedGPU::MemoryGPU HeapPagedGPU::MemoryGPU::allocate(const gc_t p_transfer_device, const uint32 p_memory_type_index, const uimax p_memory_size)
 {
     MemoryGPU l_heap_gpu;
@@ -503,7 +502,7 @@ inline void HeapPagedGPU::release_element(const HeapPagedToken& p_token)
 
 inline TransferDeviceHeap TransferDeviceHeap::allocate_default(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device)
 {
-    TransferDeviceHeap l_heap = TransferDeviceHeap{Span<HeapPagedGPU>::allocate(p_graphics_card.device_memory_properties.memoryHeapCount)};
+    TransferDeviceHeap l_heap = TransferDeviceHeap{Span_allocate<HeapPagedGPU>(p_graphics_card.device_memory_properties.memoryHeapCount)};
     for (loop(i, 0, p_graphics_card.device_memory_properties.memoryHeapCount))
     {
         int8 l_is_memory_mapped = 0;
@@ -522,7 +521,7 @@ inline TransferDeviceHeap TransferDeviceHeap::allocate_default(const GraphicsCar
             }
         }
 
-        l_heap.gpu_heaps.get(i) = HeapPagedGPU::allocate_default(l_is_memory_mapped, p_transfer_device, 16000000);
+        *Span_get(&l_heap.gpu_heaps, i) = HeapPagedGPU::allocate_default(l_is_memory_mapped, p_transfer_device, 16000000);
     }
     return l_heap;
 };
@@ -531,9 +530,9 @@ inline void TransferDeviceHeap::free(const gc_t p_transfer_device)
 {
     for (loop(i, 0, this->gpu_heaps.Capacity))
     {
-        this->gpu_heaps.get(i).free(p_transfer_device);
+        Span_get(&this->gpu_heaps, i)->free(p_transfer_device);
     };
-    this->gpu_heaps.free();
+    Span_free(&this->gpu_heaps);
 };
 
 inline int8 TransferDeviceHeap::allocate_element(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device, const VkMemoryRequirements& p_requirements,
@@ -548,24 +547,24 @@ inline int8 TransferDeviceHeap::allocate_element(const GraphicsCard& p_graphics_
 
     uint32 l_memory_type_index = p_graphics_card.get_memory_type_index(p_requirements, p_memory_property_flags);
     out_token->heap_index = p_graphics_card.device_memory_properties.memoryTypes[l_memory_type_index].heapIndex;
-    return this->gpu_heaps.get(out_token->heap_index).allocate_element(l_aligned_size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
+    return Span_get(&this->gpu_heaps, out_token->heap_index)->allocate_element(l_aligned_size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
 };
 
 inline void TransferDeviceHeap::release_element(const TransferDeviceHeapToken& p_memory)
 {
-    this->gpu_heaps.get(p_memory.heap_index).release_element(p_memory.heap_paged_token);
+    Span_get(&this->gpu_heaps, p_memory.heap_index)->release_element(p_memory.heap_paged_token);
 };
 
 inline Slice<int8> TransferDeviceHeap::get_element_as_slice(const TransferDeviceHeapToken& p_token)
 {
-    HeapPagedGPU& l_heap = this->gpu_heaps.get(p_token.heap_index);
+    HeapPagedGPU& l_heap = *Span_get(&this->gpu_heaps, p_token.heap_index);
     SliceIndex* l_slice_index = l_heap.heap.get_sliceindex_only(p_token.heap_paged_token);
     return Slice_build_memory_offset_elementnb<int8>(l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).mapped_memory, l_slice_index->Begin, l_slice_index->Size);
 };
 
 inline SliceOffset<int8> TransferDeviceHeap::get_element_gcmemory_and_offset(const TransferDeviceHeapToken& p_token)
 {
-    HeapPagedGPU& l_heap = this->gpu_heaps.get(p_token.heap_index);
+    HeapPagedGPU& l_heap = *Span_get(&this->gpu_heaps, p_token.heap_index);
     return SliceOffset<int8>::build_from_sliceindex((int8*)l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).gpu_memory, *l_heap.heap.get_sliceindex_only(p_token.heap_paged_token));
 };
 
@@ -907,47 +906,46 @@ inline ImageLayoutTransitionBarriers ImageLayoutTransitionBarriers::allocate()
         ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                                                   VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
     const ImageLayoutTransitionBarrierConfiguration shader_readonly_to_colorattachement =
-        ImageLayoutTransitionBarrierConfiguration{
-        VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                                  VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     ImageLayoutTransitionBarriers l_barriers = ImageLayoutTransitionBarriers{
-        Span<ImageLayoutTransitionBarrierConfiguration>::callocate(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount)};
-    l_barriers.barriers.get(1) = undefined_to_transfert_src;
-    l_barriers.barriers.get(2) = undefined_to_transfert_dst;
-    l_barriers.barriers.get(3) = undefined_to_shader_readonly;
-    l_barriers.barriers.get(4) = undefined_to_shader_readonly;
-    l_barriers.barriers.get(5) = undefined_to_shader_readonly;
+        Span_callocate<ImageLayoutTransitionBarrierConfiguration>(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount)};
+    *Span_get(&l_barriers.barriers, 1) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, 2) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, 3) = undefined_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, 4) = undefined_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, 5) = undefined_to_shader_readonly;
 
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 1) = undefined_to_transfert_src;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 2) = undefined_to_transfert_dst;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 3) = transfer_src_to_shader_readonly;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 4) = transfer_src_to_shader_readonly;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 5) = transfer_src_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 1) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 2) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 3) = transfer_src_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 4) = transfer_src_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 5) = transfer_src_to_shader_readonly;
 
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 1) = undefined_to_transfert_dst;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 2) = undefined_to_transfert_src;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 3) = transfer_dst_to_shader_readonly;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 4) = transfer_dst_to_shader_readonly;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 5) = transfer_dst_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 1) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 2) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 3) = transfer_dst_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 4) = transfer_dst_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 5) = transfer_dst_to_shader_readonly;
 
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 1) = undefined_to_transfert_src;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 2) = undefined_to_transfert_dst;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 5) = colorattachement_to_shader_readonly;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 1) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 2) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 5) = colorattachement_to_shader_readonly;
 
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 1) = undefined_to_transfert_src;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 2) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 1) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 2) = undefined_to_transfert_dst;
 
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 1) = undefined_to_transfert_src;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 2) = undefined_to_transfert_dst;
-    l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 3) = shader_readonly_to_colorattachement;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 1) = undefined_to_transfert_src;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 2) = undefined_to_transfert_dst;
+    *Span_get(&l_barriers.barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 3) = shader_readonly_to_colorattachement;
 
     return l_barriers;
 };
 
 inline ImageLayoutTransitionBarrierConfiguration ImageLayoutTransitionBarriers::get_barrier(const ImageUsageFlag p_left, const ImageUsageFlag p_right) const
 {
-    return this->barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * this->get_index_from_imageusage(p_left)) + this->get_index_from_imageusage(p_right));
+    return *Span_get(&this->barriers, ((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * this->get_index_from_imageusage(p_left)) + this->get_index_from_imageusage(p_right));
 };
 
 inline VkImageLayout ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(const ImageUsageFlag p_flag)
@@ -980,7 +978,7 @@ inline VkImageLayout ImageLayoutTransitionBarriers::get_imagelayout_from_imageus
 
 inline void ImageLayoutTransitionBarriers::free()
 {
-    this->barriers.free();
+    Span_free(&this->barriers);
 };
 
 inline uint8 ImageLayoutTransitionBarriers::get_index_from_imageusage(const ImageUsageFlag p_flag) const
@@ -1538,4 +1536,3 @@ inline void BufferCommandUtils::cmd_copy_buffer(const CommandBuffer& p_command_b
     l_buffer_copy.size = p_source_size;
     vkCmdCopyBuffer(p_command_buffer.command_buffer, p_source_buffer, p_target_buffer, 1, &l_buffer_copy);
 };
-

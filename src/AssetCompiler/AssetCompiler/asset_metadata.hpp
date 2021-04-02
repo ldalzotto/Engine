@@ -41,30 +41,37 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
             SliceN<SQLiteQueryPrimitiveTypes, 5> tmp_layout_text_text_int64_int64_int64{SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::INT64,
                                                                                         SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64};
 
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_int64_slice = slice_from_slicen(&tmp_layout_int64);
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_int64_int64_slice = slice_from_slicen(&tmp_layout_int64_int64);
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_text_slice = slice_from_slicen(&tmp_layout_text);
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_text_text_int64_int64_slice = slice_from_slicen(&tmp_layout_text_text_int64_int64);
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_int64_text_text_int64_int64_slice = slice_from_slicen(&tmp_layout_int64_text_text_int64_int64);
+            Slice<SQLiteQueryPrimitiveTypes> tmp_layout_text_text_int64_int64_int64_slice = slice_from_slicen(&tmp_layout_text_text_int64_int64_int64);
+
             AssetMetadataDatabase l_database;
             l_database.assetmetadata_insert_query = SQLitePreparedQuery::allocate(
                 p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_INSERT_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64_text_text_int64_int64))), SQLiteQueryLayout::build_default());
+                SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_text_text_int64_int64_slice)), SQLiteQueryLayout::build_default());
             l_database.assetmetadata_update_query = SQLitePreparedQuery::allocate(
                 p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_UPDATE_QUERY),
-                SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text_text_int64_int64_int64))), SQLiteQueryLayout::build_default());
+                SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_text_text_int64_int64_int64_slice)), SQLiteQueryLayout::build_default());
             l_database.assetmetadata_select_query =
                 SQLitePreparedQuery::allocate(p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_SELECT_QUERY),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text_text_int64_int64))));
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_slice)),
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_text_text_int64_int64_slice)));
 
             l_database.assetmetadata_count_query =
                 SQLitePreparedQuery::allocate(p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_COUNT_QUERY),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))));
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_slice)),
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_slice)));
             l_database.assetmetadata_select_paths_from_type =
                 SQLitePreparedQuery::allocate(p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_SELECT_PATHS_FROM_TYPE),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text))),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_text))));
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_text_slice)),
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_text_slice)));
             l_database.assetmetadata_select_timestamps =
                 SQLitePreparedQuery::allocate(p_database_connection, Slice_int8_build_rawstr(AssetMetadataDatabase_Const::ASSET_METADATA_SELECT_TIMESTAMPS),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64))),
-                                              SQLiteQueryLayout::allocate_span(Span<SQLiteQueryPrimitiveTypes>::allocate_slice(slice_from_slicen(&tmp_layout_int64_int64))));
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_slice)),
+                                              SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_int64_slice)));
             return l_database;
         };
 
@@ -178,7 +185,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
             {
                 for (loop(i, 0, this->data.Size))
                 {
-                    this->data.get(i).free();
+                    Span_free(&this->data.get(i));
                 }
                 this->data.free();
             };
@@ -207,8 +214,8 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
 
             inline void free()
             {
-                this->path.free();
-                this->type.free();
+                Span_free(&this->path);
+                Span_free(&this->type);
             };
         };
 

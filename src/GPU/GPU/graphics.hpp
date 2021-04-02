@@ -668,7 +668,7 @@ inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_devi
 
 #if __DEBUG
     Slice<RenderPassAttachment> p_render_pass_attachments_slice = slice_from_slicen(&p_render_pass_attachments);
-    l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
+    l_graphics_pass.attachement_layout = Span_allocate<RenderPassAttachment>(AttachmentCount);
     Slice_copy_memory_at_index(&l_graphics_pass.attachement_layout.slice, 0, &p_render_pass_attachments_slice);
 #endif
     vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
@@ -686,7 +686,7 @@ inline void GraphicsPass::free(const GraphicsDevice& p_graphics_device)
     vkDestroyFramebuffer(p_graphics_device.device, this->frame_buffer, NULL);
 
 #if __DEBUG
-    this->attachement_layout.free();
+    Span_free(&this->attachement_layout);
 #endif
 };
 
@@ -696,11 +696,11 @@ inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const
     VkPipelineLayoutCreateInfo l_pipeline_create_info{};
     l_pipeline_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-    Span<VkDescriptorSetLayout> l_descriptor_set_layouts = Span<VkDescriptorSetLayout>::allocate(in_shaderlayout_parameter_types.Capacity);
+    Span<VkDescriptorSetLayout> l_descriptor_set_layouts = Span_allocate<VkDescriptorSetLayout>(in_shaderlayout_parameter_types.Capacity);
 
     for (loop(i, 0, in_shaderlayout_parameter_types.Capacity))
     {
-        l_descriptor_set_layouts.get(i) = p_device.shaderlayout_parameters.get_descriptorset_layout(in_shaderlayout_parameter_types.get(i));
+        *Span_get(&l_descriptor_set_layouts, i) = p_device.shaderlayout_parameters.get_descriptorset_layout(*Span_get(&in_shaderlayout_parameter_types, i));
     }
 
     l_pipeline_create_info.setLayoutCount = (uint32_t)l_descriptor_set_layouts.Capacity;
@@ -712,7 +712,7 @@ inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const
     l_shader_layout.vertex_element_size = in_vertex_element_size;
     vk_handle_result(vkCreatePipelineLayout(p_device.device, &l_pipeline_create_info, NULL, &l_shader_layout.layout));
 
-    l_descriptor_set_layouts.free();
+    Span_free(&l_descriptor_set_layouts);
 
     return l_shader_layout;
 };
@@ -720,8 +720,8 @@ inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const
 inline void ShaderLayout::free(const GraphicsDevice& p_device)
 {
     vkDestroyPipelineLayout(p_device.device, this->layout, NULL);
-    this->shader_layout_parameter_types.free();
-    this->vertex_input_layout.free();
+    Span_free(&this->shader_layout_parameter_types);
+    Span_free(&this->vertex_input_layout);
 };
 
 inline ShaderModule ShaderModule::allocate(const GraphicsDevice& p_graphics_device, const Slice<int8>& p_shader_compiled_str)
@@ -751,7 +751,7 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
     Shader l_shader;
     l_shader.layout = p_shader_allocate_info.shader_layout;
 
-    Span<VkVertexInputAttributeDescription> l_vertex_input_attributes = Span<VkVertexInputAttributeDescription>::allocate(p_shader_allocate_info.shader_layout.vertex_input_layout.Capacity);
+    Span<VkVertexInputAttributeDescription> l_vertex_input_attributes = Span_allocate<VkVertexInputAttributeDescription>(p_shader_allocate_info.shader_layout.vertex_input_layout.Capacity);
 
     VkGraphicsPipelineCreateInfo l_pipeline_graphics_create_info{};
     l_pipeline_graphics_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -818,8 +818,8 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
 
     for (loop(i, 0, l_vertex_input_attributes.Capacity))
     {
-        const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = p_shader_allocate_info.shader_layout.vertex_input_layout.get(i);
-        l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
+        const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = *Span_get(&p_shader_allocate_info.shader_layout.vertex_input_layout, i);
+        *Span_get(&l_vertex_input_attributes, i) = VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
     }
 
     VkVertexInputBindingDescription l_vertex_input_binding{0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX};
@@ -872,7 +872,7 @@ inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAlloc
 
     vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphics_create_info, NULL, &l_shader.shader));
 
-    l_vertex_input_attributes.free();
+    Span_free(&l_vertex_input_attributes);
 
     return l_shader;
 };
@@ -1062,7 +1062,7 @@ struct GraphicsAllocator2
         allocate_shader_layout(Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, Span<ShaderLayout::VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size)
     {
         return this->heap.shader_layouts.alloc_element(
-            ShaderLayout::allocate(this->graphics_device, in_shaderlayout_parameter_types.move_to_value(), in_vertex_input_layout.move_to_value(), in_vertex_element_size));
+            ShaderLayout::allocate(this->graphics_device, Span_move_to_value(&in_shaderlayout_parameter_types), Span_move_to_value(&in_vertex_input_layout), in_vertex_element_size));
     };
 
     inline void free_shader_layout(const Token(ShaderLayout) p_shader_layout)

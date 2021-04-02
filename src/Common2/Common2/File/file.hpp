@@ -239,7 +239,7 @@ struct File
     inline Span<int8> read_file_allocate() const
     {
         uimax l_file_size = FileNative::get_file_size(this->native_handle);
-        Span<int8> l_buffer = Span<int8>::allocate(l_file_size);
+        Span<int8> l_buffer = Span_allocate<int8>(l_file_size);
         this->read_file(&l_buffer.slice);
         return l_buffer;
     };

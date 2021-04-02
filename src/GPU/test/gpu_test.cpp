@@ -304,14 +304,14 @@ inline void gpu_draw()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
-            l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span_allocate<ShaderLayout::VertexInputParameter>(1);
+            *Span_get(&l_shader_vertex_input_primitives, 0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
 
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(4);
-            l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate<ShaderLayoutParameterType>(4);
+            *Span_get(&l_first_shader_layout_parameters, 0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
 
@@ -364,9 +364,9 @@ inline void gpu_draw()
 
         Token(ShaderLayout) l_global_shader_layout;
         {
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-            l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate<ShaderLayoutParameterType>(1);
+            *Span_get(&l_first_shader_layout_parameters, 0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span_build<ShaderLayout::VertexInputParameter>(NULL, 0);
             l_global_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_vertex_parameters, 0);
         }
 
@@ -385,14 +385,14 @@ inline void gpu_draw()
 
         {
 
-            Span<color> l_colors = Span<color>::allocate(l_attachments.get(0).image_format.extent.x * l_attachments.get(0).image_format.extent.y);
+            Span<color> l_colors = Span_allocate<color>(l_attachments.get(0).image_format.extent.x * l_attachments.get(0).image_format.extent.y);
             for (loop(i, 0, l_colors.Capacity))
             {
-                l_colors.get(i) = l_multiplied_color_texture_color;
+                *Span_get(&l_colors, i) = l_multiplied_color_texture_color;
             }
             l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout,
                                                                     l_attachments.get(0).image_format, Slice_build_asint8(&l_colors.slice));
-            l_colors.free();
+            Span_free(&l_colors);
         }
 
         color_f l_mat_2_base_color = color_f{0.0f, 0.0f, 0.0f};
@@ -556,14 +556,14 @@ inline void gpu_depth_compare_test()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
-            l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span_allocate<ShaderLayout::VertexInputParameter>(1);
+            *Span_get(&l_shader_vertex_input_primitives, 0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
 
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(4);
-            l_first_shader_layout_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
-            l_first_shader_layout_parameters.get(3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate<ShaderLayoutParameterType>(4);
+            *Span_get(&l_first_shader_layout_parameters, 0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 1) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 2) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT;
+            *Span_get(&l_first_shader_layout_parameters, 3) = ShaderLayoutParameterType::TEXTURE_FRAGMENT;
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
 
@@ -790,10 +790,10 @@ inline void gpu_draw_indexed()
         Token(ShaderLayout) l_first_shader_layout;
         Token(ShaderModule) l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate(1);
-            l_shader_vertex_input_primitives.get(0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span_allocate<ShaderLayout::VertexInputParameter>(1);
+            *Span_get(&l_shader_vertex_input_primitives, 0) = ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex_position, position)};
 
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate(0);
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate<ShaderLayoutParameterType>(0);
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex_position));
 
@@ -968,10 +968,10 @@ inline void gpu_texture_mapping()
         Token(ImageGPU) l_texture_image = l_graphics_allocator.heap.textures_gpu.Slice_get(l_texture).Image;
         */
 
-        Span<color> l_texture_pixels = Span<color>::allocate(l_render_extends.x * l_render_extends.y);
+        Span<color> l_texture_pixels = Span_allocate<color>(l_render_extends.x * l_render_extends.y);
         for (loop(i, 0, l_texture_pixels.Capacity))
         {
-            l_texture_pixels.get(i) = (color_f{(float32)i, (float32)i, (float32)i, (float32)i} * (1.0f / l_texture_pixels.Capacity)).to_uint8_color();
+            *Span_get(&l_texture_pixels, i) = (color_f{(float32)i, (float32)i, (float32)i, (float32)i} * (1.0f / l_texture_pixels.Capacity)).to_uint8_color();
         }
 
         // l_buffer_allocator.write_to_imagegpu(l_texture_image, l_buffer_allocator.get_imagegpu(l_texture_image), l_texture_pixels.slice.build_asint8());
@@ -983,11 +983,12 @@ inline void gpu_texture_mapping()
             SliceN<ShaderLayout::VertexInputParameter, 2> l_shader_vertex_input_primitives_arr{
                 ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
                 ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives =
-                Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
+            Slice<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives_slice = slice_from_slicen(&l_shader_vertex_input_primitives_arr);
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span_allocate_slice(&l_shader_vertex_input_primitives_slice);
 
             SliceN<ShaderLayoutParameterType, 1> l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
+            Slice<ShaderLayoutParameterType> l_first_shader_layout_parameters_slice = slice_from_slicen(&l_first_shader_layout_parameters_arr);
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span_allocate_slice(&l_first_shader_layout_parameters_slice);
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
 
@@ -1099,7 +1100,7 @@ inline void gpu_texture_mapping()
         l_graphics_allocator.free_shader(l_first_shader);
         GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
 
-        l_texture_pixels.free();
+        Span_free(&l_texture_pixels);
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -1168,15 +1169,15 @@ inline void gpu_present()
 
     {
 
-        Span<color> l_render_target_color = Span<color>::allocate(l_render_target_size.x * l_render_target_size.y);
+        Span<color> l_render_target_color = Span_allocate<color>(l_render_target_size.x * l_render_target_size.y);
         for (loop(i, 0, l_render_target_color.Capacity))
         {
-            l_render_target_color.get(i) = color{UINT8_MAX, 0, 0};
+            *Span_get(&l_render_target_color, i) = color{UINT8_MAX, 0, 0};
         }
         Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
                                            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), Slice_build_asint8(&l_render_target_color.slice));
-        l_render_target_color.free();
+        Span_free(&l_render_target_color);
 
         l_gpu_context.buffer_step_and_submit();
         GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
@@ -1188,17 +1189,17 @@ inline void gpu_present()
         l_gpu_context.wait_for_completion();
     }
     {
-        Span<color> l_render_target_color = Span<color>::allocate(l_render_target_size.x * l_render_target_size.y);
+        Span<color> l_render_target_color = Span_allocate<color>(l_render_target_size.x * l_render_target_size.y);
         for (loop(i, 0, l_render_target_color.Capacity))
         {
-            l_render_target_color.get(i) = color{0, 0, UINT8_MAX};
+            *Span_get(&l_render_target_color, i) = color{0, 0, UINT8_MAX};
         }
 
         Token(ImageGPU) l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
                                            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), Slice_build_asint8(&l_render_target_color.slice));
 
-        l_render_target_color.free();
+        Span_free(&l_render_target_color);
 
         l_gpu_context.buffer_step_and_submit();
         GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();

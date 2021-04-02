@@ -91,8 +91,8 @@ struct Engine
             l_engine.present =
                 GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator, WindowAllocator::get_window(l_engine.window).handle,
                                      v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1}, *Slice_get(&l_color_step_textures, 0), l_quad_blit_vert.slice, l_quad_blit_frag.slice);
-            l_quad_blit_vert.free();
-            l_quad_blit_frag.free();
+            Span_free(&l_quad_blit_vert);
+            Span_free(&l_quad_blit_frag);
         }
         else
         {

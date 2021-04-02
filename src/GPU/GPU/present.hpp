@@ -47,7 +47,7 @@ struct GPUPresentDevice
                 break;
             }
         }
-        l_queueFamilies.free();
+        Span_free(&l_queueFamilies);
 
 #if __DEBUG
         assert_true(l_present_queue_family_index != -1);
@@ -60,14 +60,14 @@ struct GPUPresentDevice
         Span<VkSurfaceFormatKHR> l_surface_formats = vk::getPhysicalDeviceSurfaceFormatsKHR(p_instance.graphics_card.device, l_present_device.surface);
         for (loop(i, 0, l_surface_formats.Capacity))
         {
-            VkSurfaceFormatKHR& l_surface_format = l_surface_formats.get(i);
+            VkSurfaceFormatKHR& l_surface_format = *Span_get(&l_surface_formats, i);
             if (l_surface_format.format == VkFormat::VK_FORMAT_B8G8R8A8_SRGB && l_surface_format.colorSpace == VkColorSpaceKHR::VK_COLORSPACE_SRGB_NONLINEAR_KHR)
             {
                 l_present_device.surface_format = l_surface_format;
                 break;
             }
         }
-        l_surface_formats.free();
+        Span_free(&l_surface_formats);
 
         return l_present_device;
     };
@@ -176,10 +176,12 @@ struct GPUPresent_SwapChain
         p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(p_present_device.device);
 
         SliceN<ShaderLayoutParameterType, 1> l_shader_parameter_layout_input_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
-        Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_shader_parameter_layout_input_arr));
+        Slice<ShaderLayoutParameterType> l_shader_parameter_layout_input_slice = slice_from_slicen(&l_shader_parameter_layout_input_arr);
+        Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span_allocate_slice(&l_shader_parameter_layout_input_slice);
         SliceN<ShaderLayout::VertexInputParameter, 2> l_vertex_parameter_arr{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
                                                                              ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(GPUPresent_2DQuad::_vertex, uv)}};
-        Span<ShaderLayout::VertexInputParameter> l_vertex_parameter = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_vertex_parameter_arr));
+        Slice<ShaderLayout::VertexInputParameter> l_vertex_parameter_slice = slice_from_slicen(&l_vertex_parameter_arr);
+        Span<ShaderLayout::VertexInputParameter> l_vertex_parameter = Span_allocate_slice(&l_vertex_parameter_slice);
         p_swap_chain.image_copy_shader_layout = p_graphics_allocator.allocate_shader_layout(l_shader_parameter_layout, l_vertex_parameter, sizeof(GPUPresent_2DQuad::_vertex));
 
         p_swap_chain.image_copy_shader_vertex = p_graphics_allocator.allocate_shader_module(p_compiled_vertex_shader);
@@ -231,26 +233,26 @@ struct GPUPresent_SwapChain
         // l_present_device.present_mode =  VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
         Span<VkImage> l_images = vk::getSwapchainImagesKHR(p_present_device.device, p_swap_chain.swap_chain);
-        p_swap_chain.swap_chain_images = Span<Token(ImageGPU)>::allocate(l_images.Capacity);
-        p_swap_chain.rendertarget_copy_pass = Span<Token(GraphicsPass)>::allocate(l_images.Capacity);
-        p_swap_chain.image_copy_shaders = Span<Token(Shader)>::allocate(l_images.Capacity);
+        p_swap_chain.swap_chain_images = Span_allocate<Token(ImageGPU)>(l_images.Capacity);
+        p_swap_chain.rendertarget_copy_pass = Span_allocate<Token(GraphicsPass)>(l_images.Capacity);
+        p_swap_chain.image_copy_shaders = Span_allocate<Token(Shader)>(l_images.Capacity);
 
         for (loop(i, 0, l_images.Capacity))
         {
             ImageFormat l_image_format = ImageFormat::build_color_2d(v3ui{l_swapchain_create.imageExtent.width, l_swapchain_create.imageExtent.height, 1}, ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
             l_image_format.format = l_swapchain_create.imageFormat;
-            p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
+            *Span_get(&p_swap_chain.swap_chain_images, i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, *Span_get(&l_images, i), l_image_format, 0});
 
-            p_swap_chain.rendertarget_copy_pass.get(i) = p_graphics_allocator.allocate_graphicspass<1>(p_buffer_memory.allocator.device, &p_swap_chain.swap_chain_images.get(i),
-                                                                                                       &p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i)),
+            *Span_get(&p_swap_chain.rendertarget_copy_pass, i) = p_graphics_allocator.allocate_graphicspass<1>(p_buffer_memory.allocator.device, Span_get(&p_swap_chain.swap_chain_images, i),
+                                                                                                       &p_buffer_memory.allocator.gpu_images.get(*Span_get(&p_swap_chain.swap_chain_images, i)),
                                                                                                        SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
         }
-        l_images.free();
+        Span_free(&l_images);
 
         for (loop(i, 0, p_swap_chain.image_copy_shaders.Capacity))
         {
-            p_swap_chain.image_copy_shaders.get(i) = p_graphics_allocator.allocate_shader(ShaderAllocateInfo{
-                p_graphics_allocator.heap.graphics_pass.get(p_swap_chain.rendertarget_copy_pass.get(i)), ShaderConfiguration{0, ShaderConfiguration::CompareOp::Always},
+            *Span_get(&p_swap_chain.image_copy_shaders, i) = p_graphics_allocator.allocate_shader(ShaderAllocateInfo{
+                p_graphics_allocator.heap.graphics_pass.get(*Span_get(&p_swap_chain.rendertarget_copy_pass, i)), ShaderConfiguration{0, ShaderConfiguration::CompareOp::Always},
                 p_graphics_allocator.heap.shader_layouts.get(p_swap_chain.image_copy_shader_layout), p_graphics_allocator.heap.shader_modules.get(p_swap_chain.image_copy_shader_vertex),
                 p_graphics_allocator.heap.shader_modules.get(p_swap_chain.image_copy_shader_fragment)});
         }
@@ -262,21 +264,21 @@ struct GPUPresent_SwapChain
         vkDestroySwapchainKHR(p_present_device.device, p_swap_chain.swap_chain, NULL);
         for (loop(i, 0, p_swap_chain.image_copy_shaders.Capacity))
         {
-            p_graphics_allocator.free_shader(p_swap_chain.image_copy_shaders.get(i));
+            p_graphics_allocator.free_shader(*Span_get(&p_swap_chain.image_copy_shaders, i));
         }
-        p_swap_chain.image_copy_shaders.free();
+        Span_free(&p_swap_chain.image_copy_shaders);
 
         for (loop(i, 0, p_swap_chain.rendertarget_copy_pass.Capacity))
         {
-            p_graphics_allocator.free_graphicspass(p_buffer_memory.allocator.device, p_swap_chain.rendertarget_copy_pass.get(i));
+            p_graphics_allocator.free_graphicspass(p_buffer_memory.allocator.device, *Span_get(&p_swap_chain.rendertarget_copy_pass, i));
         }
-        p_swap_chain.rendertarget_copy_pass.free();
+        Span_free(&p_swap_chain.rendertarget_copy_pass);
 
         for (loop(i, 0, p_swap_chain.swap_chain_images.Capacity))
         {
-            p_buffer_memory.allocator.gpu_images.release_element(p_swap_chain.swap_chain_images.get(i));
+            p_buffer_memory.allocator.gpu_images.release_element(*Span_get(&p_swap_chain.swap_chain_images, i));
         }
-        p_swap_chain.swap_chain_images.free();
+        Span_free(&p_swap_chain.swap_chain_images);
     };
 };
 
@@ -323,9 +325,9 @@ struct GPUPresent
                                                &this->current_swapchain_image_index));
 
         SliceN<v4f, 1> l_renderpass_clear_arr{v4f{1.0f, 0, 0, 0}};
-        p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->swap_chain.rendertarget_copy_pass.get(this->current_swapchain_image_index)),
+        p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(*Span_get(&this->swap_chain.rendertarget_copy_pass, this->current_swapchain_image_index)),
                                             slice_from_slicen(&l_renderpass_clear_arr));
-        p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(this->swap_chain.image_copy_shaders.get(this->current_swapchain_image_index)));
+        p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(*Span_get(&this->swap_chain.image_copy_shaders, this->current_swapchain_image_index)));
         p_graphics_binder.bind_shadertexturegpu_parameter(p_graphics_binder.graphics_allocator.heap.shader_texture_gpu_parameters.get(this->swap_chain.shader_parameter_texture));
         this->d2_quad.bind_and_draw(p_graphics_binder);
         p_graphics_binder.pop_shadertexturegpu_parameter();

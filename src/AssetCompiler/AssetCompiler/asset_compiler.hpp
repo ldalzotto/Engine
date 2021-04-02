@@ -19,12 +19,12 @@ struct AssetCompiled
 
     inline static AssetCompiled build_default()
     {
-        return AssetCompiled{AssetType::UNDEFINED, Span<int8>::build_default()};
+        return AssetCompiled{AssetType::UNDEFINED, Span_build_default<int8>()};
     };
 
     inline void free()
     {
-        this->compiled_data.free();
+        Span_free(&this->compiled_data);
     };
 };
 
@@ -54,13 +54,14 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
         if (Slice_compare(&l_asset_path, &AssetCompiler_Const::vert))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
+            *Span_get(&l_buffer, l_buffer.Capacity - 1) = (int8)NULL;
             ShaderCompiled l_compiled_shader;
             int l_compilation_result = p_shader_compiler.compile_shader_silent(ShaderModuleStage::VERTEX, l_buffer.slice, &l_compiled_shader);
-            l_buffer.free();
+            Span_free(&l_buffer);
             if (l_compilation_result)
             {
-                Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
+                Slice<int8> l_compiled_shader_compiled_binary = l_compiled_shader.get_compiled_binary();
+                Span<int8> l_compiled_buffer = Span_allocate_slice(&l_compiled_shader_compiled_binary);
                 l_compiled_shader.free();
                 *out_asset_compiled = AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
                 return 1;
@@ -69,13 +70,14 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
         else if (Slice_compare(&l_asset_path, &AssetCompiler_Const::frag))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            l_buffer.get(l_buffer.Capacity - 1) = (int8)NULL;
+            *Span_get(&l_buffer, l_buffer.Capacity - 1) = (int8)NULL;
             ShaderCompiled l_compiled_shader;
             int l_compilation_result = p_shader_compiler.compile_shader_silent(ShaderModuleStage::FRAGMENT, l_buffer.slice, &l_compiled_shader);
-            l_buffer.free();
+            Span_free(&l_buffer);
             if (l_compilation_result)
             {
-                Span<int8> l_compiled_buffer = Span<int8>::allocate_slice(l_compiled_shader.get_compiled_binary());
+                Slice<int8> l_compiled_shader_compiled_binary = l_compiled_shader.get_compiled_binary();
+                Span<int8> l_compiled_buffer = Span_allocate_slice(&l_compiled_shader_compiled_binary);
                 l_compiled_shader.free();
                 *out_asset_compiled = AssetCompiled::build(AssetType::SHADER_MODULE, l_compiled_buffer);
                 return 1;
@@ -92,7 +94,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
 
             l_vertices.free();
             l_indices.free();
-            l_buffer.free();
+            Span_free(&l_buffer);
             *out_asset_compiled = AssetCompiled::build(AssetType::MESH, l_mesh_asset.allocated_binary);
             return 1;
         }
@@ -107,8 +109,8 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
 
             TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{l_size, l_channel_nb, l_pixels.slice});
 
-            l_pixels.free();
-            l_buffer.free();
+            Span_free(&l_pixels);
+            Span_free(&l_buffer);
             *out_asset_compiled = AssetCompiled::build(AssetType::TEXTURE, l_texture_asset.allocated_binary);
             return 1;
         }
@@ -139,7 +141,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
 
             l_json_value_deserializer.free();
             l_json_deserializer.free();
-            l_buffer.free();
+            Span_free(&l_buffer);
             *out_asset_compiled = l_compiled_asset;
             return 1;
         }
@@ -187,19 +189,20 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
 
             l_json_value_deserializer.free();
             l_json_deserializer.free();
-            l_buffer.free();
+            Span_free(&l_buffer);
             return l_compiled_dependencies;
         }
     }
 
-    return Span<int8>::build_default();
+    return Span_build_default<int8>();
 };
 
 inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompiler& p_shader_compiler, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
                                                                    AssetMetadataDatabase& p_asset_metadata_database, const Slice<int8>& p_root_path, const Slice<int8>& p_relative_asset_path)
 {
     int8 l_return = 0;
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_root_path, p_relative_asset_path, Slice_build_begin_end<int8>("\0", 0, 1));
+    Slice<int8> l_end_char = Slice_build_begin_end<int8>("\0", 0, 1);
+    Span<int8> l_asset_full_path = Span_allocate_slice_3(&p_root_path, &p_relative_asset_path, &l_end_char);
     File l_asset_file = File::open_silent(l_asset_full_path.slice);
     if (l_asset_file.is_valid())
     {
@@ -226,7 +229,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
                 if (l_compiled_dependencies.Memory)
                 {
                     p_asset_database.insert_or_update_asset_dependencies(p_database_connection, p_relative_asset_path, l_compiled_dependencies.slice);
-                    l_compiled_dependencies.free();
+                    Span_free(&l_compiled_dependencies);
                 }
                 l_return = 1;
             }
@@ -234,7 +237,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
 
         l_asset_file.free();
     }
-    l_asset_full_path.free();
+    Span_free(&l_asset_full_path);
 
     return l_return;
 };

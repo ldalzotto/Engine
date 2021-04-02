@@ -33,7 +33,7 @@ template <class KeyType, class ElementType> struct HashMap
             abort(); // minimal allocation size is 2
         }
 #endif
-        return HashMap<KeyType, ElementType>{Span<ElementType>::allocate(p_initial_size), Span<KeyType>::allocate(p_initial_size), Span<int8>::callocate(p_initial_size)};
+        return HashMap<KeyType, ElementType>{Span_allocate<ElementType>(p_initial_size), Span_allocate<KeyType>(p_initial_size), Span_callocate<int8>(p_initial_size)};
     };
 
     inline static HashMap<KeyType, ElementType> allocate_default()
@@ -43,9 +43,9 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void resize(const uimax p_new_size)
     {
-        this->Memory.resize(p_new_size);
-        this->StoredKeys.resize(p_new_size);
-        this->Slots.resize(p_new_size);
+        Span_resize(&this->Memory, p_new_size);
+        Span_resize(&this->StoredKeys, p_new_size);
+        Span_resize(&this->Slots, p_new_size);
     };
 
     inline void zero()
@@ -55,9 +55,9 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void free()
     {
-        this->Memory.free();
-        this->StoredKeys.free();
-        this->Slots.free();
+        Span_free(&this->Memory);
+        Span_free(&this->StoredKeys);
+        Span_free(&this->Slots);
     };
 
     inline uimax get_capacity()
@@ -69,7 +69,7 @@ template <class KeyType, class ElementType> struct HashMap
     {
         for (loop(i, 0, this->Slots.Capacity))
         {
-            if (this->Slots.get(i))
+            if (*Span_get(&this->Slots, i))
             {
                 return 0;
             }
@@ -80,7 +80,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline int8 has_key(const hash_t p_hash)
     {
-        return this->Slots.get(p_hash);
+        return *Span_get(&this->Slots, p_hash);
     };
 
     inline int8 has_key_nothashed(const KeyType& p_key)
@@ -100,7 +100,7 @@ template <class KeyType, class ElementType> struct HashMap
     {
         if (this->has_key(p_hash))
         {
-            return &this->Memory.get(p_hash);
+            return Span_get(&this->Memory, p_hash);
         }
 
         return NULL;
@@ -126,9 +126,9 @@ template <class KeyType, class ElementType> struct HashMap
         assert_true(!this->has_key(p_hash)); // use has_key before
 #endif
 
-        this->Memory.get(p_hash) = p_value;
-        this->StoredKeys.get(p_hash) = p_key;
-        this->Slots.get(p_hash) = 1;
+        *Span_get(&this->Memory, p_hash) = p_value;
+        *Span_get(&this->StoredKeys, p_hash) = p_key;
+        *Span_get(&this->Slots, p_hash) = 1;
     };
 
     inline void put_value(const hash_t p_hash, const ElementType& p_value)
@@ -137,7 +137,7 @@ template <class KeyType, class ElementType> struct HashMap
         assert_true(this->has_key(p_hash)); // use has_key before
 #endif
 
-        this->Memory.get(p_hash) = p_value;
+        *Span_get(&this->Memory, p_hash) = p_value;
     };
 
     inline void put_value_nothashed(const KeyType& p_key, const ElementType& p_value)
@@ -146,7 +146,7 @@ template <class KeyType, class ElementType> struct HashMap
 #if __DEBUG
         assert_true(this->has_key(l_hash) && this->check_key_equality(p_key, l_hash)); // use has_key before
 #endif
-        this->Memory.get(l_hash) = p_value;
+        *Span_get(&this->Memory, l_hash) = p_value;
     };
 
     inline void push_key_value_nothashed(const KeyType& p_key, const ElementType& p_value)
@@ -174,7 +174,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline void erase_key(const hash_t p_hash)
     {
-        this->Slots.get(p_hash) = 0;
+        this->Slots.Span_get(p_hash) = 0;
     };
 
     inline void erase_key_nothashed(const KeyType& p_key)
@@ -183,7 +183,7 @@ template <class KeyType, class ElementType> struct HashMap
 #if __DEBUG
         assert_true(this->check_key_equality(p_key, l_hash));
 #endif
-        this->Slots.get(l_hash) = 0;
+        *Span_get(&this->Slots, l_hash) = 0;
     };
 
   private:
@@ -191,10 +191,10 @@ template <class KeyType, class ElementType> struct HashMap
     {
         for (loop(i, 0, this->Slots.Capacity))
         {
-            if (this->Slots.get(i))
+            if (*Span_get(&this->Slots, i))
             {
-                KeyType& l_key = this->StoredKeys.get(i);
-                in_out_new_map->put_key_value(in_out_new_map->hash_key(l_key), l_key, this->Memory.get(i));
+                KeyType& l_key = *Span_get(&this->StoredKeys, i);
+                in_out_new_map->put_key_value(in_out_new_map->hash_key(l_key), l_key, *Span_get(&this->Memory, i));
             }
         }
     };
@@ -211,7 +211,7 @@ template <class KeyType, class ElementType> struct HashMap
 
     inline int8 check_key_equality(const KeyType& p_key, const hash_t p_hash)
     {
-        return memory_compare((int8*)&this->StoredKeys.get(p_hash), (int8*)&p_key, sizeof(KeyType));
+        return memory_compare((int8*)Span_get(&this->StoredKeys, p_hash), (int8*)&p_key, sizeof(KeyType));
     };
 };
 

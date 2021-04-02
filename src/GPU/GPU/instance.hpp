@@ -43,7 +43,7 @@ inline Span<VkLayerProperties> enumerateInstanceLayerProperties()
 {
     uint32_t l_size;
     vk_handle_result(vkEnumerateInstanceLayerProperties(&l_size, NULL));
-    Span<VkLayerProperties> l_array = Span<VkLayerProperties>::allocate(l_size);
+    Span<VkLayerProperties> l_array = Span_allocate<VkLayerProperties>(l_size);
     vk_handle_result(vkEnumerateInstanceLayerProperties((uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
@@ -52,7 +52,7 @@ inline Span<VkPhysicalDevice> enumeratePhysicalDevices(const gpuinstance_t p_ins
 {
     uint32_t l_size;
     vk_handle_result(vkEnumeratePhysicalDevices(p_instance, &l_size, NULL));
-    Span<VkPhysicalDevice> l_array = Span<VkPhysicalDevice>::allocate(l_size);
+    Span<VkPhysicalDevice> l_array = Span_allocate<VkPhysicalDevice>(l_size);
     vk_handle_result(vkEnumeratePhysicalDevices(p_instance, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
@@ -61,7 +61,7 @@ inline Span<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties(cons
 {
     uint32_t l_size;
     vkGetPhysicalDeviceQueueFamilyProperties(p_physical_device, &l_size, NULL);
-    Span<VkQueueFamilyProperties> l_array = Span<VkQueueFamilyProperties>::allocate(l_size);
+    Span<VkQueueFamilyProperties> l_array = Span_allocate<VkQueueFamilyProperties>(l_size);
     vkGetPhysicalDeviceQueueFamilyProperties(p_physical_device, (uint32_t*)&l_array.Capacity, l_array.Memory);
     return l_array;
 };
@@ -70,7 +70,7 @@ inline Span<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModesKHR(const VkPh
 {
     uint32_t l_size;
     vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, &l_size, NULL));
-    Span<VkPresentModeKHR> l_array = Span<VkPresentModeKHR>::allocate(l_size);
+    Span<VkPresentModeKHR> l_array = Span_allocate<VkPresentModeKHR>(l_size);
     vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
@@ -79,7 +79,7 @@ inline Span<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormatsKHR(const VkPhysi
 {
     uint32_t l_size;
     vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, &l_size, NULL));
-    Span<VkSurfaceFormatKHR> l_array = Span<VkSurfaceFormatKHR>::allocate(l_size);
+    Span<VkSurfaceFormatKHR> l_array = Span_allocate<VkSurfaceFormatKHR>(l_size);
     vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
@@ -88,7 +88,7 @@ inline Span<VkImage> getSwapchainImagesKHR(const VkDevice p_device, const VkSwap
 {
     uint32_t l_size;
     vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, &l_size, NULL));
-    Span<VkImage> l_array = Span<VkImage>::allocate(l_size);
+    Span<VkImage> l_array = Span_allocate<VkImage>(l_size);
     vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
@@ -140,7 +140,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         int8 l_layer_match = 0;
         for (loop(j, 0, l_available_layers.Capacity))
         {
-            Slice<int8> l_available_layer = Slice_int8_build_rawstr(l_available_layers.get(j).layerName);
+            Slice<int8> l_available_layer = Slice_int8_build_rawstr(Span_get(&l_available_layers, j)->layerName);
             if (Slice_compare(&l_validation_layer, &l_available_layer))
             {
                 l_layer_match = 1;
@@ -191,7 +191,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_extensions.free();
 
 #if __DEBUG
-    l_available_layers.free();
+    Span_free(&l_available_layers);
 #endif
 
 #if __DEBUG
@@ -212,7 +212,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     for (loop(i, 0, l_physical_devices.Capacity))
     {
-        VkPhysicalDevice& l_physical_device = l_physical_devices.get(i);
+        VkPhysicalDevice& l_physical_device = *Span_get(&l_physical_devices, i);
         VkPhysicalDeviceProperties l_physical_device_properties;
         vkGetPhysicalDeviceProperties(l_physical_device, &l_physical_device_properties);
         if (l_physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
@@ -222,7 +222,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
             for (loop(j, 0, l_queueFamilies.Capacity))
             {
-                if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
+                if (Span_get(&l_queueFamilies, j)->queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
                 {
                     l_gpu.graphics_card.transfer_queue_family = (uint32)j;
                     l_queueus_found += 1;
@@ -232,7 +232,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
                     }
                 }
 
-                if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+                if (Span_get(&l_queueFamilies, j)->queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
                 {
                     l_gpu.graphics_card.graphics_queue_family = (uint32)j;
                     l_queueus_found += 1;
@@ -243,7 +243,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
                 }
             }
 
-            l_queueFamilies.free();
+            Span_free(&l_queueFamilies);
 
             l_gpu.graphics_card.device = l_physical_device;
             vkGetPhysicalDeviceMemoryProperties(l_gpu.graphics_card.device, &l_gpu.graphics_card.device_memory_properties);
@@ -251,7 +251,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         }
     }
 
-    l_physical_devices.free();
+    Span_free(&l_physical_devices);
 
     VkDeviceQueueCreateInfo l_devicequeue_create_info{};
     l_devicequeue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;

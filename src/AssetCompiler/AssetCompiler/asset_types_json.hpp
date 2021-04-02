@@ -2,11 +2,12 @@
 
 inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
 {
-    Span<int8> l_asset_full_path = Span<int8>::allocate_slice_3(p_asset_root_path, p_relative_asset_path, Slice_build_begin_end<int8>("\0", 0, 1));
+    Slice<int8> l_end_char = Slice_build_begin_end<int8>("\0", 0, 1);
+    Span<int8> l_asset_full_path = Span_allocate_slice_3(&p_asset_root_path, &p_relative_asset_path, &l_end_char);
     File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_asset_file_content = l_asset_file.read_file_allocate();
     l_asset_file.free();
-    l_asset_full_path.free();
+    Span_free(&l_asset_full_path);
     return l_asset_file_content;
 };
 
@@ -353,7 +354,7 @@ struct MaterialAssetJSON
 
             l_shader_asset_deserializer.free();
             l_shader_asset_value_deserializer.free();
-            l_shader_file_content.free();
+            Span_free(&l_shader_file_content);
         }
 
         Vector<hash_t> l_textures = Vector<hash_t>::allocate(0);

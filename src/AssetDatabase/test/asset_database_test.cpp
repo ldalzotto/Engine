@@ -15,7 +15,7 @@ inline void asset_blob_insert_read_write()
         hash_t l_inserted_id = l_asset_database.insert_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
         assert_true(Slice_compare(&l_data_int8, &l_retrieved_data.slice));
-        l_retrieved_data.free();
+        Span_free(&l_retrieved_data);
 
         // insert_or_update_asset_blob -> doing update
         l_data_arr = SliceN<uimax, 3>{3, 4, 5};
@@ -24,7 +24,7 @@ inline void asset_blob_insert_read_write()
         l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
         assert_true(Slice_compare(&l_data_int8, &l_retrieved_data.slice));
-        l_retrieved_data.free();
+        Span_free(&l_retrieved_data);
     }
 
     // insert_or_update_asset_blob -> doing insert
@@ -36,7 +36,7 @@ inline void asset_blob_insert_read_write()
         hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
         assert_true(Slice_compare(&l_data_int8, &l_retrieved_data.slice));
-        l_retrieved_data.free();
+        Span_free(&l_retrieved_data);
     }
 
     l_asset_database.free(l_connection);
@@ -59,7 +59,7 @@ inline void asset_dependencies_blob_read_write()
         l_asset_database.insert_asset_dependencies_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_dependencies_blob(l_connection, l_inserted_id);
         assert_true(Slice_compare(&l_data_int8, &l_retrieved_data.slice));
-        l_retrieved_data.free();
+        Span_free(&l_retrieved_data);
     }
     l_asset_database.free(l_connection);
     l_connection.free();

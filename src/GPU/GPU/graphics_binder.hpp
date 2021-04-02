@@ -222,8 +222,8 @@ struct GraphicsBinder
     inline void _cmd_bind_uniform_buffer_parameter(const ShaderLayout& p_shader_layout, const VkDescriptorSet p_descriptor_set, const uint32 p_set_number)
     {
 #if __DEBUG
-        assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
-                    p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+        assert_true(*Span_get(&p_shader_layout.shader_layout_parameter_types, p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
+                    *Span_get(&p_shader_layout.shader_layout_parameter_types, p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
         vkCmdBindDescriptorSets(this->graphics_allocator.graphics_device.command_buffer.command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number, 1,
@@ -233,7 +233,7 @@ struct GraphicsBinder
     inline void _cmd_bind_shader_texture_gpu_parameter(const ShaderLayout& p_shader_layout, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)
     {
 #if __DEBUG
-        assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+        assert_true(*Span_get(&p_shader_layout.shader_layout_parameter_types, p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 
         vkCmdBindDescriptorSets(this->graphics_allocator.graphics_device.command_buffer.command_buffer, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number, 1,

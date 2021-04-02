@@ -108,12 +108,12 @@ struct Material
 
 #if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
-        assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
-                    p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+        assert_true(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
+                    *Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
         Token(ShaderUniformBufferHostParameter) l_parameter =
-            p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index), p_buffer_token, p_buffer);
+            p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index), p_buffer_token, p_buffer);
 
         p_graphics_allocator.heap.material_parameters.element_push_back_element(this->parameters, ShaderParameter{ShaderParameter::Type::UNIFORM_HOST, token_get_value(l_parameter)});
     };
@@ -149,12 +149,12 @@ struct Material
 
 #if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
-        assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
-                    p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
+        assert_true(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX ||
+                    *Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
         Token(ShaderUniformBufferGPUParameter) l_shader_uniform_buffer_parameter =
-            p_graphics_allocator.allocate_shaderuniformbuffergpu_parameter(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index), p_buffer_gpu_token, p_buffer_gpu);
+            p_graphics_allocator.allocate_shaderuniformbuffergpu_parameter(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index), p_buffer_gpu_token, p_buffer_gpu);
 
         p_graphics_allocator.heap.material_parameters.element_push_back_element(this->parameters, ShaderParameter{ShaderParameter::Type::UNIFORM_GPU, token_get_value(l_shader_uniform_buffer_parameter)});
     };
@@ -192,11 +192,11 @@ struct Material
 
 #if __DEBUG
         assert_true(l_inserted_index < p_shader_layout.shader_layout_parameter_types.Capacity);
-        assert_true(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+        assert_true(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 
         Token(ShaderTextureGPUParameter) l_shader_texture_gpu_parameter =
-            p_graphics_allocator.allocate_shadertexturegpu_parameter(p_shader_layout.shader_layout_parameter_types.get(l_inserted_index), p_texture_gpu_token, p_texture_gpu);
+            p_graphics_allocator.allocate_shadertexturegpu_parameter(*Span_get(&p_shader_layout.shader_layout_parameter_types, l_inserted_index), p_texture_gpu_token, p_texture_gpu);
 
         p_graphics_allocator.heap.material_parameters.element_push_back_element(this->parameters, ShaderParameter{ShaderParameter::Type::TEXTURE_GPU, token_get_value(l_shader_texture_gpu_parameter)});
     };

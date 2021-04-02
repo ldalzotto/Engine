@@ -49,12 +49,14 @@ inline void material_viewer(qt_test& qt_app)
             assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default(MeshRendererComponent)));
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer_window.widgets.db_file_dialog;
-            Span<int8> l_file_path = Span<int8>::allocate_slice_2(Slice_int8_build_rawstr(ASSET_FOLDER_PATH), Slice_int8_build_rawstr("asset.db"));
+            Slice<int8> l_asset_folder_path = Slice_int8_build_rawstr(ASSET_FOLDER_PATH);
+            Slice<int8> l_asset_db_file = Slice_int8_build_rawstr("asset.db");
+            Span<int8> l_file_path = Span_allocate_slice_2(&l_asset_folder_path, &l_asset_db_file);
             fd->fileSelected(QString::fromLocal8Bit(l_file_path.slice.Begin, l_file_path.slice.Size));
             Slice<int8> l_database_file = Slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.database_file.toLocal8Bit().data());
             assert_true(Slice_compare(&l_database_file, &l_file_path.slice));
             fd->close();
-            l_file_path.free();
+            Span_free(&l_file_path);
 
             assert_true(l_material_viewer_editor.material_viewer_window.widgets.selected_mesh->count() == 3);
             assert_true(l_material_viewer_editor.material_viewer_window.widgets.selected_material->count() == 3);
@@ -121,12 +123,14 @@ inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
             assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default(MeshRendererComponent)));
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer_window.widgets.db_file_dialog;
-            Span<int8> l_file_path = Span<int8>::allocate_slice_2(Slice_int8_build_rawstr(ASSET_FOLDER_PATH), Slice_int8_build_rawstr("asset.db"));
+            Slice<int8> l_asset_folder_path = Slice_int8_build_rawstr(ASSET_FOLDER_PATH);
+            Slice<int8> l_asset_db_file = Slice_int8_build_rawstr("asset.db");
+            Span<int8> l_file_path = Span_allocate_slice_2(&l_asset_folder_path, &l_asset_db_file);
             fd->fileSelected(QString::fromLocal8Bit(l_file_path.slice.Begin, l_file_path.slice.Size));
             Slice<int8> l_database_file = Slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.database_file.toLocal8Bit().data());
             assert_true(Slice_compare(&l_database_file, &l_file_path.slice));
             fd->close();
-            l_file_path.free();
+            Span_free(&l_file_path);
 
             assert_true(l_material_viewer_editor.material_viewer_window.widgets.selected_mesh->count() == 3);
             assert_true(l_material_viewer_editor.material_viewer_window.widgets.selected_material->count() == 3);

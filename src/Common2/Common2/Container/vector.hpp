@@ -14,12 +14,12 @@ template <class ElementType> struct Vector
 
     inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
     {
-        return Vector<ElementType>{0, Span<ElementType>::build(p_memory, p_initial_capacity)};
+        return Vector<ElementType>{0, Span_build<ElementType>(p_memory, p_initial_capacity)};
     };
 
     inline static Vector<ElementType> allocate(const uimax p_initial_capacity)
     {
-        return Vector<ElementType>{0, Span<ElementType>::allocate(p_initial_capacity)};
+        return Vector<ElementType>{0, Span_allocate<ElementType>(p_initial_capacity)};
     };
 
     inline static Vector<ElementType> allocate_elements(const Slice<ElementType>& p_initial_elements)
@@ -43,7 +43,7 @@ template <class ElementType> struct Vector
 
     inline void free()
     {
-        this->Memory.free();
+        Span_free(&this->Memory);
         *this = Vector<ElementType>::build_zero_size(NULL, 0);
     };
 
@@ -108,7 +108,7 @@ template <class ElementType> struct Vector
 
     inline int8 push_back_array(const Slice<ElementType>& p_elements)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements.Size);
         Slice_copy_memory_at_index(&this->Memory.slice, this->Size, &p_elements);
         this->Size += p_elements.Size;
 
@@ -117,7 +117,7 @@ template <class ElementType> struct Vector
 
     inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements_0.Size + p_elements_1.Size);
         Slice_copy_memory_at_index_2(&this->Memory.slice, this->Size, &p_elements_0, &p_elements_1);
         this->Size += (p_elements_0.Size + p_elements_1.Size);
 
@@ -126,21 +126,21 @@ template <class ElementType> struct Vector
 
     inline int8 push_back_array_empty(const uimax p_array_size)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_array_size);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + p_array_size);
         this->Size += p_array_size;
         return 1;
     };
 
     inline int8 push_back_element_empty()
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + 1);
         this->Size += 1;
         return 1;
     };
 
     inline int8 push_back_element(const ElementType& p_element)
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + 1);
         this->Memory.Memory[this->Size] = p_element;
         this->Size += 1;
 
@@ -296,7 +296,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
     {
-        this->Memory.resize_until_capacity_met(this->Size + 1);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + 1);
         this->move_memory_down(p_index, 1);
         this->Memory.Memory[p_index] = p_element;
         this->Size += 1;
@@ -306,7 +306,7 @@ template <class ElementType> struct Vector
 
     inline int8 insert_array_at_unchecked(const Slice<ElementType>& p_elements, const uimax p_index)
     {
-        this->Memory.resize_until_capacity_met(this->Size + p_elements.Size);
+        Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements.Size);
         this->move_memory_down(p_index, p_elements.Size);
         Slice_copy_memory_at_index(&this->Memory.slice, p_index, &p_elements);
 

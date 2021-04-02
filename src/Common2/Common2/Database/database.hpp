@@ -161,7 +161,7 @@ struct SQLiteQueryLayout
 
     inline void free()
     {
-        this->types_allocated.free();
+        Span_free(&this->types_allocated);
     };
 };
 
@@ -340,7 +340,8 @@ struct SQLiteResultSet
         assert_true(*Slice_get(&this->binded_return_layout->types_slice, p_index) == SQLiteQueryPrimitiveTypes::TEXT);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size));
+        Slice<int8> l_column_as_text = Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_text(this->binded_statement, p_index), l_size);
+        return Span_allocate_slice<int8>(&l_column_as_text);
     };
 
     inline Span<int8> get_blob(const int8 p_index)
@@ -350,7 +351,8 @@ struct SQLiteResultSet
         assert_true(*Slice_get(&this->binded_return_layout->types_slice, p_index) == SQLiteQueryPrimitiveTypes::BLOB);
 #endif
         uimax l_size = sqlite3_column_bytes(this->binded_statement, p_index);
-        return Span<int8>::allocate_slice(Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size));
+        Slice<int8> l_column_blob = Slice_build_memory_elementnb<int8>((int8*)sqlite3_column_blob(this->binded_statement, p_index), l_size);
+        return Span_allocate_slice<int8>(&l_column_blob);
     };
 };
 

@@ -138,7 +138,7 @@ struct VaryingVector
 
         uimax l_new_varyingvector_size = this->memory.Size + p_expansion_size;
 
-        this->memory.Memory.resize_until_capacity_met(l_new_varyingvector_size);
+        Span_resize_until_capacity_met(&this->memory.Memory, l_new_varyingvector_size);
         l_updated_chunk.Size += p_expansion_size;
 
         for (loop(i, p_index + 1, this->chunks.Size))
@@ -158,7 +158,7 @@ struct VaryingVector
         uimax l_size_delta = p_pushed_element.Size;
         uimax l_new_varyingvector_size = this->memory.Size + l_size_delta;
 
-        this->memory.Memory.resize_until_capacity_met(l_new_varyingvector_size);
+        Span_resize_until_capacity_met(&this->memory.Memory, l_new_varyingvector_size);
 
         this->memory.insert_array_at_always(p_pushed_element, l_updated_chunk.Begin + l_updated_chunk.Size);
         l_updated_chunk.Size += l_size_delta;

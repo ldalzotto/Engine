@@ -45,7 +45,7 @@ struct ShaderModuleRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         };
 
         struct Value
@@ -65,7 +65,7 @@ struct ShaderModuleRessource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
-            return Asset{Span<int8>::allocate_slice(p_value.compiled_shader)};
+            return Asset{Span_allocate_slice(&p_value.compiled_shader)};
         };
     };
 
@@ -118,7 +118,7 @@ struct MeshRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         }
 
         struct Value
@@ -236,7 +236,7 @@ struct ShaderRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         }
     };
 
@@ -279,7 +279,7 @@ struct ShaderRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         };
     };
 
@@ -353,7 +353,7 @@ struct TextureRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         };
     };
 
@@ -462,7 +462,7 @@ struct MaterialRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         };
 
         inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
@@ -514,7 +514,7 @@ struct MaterialRessource
 
         inline void free()
         {
-            this->allocated_binary.free();
+            Span_free(&this->allocated_binary);
         };
 
         inline static AssetDependencies build_from_binary(const Span<int8>& p_allocated_binary)

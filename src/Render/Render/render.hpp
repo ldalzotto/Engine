@@ -102,9 +102,12 @@ struct D3RendererAllocator
 namespace ColorStep_const
 {
 SliceN<ShaderLayoutParameterType, 1> shaderlayout_before = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
+Slice<ShaderLayoutParameterType> shaderlayout_before_slice = slice_from_slicen(&shaderlayout_before);
 SliceN<ShaderLayoutParameterType, 1> shaderlayout_after = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
+Slice<ShaderLayoutParameterType> shaderlayout_after_slice = slice_from_slicen(&shaderlayout_after);
 SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN<ShaderLayout::VertexInputParameter, 2>{
     ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0}, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)}};
+Slice<ShaderLayout::VertexInputParameter> shaderlayout_vertex_input_slice = slice_from_slicen(&shaderlayout_vertex_input);
 }; // namespace ColorStep_const
 
 struct ColorStep
@@ -440,8 +443,8 @@ struct D3RendererAllocatorComposition
                                                     const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
     {
         Span<ShaderLayoutParameterType> l_span =
-            Span<ShaderLayoutParameterType>::allocate_slice_3(slice_from_slicen(&ColorStep_const::shaderlayout_before), p_specific_parameters, slice_from_slicen(&ColorStep_const::shaderlayout_after));
-        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&ColorStep_const::shaderlayout_vertex_input));
+            Span_allocate_slice_3(&ColorStep_const::shaderlayout_before_slice, &p_specific_parameters, &ColorStep_const::shaderlayout_after_slice);
+        Span<ShaderLayout::VertexInputParameter> l_vertex_input = Span_allocate_slice(&ColorStep_const::shaderlayout_vertex_input_slice);
 
         ShaderIndex l_shader_index;
         l_shader_index.execution_order = p_execution_order;
@@ -490,9 +493,9 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
 {
     ColorStep l_step;
 
-    Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-    l_global_buffer_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
-    Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
+    Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span_allocate<ShaderLayoutParameterType>(1);
+    *Span_get(&l_global_buffer_parameters, 0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
+    Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span_build<ShaderLayout::VertexInputParameter>(NULL, 0);
 
     ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
     if (p_allocate_info.attachment_host_read)
@@ -512,7 +515,8 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
     SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
-    l_step.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
+    Slice<v4f> tmp_clear_values_slice = slice_from_slicen(&tmp_clear_values);
+    l_step.clear_values = Span_allocate_slice<v4f>(&tmp_clear_values_slice);
     l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
@@ -526,7 +530,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
 
 inline void ColorStep::free(GPUContext& p_gpu_context)
 {
-    this->clear_values.free();
+    Span_free(&this->clear_values);
     p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
     GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
     this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);

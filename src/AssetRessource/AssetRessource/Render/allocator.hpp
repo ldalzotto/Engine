@@ -714,14 +714,14 @@ struct MaterialRessourceComposition
         {
             MaterialRessource::Dependencies l_dependencies;
             l_dependencies.shader = ShaderRessourceComposition::allocate_or_increment_inline(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
-            Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span<MaterialRessource::DynamicDependency>::allocate(p_inline_input.texture_dependencies_input.Size);
+            Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span_allocate<MaterialRessource::DynamicDependency>(p_inline_input.texture_dependencies_input.Size);
             for (loop(i, 0, l_dynamic_textures.Capacity))
             {
-                l_dynamic_textures.get(i) =
+                *Span_get(&l_dynamic_textures, i) =
                     MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_inline(p_texture_unit, *Slice_get(&p_inline_input.texture_dependencies_input, i))};
             }
             l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
-            l_dynamic_textures.free();
+            Span_free(&l_dynamic_textures);
             return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::INLINE, p_inline_input.asset, l_dependencies);
         }
     };
@@ -733,14 +733,14 @@ struct MaterialRessourceComposition
     {
         MaterialRessource::Dependencies l_dependencies;
         l_dependencies.shader = ShaderRessourceComposition::allocate_or_increment_database(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
-        Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span<MaterialRessource::DynamicDependency>::allocate(p_inline_input.texture_dependencies_input.Size);
+        Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span_allocate<MaterialRessource::DynamicDependency>(p_inline_input.texture_dependencies_input.Size);
         for (loop(i, 0, l_dynamic_textures.Capacity))
         {
-            l_dynamic_textures.get(i) =
+            *Span_get(&l_dynamic_textures, i) =
                 MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_database(p_texture_unit, *Slice_get(&p_inline_input.texture_dependencies_input, i))};
         }
         l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
-        l_dynamic_textures.free();
+        Span_free(&l_dynamic_textures);
         return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::ASSET_DATABASE, MaterialRessource::Asset{}, l_dependencies);
     };
 
@@ -784,7 +784,7 @@ struct MaterialRessourceComposition
                 allocate_database(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, l_material_database_input, ShaderRessource::DatabaseAllocationInput{l_asset_dependencies_value.shader},
                                   ShaderModuleRessource::DatabaseAllocationInput{l_asset_dependencies_value.shader_dependencies.vertex_module},
                                   ShaderModuleRessource::DatabaseAllocationInput{l_asset_dependencies_value.shader_dependencies.fragment_module});
-            l_asset_dependencies.free();
+            Span_free(&l_asset_dependencies);
             return l_material_ressource;
         }
     };

@@ -10,7 +10,7 @@ struct HeapMemory
 
     inline static HeapMemory allocate(const uimax p_heap_size)
     {
-        return HeapMemory{Heap::allocate(p_heap_size), Span<int8>::allocate(p_heap_size)};
+        return HeapMemory{Heap::allocate(p_heap_size), Span_allocate<int8>(p_heap_size)};
     };
 
     inline static HeapMemory allocate_default()
@@ -21,7 +21,7 @@ struct HeapMemory
     inline void free()
     {
         this->_Heap.free();
-        this->Memory.free();
+        Span_free(&this->Memory);
     };
 
     inline Token(SliceIndex) allocate_element(const Slice<int8>* p_element_bytes)
@@ -85,7 +85,7 @@ struct HeapMemory
         if ((HeapA::AllocationState_t)p_allocation_state & (HeapA::AllocationState_t)HeapA::AllocationState::HEAP_RESIZED)
         {
 #if __DEBUG
-            if (!this->Memory.resize(this->_Heap.Size))
+            if (!Span_resize(&this->Memory, this->_Heap.Size))
             {
                 abort();
             }

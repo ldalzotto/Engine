@@ -98,13 +98,13 @@ struct SceneAsset
     */
     template <class ComponentResourceAllocatorFunc> inline void merge_to_scene(Scene* p_target_scene, const Token(Node) p_parent, const ComponentResourceAllocatorFunc& p_component_resource_allocator)
     {
-        Span<Token(Node)> l_allocated_nodes = Span<Token(Node)>::allocate(this->nodes.Indices.get_size());
+        Span<Token(Node)> l_allocated_nodes = Span_allocate<Token(Node)>(this->nodes.Indices.get_size());
         {
             this->nodes.traverse3(token_build(NTreeNode, 0), [&](const NTree<transform>::Resolve& p_node) {
                 Token(Node) l_parent;
                 if (p_node.has_parent())
                 {
-                    l_parent = l_allocated_nodes.get(token_get_value(p_node.Node->parent));
+                    l_parent = *Span_get(&l_allocated_nodes, token_get_value(p_node.Node->parent));
                 }
                 else
                 {
@@ -112,7 +112,7 @@ struct SceneAsset
                 }
 
                 Token(Node) l_allocated_node = p_target_scene->add_node(*p_node.Element, l_parent);
-                l_allocated_nodes.get(token_get_value(p_node.Node->index)) = l_allocated_node;
+                *Span_get(&l_allocated_nodes, token_get_value(p_node.Node->index)) = l_allocated_node;
 
                 Slice<Token(SliceIndex)> l_components = this->get_components(p_node);
                 for (loop(i, 0, l_components.Size))
@@ -123,7 +123,7 @@ struct SceneAsset
                 }
             });
         }
-        l_allocated_nodes.free();
+        Span_free(&l_allocated_nodes);
     };
 
     struct AddComponentAssetToSceneAsset
@@ -147,12 +147,12 @@ struct SceneAsset
     template <class ComponentResourceDeconstrcutorFunc>
     inline void scene_copied_to(Scene* p_scene, const Token(Node) p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
     {
-        Span<Token(transform)> l_allocated_nodes = Span<Token(transform)>::allocate(p_scene->tree.node_tree.Indices.get_size());
+        Span<Token(transform)> l_allocated_nodes = Span_allocate<Token(transform)>(p_scene->tree.node_tree.Indices.get_size());
 
         {
             NodeEntry l_node = p_scene->tree.node_tree.get(p_start_node_included);
             Token(transform) l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
-            l_allocated_nodes.get(token_get_value(l_node.Node->index)) = l_allocated_node;
+            *Span_get(&l_allocated_nodes, token_get_value(l_node.Node->index)) = l_allocated_node;
             Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from(Node, l_node.Node->index));
             for (loop(i, 0, l_components.Size))
             {
@@ -161,8 +161,8 @@ struct SceneAsset
         }
 
         p_scene->tree.node_tree.traverse3_excluded(token_build_from(NTreeNode, p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
-            Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(token_get_value(p_node.Node->parent)));
-            l_allocated_nodes.get(token_get_value(p_node.Node->index)) = l_allocated_node;
+            Token(transform) l_allocated_node = this->add_node(p_node.Element->local_transform, *Span_get(&l_allocated_nodes, token_get_value(p_node.Node->parent)));
+            *Span_get(&l_allocated_nodes, token_get_value(p_node.Node->index)) = l_allocated_node;
 
             Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from(Node, p_node.Node->index));
             for (loop(i, 0, l_components.Size))
@@ -171,7 +171,7 @@ struct SceneAsset
             }
         });
 
-        l_allocated_nodes.free();
+        Span_free(&l_allocated_nodes);
     };
 };
 
