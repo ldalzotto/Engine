@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct CameraComponent
 {
     static constexpr component_t Type = HashRaw_constexpr(STR(CameraComponent));
@@ -114,7 +113,8 @@ struct RenderMiddleWare
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.component);
             MaterialRessource& l_linked_material = p_render_ressource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material);
             p_renderer.allocator.heap.unlink_material_with_renderable_object(l_linked_material.material, l_mesh_renderer.renderable_object);
-            D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, l_mesh_renderer.renderable_object);
+            D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_renderer.events,
+                                                                                l_mesh_renderer.renderable_object);
             this->mesh_renderers.release_element(l_event.component);
             this->meshrenderer_free_events.pop_back();
         }
@@ -165,7 +165,7 @@ struct RenderMiddleWare
             NodeEntry l_node = p_scene->get_node(l_mesh_renderer.scene_node);
             if (l_mesh_renderer.force_update || l_node.Element->state.haschanged_thisframe)
             {
-                p_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_mesh_renderer.renderable_object, p_scene->tree.get_localtoworld(l_node)});
+                p_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_mesh_renderer.renderable_object, p_scene->tree.get_localtoworld(l_node)});
 
                 l_mesh_renderer.force_update = 0;
             }

@@ -25,11 +25,11 @@ inline void bufferstep_test()
 
     Token(RenderableObject) l_renderable_object =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_renderable_object, m44f_const::IDENTITY});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_renderable_object, m44f_const::IDENTITY});
 
     l_renderer.buffer_step(l_ctx);
 
-    assert_true(l_renderer.heap().model_update_events.Size == 0);
+    assert_true(l_renderer.events.model_update_events.Size == 0);
 
     l_ctx.buffer_step_and_submit();
     l_ctx.wait_for_completion();
@@ -42,15 +42,15 @@ inline void bufferstep_test()
 
     Token(RenderableObject) l_renderable_object2 =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_renderable_object2, m44f_const::IDENTITY});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_renderable_object2, m44f_const::IDENTITY});
 
-    assert_true(l_renderer.heap().model_update_events.Size == 1);
+    assert_true(l_renderer.events.model_update_events.Size == 1);
 
-    D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object2);
+    D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_renderable_object2);
 
-    assert_true(l_renderer.heap().model_update_events.Size == 0);
+    assert_true(l_renderer.events.model_update_events.Size == 0);
 
-    D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderable_object);
+    D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_renderable_object);
 
     l_renderer.free(l_ctx);
     l_ctx.free();
@@ -190,13 +190,13 @@ inline void draw_test()
     }
 
     m44f l_model = m44f::trs(v3f{2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_obj_1, l_model});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_1, l_model});
     l_model = m44f::trs(v3f{-2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_obj_2, l_model});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_2, l_model});
     l_model = m44f::trs(v3f{0.0f, 2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_obj_3, l_model});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_3, l_model});
     l_model = m44f::trs(v3f{0.0f, -2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
-    l_renderer.heap().push_modelupdateevent(D3RendererHeap::RenderableObject_ModelUpdateEvent{l_obj_4, l_model});
+    l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_4, l_model});
 
     l_renderer.heap().link_material_with_renderable_object(l_red_material_token, l_obj_1);
     l_renderer.heap().link_material_with_renderable_object(l_red_material_token, l_obj_2);
@@ -342,7 +342,7 @@ inline void draw_test()
 
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events, l_color_attachment_token);
 
-    D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_shader);
+    D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_shader);
 
     l_ctx.graphics_allocator.free_shader_module(l_vertex_shader_module);
     l_ctx.graphics_allocator.free_shader_module(l_fragment_shader_module);
