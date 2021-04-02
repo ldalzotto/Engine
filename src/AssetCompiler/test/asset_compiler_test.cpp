@@ -213,7 +213,7 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
     {
         Span<int8> l_shader_ressource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(l_shader_asset_test_file_name));
         ShaderRessource::Asset::Value l_shader_value = ShaderRessource::Asset::Value::build_from_asset(ShaderRessource::Asset::build_from_binary(l_shader_ressource_compiled));
-        Declare_sized_slice(ShaderLayoutParameterType, 1, l_shader_layout_arr, l_shader_layout_slice, ShaderLayoutParameterType::TEXTURE_FRAGMENT);
+        Slice_declare_sized(ShaderLayoutParameterType, 1, l_shader_layout_arr, l_shader_layout_slice, ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 
         assert_true(l_shader_value.execution_order == 1001);
         assert_true(l_shader_value.shader_configuration.zwrite == 0);
@@ -334,11 +334,11 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
             l_uvs[i].y = 1.0f - l_uvs[i].y;
         }
 
-        Declare_sized_slice(Vertex, 14, l_vertices, l_vertices_slice, Vertex{l_positions[1], l_uvs[0]}, Vertex{l_positions[2], l_uvs[1]}, Vertex{l_positions[0], l_uvs[2]},
+        Slice_declare_sized(Vertex, 14, l_vertices, l_vertices_slice, Vertex{l_positions[1], l_uvs[0]}, Vertex{l_positions[2], l_uvs[1]}, Vertex{l_positions[0], l_uvs[2]},
                             Vertex{l_positions[3], l_uvs[3]}, Vertex{l_positions[6], l_uvs[4]}, Vertex{l_positions[7], l_uvs[5]}, Vertex{l_positions[4], l_uvs[6]}, Vertex{l_positions[5], l_uvs[7]},
                             Vertex{l_positions[0], l_uvs[8]}, Vertex{l_positions[0], l_uvs[9]}, Vertex{l_positions[2], l_uvs[10]}, Vertex{l_positions[3], l_uvs[11]}, Vertex{l_positions[1], l_uvs[12]},
                             Vertex{l_positions[1], l_uvs[13]});
-        Declare_sized_slice(uint32, 36, l_indices, l_indices_slice, 0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7);
+        Slice_declare_sized(uint32, 36, l_indices, l_indices_slice, 0, 1, 2, 3, 4, 1, 5, 6, 4, 7, 8, 6, 4, 9, 10, 11, 7, 5, 0, 3, 1, 3, 5, 4, 5, 7, 6, 7, 12, 8, 4, 6, 9, 11, 13, 7);
 
         assert_true(Slice_compare(&l_mesh_value.initial_vertices, &l_vertices_slice));
         assert_true(Slice_compare(&l_mesh_value.initial_indices, &l_indices_slice));
@@ -375,7 +375,7 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
         assert_true(l_texture_value.channel_nb == 4);
         Slice<color> l_pixels = Slice_cast<color>(&l_texture_value.pixels);
         assert_true(l_pixels.Size == 16);
-        Declare_sized_slice(color, 16, l_awaited_pixels_arr, l_awaited_pixels_slice, color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
+        Slice_declare_sized(color, 16, l_awaited_pixels_arr, l_awaited_pixels_slice, color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
                             color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
                             color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX},
                             color{UINT8_MAX, 0, 0, UINT8_MAX}, color{0, UINT8_MAX, 0, UINT8_MAX}, color{0, 0, UINT8_MAX, UINT8_MAX}, color{0, 0, 0, UINT8_MAX});

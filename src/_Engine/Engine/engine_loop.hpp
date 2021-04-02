@@ -54,7 +54,7 @@ struct EngineLoop
         int8 l_return = this->update(out_delta);
         if (!l_return)
         {
-            Thread::wait(Thread::get_current_thread(), (uimax)(this->get_remaining_time_for_update() * 0.0009999));
+            Thread_wait(Thread_get_current_thread(), (uimax)(this->get_remaining_time_for_update() * 0.0009999));
         }
         return l_return;
     };

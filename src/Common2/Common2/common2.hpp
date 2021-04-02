@@ -46,8 +46,6 @@
 
 #include "./Functional/hash.hpp"
 
-#include "./Functional/sort.hpp"
-
 #include "./Container/vector.hpp"
 #include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
@@ -83,7 +81,6 @@
 #include "./AppNativeEvent/app_native_event.hpp"
 #include "./Window/window.hpp"
 #endif
-
 
 #undef __SQLITE_ENABLED
 #undef __NATIVE_WINDOW_ENABLED

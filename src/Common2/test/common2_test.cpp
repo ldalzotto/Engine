@@ -53,8 +53,8 @@ inline void slice_span_test()
     {
         l_span_sizet = Span_allocate<uimax>(10);
 
-        Declare_sized_slice(uimax, 4, l_slicen_1, l_slice_1, 0, 1, 2, 3);
-        Declare_sized_slice(uimax, 4, l_slicen_2, l_slice_2, 5, 6, 7, 8);
+        Slice_declare_sized(uimax, 4, l_slicen_1, l_slice_1, 0, 1, 2, 3);
+        Slice_declare_sized(uimax, 4, l_slicen_2, l_slice_2, 5, 6, 7, 8);
         Slice_copy_memory_at_index_2(&l_span_sizet.slice, 1, &l_slice_1, &l_slice_2);
 
         Slice<uimax> l_span_sizet_offsetted = Slice_slide_rv(&l_span_sizet.slice, 1);
@@ -65,7 +65,7 @@ inline void slice_span_test()
         Span_free(&l_span_sizet);
     }
     {
-        Declare_sized_slice(uimax, 4, l_slicen, l_slice, 15, 26, 78, 10);
+        Slice_declare_sized(uimax, 4, l_slicen, l_slice, 15, 26, 78, 10);
         l_span_sizet = Span_allocate_slice<uimax>(&l_slice);
         assert_true(l_span_sizet.Capacity == 4);
         assert_true(Slice_compare(&l_span_sizet.slice, &l_slice));
@@ -346,8 +346,8 @@ inline void pool_test()
 
 inline void varyingslice_test()
 {
-    Declare_sized_slice(uimax, 5, l_varying_slice_memory_arr, l_varying_slice_memory, 0, 1, 2, 3, 4);
-    Declare_sized_slice(SliceIndex, 5, l_varying_slice_indices_arr, l_varying_slice_indices, SliceIndex_build(0, sizeof(uimax)), SliceIndex_build(sizeof(uimax), sizeof(uimax)),
+    Slice_declare_sized(uimax, 5, l_varying_slice_memory_arr, l_varying_slice_memory, 0, 1, 2, 3, 4);
+    Slice_declare_sized(SliceIndex, 5, l_varying_slice_indices_arr, l_varying_slice_indices, SliceIndex_build(0, sizeof(uimax)), SliceIndex_build(sizeof(uimax), sizeof(uimax)),
                         SliceIndex_build(sizeof(uimax) * 2, sizeof(uimax)), SliceIndex_build(sizeof(uimax) * 3, sizeof(uimax)), SliceIndex_build(sizeof(uimax) * 4, sizeof(uimax)));
 
     VaryingSlice l_varying_slice = VaryingSlice::build(Slice_build_asint8(&l_varying_slice_memory), l_varying_slice_indices);
@@ -1031,23 +1031,27 @@ inline void assert_heap_memory_alignement(const uimax p_alignment, const HeapA::
     assert_true((p_chunk.Offset % p_alignment) == 0);
 };
 
-inline void sort_test(){{uimax l_sizet_array[10] = {10, 9, 8, 2, 7, 4, 10, 35, 9, 4};
-uimax l_sorted_sizet_array[10] = {35, 10, 10, 9, 9, 8, 7, 4, 4, 2};
-Slice<uimax> l_slice = Slice_build_memory_elementnb<uimax>(l_sizet_array, 10);
-
-struct TestSorter
+void sort_test_linear3_function(Slice<uimax>* p_slice, const uimax p_start_index, void* p_null);
+inline int8 sort_test_linear3_compare_function(uimax* p_left, uimax* p_right, void*)
 {
-    inline int8 operator()(const uimax& p_left, const uimax& p_right) const
-    {
-        return p_left < p_right;
-    };
+    return *p_left < *p_right;
 };
-Sort::Linear3(l_slice, 0, TestSorter{});
 
-assert_true(memcmp(l_sizet_array, l_sorted_sizet_array, sizeof(uimax) * 10) == 0);
-}
-}
-;
+#define sort_tt_linear_3
+#define pm_type_element uimax
+#define pm_func_name sort_test_linear3_function
+#define pm_compare_func_name sort_test_linear3_compare_function
+#include "Common2/Functional/sort_tt.h"
+
+inline void sort_test()
+{
+    uimax l_sizet_array[10] = {10, 9, 8, 2, 7, 4, 10, 35, 9, 4};
+    uimax l_sorted_sizet_array[10] = {35, 10, 10, 9, 9, 8, 7, 4, 4, 2};
+    Slice<uimax> l_slice = Slice_build_memory_elementnb<uimax>(l_sizet_array, 10);
+    sort_test_linear3_function(&l_slice, 0, NULL);
+
+    assert_true(memcmp(l_sizet_array, l_sorted_sizet_array, sizeof(uimax) * 10) == 0);
+};
 
 inline void heap_test()
 {
@@ -1568,7 +1572,7 @@ inline void serialize_json_test()
 
 inline void serialize_deserialize_binary_test()
 {
-    Declare_sized_slice(uimax, 5, l_slice_arr, l_slice, 0, 1, 2, 3, 4);
+    Slice_declare_sized(uimax, 5, l_slice_arr, l_slice, 0, 1, 2, 3, 4);
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
 
@@ -1597,8 +1601,8 @@ inline void file_test()
     File l_file = File::create(l_file_path.to_slice());
     assert_true(l_file.is_valid());
 
-    Declare_sized_slice(int8, 100, l_source_buffer_arr, l_source_buffer, 0, 1, 2, 3, 4, 5);
-    Declare_sized_slice(int8, 100, l_buffer_arr, l_buffer, );
+    Slice_declare_sized(int8, 100, l_source_buffer_arr, l_source_buffer, 0, 1, 2, 3, 4, 5);
+    Slice_declare_sized(int8, 100, l_buffer_arr, l_buffer, );
 
     l_file.write_file(l_source_buffer);
     l_file.read_file(&l_buffer);
@@ -1649,7 +1653,7 @@ inline void database_test()
         });
         l_table_creation_query.free(l_connection);
 
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 4, l_parameter_layout_arr, l_parameter_layout_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64,
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 4, l_parameter_layout_arr, l_parameter_layout_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::INT64,
                             SQLiteQueryPrimitiveTypes::TEXT, SQLiteQueryPrimitiveTypes::BLOB);
         SQLiteQueryLayout l_parameter_layout = SQLiteQueryLayout::build_slice(l_parameter_layout_slice);
         SQLitePreparedQuery l_insersion_query = SQLitePreparedQuery::allocate(l_connection, Slice_int8_build_rawstr(
@@ -1676,7 +1680,7 @@ inline void database_test()
 
         l_insersion_query.free(l_connection);
 
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 3, l_return_layout_arr, l_return_layout_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT,
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 3, l_return_layout_arr, l_return_layout_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::TEXT,
                             SQLiteQueryPrimitiveTypes::BLOB);
         SQLiteQueryLayout l_return_layout = SQLiteQueryLayout::build_slice(l_return_layout_slice);
         SQLitePreparedQuery l_select_query = SQLitePreparedQuery::allocate(l_connection, Slice_int8_build_rawstr(
@@ -1729,13 +1733,13 @@ inline void thread_test()
 {
     struct my_thread
     {
-        inline static int8 main(const Slice<int8*>& p_args)
+        inline static int8 main(const Slice<int8*>* p_args)
         {
-            assert_true(p_args.Size == 2);
-            assert_true(**Slice_get(&p_args, 0) == 0);
-            assert_true(**Slice_get(&p_args, 1) == 5);
+            assert_true(p_args->Size == 2);
+            assert_true(**Slice_get(p_args, 0) == 0);
+            assert_true(**Slice_get(p_args, 1) == 5);
 
-            **Slice_get(&p_args, 0) = 1;
+            **Slice_get(p_args, 0) = 1;
 
             return 0;
         };
@@ -1746,10 +1750,10 @@ inline void thread_test()
 
     int8* l_args[2] = {(int8*)&l_arg_1, (int8*)&l_arg_2};
 
-    Declare_sized_slice(int8*, 2, l_arg_arr, l_arg_slice, (int8*)&l_arg_1, (int8*)&l_arg_2);
-    Thread::MainInput l_input = Thread::MainInput{&my_thread::main, l_arg_slice};
-    thread_t l_thread = Thread::spawn_thread(l_input);
-    Thread::wait_for_end_and_terminate(l_thread, -1);
+    Slice_declare_sized(int8*, 2, l_arg_arr, l_arg_slice, (int8*)&l_arg_1, (int8*)&l_arg_2);
+    ThreadInput l_input = ThreadInput{&my_thread::main, l_arg_slice};
+    thread_t l_thread = Thread_spawn_thread(l_input);
+    Thread_wait_for_end_and_terminate(l_thread, -1);
     assert_true(l_arg_1 == 1);
 };
 
@@ -1762,9 +1766,9 @@ inline void barrier_test()
         Vector<int8>* order_result;
         BarrierTwoStep* barrier;
 
-        inline static int8 main(const Slice<int8*>& p_args)
+        inline static int8 main(const Slice<int8*>* p_args)
         {
-            thread_1* l_thread = (thread_1*)*Slice_get(&p_args, 0);
+            thread_1* l_thread = (thread_1*)*Slice_get(p_args, 0);
             BarrierTwoStep_ask_and_wait_for_sync_1(l_thread->barrier);
             l_thread->order_result->push_back_element(1);
             BarrierTwoStep_notify_sync_2(l_thread->barrier);
@@ -1782,9 +1786,9 @@ inline void barrier_test()
         Vector<int8>* order_result;
         BarrierTwoStep* barrier;
 
-        inline static int8 main(const Slice<int8*>& p_args)
+        inline static int8 main(const Slice<int8*>* p_args)
         {
-            thread_2* l_thread = (thread_2*)*Slice_get(&p_args, 0);
+            thread_2* l_thread = (thread_2*)*Slice_get(p_args, 0);
 
             while (BarrierTwoStep_is_opened(l_thread->barrier))
             {
@@ -1804,20 +1808,20 @@ inline void barrier_test()
     };
 
     thread_1 l_t1 = thread_1{&l_order_result, &l_barrier_two_step};
-    Declare_sized_slice(int8*, 1, l_t1_args, l_t1_args_slice, (int8*)&l_t1);
-    Thread::MainInput l_thread_1_input = Thread::MainInput{thread_1::main, l_t1_args_slice};
-    thread_t l_tt1 = Thread::spawn_thread(l_thread_1_input);
+    Slice_declare_sized(int8*, 1, l_t1_args, l_t1_args_slice, (int8*)&l_t1);
+    ThreadInput l_thread_1_input = ThreadInput{thread_1::main, l_t1_args_slice};
+    thread_t l_tt1 = Thread_spawn_thread(l_thread_1_input);
 
     thread_2 l_t2 = thread_2{&l_order_result, &l_barrier_two_step};
-    Declare_sized_slice(int8*, 1, l_t2_args, l_t2_args_slice, (int8*)&l_t2);
-    Thread::MainInput l_thread_2_input = Thread::MainInput{thread_2::main, l_t2_args_slice};
-    thread_t l_tt2 = Thread::spawn_thread(l_thread_2_input);
+    Slice_declare_sized(int8*, 1, l_t2_args, l_t2_args_slice, (int8*)&l_t2);
+    ThreadInput l_thread_2_input = ThreadInput{thread_2::main, l_t2_args_slice};
+    thread_t l_tt2 = Thread_spawn_thread(l_thread_2_input);
 
-    Thread::wait_for_end_and_terminate(l_tt1, -1);
-    Thread::wait_for_end_and_terminate(l_tt2, -1);
+    Thread_wait_for_end_and_terminate(l_tt1, -1);
+    Thread_wait_for_end_and_terminate(l_tt2, -1);
 
     Slice<int8> l_order_result_slice = l_order_result.to_slice();
-    Declare_sized_slice(int8, 4, l_awaited_result_n, l_awaited_result_slice, 0, 1, 2, 3);
+    Slice_declare_sized(int8, 4, l_awaited_result_n, l_awaited_result_slice, 0, 1, 2, 3);
     assert_true(Slice_compare(&l_order_result_slice, &l_awaited_result_slice));
 
     l_order_result.free();

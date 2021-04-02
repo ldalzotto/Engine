@@ -126,9 +126,9 @@ struct D3RendererEvents
 
 namespace ColorStep_const
 {
-Declare_sized_slice(ShaderLayoutParameterType, 1, shaderlayout_before, shaderlayout_before_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
-Declare_sized_slice(ShaderLayoutParameterType, 1, shaderlayout_after, shaderlayout_after_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
-Declare_sized_slice(ShaderLayout::VertexInputParameter, 2, shaderlayout_vertex_input, shaderlayout_vertex_input_slice, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
+Slice_declare_sized(ShaderLayoutParameterType, 1, shaderlayout_before, shaderlayout_before_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
+Slice_declare_sized(ShaderLayoutParameterType, 1, shaderlayout_after, shaderlayout_after_slice, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX);
+Slice_declare_sized(ShaderLayout::VertexInputParameter, 2, shaderlayout_vertex_input, shaderlayout_vertex_input_slice, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0},
                     ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)});
 }; // namespace ColorStep_const
 
@@ -547,7 +547,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
         l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
     }
 
-    Declare_sized_slice(
+    Slice_declare_sized(
         RenderPassAttachment, 2, l_attachments_arr, l_attachments,
         RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))},
@@ -555,7 +555,7 @@ inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateIn
                                                                                                                                            (ImageUsageFlags)l_additional_attachment_usage_flags))});
 
     l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    Declare_sized_slice(v4f, 2, tmp_clear_values, tmp_clear_values_slice, v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f});
+    Slice_declare_sized(v4f, 2, tmp_clear_values, tmp_clear_values_slice, v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f});
     l_step.clear_values = Span_allocate_slice<v4f>(&tmp_clear_values_slice);
     l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
     l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);

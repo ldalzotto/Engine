@@ -35,16 +35,6 @@ inline uimax HashFunctionRawChecked(const int8* p_value, const uimax p_size)
     return hash;
 }
 
-template <class TYPE> inline hash_t HashFunction(const TYPE& p_value)
-{
-    return HashFunctionRaw((int8*)&p_value, sizeof(TYPE));
-};
-
-template <class TYPE> inline hash_t HashCombineFunction(const uimax p_hash, const TYPE& p_value)
-{
-    return p_hash ^ (HashFunction<TYPE>(p_value) + 0x9e3779b9 + (p_hash << 6) + (p_hash >> 2));
-};
-
 template <class TYPE> inline hash_t HashSlice(const Slice<TYPE>& p_value)
 {
     return HashFunctionRaw((int8*)p_value.Begin, p_value.Size * sizeof(TYPE));

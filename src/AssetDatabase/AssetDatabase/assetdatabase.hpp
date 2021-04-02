@@ -69,10 +69,10 @@ static const int8* DB_ASSET_RESSOURCE_TABLE_INITIALIZATION = MULTILINE(create ta
     {
         AssetDatabase l_asset_database;
 
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 1, tmp_layout_int64, tmp_layout_int64_slice, SQLiteQueryPrimitiveTypes::INT64);
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 1, tmp_layout_blob, tmp_layout_blob_slice, SQLiteQueryPrimitiveTypes::BLOB);
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 2, tmp_layout_int64_blob, tmp_layout_int64_blob_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB);
-        Declare_sized_slice(SQLiteQueryPrimitiveTypes, 2, tmp_layout_blob_int64, tmp_layout_blob_int64_slice, SQLiteQueryPrimitiveTypes::BLOB, SQLiteQueryPrimitiveTypes::INT64);
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 1, tmp_layout_int64, tmp_layout_int64_slice, SQLiteQueryPrimitiveTypes::INT64);
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 1, tmp_layout_blob, tmp_layout_blob_slice, SQLiteQueryPrimitiveTypes::BLOB);
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 2, tmp_layout_int64_blob, tmp_layout_int64_blob_slice, SQLiteQueryPrimitiveTypes::INT64, SQLiteQueryPrimitiveTypes::BLOB);
+        Slice_declare_sized(SQLiteQueryPrimitiveTypes, 2, tmp_layout_blob_int64, tmp_layout_blob_int64_slice, SQLiteQueryPrimitiveTypes::BLOB, SQLiteQueryPrimitiveTypes::INT64);
 
         l_asset_database.asset_count_query = SQLitePreparedQuery::allocate(p_database_connection, Slice_int8_build_rawstr(AssetDatabase_Const::ASSET_COUNT_SELECT_QUERY),
                                                                            SQLiteQueryLayout::allocate_span(Span_allocate_slice(&tmp_layout_int64_slice)),

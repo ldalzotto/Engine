@@ -285,7 +285,7 @@ template <class type_casted> inline Slice<type_casted> Slice_cast_fixedelementnb
 #define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice
 #endif
 
-#define Declare_sized_slice(type_element, type_size, name_arr, name_slice, ...) type_element name_arr[type_size] = {__VA_ARGS__}; Slice<type_element> name_slice = {type_size, name_arr};
+#define Slice_declare_sized(type_element, type_size, name_arr, name_slice, ...) type_element name_arr[type_size] = {__VA_ARGS__}; Slice<type_element> name_slice = {type_size, name_arr};
 
 /*
     A SliceIndex is just a begin and end uimax

@@ -240,7 +240,7 @@ template <class ShadowHeap_t(s)> inline int8 HeapA::_allocate_element(ShadowHeap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
+    for (loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);
         if (l_free_chunk.Size > p_size)
@@ -277,7 +277,7 @@ inline int8 HeapA::_allocate_element_with_modulo_offset(ShadowHeap_t(s) & p_heap
 
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
-    for(loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
+    for (loop_reverse(i, 0, sv_c_get_size(&l_free_chunks)))
     // for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
     {
         SliceIndex& l_free_chunk = sv_c_get(&l_free_chunks, i);
@@ -350,21 +350,26 @@ template <class ShadowHeap_t(s)> inline HeapA::AllocatedElementReturn HeapA::_pu
     return HeapA::AllocatedElementReturn::build(sh_c_get_allocated_chunks(&p_heap).alloc_element(*p_chunk), p_chunk->Begin);
 }
 
+void SliceIndex_sort_increasing(Slice<SliceIndex>* p_slice, const uimax p_index, void*);
+inline int8 SliceIndex_sort_increasing_compare(const SliceIndex* p_left, const SliceIndex* p_right, void*)
+{
+    return p_left->Begin > p_right->Begin;
+};
+
+#define sort_tt_linear_3
+#define pm_type_element SliceIndex
+#define pm_func_name SliceIndex_sort_increasing
+#define pm_compare_func_name SliceIndex_sort_increasing_compare
+#include "../Functional/sort_tt.h"
+
 template <class ShadowHeap_t(s)> inline void HeapA::_defragment(ShadowHeap_t(s) & p_heap)
 {
     using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(&p_heap));
     ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(&p_heap);
     if (sv_c_get_size(&l_free_chunks) > 0)
     {
-        struct FreeChunkSortByAddress
-        {
-            inline int8 operator()(const SliceIndex& p_left, const SliceIndex& p_right) const
-            {
-                return p_left.Begin > p_right.Begin;
-            };
-        };
         Slice<SliceIndex> l_freechunks_slice = sv_c_to_slice(&l_free_chunks);
-        Sort::Linear3(l_freechunks_slice, 0, FreeChunkSortByAddress{});
+        SliceIndex_sort_increasing(&l_freechunks_slice, 0, NULL);
 
         SliceIndex& l_compared_chunk = sv_c_get(&l_free_chunks, 0);
         for (loop(i, 1, sv_c_get_size(&l_free_chunks)))

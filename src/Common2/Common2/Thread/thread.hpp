@@ -8,32 +8,29 @@ using thread_t
 #endif // _WIN32
     ;
 
-typedef int8 (*Thread_MainFunction)(const Slice<int8*>& p_args);
+typedef int8 (*Thread_MainFunction)(const Slice<int8*>* p_args);
 
-struct Thread
+struct ThreadInput
 {
-    struct MainInput
-    {
-        Thread_MainFunction function;
-        Slice<int8*> args;
-    };
-
-    static thread_t spawn_thread(MainInput& p_thread_main);
-    static thread_t get_current_thread();
-    static void wait(const thread_t p_thread, const uimax p_time_in_ms);
-    static void wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms);
-    static void kill(const thread_t p_thread);
+    Thread_MainFunction function;
+    Slice<int8*> args;
 };
+
+thread_t Thread_spawn_thread(ThreadInput* p_thread_main);
+thread_t Thread_get_current_thread();
+void Thread_wait(const thread_t p_thread, const uimax p_time_in_ms);
+void Thread_wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms);
+void Thread_kill(const thread_t p_thread);
 
 #ifdef _WIN32
 
 DWORD WINAPI Thread_native_main_function(LPVOID lpParam)
 {
-    Thread::MainInput* l_input = (Thread::MainInput*)lpParam;
-    return l_input->function(l_input->args);
+    ThreadInput* l_input = (ThreadInput*)lpParam;
+    return l_input->function(&l_input->args);
 };
 
-inline thread_t Thread::spawn_thread(MainInput& p_thread_main)
+inline thread_t Thread_spawn_thread(ThreadInput& p_thread_main)
 {
     DWORD l_id;
     thread_t l_thread = (thread_t)CreateThread(NULL, 0, Thread_native_main_function, (LPVOID)&p_thread_main, 0, &l_id);
@@ -49,12 +46,12 @@ inline thread_t Thread::spawn_thread(MainInput& p_thread_main)
     return l_thread;
 };
 
-inline thread_t Thread::get_current_thread()
+inline thread_t Thread_get_current_thread()
 {
     return GetCurrentThread();
 };
 
-inline void Thread::wait(const thread_t p_thread, const uimax p_time_in_ms)
+inline void Thread_wait(const thread_t p_thread, const uimax p_time_in_ms)
 {
 #if __DEBUG
     assert_true(
@@ -66,9 +63,9 @@ inline void Thread::wait(const thread_t p_thread, const uimax p_time_in_ms)
         ;
 };
 
-inline void Thread::wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
+inline void Thread_wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
 {
-    Thread::wait(p_thread, p_max_time_in_ms);
+    Thread_wait(p_thread, p_max_time_in_ms);
 
 #if __MEMLEAK
     remove_ptr_to_tracked((int8*)p_thread);
@@ -84,7 +81,7 @@ inline void Thread::wait_for_end_and_terminate(const thread_t p_thread, const ui
     TerminateThread(p_thread, 0);
 };
 
-inline void Thread::kill(const thread_t p_thread)
+inline void Thread_kill(const thread_t p_thread)
 {
 #if __MEMLEAK
     remove_ptr_to_tracked((int8*)p_thread);

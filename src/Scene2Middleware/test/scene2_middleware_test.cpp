@@ -93,7 +93,7 @@ inline static Token(MeshRendererComponent)
     l_vertex_shader_compiled.free();
     l_fragment_shader_compiled.free();
 
-    Declare_sized_slice(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
+    Slice_declare_sized(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
                         ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 
     v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
@@ -137,7 +137,7 @@ inline static Token(MeshRendererComponent)
         Span_free(&l_material_parameter_temp);
     }
 
-    Declare_sized_slice(TextureRessource::InlineAllocationInput, 1, tmp_material_texture_input, tmp_material_texture_input_slice,
+    Slice_declare_sized(TextureRessource::InlineAllocationInput, 1, tmp_material_texture_input, tmp_material_texture_input_slice,
                         TextureRessource::InlineAllocationInput{p_material_texture_id, l_material_texture_asset});
     return RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
         p_ctx.scene_middleware.render_middleware, p_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{p_vertex_shader_id, l_vertex_shader},
@@ -268,7 +268,7 @@ inline void render_middleware_inline_allocation()
         l_vertex_shader_compiled.free();
         l_fragment_shader_compiled.free();
 
-        Declare_sized_slice(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
+        Slice_declare_sized(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
                             ShaderLayoutParameterType::TEXTURE_FRAGMENT);
         v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
                               v3f{1.0f, -1.0f, 1.0f},  v3f{1.0f, 1.0f, 1.0f},  v3f{1.0f, -1.0f, -1.0f},  v3f{1.0f, 1.0f, -1.0f}};
@@ -317,7 +317,7 @@ inline void render_middleware_inline_allocation()
             Span_free(&l_material_parameter_temp);
         }
 
-        Declare_sized_slice(TextureRessource::InlineAllocationInput, 1, l_material_texture_input, l_material_texture_input_slice,
+        Slice_declare_sized(TextureRessource::InlineAllocationInput, 1, l_material_texture_input, l_material_texture_input_slice,
                             TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset});
         Token(MeshRendererComponent) l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.scene_middleware.render_middleware, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
@@ -374,7 +374,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
         Span<int8> l_compiled_vertex = Span_allocate_slice(&p_vertex_litteral_slice);
         Span<int8> l_compiled_fragment = Span_allocate_slice(&p_fragment_litteral_slice);
 
-        Declare_sized_slice(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
+        Slice_declare_sized(ShaderLayoutParameterType, 2, l_shader_parameter_layout_arr, l_shader_parameter_layout, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX,
                             ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 
         v3f l_positions[1] = {v3f{-1.0f, -1.0f, 1.0f}};
@@ -422,7 +422,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
             Span_free(&l_material_parameter_temp);
         }
 
-        Declare_sized_slice(TextureRessource::InlineAllocationInput, 1, tmp_material_input, tmp_material_input_slice,
+        Slice_declare_sized(TextureRessource::InlineAllocationInput, 1, tmp_material_input, tmp_material_input_slice,
                             TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset});
         Token(MeshRendererComponent) l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.scene_middleware.render_middleware, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},

@@ -13,7 +13,7 @@ struct AssetCompilationThread
 {
     thread_t thread;
     int8* thread_input_args;
-    Thread::MainInput thread_input;
+    Thread::ThreadInput thread_input;
 
     ShaderCompiler shader_compiler;
     int8 ask_exit;
@@ -77,8 +77,8 @@ struct AssetCompilationThread
     inline void start()
     {
         this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::Slice_build_begin_end(&this->thread_input_args, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->thread_input = Thread::ThreadInput{AssetCompilationThread::main, Slice<int8*>::Slice_build_begin_end(&this->thread_input_args, 0, 1)};
+        this->thread = Thread::Thread_spawn_thread(this->thread_input);
         this->is_running = 1;
     };
 
@@ -93,7 +93,7 @@ struct AssetCompilationThread
     inline void stop_and_wait()
     {
         this->ask_exit = 1;
-        Thread::wait_for_end_and_terminate(this->thread, -1);
+        Thread::Thread_wait_for_end_and_terminate(this->thread, -1);
         this->is_running = 0;
     };
 

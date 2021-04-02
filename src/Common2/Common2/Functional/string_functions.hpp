@@ -120,7 +120,7 @@ struct ToString
 
     inline static void auimax_append(const uimax p_value, String& p_str)
     {
-        Declare_sized_slice(int8, uimaxstr_size, l_uimax_str_buffer_arr, l_uimax_str_buffer_slice, );
+        Slice_declare_sized(int8, uimaxstr_size, l_uimax_str_buffer_arr, l_uimax_str_buffer_slice, );
         p_str.append(auimax(p_value, l_uimax_str_buffer_slice));
     };
 };

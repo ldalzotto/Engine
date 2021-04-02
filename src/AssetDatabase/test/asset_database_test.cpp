@@ -11,7 +11,7 @@ inline void asset_blob_insert_read_write()
     {
         Slice<int8> l_path = Slice_int8_build_rawstr("pathtest");
         {
-            Declare_sized_slice(uimax, 3, l_data_arr, l_data, 0, 1, 2);
+            Slice_declare_sized(uimax, 3, l_data_arr, l_data, 0, 1, 2);
             Slice<int8> l_data_int8 = Slice_build_asint8(&l_data);
             hash_t l_inserted_id = l_asset_database.insert_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
             Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
@@ -20,7 +20,7 @@ inline void asset_blob_insert_read_write()
         }
         {
             // insert_or_update_asset_blob -> doing update
-            Declare_sized_slice(uimax, 3, l_data_arr, l_data, 3, 4, 5);
+            Slice_declare_sized(uimax, 3, l_data_arr, l_data, 3, 4, 5);
             Slice<int8> l_data_int8 = Slice_build_asint8(&l_data);
             hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
             Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
@@ -32,7 +32,7 @@ inline void asset_blob_insert_read_write()
     // insert_or_update_asset_blob -> doing insert
     {
         Slice<int8> l_path = Slice_int8_build_rawstr("pathtest2");
-        Declare_sized_slice(uimax, 3, l_data_arr, l_data, 0, 1, 2);
+        Slice_declare_sized(uimax, 3, l_data_arr, l_data, 0, 1, 2);
         Slice<int8> l_data_int8 = Slice_build_asint8(&l_data);
         hash_t l_inserted_id = l_asset_database.insert_or_update_asset_blob(l_connection, l_path, Slice_build_asint8(&l_data));
         Span<int8> l_retrieved_data = l_asset_database.get_asset_blob(l_connection, l_inserted_id);
@@ -53,7 +53,7 @@ inline void asset_dependencies_blob_read_write()
     // insert select
     {
         Slice<int8> l_path = Slice_int8_build_rawstr("pathtest2");
-        Declare_sized_slice(uimax, 3, l_data_arr, l_data, 0, 1, 2);
+        Slice_declare_sized(uimax, 3, l_data_arr, l_data, 0, 1, 2);
         Slice<int8> l_data_int8 = Slice_build_asint8(&l_data);
         hash_t l_inserted_id = HashSlice(l_path);
         l_asset_database.insert_asset_dependencies_blob(l_connection, l_path, Slice_build_asint8(&l_data));

@@ -85,7 +85,7 @@ struct EngineRunnerThread
     } synchronization;
 
     int8* thread_input_args;
-    Thread::MainInput thread_input;
+    ThreadInput thread_input;
     thread_t thread;
 
     inline static EngineRunnerThread allocate()
@@ -101,14 +101,14 @@ struct EngineRunnerThread
     inline void start()
     {
         this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{EngineRunnerThread::main, Slice_build_begin_end<int8*>(&this->thread_input_args, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->thread_input = ThreadInput{EngineRunnerThread::main, Slice_build_begin_end<int8*>(&this->thread_input_args, 0, 1)};
+        this->thread = Thread_spawn_thread(this->thread_input);
     };
 
     inline void free()
     {
         this->ask_exit = 1;
-        Thread::wait_for_end_and_terminate(this->thread, -1);
+        Thread_wait_for_end_and_terminate(this->thread, -1);
     };
 
     inline Token(EngineExecutionUnit) allocate_engine_execution_unit(const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height, const EngineExternalStepCallback& p_step_cb,
@@ -221,9 +221,9 @@ struct EngineRunnerThread
     };
 
   private:
-    inline static int8 main(const Slice<int8*>& p_args)
+    inline static int8 main(const Slice<int8*>* p_args)
     {
-        EngineRunnerThread* thiz = (EngineRunnerThread*)*Slice_get(&p_args, 0);
+        EngineRunnerThread* thiz = (EngineRunnerThread*)*Slice_get(p_args, 0);
 
         while (true)
         {
@@ -294,7 +294,7 @@ struct EngineRunnerThread
                 }
             }
             // printf("%lld \n", l_min_time);
-            Thread::wait(Thread::get_current_thread(), (uimax)((float)l_min_time * 0.0009999f));
+            Thread_wait(Thread_get_current_thread(), (uimax)((float)l_min_time * 0.0009999f));
         }
 
         if (!BarrierTwoStep_is_opened(&this->synchronization.end_of_step_barrier))
