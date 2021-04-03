@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 typedef VkSurfaceKHR gcsurface_t;
 
 struct GPUPresentDevice
@@ -151,9 +149,8 @@ struct SwapChain
     Token(ShaderModule) image_copy_shader_fragment;
     Token(ShaderTextureGPUParameter) shader_parameter_texture;
 
-    inline static SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                const Token(TextureGPU) p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader,
-                                                const v3ui p_window_handle_dimensions)
+    inline static SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Token(TextureGPU) p_presented_texture,
+                                     const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader, const v3ui p_window_handle_dimensions)
     {
         SwapChain l_swap_chain;
         allocate_swap_chain_texture_independant(l_swap_chain, p_present_device, p_graphics_allocator, p_presented_texture, p_compiled_vertex_shader, p_compiled_fragment_shader);
@@ -193,8 +190,7 @@ struct SwapChain
             p_graphics_allocator.allocate_shadertexturegpu_parameter(ShaderLayoutParameterType::TEXTURE_FRAGMENT, p_presented_texture, p_graphics_allocator.heap.textures_gpu.get(p_presented_texture));
     };
 
-    inline static void free_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
-                                                           GraphicsAllocator2& p_graphics_allocator)
+    inline static void free_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator)
     {
         p_swap_chain.swap_chain_next_image_semaphore.free(p_present_device.device);
 
@@ -205,8 +201,8 @@ struct SwapChain
         p_graphics_allocator.free_shader_layout(p_swap_chain.image_copy_shader_layout);
     };
 
-    inline static void allocate_swap_chain_texture_dependendant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
-                                                                GraphicsAllocator2& p_graphics_allocator, const v3ui p_window_handle_dimensions)
+    inline static void allocate_swap_chain_texture_dependendant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+                                                                const v3ui p_window_handle_dimensions)
     {
         p_swap_chain.swap_chain_dimensions =
             v3ui{Math::clamp_ui32(p_window_handle_dimensions.x, p_present_device.surface_capacilities.minImageExtent.width, p_present_device.surface_capacilities.maxImageExtent.width),
@@ -245,9 +241,10 @@ struct SwapChain
             l_image_format.format = l_swapchain_create.imageFormat;
             p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
 
-            p_swap_chain.rendertarget_copy_pass.get(i) = p_graphics_allocator.allocate_graphicspass<1>(p_buffer_memory.allocator.device, &p_swap_chain.swap_chain_images.get(i),
-                                                                                                       &p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i)),
-                                                                                                       SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
+            p_swap_chain.rendertarget_copy_pass.get(i) =
+                p_graphics_allocator.allocate_graphicspass<1>(p_buffer_memory.allocator.device, SliceN<Token(ImageGPU), 1>{p_swap_chain.swap_chain_images.get(i)},
+                                                              SliceN<ImageGPU, 1>{p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i))},
+                                                              SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
         }
         l_images.free();
 
@@ -260,8 +257,7 @@ struct SwapChain
         }
     };
 
-    inline static void free_swap_chain_texture_dependant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory,
-                                                         GraphicsAllocator2& p_graphics_allocator)
+    inline static void free_swap_chain_texture_dependant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator)
     {
         vkDestroySwapchainKHR(p_present_device.device, p_swap_chain.swap_chain, NULL);
         for (loop(i, 0, p_swap_chain.image_copy_shaders.Capacity))
