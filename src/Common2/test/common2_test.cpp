@@ -1405,7 +1405,6 @@ l_json_str.free();
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     Slice<int8> l_array_plain_value;
     assert_true(l_deserialized.next_array("value_array", &l_array));
-    // TODO ->
     assert_true(l_array.next_array_plain_value(&l_array_plain_value));
     assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
     assert_true(l_array.next_array_plain_value(&l_array_plain_value));

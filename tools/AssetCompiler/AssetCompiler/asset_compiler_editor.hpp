@@ -83,11 +83,11 @@ struct AssetCompilationThread
     };
 
     inline void pause(){
-
+        // TODO -> implement this
     };
 
     inline void unpause(){
-
+        // TODO -> implement this
     };
 
     inline void stop_and_wait()
@@ -95,6 +95,11 @@ struct AssetCompilationThread
         this->ask_exit = 1;
         Thread::wait_for_end_and_terminate(this->thread, -1);
         this->is_running = 0;
+    };
+
+    inline int8 has_compilation_events()
+    {
+        return !this->input_events._data.compilation_passes.empty();
     };
 
     inline void push_asset_compilation_pass(const Token(AssetCompilationPass) p_asset_compilation_pass_token, const AssetCompilationPass& p_asset_compilation_pass)
@@ -194,6 +199,8 @@ struct AssetCompilationPassWidget
 
     inline void free()
     {
+        this->root->setParent(NULL);
+        delete this->root;
         this->items.free();
     };
 
@@ -287,6 +294,26 @@ struct AssetCompilerWindow
                 break;
             }
         }
+    };
+
+    inline Token(AssetCompilationPass) remove_asset_compilation(const uimax p_index)
+    {
+        Token(AssetCompilationPass) l_return = this->view.compilation_passes.get(p_index);
+        this->view.compilation_passes.erase_element_at_always(p_index);
+        this->widgets.asset_compilation_passes.get(p_index).free();
+        this->widgets.asset_compilation_passes.erase_element_at_always(p_index);
+        return l_return;
+    };
+
+    inline Span<Token<AssetCompilationPass>> remove_all_asset_compilation_pass_widgets()
+    {
+        Span<Token<AssetCompilationPass>> l_removed_asset_compilation_passes = Span<Token<AssetCompilationPass>>::allocate(this->widgets.asset_compilation_passes.Size);
+        for (loop_reverse(i, 0, this->widgets.asset_compilation_passes.Size))
+        {
+            l_removed_asset_compilation_passes.get(i) = this->remove_asset_compilation(i);
+        }
+        this->widgets.asset_compilation_passes.clear();
+        return l_removed_asset_compilation_passes;
     };
 
   private:
@@ -383,6 +410,16 @@ struct AssetCompilerEditor
         l_asset_compiler_window_cb.closure = this;
         l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
+            while (thiz->compilation_thread.has_compilation_events())
+            {
+            };
+            Span<Token<AssetCompilationPass>> l_removed_compilation_pass = thiz->window.remove_all_asset_compilation_pass_widgets();
+            for (loop(i, 0, l_removed_compilation_pass.Capacity))
+            {
+                thiz->heap.free_asset_compiler_pass(l_removed_compilation_pass.get(i));
+            }
+            l_removed_compilation_pass.free();
+            // TODO -> remove absolute
             AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"),
                                                                                   thiz->asset_folder_root, in_out_asset_compilation_pass);
         };

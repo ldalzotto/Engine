@@ -1,3 +1,0 @@
-
-add_executable(AssetCompilerExec ${CMAKE_CURRENT_SOURCE_DIR}/AssetCompiler/asset_compiler.cpp)
-target_link_libraries(AssetCompilerExec PUBLIC AssetCompiler)
