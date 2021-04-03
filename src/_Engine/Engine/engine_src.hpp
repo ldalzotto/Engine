@@ -85,11 +85,11 @@ struct Engine
             Span<int8> l_quad_blit_vert = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
             Span<int8> l_quad_blit_frag = l_engine.asset_database.get_asset_blob(l_engine.database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
             l_engine.present = GPUPresent::allocate(l_engine.gpu_context.instance, l_engine.gpu_context.buffer_memory, l_engine.gpu_context.graphics_allocator,
-                                                        WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
-                                                        l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
-                                                            .get_vector(l_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(l_engine.renderer.color_step.pass).attachment_textures)
-                                                            .get(0),
-                                                        l_quad_blit_vert.slice, l_quad_blit_frag.slice);
+                                                    WindowAllocator::get_window(l_engine.window).handle, v3ui{p_configuration.render_size.x, p_configuration.render_size.y, 1},
+                                                    l_engine.gpu_context.graphics_allocator.heap.renderpass_attachment_textures
+                                                        .get_vector(l_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(l_engine.renderer.color_step.pass).attachment_textures)
+                                                        .get(0),
+                                                    l_quad_blit_vert.slice, l_quad_blit_frag.slice);
             l_quad_blit_vert.free();
             l_quad_blit_frag.free();
         }
@@ -141,7 +141,7 @@ struct Engine
 struct EngineExternalStepCallback
 {
     void* closure;
-    typedef void(*cb_t)(EngineExternalStep, Engine&, void*);
+    typedef void (*cb_t)(EngineExternalStep, Engine&, void*);
     cb_t cb;
     inline void step(EngineExternalStep p_step, Engine& p_engine)
     {
@@ -249,24 +249,28 @@ struct EngineRunner
         EngineLoopFunctions::end_of_frame(p_engine, p_callback_step);
     };
 
-    template <class ExternalCallbackStep> inline static void single_frame_no_block(Engine& p_engine, ExternalCallbackStep& p_callback_step)
+    template <class ExternalCallbackStep> inline static int8 single_frame_no_block(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
         AppNativeEvent::poll_events();
         float32 l_delta;
         if (p_engine.engine_loop.update(&l_delta))
         {
             EngineRunner::single_frame_forced_delta(p_engine, l_delta, p_callback_step);
+            return 1;
         };
+        return 0;
     };
 
-    template <class ExternalCallbackStep> inline static void single_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
+    template <class ExternalCallbackStep> inline static int8 single_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
         AppNativeEvent::poll_events();
         float32 l_delta;
         if (p_engine.engine_loop.update_thread_block(&l_delta))
         {
             EngineRunner::single_frame_forced_delta(p_engine, l_delta, p_callback_step);
+            return 1;
         };
+        return 0;
     };
 
     template <class ExternalCallbackStep> inline static void main_loop(Engine& p_engine, ExternalCallbackStep& p_callback_step)

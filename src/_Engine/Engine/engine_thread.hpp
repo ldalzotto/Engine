@@ -42,9 +42,9 @@ struct EngineExecutionUnit
         DestroyEngine(this->engine);
     };
 
-    inline void single_frame_no_block()
+    inline int8 single_frame_no_block()
     {
-        EngineRunner::single_frame_no_block(this->engine, this->external_loop_callback);
+        return EngineRunner::single_frame_no_block(this->engine, this->external_loop_callback);
     };
 };
 
@@ -273,17 +273,20 @@ struct EngineRunnerThread
             }
             else
             {
-                p_engine.single_frame_no_block();
-                EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_engine_token));
-                if (!l_engine_sync.end_of_frame.is_opened())
+                if (p_engine.single_frame_no_block())
                 {
-                    l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
+                    EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_engine_token));
+                    if (!l_engine_sync.end_of_frame.is_opened())
+                    {
+                        l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
+                    }
                 }
             }
         });
 
         if (this->engines.Indices.Size > 0)
         {
+            uimax l_engine_index = 0;
             time_t l_min_time = this->engines.get_by_index(0).engine.engine_loop.get_remaining_time_for_update();
             for (loop(i, 1, this->engines.Indices.Size))
             {
@@ -291,10 +294,11 @@ struct EngineRunnerThread
                 if (l_current_time <= l_min_time)
                 {
                     l_min_time = l_current_time;
+                    l_engine_index = i;
                 }
             }
             // printf("%lld \n", l_min_time);
-            Thread::wait(Thread::get_current_thread(), (uimax)((float)l_min_time * 0.0009999f));
+            Thread::wait(Thread::get_current_thread(), (uimax)((float)this->engines.get_by_index(l_engine_index).engine.engine_loop.get_remaining_time_for_update() * 0.0009999f));
         }
 
         if (!this->synchronization.end_of_step_barrier.is_opened())
@@ -322,6 +326,5 @@ struct EngineRunnerThread
             p_engine.free();
         });
         this->engines.free();
-
     };
 };

@@ -15,13 +15,11 @@ struct SandboxTestUtil
         p_engine.gpu_context.buffer_step_and_wait_for_completion();
         Slice<int8> l_rendertarget_texture_value = p_engine.gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
-
         Span<int8> l_image = ImgCompiler::read_image(p_compared_image_path);
         assert_true(l_rendertarget_texture_value.compare(l_image.slice));
         l_image.free();
 
-        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events,
-                                                                                 l_rendertarget_texture);
+        BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_engine.gpu_context.buffer_memory.allocator, p_engine.gpu_context.buffer_memory.events, l_rendertarget_texture);
     };
 
     inline static void render_texture_screenshot(Engine& p_engine, const Slice<int8>& p_path)
