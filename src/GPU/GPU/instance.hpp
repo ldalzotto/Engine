@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
     The GraphicsCard is the hardware responsible of all GPU related operations.
 */
@@ -35,7 +34,6 @@ struct GPUInstance
     static GPUInstance allocate(const Slice<GPUExtension>& p_required_extensions);
     void free();
 };
-
 
 namespace vk
 {
@@ -92,8 +90,6 @@ inline Span<VkImage> getSwapchainImagesKHR(const VkDevice p_device, const VkSwap
     vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
-
-
 
 }; // namespace vk
 
@@ -163,7 +159,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 
     int8 l_window_present_enabled = 0;
 
-    Vector<int8*> l_extensions = Vector<int8*>::allocate(0);
+    Vector<int8*> l_extensions = Vector_allocate<int8*>(0);
 
     for (loop(i, 0, p_required_instance_extensions.Size))
     {
@@ -171,16 +167,16 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         {
         case GPUExtension::WINDOW_PRESENT:
             l_window_present_enabled = 1;
-            l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
+            l_extensions.push_back_element((int8*)VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
-            l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+            l_extensions.push_back_element((int8*)VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
             break;
         }
     }
 
 #if __DEBUG
-    l_extensions.push_back_element(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    l_extensions.push_back_element((int8*)VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
 
     l_instance_create_info.enabledExtensionCount = (uint32)l_extensions.Size;
@@ -264,7 +260,6 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
     l_device_create_info.queueCreateInfoCount = 1;
-    
 
 #if __DEBUG
 
@@ -272,7 +267,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
 #endif
 
-   int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    const int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     if (l_window_present_enabled)
     {
         l_device_create_info.enabledExtensionCount = 1;

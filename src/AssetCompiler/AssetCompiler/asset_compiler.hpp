@@ -86,8 +86,8 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
         else if (Slice_compare(&l_asset_path,  &AssetCompiler_Const::obj))
         {
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
-            Vector<Vertex> l_vertices = Vector<Vertex>::allocate(0);
-            Vector<uint32> l_indices = Vector<uint32>::allocate(0);
+            Vector<Vertex> l_vertices = Vector_allocate<Vertex>(0);
+            Vector<uint32> l_indices = Vector_allocate<uint32>(0);
             ObjCompiler::ReadObj(l_buffer.slice, l_vertices, l_indices);
 
             MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices.to_slice(), l_indices.to_slice()});
@@ -201,7 +201,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
                                                                    AssetMetadataDatabase& p_asset_metadata_database, const Slice<int8>& p_root_path, const Slice<int8>& p_relative_asset_path)
 {
     int8 l_return = 0;
-    Slice<int8> l_end_char = Slice_build_begin_end<int8>("\0", 0, 1);
+    Slice<int8> l_end_char = Slice_build_begin_end<int8>((int8*)"\0", 0, 1);
     Span<int8> l_asset_full_path = Span_allocate_slice_3(&p_root_path, &p_relative_asset_path, &l_end_char);
     File l_asset_file = File::open_silent(l_asset_full_path.slice);
     if (l_asset_file.is_valid())

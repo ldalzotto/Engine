@@ -167,7 +167,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
             Vector<Span<int8>> data;
             inline static Paths allocate_default()
             {
-                return Paths{Vector<Span<int8>>::allocate(0)};
+                return Paths{Vector_allocate<Span<int8>>(0)};
             };
 
             inline void free()

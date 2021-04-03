@@ -147,9 +147,9 @@ inline CollisionDetectionStep::CollisionDetectorDeletionEvent CollisionDetection
 inline CollisionDetectionStep CollisionDetectionStep::allocate()
 {
     return CollisionDetectionStep{
-        Vector<Token(BoxCollider)>::allocate(0), Vector<Token(BoxCollider)>::allocate(0), Vector<Token(BoxCollider)>::allocate(0), Vector<CollisionDetectorDeletionEvent>::allocate(0),
-        Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
-        Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
+        Vector_allocate<Token(BoxCollider)>(0), Vector_allocate<Token(BoxCollider)>(0), Vector_allocate<Token(BoxCollider)>(0), Vector_allocate<CollisionDetectorDeletionEvent>(0),
+        Vector_allocate<IntersectionEvent>(0),  Vector_allocate<IntersectionEvent>(0),  Vector_allocate<IntersectionEvent>(0),  Vector_allocate<IntersectionEvent>(0),
+        Vector_allocate<IntersectionEvent>(0),  Vector_allocate<IntersectionEvent>(0),
     };
 };
 
@@ -318,21 +318,21 @@ inline void CollisionDetectionStep::exit_collision(CollisionHeap2& p_collision_h
 
 inline void CollisionDetectionStep::remove_references_to_colliderdetector(CollisionHeap2& p_collision_heap, const Token(ColliderDetector) p_collider_detector)
 {
-    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
+    this->is_waitingfor_trigger_stay_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
         return token_equals(l_intsersrection_event.detector, p_collider_detector);
     });
 
-    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event){
-      return token_equals(l_intsersrection_event.detector, p_collider_detector);
+    this->is_waitingfor_trigger_none_detector.erase_if([&](const CollisionDetectionStep::IntersectionEvent& l_intsersrection_event) {
+        return token_equals(l_intsersrection_event.detector, p_collider_detector);
     });
 
-    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_disabled_collider){
-      Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
-      if (token_not_equals(l_collider_detector, token_build(ColliderDetector, -1)) && token_equals(l_collider_detector, p_collider_detector))
-      {
-          return true;
-      }
-      return false;
+    this->in_colliders_processed.erase_if([&](const Token(BoxCollider) l_disabled_collider) {
+        Token(ColliderDetector)& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_disabled_collider);
+        if (token_not_equals(l_collider_detector, token_build(ColliderDetector, -1)) && token_equals(l_collider_detector, p_collider_detector))
+        {
+            return true;
+        }
+        return false;
     });
 };
 
@@ -573,7 +573,7 @@ inline void CollisionDetectionStep::udpate_triggerstate_from_lastframe_intersect
 
 inline void CollisionDetectionStep::free_deleted_colliders(CollisionHeap2& p_collision_heap)
 {
-    for(loop(i, 0, this->deleted_colliders_from_last_step.Size))
+    for (loop(i, 0, this->deleted_colliders_from_last_step.Size))
     {
         p_collision_heap.free_boxcollider(this->deleted_colliders_from_last_step.get(i));
     }

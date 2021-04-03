@@ -39,6 +39,8 @@
 #include "./Memory/token.hpp"
 #include "./Memory/memory.hpp"
 #include "./Memory/slice.hpp"
+#include "./Memory/slice_gen.h"
+
 #include "./Memory/span.hpp"
 
 #include "./Clock/clock.hpp"

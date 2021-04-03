@@ -193,7 +193,7 @@ inline D3RendererHeap D3RendererHeap::allocate()
     l_heap.materials = Pool<Material>::allocate(0);
     l_heap.meshes = Pool<Mesh>::allocate(0);
     l_heap.renderable_objects = Pool<RenderableObject>::allocate(0);
-    l_heap.shaders_indexed = Vector<Token(ShaderIndex)>::allocate(0);
+    l_heap.shaders_indexed = Vector_allocate<Token(ShaderIndex)>(0);
     l_heap.shaders_to_materials = PoolOfVector<Token(Material)>::allocate_default();
     l_heap.material_to_renderable_objects = PoolOfVector<Token(RenderableObject)>::allocate_default();
     return l_heap;
@@ -501,7 +501,7 @@ struct D3RendererAllocatorComposition
 
 inline D3RendererEvents D3RendererEvents::allocate()
 {
-    return D3RendererEvents{Vector<RenderableObject_ModelUpdateEvent>::allocate(0)};
+    return D3RendererEvents{Vector_allocate<RenderableObject_ModelUpdateEvent>(0)};
 };
 
 inline void D3RendererEvents::free()

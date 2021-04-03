@@ -182,7 +182,7 @@ struct AssetCompilationPassWidget
         l_widget.widgets.main_layout = new QVBoxLayout(l_widget.root);
         l_widget.widgets.database_label = new QLabel();
         l_widget.widgets.assets_to_compile = new QListWidget();
-        l_widget.items = Vector<Item>::allocate(0);
+        l_widget.items = Vector<Item>::Vector_allocate(0);
 
         QLayoutBuilder l_layout_bulder;
         l_layout_bulder.bind_layout(l_widget.widgets.main_layout);
@@ -257,8 +257,8 @@ struct AssetCompilerWindow
 
     inline void allocate(AssetCompilerPassHeap& p_asset_compiler_heap, const Callbacks& p_callbacks)
     {
-        this->callbacks_asset_compilation_pass_buffer = Vector<Token(AssetCompilationPass)>::allocate(0);
-        this->view.compilation_passes = Vector<Token(AssetCompilationPass)>::allocate(0);
+        this->callbacks_asset_compilation_pass_buffer = Vector<Token(AssetCompilationPass)>::Vector_allocate(0);
+        this->view.compilation_passes = Vector<Token(AssetCompilationPass)>::Vector_allocate(0);
         this->allocate_widgets();
         this->setup_widget_layout();
         this->setup_widget_events(p_callbacks, p_asset_compiler_heap);
@@ -301,7 +301,7 @@ struct AssetCompilerWindow
         this->widgets.go_button = new QPushButton();
         this->widgets.go_button->setText("GO");
 
-        this->widgets.asset_compilation_passes = Vector<AssetCompilationPassWidget>::allocate(0);
+        this->widgets.asset_compilation_passes = Vector<AssetCompilationPassWidget>::Vector_allocate(0);
     };
 
     inline void setup_widget_layout()

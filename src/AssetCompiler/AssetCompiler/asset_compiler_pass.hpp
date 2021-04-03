@@ -12,7 +12,7 @@ struct AssetCompilationPassStatic
 
     inline static AssetCompilationPassStatic allocate_default()
     {
-        return AssetCompilationPassStatic::build(String::allocate(0), Vector<String>::allocate(0));
+        return AssetCompilationPassStatic::build(String::allocate(0), Vector_allocate<String>(0));
     };
 
     inline void free()
@@ -39,12 +39,13 @@ struct AssetCompilationPass
 
     inline static AssetCompilationPass allocate_default()
     {
-        return AssetCompilationPass::build(String::allocate(0), String::allocate(0), Vector<String>::allocate(0));
+        return AssetCompilationPass::build(String::allocate(0), String::allocate(0), Vector_allocate<String>(0));
     };
 
     inline static AssetCompilationPass allocate_from_static(const String& p_database_path, const AssetCompilationPassStatic& p_static)
     {
-        Vector<String> l_assets_to_compile = Vector<String>::allocate_elements(p_static.assets_to_compile.to_slice());
+        Slice<String> l_assets_to_compile_slice = p_static.assets_to_compile.to_slice();
+        Vector<String> l_assets_to_compile = Vector_allocate_elements<String>(&l_assets_to_compile_slice);
         for (loop(i, 0, l_assets_to_compile.Size))
         {
             l_assets_to_compile.get(i) = String::allocate_elements(p_static.assets_to_compile.get(i).to_slice());
@@ -96,7 +97,7 @@ struct AssetCompilerConfigurationJSON
 
     inline static AssetCompilerConfigurationJSON allocate_default()
     {
-        return AssetCompilerConfigurationJSON{Vector<AssetCompilationPassStatic>::allocate(0), Vector<AssetCompilationPass>::allocate(0)};
+        return AssetCompilerConfigurationJSON{Vector_allocate<AssetCompilationPassStatic>(0), Vector_allocate<AssetCompilationPass>(0)};
     };
 
     inline static AssetCompilerConfigurationJSON allocate_from_json(JSONDeserializer& p_deserializer, const Slice<int8>& p_pathes_absolute_prefix)
@@ -181,7 +182,7 @@ struct AssetCompilerConfigurationJSON
 
     inline Vector<AssetCompilationPass> consume_and_merge_to_passes()
     {
-        Vector<AssetCompilationPass> l_return = Vector<AssetCompilationPass>::allocate(0);
+        Vector<AssetCompilationPass> l_return = Vector_allocate<AssetCompilationPass>(0);
         for (loop(i, 0, this->local_passes.Size))
         {
             AssetCompilationPass& l_local_pass = this->local_passes.get(i);

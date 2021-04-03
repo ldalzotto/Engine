@@ -16,6 +16,7 @@ enable_language(CXX)
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
 else()
+    add_compile_options(/std:c++latest)
     add_link_options(/NODEFAULTLIB:library)
 endif ()
 
@@ -56,6 +57,6 @@ add_custom_target(
         COMMAND GPUTest
         COMMAND Scene2MiddlewareTest
         COMMAND Sandbox
-        COMMAND AssetCompilerTest
-        COMMAND MaterialViewerTest
+      #  COMMAND AssetCompilerTest
+       # COMMAND MaterialViewerTest
 )

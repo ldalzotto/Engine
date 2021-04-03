@@ -88,7 +88,7 @@ inline void AppNativeEvent::initialize()
 
     RegisterClass(&wc);
 
-    g_appevent_listeners = Vector<AppEventQueueListener>::allocate(0);
+    g_appevent_listeners = Vector_allocate<AppEventQueueListener>(0);
 };
 
 inline void AppNativeEvent::finalize()

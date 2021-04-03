@@ -8,8 +8,8 @@ struct ShaderModuleRessourceUnit
 
     inline static ShaderModuleRessourceUnit allocate()
     {
-        return ShaderModuleRessourceUnit{PoolHashedCounted<hash_t, ShaderModuleRessource>::allocate_default(), Vector<ShaderModuleRessource::AllocationEvent>::allocate(0),
-                                         Vector<ShaderModuleRessource::FreeEvent>::allocate(0)};
+        return ShaderModuleRessourceUnit{PoolHashedCounted<hash_t, ShaderModuleRessource>::allocate_default(), Vector_allocate<ShaderModuleRessource::AllocationEvent>(0),
+                                         Vector_allocate<ShaderModuleRessource::FreeEvent>(0)};
     };
 
     inline void free()
@@ -138,8 +138,8 @@ struct TextureRessourceUnit
 
     inline static TextureRessourceUnit allocate()
     {
-        return TextureRessourceUnit{PoolHashedCounted<hash_t, TextureRessource>::allocate_default(), Vector<TextureRessource::AllocationEvent>::allocate(0),
-                                    Vector<TextureRessource::FreeEvent>::allocate(0)};
+        return TextureRessourceUnit{PoolHashedCounted<hash_t, TextureRessource>::allocate_default(), Vector_allocate<TextureRessource::AllocationEvent>(0),
+                                    Vector_allocate<TextureRessource::FreeEvent>(0)};
     };
 
     inline void free()
@@ -274,7 +274,8 @@ struct MeshRessourceUnit
 
     inline static MeshRessourceUnit allocate()
     {
-        return MeshRessourceUnit{PoolHashedCounted<hash_t, MeshRessource>::allocate_default(), Vector<MeshRessource::AllocationEvent>::allocate(0), Vector<MeshRessource::FreeEvent>::allocate(0)};
+        return MeshRessourceUnit{PoolHashedCounted<hash_t, MeshRessource>::allocate_default(), Vector_allocate<MeshRessource::AllocationEvent>(0),
+                                 Vector_allocate<MeshRessource::FreeEvent>(0)};
     };
 
     inline void free()
@@ -403,8 +404,8 @@ struct ShaderRessourceUnit
 
     inline static ShaderRessourceUnit allocate()
     {
-        return ShaderRessourceUnit{PoolHashedCounted<hash_t, ShaderRessource>::allocate_default(), Vector<ShaderRessource::AllocationEvent>::allocate(0),
-                                   Vector<ShaderRessource::FreeEvent>::allocate(0)};
+        return ShaderRessourceUnit{PoolHashedCounted<hash_t, ShaderRessource>::allocate_default(), Vector_allocate<ShaderRessource::AllocationEvent>(0),
+                                   Vector_allocate<ShaderRessource::FreeEvent>(0)};
     };
 
     inline void free()
@@ -574,7 +575,7 @@ struct MaterialRessourceUnit
     inline static MaterialRessourceUnit allocate()
     {
         return MaterialRessourceUnit{PoolHashedCounted<hash_t, MaterialRessource>::allocate_default(), PoolOfVector<MaterialRessource::DynamicDependency>::allocate_default(),
-                                     Vector<MaterialRessource::AllocationEvent>::allocate(0), Vector<MaterialRessource::FreeEvent>::allocate(0)};
+                                     Vector_allocate<MaterialRessource::AllocationEvent>(0), Vector_allocate<MaterialRessource::FreeEvent>(0)};
     };
 
     inline void free()

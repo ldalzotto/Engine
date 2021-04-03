@@ -76,7 +76,7 @@ inline void slice_span_test()
 
 inline void vector_test()
 {
-    Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
+    Vector<uimax> l_vector_sizet = Vector_build_zero_size<uimax>((uimax*)NULL, 0);
 
     // vector_push_back_array
     {
@@ -205,7 +205,7 @@ inline void vector_test()
     // erase_all_elements_that_matches_element
 
     {
-        l_vector_sizet = Vector<uimax>::allocate(5);
+        l_vector_sizet = Vector_allocate<uimax>(5);
         l_vector_sizet.Size = l_vector_sizet.Memory.Capacity;
         l_vector_sizet.get(0) = 0;
         l_vector_sizet.get(1) = 1;
@@ -1574,7 +1574,7 @@ inline void serialize_deserialize_binary_test()
 {
     Slice_declare_sized(uimax, 5, l_slice_arr, l_slice, 0, 1, 2, 3, 4);
 
-    Vector<int8> l_binary_data = Vector<int8>::allocate(0);
+    Vector<int8> l_binary_data = Vector_allocate<int8>(0);
 
     BinarySerializer::slice(&l_binary_data, Slice_build_asint8(&l_slice));
 
@@ -1760,7 +1760,7 @@ inline void thread_test()
 inline void barrier_test()
 {
     BarrierTwoStep l_barrier_two_step = BarrierTwoStep{};
-    Vector<int8> l_order_result = Vector<int8>::allocate(0);
+    Vector<int8> l_order_result = Vector_allocate<int8>(0);
     struct thread_1
     {
         Vector<int8>* order_result;

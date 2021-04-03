@@ -7,47 +7,23 @@
     Any memory access outside of this imaginary boundary will be in error.
     The Vector expose some safe way to insert/erase data (array or single element).
 */
-template <class ElementType> struct Vector
+template <class type_element> struct Vector
 {
     uimax Size;
-    Span<ElementType> Memory;
+    Span<type_element> Memory;
 
-    inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
+    inline Slice<type_element> to_slice() const
     {
-        return Vector<ElementType>{0, Span_build<ElementType>(p_memory, p_initial_capacity)};
-    };
-
-    inline static Vector<ElementType> allocate(const uimax p_initial_capacity)
-    {
-        return Vector<ElementType>{0, Span_allocate<ElementType>(p_initial_capacity)};
-    };
-
-    inline static Vector<ElementType> allocate_elements(const Slice<ElementType>& p_initial_elements)
-    {
-        Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_initial_elements.Size);
-        l_vector.push_back_array(p_initial_elements);
-        return l_vector;
-    };
-
-    inline static Vector<ElementType> allocate_capacity_elements(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements)
-    {
-        Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_inital_capacity);
-        l_vector.push_back_array(p_initial_elements);
-        return l_vector;
-    };
-
-    inline Slice<ElementType> to_slice() const
-    {
-        return Slice_build_memory_elementnb<ElementType>(this->Memory.Memory, this->Size);
+        return Slice_build_memory_elementnb<type_element>(this->Memory.Memory, this->Size);
     };
 
     inline void free()
     {
         Span_free(&this->Memory);
-        *this = Vector<ElementType>::build_zero_size(NULL, 0);
+        *this = Vector_build_zero_size<type_element>(NULL, 0);
     };
 
-    inline ElementType* get_memory()
+    inline type_element* get_memory()
     {
         return this->Memory.Memory;
     };
@@ -67,7 +43,7 @@ template <class ElementType> struct Vector
         return this->Size == 0;
     };
 
-    inline ElementType& get(const uimax p_index)
+    inline type_element& get(const uimax p_index)
     {
 #if __DEBUG
         this->bound_check(p_index);
@@ -76,9 +52,9 @@ template <class ElementType> struct Vector
         return this->Memory.Memory[p_index];
     };
 
-    inline const ElementType& get(const uimax p_index) const
+    inline const type_element& get(const uimax p_index) const
     {
-        return ((Vector<ElementType>*)this)->get(p_index);
+        return ((Vector<type_element>*)this)->get(p_index);
     };
 
     inline void clear()
@@ -86,7 +62,7 @@ template <class ElementType> struct Vector
         this->Size = 0;
     };
 
-    inline int8 insert_array_at(const Slice<ElementType>& p_elements, const uimax p_index)
+    inline int8 insert_array_at(const Slice<type_element>& p_elements, const uimax p_index)
     {
 #if __DEBUG
         this->bound_check(p_index);
@@ -96,7 +72,7 @@ template <class ElementType> struct Vector
         return this->insert_array_at_unchecked(p_elements, p_index);
     };
 
-    inline int8 insert_element_at(const ElementType& p_element, const uimax p_index)
+    inline int8 insert_element_at(const type_element& p_element, const uimax p_index)
     {
 #if __DEBUG
         this->bound_check(p_index);
@@ -106,7 +82,7 @@ template <class ElementType> struct Vector
         return this->insert_element_at_unchecked(p_element, p_index);
     };
 
-    inline int8 push_back_array(const Slice<ElementType>& p_elements)
+    inline int8 push_back_array(const Slice<type_element>& p_elements)
     {
         Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements.Size);
         Slice_copy_memory_at_index(&this->Memory.slice, this->Size, &p_elements);
@@ -115,7 +91,7 @@ template <class ElementType> struct Vector
         return 1;
     };
 
-    inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
+    inline int8 push_back_array_2(const Slice<type_element>& p_elements_0, const Slice<type_element>& p_elements_1)
     {
         Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements_0.Size + p_elements_1.Size);
         Slice_copy_memory_at_index_2(&this->Memory.slice, this->Size, &p_elements_0, &p_elements_1);
@@ -138,7 +114,7 @@ template <class ElementType> struct Vector
         return 1;
     };
 
-    inline int8 push_back_element(const ElementType& p_element)
+    inline int8 push_back_element(const type_element& p_element)
     {
         Span_resize_until_capacity_met(&this->Memory, this->Size + 1);
         this->Memory.Memory[this->Size] = p_element;
@@ -147,7 +123,7 @@ template <class ElementType> struct Vector
         return 1;
     };
 
-    inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)
+    inline int8 insert_array_at_always(const Slice<type_element>& p_elements, const uimax p_index)
     {
 #if __DEBUG
         this->bound_check(p_index);
@@ -162,7 +138,7 @@ template <class ElementType> struct Vector
         }
     };
 
-    inline int8 insert_element_at_always(const ElementType& p_element, const uimax p_index)
+    inline int8 insert_element_at_always(const type_element& p_element, const uimax p_index)
     {
 #if __DEBUG
         this->bound_check(p_index);
@@ -246,9 +222,9 @@ template <class ElementType> struct Vector
         }
     };
 
-    inline void erase_all_elements_that_matches_element(const ElementType& p_compared_element)
+    inline void erase_all_elements_that_matches_element(const type_element& p_compared_element)
     {
-        this->erase_if([&](const ElementType& p_element){
+        this->erase_if([&](const type_element& p_element){
             return p_element == p_compared_element;
         });
     };
@@ -294,7 +270,7 @@ template <class ElementType> struct Vector
         Slice_move_memory_up(&this->Memory.slice, this->Size - p_break_index, p_break_index, p_move_delta);
     };
 
-    inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
+    inline int8 insert_element_at_unchecked(const type_element& p_element, const uimax p_index)
     {
         Span_resize_until_capacity_met(&this->Memory, this->Size + 1);
         this->move_memory_down(p_index, 1);
@@ -304,7 +280,7 @@ template <class ElementType> struct Vector
         return 1;
     };
 
-    inline int8 insert_array_at_unchecked(const Slice<ElementType>& p_elements, const uimax p_index)
+    inline int8 insert_array_at_unchecked(const Slice<type_element>& p_elements, const uimax p_index)
     {
         Span_resize_until_capacity_met(&this->Memory, this->Size + p_elements.Size);
         this->move_memory_down(p_index, p_elements.Size);
@@ -315,7 +291,9 @@ template <class ElementType> struct Vector
         return 1;
     };
 
-#define ShadowVector(ElementType) ShadowVector_##ElementType
+};
+
+#define ShadowVector(ElementType) ShadowVector_##type_element
 
 #define sv_func_get_size() get_size()
 #define sv_func_get(p_index) get(p_index)
@@ -330,4 +308,30 @@ template <class ElementType> struct Vector
 #define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector)->push_back_element(p_element)
 #define sv_c_to_slice(p_shadow_vector) (p_shadow_vector)->to_slice()
 
+template<class type_element>
+inline static Vector<type_element> Vector_build_zero_size(type_element* p_memory, const uimax p_initial_capacity)
+{
+    return Vector<type_element>{0, Span_build<type_element>(p_memory, p_initial_capacity)};
+};
+
+template<class type_element>
+inline static Vector<type_element> Vector_allocate(const uimax p_initial_capacity)
+{
+    return Vector<type_element>{0, Span_allocate<type_element>(p_initial_capacity)};
+};
+
+template<class type_element>
+inline static Vector<type_element> Vector_allocate_elements(const Slice<type_element>* p_initial_elements)
+{
+    Vector<type_element> l_vector = Vector_allocate<type_element>(p_initial_elements->Size);
+    l_vector.push_back_array(*p_initial_elements);
+    return l_vector;
+};
+
+template<class type_element>
+inline static Vector<type_element> Vector_allocate_capacity_elements(const uimax p_inital_capacity, const Slice<type_element>& p_initial_elements)
+{
+    Vector<type_element> l_vector = Vector_allocate<type_element>(p_inital_capacity);
+    l_vector.push_back_array(p_initial_elements);
+    return l_vector;
 };

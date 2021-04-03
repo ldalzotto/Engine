@@ -79,7 +79,7 @@ struct RenderMiddleWare
 
     inline static RenderMiddleWare allocate()
     {
-        return RenderMiddleWare{Vector<MeshRendererComponent::AllocationEvent>::allocate(0), Vector<MeshRendererComponent::FreeEvent>::allocate(0),
+        return RenderMiddleWare{Vector_allocate<MeshRendererComponent::AllocationEvent>(0), Vector_allocate<MeshRendererComponent::FreeEvent>(0),
                                 PoolIndexed<MeshRendererComponent>::allocate_default(), CameraComponent::build_default()};
     };
 

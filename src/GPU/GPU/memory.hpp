@@ -478,7 +478,7 @@ inline void HeapPagedGPU::MemoryGPU::map(const gc_t p_transfer_device, const uim
 
 inline HeapPagedGPU HeapPagedGPU::allocate_default(const int8 is_memory_mapped, const gc_t p_transfer_device, const uimax p_memory_chunk_size)
 {
-    return HeapPagedGPU{HeapPaged::allocate_default(p_memory_chunk_size), Vector<MemoryGPU>::allocate(0), is_memory_mapped};
+    return HeapPagedGPU{HeapPaged::allocate_default(p_memory_chunk_size), Vector_allocate<MemoryGPU>(0), is_memory_mapped};
 };
 
 inline void HeapPagedGPU::free(const gc_t p_transfer_device)
@@ -1117,9 +1117,11 @@ inline void BufferAllocator::free_imagegpu(const Token(ImageGPU) p_image_gpu)
 
 inline BufferEvents BufferEvents::allocate()
 {
-    return BufferEvents{Vector<Token(BufferHost)>::allocate(0),        Vector<WriteBufferHostToBufferGPU>::allocate(0), Vector<WriteBufferGPUToBufferHost>::allocate(0),
-                        Vector<AllocatedImageHost>::allocate(0),       Vector<AllocatedImageGPU>::allocate(0),          Vector<WriteBufferHostToImageGPU>::allocate(0),
-                        Vector<WriteImageGPUToBufferHost>::allocate(0)};
+    return BufferEvents{Vector_allocate<Token(BufferHost)>(0),
+                        Vector_allocate<WriteBufferHostToBufferGPU>(0),
+                        Vector_allocate<WriteBufferGPUToBufferHost>(0),
+                        Vector_allocate<AllocatedImageHost>(0),
+                        Vector_allocate<AllocatedImageGPU>(0), Vector_allocate<WriteBufferHostToImageGPU>(0),  Vector_allocate<WriteImageGPUToBufferHost>(0)};
 };
 
 inline void BufferEvents::free()

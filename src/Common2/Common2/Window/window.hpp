@@ -174,7 +174,7 @@ inline void Window::consume_resize_event()
 inline void WindowAllocator::initialize()
 {
     g_app_windows = Pool<Window>::allocate(0);
-    g_native_to_window = Vector<NativeWindow_to_Window>::allocate(0);
+    g_native_to_window = Vector_allocate<NativeWindow_to_Window>(0);
 };
 inline void WindowAllocator::finalize()
 {

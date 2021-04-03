@@ -63,7 +63,7 @@ struct CollisionMiddleware
 
 inline CollisionAllocator CollisionAllocator::allocate_default()
 {
-    return CollisionAllocator{PoolIndexed<BoxColliderComponent>::allocate_default(), Vector<Token(BoxColliderComponent)>::allocate(0), Vector<BoxColliderComponentAsset>::allocate(0)};
+    return CollisionAllocator{PoolIndexed<BoxColliderComponent>::allocate_default(), Vector_allocate<Token(BoxColliderComponent)>(0), Vector_allocate<BoxColliderComponentAsset>(0)};
 };
 
 inline void CollisionAllocator::free()

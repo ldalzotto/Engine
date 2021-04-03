@@ -214,7 +214,7 @@ struct SceneJSON_TO_SceneAsset
 
             inline static Stack allocate_default()
             {
-                return Stack{Vector<JSONDeserializer>::allocate(0), Vector<Token(transform)>::allocate(0), Vector<JSONDeserializer>::allocate(0)};
+                return Stack{Vector_allocate<JSONDeserializer>(0), Vector_allocate<Token(transform)>(0), Vector_allocate<JSONDeserializer>(0)};
             };
 
             inline void free()

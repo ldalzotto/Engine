@@ -2,7 +2,7 @@
 
 inline Span<int8> AssetCompiler_open_and_read_asset_file(const Slice<int8>& p_asset_root_path, const Slice<int8>& p_relative_asset_path)
 {
-    Slice<int8> l_end_char = Slice_build_begin_end<int8>("\0", 0, 1);
+    Slice<int8> l_end_char = Slice_build_begin_end<int8>((int8*)"\0", 0, 1);
     Span<int8> l_asset_full_path = Span_allocate_slice_3(&p_asset_root_path, &p_relative_asset_path, &l_end_char);
     File l_asset_file = File::open(l_asset_full_path.slice);
     Span<int8> l_asset_file_content = l_asset_file.read_file_allocate();
@@ -154,7 +154,7 @@ struct ShaderAssetJSON
     inline static Span<int8> allocate_asset_from_json(JSONDeserializer* p_json_deserializer)
     {
         ShaderRessource::Asset::Value l_shader_ressource_value{};
-        Vector<ShaderLayoutParameterType> l_shader_layout_parameter_types_deserialized = Vector<ShaderLayoutParameterType>::allocate(0);
+        Vector<ShaderLayoutParameterType> l_shader_layout_parameter_types_deserialized = Vector_allocate<ShaderLayoutParameterType>(0);
 
         p_json_deserializer->next_field("execution_order");
         l_shader_ressource_value.execution_order = FromString::auimax(p_json_deserializer->get_currentfield().value);
@@ -214,7 +214,7 @@ struct ShaderAssetJSON
 
     inline static ShaderRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
     {
-        Vector<int8> l_binary = Vector<int8>::allocate(0);
+        Vector<int8> l_binary = Vector_allocate<int8>(0);
         push_dependencies_from_json_to_buffer(p_json_deserializer, &l_binary);
         return ShaderRessource::AssetDependencies{l_binary.Memory};
     };
@@ -339,7 +339,7 @@ struct MaterialAssetJSON
 
     inline static MaterialRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer, const Slice<int8>& p_root_path)
     {
-        Vector<int8> l_binary = Vector<int8>::allocate(0);
+        Vector<int8> l_binary = Vector_allocate<int8>(0);
 
         p_json_deserializer->next_field("shader");
         BinarySerializer::type(&l_binary, HashSlice(p_json_deserializer->get_currentfield().value));
@@ -357,7 +357,7 @@ struct MaterialAssetJSON
             Span_free(&l_shader_file_content);
         }
 
-        Vector<hash_t> l_textures = Vector<hash_t>::allocate(0);
+        Vector<hash_t> l_textures = Vector_allocate<hash_t>(0);
         JSONDeserializer l_parameter_array_deserializer = JSONDeserializer::allocate_default();
         if (p_json_deserializer->next_array("parameters", &l_parameter_array_deserializer))
         {

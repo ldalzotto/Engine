@@ -150,7 +150,7 @@ template <class ElementType> struct NTree
 
     inline void remove_node_recursively(const Token(NTreeNode) p_node)
     {
-        Vector<Resolve> l_involved_nodes = Vector<Resolve>::allocate(0);
+        Vector<Resolve> l_involved_nodes = Vector_allocate<Resolve>(0);
         this->get_nodes(p_node, &l_involved_nodes);
 
         Slice<Resolve> l_involved_nodes_slice = l_involved_nodes.to_slice();

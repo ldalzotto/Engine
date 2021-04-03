@@ -27,9 +27,9 @@ struct ObjCompiler
 
     inline static void ReadObj(const Slice<int8>& p_obj_content, Vector<Vertex>& out_vertices, Vector<uint32>& out_indices)
     {
-        Vector<VertexKey> l_vertices_indexed = Vector<VertexKey>::allocate(0);
-        Vector<v3f> l_positions = Vector<v3f>::allocate(0);
-        Vector<v2f> l_uvs = Vector<v2f>::allocate(0);
+        Vector<VertexKey> l_vertices_indexed = Vector_allocate<VertexKey>(0);
+        Vector<v3f> l_positions = Vector_allocate<v3f>(0);
+        Vector<v2f> l_uvs = Vector_allocate<v2f>(0);
 
         uimax l_begin_line_index = 0;
         for (loop(l_reader_index, 0, p_obj_content.Size))

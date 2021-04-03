@@ -7,7 +7,7 @@ template <class ElementType> struct PoolIndexed
 
     inline static PoolIndexed<ElementType> allocate_default()
     {
-        return PoolIndexed<ElementType>{Pool<ElementType>::allocate(0), Vector<Token(ElementType)>::allocate(0)};
+        return PoolIndexed<ElementType>{Pool<ElementType>::allocate(0), Vector_allocate<Token(ElementType)>(0)};
     };
 
     inline void free()

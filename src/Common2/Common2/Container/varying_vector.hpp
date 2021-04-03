@@ -17,7 +17,7 @@ struct VaryingVector
 
     inline static VaryingVector allocate(const uimax p_memory_array_initial_capacity, const uimax p_chunk_array_initial_capacity)
     {
-        return build(Vector<int8>::allocate(p_memory_array_initial_capacity), Vector<SliceIndex>::allocate(p_chunk_array_initial_capacity));
+        return build(Vector_allocate<int8>(p_memory_array_initial_capacity), Vector_allocate<SliceIndex>(p_chunk_array_initial_capacity));
     };
 
     inline static VaryingVector allocate_default()

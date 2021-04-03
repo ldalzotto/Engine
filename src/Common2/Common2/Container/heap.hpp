@@ -391,7 +391,7 @@ template <class ShadowHeap_t(s)> inline void HeapA::_defragment(ShadowHeap_t(s) 
 
 inline Heap Heap::allocate(const uimax p_heap_size)
 {
-    Heap l_heap = Heap{Pool<SliceIndex>::allocate(0), Vector<SliceIndex>::allocate(1), p_heap_size};
+    Heap l_heap = Heap{Pool<SliceIndex>::allocate(0), Vector_allocate<SliceIndex>(1), p_heap_size};
     l_heap.FreeChunks.push_back_element(SliceIndex_build(0, p_heap_size));
     return l_heap;
 }

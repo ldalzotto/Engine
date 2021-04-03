@@ -91,7 +91,7 @@ struct EngineRunnerThread
     inline static EngineRunnerThread allocate()
     {
         EngineRunnerThread l_runner{};
-        l_runner.allocation_events = Vector<EngineAllocationEvent>::allocate(0);
+        l_runner.allocation_events = Vector_allocate<EngineAllocationEvent>(0);
         l_runner.engines = PoolIndexed<EngineExecutionUnit>::allocate_default();
         l_runner.engine_synchronisation = Pool<EngineSyncrhonisation>::allocate(0);
         l_runner.ask_exit = 0;

@@ -145,7 +145,7 @@ struct MeshRessource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.initial_vertices));
             BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.initial_indices));
             return build_from_binary(l_binary.Memory);
@@ -227,7 +227,7 @@ struct ShaderRessource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             BinarySerializer::slice(&l_binary, Slice_build_asint8(&p_values.specific_parameters));
             BinarySerializer::type(&l_binary, p_values.execution_order);
             BinarySerializer::type(&l_binary, p_values.shader_configuration);
@@ -272,7 +272,7 @@ struct ShaderRessource
 
         inline static AssetDependencies allocate_from_values(const Value& p_values)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             p_values.push_to_binary_buffer(&l_binary);
             return AssetDependencies{l_binary.Memory};
         };
@@ -344,7 +344,7 @@ struct TextureRessource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             BinarySerializer::type(&l_binary, p_value.size);
             BinarySerializer::type(&l_binary, p_value.channel_nb);
             BinarySerializer::slice(&l_binary, p_value.pixels);
@@ -472,7 +472,7 @@ struct MaterialRessource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             BinarySerializer::varying_slice(&l_binary, p_value.parameters.parameters);
             return build_from_binary(l_binary.Memory);
         };
@@ -524,7 +524,7 @@ struct MaterialRessource
 
         inline static AssetDependencies allocate_from_values(const Value& p_value)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Vector<int8> l_binary = Vector_allocate<int8>(0);
             p_value.push_to_binary_buffer(&l_binary);
             return build_from_binary(l_binary.Memory);
         };

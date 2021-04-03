@@ -35,12 +35,12 @@ struct JSONDeserializer
 
     inline static JSONDeserializer allocate_default()
     {
-        return JSONDeserializer{Slice_build_default<int8>(), Slice_build_default<int8>(), Vector<FieldNode>::allocate(0), (uimax)-1};
+        return JSONDeserializer{Slice_build_default<int8>(), Slice_build_default<int8>(), Vector_allocate<FieldNode>(0), (uimax)-1};
     };
 
     inline static JSONDeserializer allocate(const Slice<int8>& p_source, const Slice<int8>& p_parent_cursor)
     {
-        return JSONDeserializer{p_source, p_parent_cursor, Vector<FieldNode>::allocate(0), (uimax)-1};
+        return JSONDeserializer{p_source, p_parent_cursor, Vector_allocate<FieldNode>(0), (uimax)-1};
     };
 
     inline static JSONDeserializer start(Vector<int8>& p_source)
@@ -56,7 +56,8 @@ struct JSONDeserializer
 
     inline JSONDeserializer clone()
     {
-        return JSONDeserializer{this->source, this->parent_cursor, Vector<FieldNode>::allocate_elements(this->stack_fields.to_slice()), this->current_field};
+        Slice<FieldNode> l_stack_fields_slice = this->stack_fields.to_slice();
+        return JSONDeserializer{this->source, this->parent_cursor, Vector_allocate_elements<FieldNode>(&l_stack_fields_slice), this->current_field};
     };
 
     inline void free()

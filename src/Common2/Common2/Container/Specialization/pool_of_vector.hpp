@@ -19,7 +19,7 @@ template <class ElementType> struct PoolOfVector
 
     inline static PoolOfVector<ElementType> allocate_default()
     {
-        return PoolOfVector<ElementType>{VectorOfVector<ElementType>::allocate_default(), Vector<PoolOfVectorToken<ElementType>>::allocate(0)};
+        return PoolOfVector<ElementType>{VectorOfVector<ElementType>::allocate_default(), Vector_allocate<PoolOfVectorToken<ElementType>>(0)};
     };
 
     inline void free()

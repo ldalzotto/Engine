@@ -66,7 +66,8 @@ inline NodeEntry SceneTree::get_node_parent(const NodeEntry& p_node)
 inline Slice<Token(Node)> SceneTree::get_node_childs(const NodeEntry& p_node)
 {
     Slice<Token(NTreeNode)> l_childs = this->node_tree.get_childs(p_node.Node->childs);
-    return sliceoftoken_cast(Node, l_childs);
+    Slice<int8> l_childs_int8 = Slice_build_asint8(&l_childs);
+    return Slice_cast<Token(Node)>(&l_childs_int8);
 };
 
 inline void SceneTree::add_child(const NodeEntry& p_parent, const NodeEntry& p_child)
@@ -212,7 +213,9 @@ inline m44f SceneTree::get_worldtolocal(const NodeEntry& p_node)
 
 inline void SceneTree::clear_nodes_state()
 {
-    this->node_tree.traverse3(token_build(NTreeNode, 0), [](const NodeEntry& p_node) { p_node.Element->state.haschanged_thisframe = false; });
+    this->node_tree.traverse3(token_build(NTreeNode, 0), [](const NodeEntry& p_node) {
+        p_node.Element->state.haschanged_thisframe = false;
+    });
 };
 
 inline Token(Node) SceneTree::allocate_node(const transform& p_initial_local_transform, const Token(Node) p_parent)
@@ -229,7 +232,9 @@ inline Token(Node) SceneTree::allocate_root_node()
 
 inline void SceneTree::mark_node_for_recalculation_recursive(const NodeEntry& p_node)
 {
-    this->node_tree.traverse3(token_build_from(NTreeNode, p_node.Node->index), [](const NodeEntry& p_node) { p_node.Element->mark_for_recaluclation(); });
+    this->node_tree.traverse3(token_build_from(NTreeNode, p_node.Node->index), [](const NodeEntry& p_node) {
+        p_node.Element->mark_for_recaluclation();
+    });
 };
 
 inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
@@ -249,7 +254,7 @@ inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
 
 inline void SceneTree::free_node_recurvise(const NodeEntry& p_node)
 {
-    Vector<NodeEntry> l_deleted_nodes = Vector<NodeEntry>::allocate(0);
+    Vector<NodeEntry> l_deleted_nodes = Vector_allocate<NodeEntry>(0);
     this->node_tree.get_nodes(p_node.Node->index, &l_deleted_nodes);
 
     Slice<NodeEntry> l_deleted_nodes_slice = l_deleted_nodes.to_slice();
@@ -264,8 +269,8 @@ inline Scene::ComponentRemovedEvent Scene::ComponentRemovedEvent::build(const To
 
 inline Scene Scene::allocate_default()
 {
-    Scene l_scene = Scene{SceneTree::allocate_default(), PoolOfVector<NodeComponent>::allocate_default(), Vector<Token(Node)>::allocate(0), Vector<Token(Node)>::allocate(0),
-                          Vector<ComponentRemovedEvent>::allocate(0)};
+    Scene l_scene = Scene{SceneTree::allocate_default(), PoolOfVector<NodeComponent>::allocate_default(), Vector_allocate<Token(Node)>(0), Vector_allocate<Token(Node)>(0),
+                          Vector_allocate<ComponentRemovedEvent>(0)};
     l_scene.node_to_components.alloc_vector();
     return l_scene;
 };
