@@ -23,25 +23,109 @@ struct ShaderLayoutParameters
 
     Binding0 parameter_set;
 
-    static ShaderLayoutParameters allocate(gc_t const p_device);
+    inline static ShaderLayoutParameters allocate(gc_t const p_device)
+    {
+        ShaderLayoutParameters l_shader_layout_parameters;
+        l_shader_layout_parameters.parameter_set = Binding0{l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, (uint32)0),
+                                                            l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, (uint32)0),
+                                                            l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::TEXTURE_FRAGMENT, (uint32)0)};
+        return l_shader_layout_parameters;
+    };
 
-    void free(gc_t const p_device);
+    inline void free(gc_t const p_device)
+    {
+        vkDestroyDescriptorSetLayout(p_device, this->parameter_set.uniformbuffer_vertex_layout, NULL);
+        vkDestroyDescriptorSetLayout(p_device, this->parameter_set.uniformbuffer_fragment_vertex_layout, NULL);
+        vkDestroyDescriptorSetLayout(p_device, this->parameter_set.texture_fragment_layout, NULL);
+    };
 
-    VkDescriptorSetLayout get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type) const;
+    inline VkDescriptorSetLayout get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type) const
+    {
+        switch (p_shader_layout_parameter_type)
+        {
+        case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX:
+            return this->parameter_set.uniformbuffer_vertex_layout;
+        case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT:
+            return this->parameter_set.uniformbuffer_fragment_vertex_layout;
+        case ShaderLayoutParameterType::TEXTURE_FRAGMENT:
+            return this->parameter_set.texture_fragment_layout;
+        default:
+            abort();
+        }
+    };
 
   private:
-    VkDescriptorSetLayout create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding);
+    inline VkDescriptorSetLayout create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding)
+    {
+        VkDescriptorType l_descriptor_type;
+        VkShaderStageFlags l_shader_stage;
+        switch (p_shader_layout_parameter_type)
+        {
+        case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX:
+            l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+            break;
+        case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT:
+            l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+            break;
+        case ShaderLayoutParameterType::TEXTURE_FRAGMENT:
+            l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+            break;
+        default:
+            abort();
+        }
 
-    VkDescriptorSetLayoutBinding create_binding(const uint32 p_shader_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage);
+        VkDescriptorSetLayoutBinding l_binding = this->create_binding(p_shader_binding, l_descriptor_type, l_shader_stage);
+
+        VkDescriptorSetLayoutCreateInfo l_descriptorset_layot_create{};
+        l_descriptorset_layot_create.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        l_descriptorset_layot_create.bindingCount = 1;
+        l_descriptorset_layot_create.pBindings = &l_binding;
+
+        VkDescriptorSetLayout l_layout;
+        vk_handle_result(vkCreateDescriptorSetLayout(p_device, &l_descriptorset_layot_create, NULL, &l_layout));
+        return l_layout;
+    };
+
+    inline VkDescriptorSetLayoutBinding create_binding(const uint32 p_shader_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage)
+    {
+        VkDescriptorSetLayoutBinding l_camera_matrices_layout_binding{};
+        l_camera_matrices_layout_binding.binding = p_shader_binding;
+        l_camera_matrices_layout_binding.descriptorCount = 1;
+        l_camera_matrices_layout_binding.descriptorType = p_descriptor_type;
+        l_camera_matrices_layout_binding.stageFlags = p_shader_stage;
+        l_camera_matrices_layout_binding.pImmutableSamplers = nullptr;
+        return l_camera_matrices_layout_binding;
+    };
 };
 
 struct ShaderParameterPool
 {
     VkDescriptorPool descriptor_pool;
 
-    static ShaderParameterPool allocate(const gc_t p_device, const uimax p_max_sets);
+    inline static ShaderParameterPool allocate(const gc_t p_device, const uimax p_max_sets)
+    {
+        VkDescriptorPoolSize l_types{};
+        l_types.descriptorCount = 4;
 
-    void free(const gc_t p_device);
+        VkDescriptorPoolCreateInfo l_descriptor_pool_create_info{};
+        l_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        l_descriptor_pool_create_info.poolSizeCount = 1;
+        l_descriptor_pool_create_info.pPoolSizes = &l_types;
+        l_descriptor_pool_create_info.flags = VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+        l_descriptor_pool_create_info.maxSets = (uint32_t)p_max_sets;
+
+        ShaderParameterPool l_shader_parameter_pool;
+        vk_handle_result(vkCreateDescriptorPool(p_device, &l_descriptor_pool_create_info, NULL, &l_shader_parameter_pool.descriptor_pool));
+        return l_shader_parameter_pool;
+    };
+
+    inline void free(const gc_t p_device)
+    {
+        vkDestroyDescriptorPool(p_device, this->descriptor_pool, NULL);
+    };
 };
 
 typedef VkSampler TextureSampler;
@@ -50,9 +134,34 @@ struct TextureSamplers
 {
     TextureSampler Default;
 
-    static TextureSamplers allocate(const gc_t p_device);
+    inline static TextureSamplers allocate(const gc_t p_device)
+    {
+        TextureSamplers l_samplers;
 
-    void free(const gc_t p_device);
+        VkSamplerCreateInfo l_sampler_create_info{};
+        l_sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        l_sampler_create_info.magFilter = VkFilter::VK_FILTER_NEAREST;
+        l_sampler_create_info.minFilter = VkFilter::VK_FILTER_NEAREST;
+        l_sampler_create_info.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        l_sampler_create_info.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        l_sampler_create_info.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        l_sampler_create_info.borderColor = VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        l_sampler_create_info.unnormalizedCoordinates = 0;
+        l_sampler_create_info.compareEnable = false;
+        l_sampler_create_info.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+        l_sampler_create_info.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        l_sampler_create_info.mipLodBias = 0.0f;
+        l_sampler_create_info.maxLod = 0.0f;
+        l_sampler_create_info.minLod = 0.0f;
+
+        vk_handle_result(vkCreateSampler(p_device, &l_sampler_create_info, NULL, &l_samplers.Default));
+        return l_samplers;
+    };
+
+    inline void free(const gc_t p_device)
+    {
+        vkDestroySampler(p_device, this->Default, NULL);
+    };
 };
 
 /*
@@ -72,9 +181,35 @@ struct GraphicsDevice
     ShaderLayoutParameters shaderlayout_parameters;
     TextureSamplers texture_samplers;
 
-    static GraphicsDevice allocate(GPUInstance& p_instance);
+    inline static GraphicsDevice allocate(GPUInstance& p_instance)
+    {
+        GraphicsDevice l_graphics_device;
+        l_graphics_device.graphics_card = p_instance.graphics_card;
+        l_graphics_device.device = p_instance.logical_device;
 
-    void free();
+        vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family, 0, &l_graphics_device.graphics_queue);
+
+        l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family);
+        l_graphics_device.command_buffer = l_graphics_device.command_pool.allocate_command_buffer(l_graphics_device.device, l_graphics_device.graphics_queue);
+
+        l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000);
+        l_graphics_device.shaderlayout_parameters = ShaderLayoutParameters::allocate(l_graphics_device.device);
+
+        l_graphics_device.texture_samplers = TextureSamplers::allocate(l_graphics_device.device);
+
+        return l_graphics_device;
+    };
+
+    inline void free()
+    {
+        this->command_pool.free_command_buffer(this->device, this->command_buffer);
+        this->command_pool.free(this->device);
+
+        this->shaderparameter_pool.free(this->device);
+        this->shaderlayout_parameters.free(this->device);
+
+        this->texture_samplers.free(this->device);
+    };
 };
 
 typedef VkImageView ImageView_t;
@@ -89,9 +224,37 @@ struct TextureGPU
     Token(ImageGPU) Image;
     ImageView_t ImageView;
 
-    static TextureGPU allocate(BufferMemory& p_buffer_memory, const ImageFormat& p_image_format);
+    inline static TextureGPU allocate(BufferMemory& p_buffer_memory, const ImageFormat& p_image_format)
+    {
+        TextureGPU l_texture_gpu;
+        l_texture_gpu.Image = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, p_image_format);
 
-    void free(BufferMemory& p_buffer_memory);
+        ImageGPU& l_image_gpu = p_buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image);
+
+        VkImageViewCreateInfo l_imageview_create_info{};
+        l_imageview_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        l_imageview_create_info.image = l_image_gpu.image;
+        switch (p_image_format.imageType)
+        {
+        case VkImageType::VK_IMAGE_TYPE_2D:
+            l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+            break;
+        default:
+            abort();
+        }
+        l_imageview_create_info.format = p_image_format.format;
+        l_imageview_create_info.subresourceRange = VkImageSubresourceRange{p_image_format.imageAspect, 0, (uint32_t)p_image_format.mipLevels, 0, (uint32_t)p_image_format.arrayLayers};
+
+        vk_handle_result(vkCreateImageView(p_buffer_memory.allocator.device.device, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
+
+        return l_texture_gpu;
+    };
+
+    inline void free(BufferMemory& p_buffer_memory)
+    {
+        vkDestroyImageView(p_buffer_memory.allocator.device.device, this->ImageView, NULL);
+        BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, this->Image);
+    };
 };
 
 typedef VkRenderPass RenderPass_t;
@@ -120,9 +283,96 @@ struct RenderPass
 {
     RenderPass_t render_pass;
 
-    template <uint8 AttachmentCount> static RenderPass allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments);
+    template <uint8 AttachmentCount> inline static RenderPass allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
+    {
 
-    void free(const GraphicsDevice& p_device);
+#if __DEBUG
+        assert_true(AttachmentCount >= 1);
+#endif
+
+        VkAttachmentDescription l_attachments_raw[AttachmentCount];
+        Slice<VkAttachmentDescription> l_attachments = Slice<VkAttachmentDescription>::build_memory_elementnb(l_attachments_raw, AttachmentCount);
+
+        VkAttachmentReference l_color_attachments_ref_raw[AttachmentCount];
+        Slice<VkAttachmentReference> l_color_attachments_ref = Slice<VkAttachmentReference>::build_memory_elementnb(l_color_attachments_ref_raw, AttachmentCount);
+        uint8 l_color_attachments_ref_count = 0;
+
+        VkAttachmentReference l_depth_attachment_reference;
+
+        VkSubpassDescription l_subpass = VkSubpassDescription{};
+
+        for (loop(i, 0, AttachmentCount))
+        {
+
+            VkAttachmentDescription& l_attachment_description = l_attachments.get(i);
+            l_attachment_description = VkAttachmentDescription{};
+            l_attachment_description.format = p_attachments.get(i).image_format.format;
+            l_attachment_description.samples = p_attachments.get(i).image_format.samples;
+            l_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+            l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+            l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+            l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+            l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+
+            if (p_attachments.get(i).type == AttachmentType::KHR)
+            {
+                l_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            }
+            else
+            {
+                l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments.get(i).image_format.imageUsage);
+            }
+
+            switch (p_attachments.get(i).type)
+            {
+            case AttachmentType::COLOR:
+            {
+                VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
+                l_attachment_reference.attachment = (uint32)i;
+                l_attachment_reference.layout = l_attachment_description.finalLayout;
+                l_color_attachments_ref_count += 1;
+            }
+            break;
+            case AttachmentType::KHR:
+            {
+                VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
+                l_attachment_reference.attachment = (uint32)i;
+                l_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
+                l_color_attachments_ref_count += 1;
+            }
+            break;
+            case AttachmentType::DEPTH:
+            {
+                l_depth_attachment_reference = VkAttachmentReference{};
+                l_depth_attachment_reference.attachment = (uint32)i;
+                l_depth_attachment_reference.layout = l_attachment_description.finalLayout;
+                l_subpass.pDepthStencilAttachment = &l_depth_attachment_reference;
+            }
+            break;
+            }
+        }
+
+        l_subpass.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
+        l_subpass.colorAttachmentCount = l_color_attachments_ref_count;
+        l_subpass.pColorAttachments = l_color_attachments_ref.Begin;
+
+        VkRenderPassCreateInfo l_renderpass_create_info{};
+        l_renderpass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        l_renderpass_create_info.attachmentCount = (uint32)l_attachments.Size;
+        l_renderpass_create_info.pAttachments = l_attachments.Begin;
+        l_renderpass_create_info.subpassCount = 1;
+        l_renderpass_create_info.pSubpasses = &l_subpass;
+
+        RenderPass l_render_pass_object;
+
+        vk_handle_result(vkCreateRenderPass(p_device.device, &l_renderpass_create_info, NULL, &l_render_pass_object.render_pass));
+        return l_render_pass_object;
+    };
+
+    inline void free(const GraphicsDevice& p_device)
+    {
+        vkDestroyRenderPass(p_device.device, this->render_pass, NULL);
+    };
 };
 
 typedef VkFramebuffer FrameBuffer_t;
@@ -141,10 +391,52 @@ struct GraphicsPass
     FrameBuffer_t frame_buffer;
 
     template <uint32 AttachmentCount>
-    static GraphicsPass allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
-                                 const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views);
+    inline static GraphicsPass allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
+                                        const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
+    {
+#if __DEBUG
+        v3ui l_extend = p_render_pass_attachments.get(0).image_format.extent;
+        for (loop(i, 1, AttachmentCount))
+        {
+            assert_true(p_render_pass_attachments.get(i).image_format.extent == l_extend);
+        }
+#endif
 
-    void free(const GraphicsDevice& p_graphics_device);
+        RenderPass l_render_pass = RenderPass::allocate<AttachmentCount>(p_graphics_device, p_render_pass_attachments);
+
+        VkFramebufferCreateInfo l_framebuffer_create{};
+        l_framebuffer_create.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        l_framebuffer_create.attachmentCount = AttachmentCount;
+        l_framebuffer_create.pAttachments = p_attachment_image_views;
+        l_framebuffer_create.layers = 1;
+        l_framebuffer_create.width = p_render_pass_attachments.get(0).image_format.extent.x;
+        l_framebuffer_create.height = p_render_pass_attachments.get(0).image_format.extent.y;
+        l_framebuffer_create.renderPass = l_render_pass.render_pass;
+
+        GraphicsPass l_graphics_pass;
+
+#if __DEBUG
+        l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
+        l_graphics_pass.attachement_layout.slice.copy_memory_at_index(0, slice_from_slicen(&p_render_pass_attachments));
+#endif
+        vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
+
+        l_graphics_pass.attachment_textures = p_allocated_attachment_textures;
+        l_graphics_pass.render_pass = l_render_pass;
+
+        return l_graphics_pass;
+    };
+
+    inline void free(const GraphicsDevice& p_graphics_device)
+    {
+        this->render_pass.free(p_graphics_device);
+
+        vkDestroyFramebuffer(p_graphics_device.device, this->frame_buffer, NULL);
+
+#if __DEBUG
+        this->attachement_layout.free();
+#endif
+    };
 };
 
 typedef VkPipelineLayout ShaderLayout_t;
@@ -167,10 +459,39 @@ struct ShaderLayout
     Span<VertexInputParameter> vertex_input_layout;
     uimax vertex_element_size;
 
-    static ShaderLayout allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types, const Span<VertexInputParameter>& in_vertex_input_layout,
-                                 const uimax in_vertex_element_size);
+    inline static ShaderLayout allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types,
+                                        const Span<VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size)
+    {
+        VkPipelineLayoutCreateInfo l_pipeline_create_info{};
+        l_pipeline_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-    void free(const GraphicsDevice& p_device);
+        Span<VkDescriptorSetLayout> l_descriptor_set_layouts = Span<VkDescriptorSetLayout>::allocate(in_shaderlayout_parameter_types.Capacity);
+
+        for (loop(i, 0, in_shaderlayout_parameter_types.Capacity))
+        {
+            l_descriptor_set_layouts.get(i) = p_device.shaderlayout_parameters.get_descriptorset_layout(in_shaderlayout_parameter_types.get(i));
+        }
+
+        l_pipeline_create_info.setLayoutCount = (uint32_t)l_descriptor_set_layouts.Capacity;
+        l_pipeline_create_info.pSetLayouts = l_descriptor_set_layouts.Memory;
+
+        ShaderLayout l_shader_layout;
+        l_shader_layout.shader_layout_parameter_types = in_shaderlayout_parameter_types;
+        l_shader_layout.vertex_input_layout = in_vertex_input_layout;
+        l_shader_layout.vertex_element_size = in_vertex_element_size;
+        vk_handle_result(vkCreatePipelineLayout(p_device.device, &l_pipeline_create_info, NULL, &l_shader_layout.layout));
+
+        l_descriptor_set_layouts.free();
+
+        return l_shader_layout;
+    };
+
+    inline void free(const GraphicsDevice& p_device)
+    {
+        vkDestroyPipelineLayout(p_device.device, this->layout, NULL);
+        this->shader_layout_parameter_types.free();
+        this->vertex_input_layout.free();
+    };
 };
 
 enum class ShaderModuleStage
@@ -189,11 +510,27 @@ struct ShaderModule
 {
     ShaderModule_t module;
 
-    static ShaderModule allocate(const GraphicsDevice& p_graphics_device, const Slice<int8>& p_shader_compiled_str);
+    inline static ShaderModule allocate(const GraphicsDevice& p_graphics_device, const Slice<int8>& p_shader_compiled_str)
+    {
+        VkShaderModuleCreateInfo l_shader_module_create_info{};
+        l_shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        l_shader_module_create_info.codeSize = p_shader_compiled_str.Size;
+        l_shader_module_create_info.pCode = (uint32_t*)p_shader_compiled_str.Begin;
 
-    static ShaderModule build_default();
+        ShaderModule l_shader_module;
+        vk_handle_result(vkCreateShaderModule(p_graphics_device.device, &l_shader_module_create_info, NULL, &l_shader_module.module));
+        return l_shader_module;
+    };
 
-    void free(const GraphicsDevice& p_graphics_device);
+    inline static ShaderModule build_default()
+    {
+        return ShaderModule{NULL};
+    };
+
+    inline void free(const GraphicsDevice& p_graphics_device)
+    {
+        vkDestroyShaderModule(p_graphics_device.device, this->module, NULL);
+    };
 };
 
 struct ShaderConfiguration
@@ -232,12 +569,159 @@ struct Shader
     VkPipeline shader;
     ShaderLayout layout;
 
-    static Shader allocate(const GraphicsDevice& p_device, const ShaderAllocateInfo& p_shader_allocate_info);
+    inline static Shader allocate(const GraphicsDevice& p_device, const ShaderAllocateInfo& p_shader_allocate_info)
+    {
+        Shader l_shader;
+        l_shader.layout = p_shader_allocate_info.shader_layout;
 
-    void free(const GraphicsDevice& p_device);
+        Span<VkVertexInputAttributeDescription> l_vertex_input_attributes = Span<VkVertexInputAttributeDescription>::allocate(p_shader_allocate_info.shader_layout.vertex_input_layout.Capacity);
+
+        VkGraphicsPipelineCreateInfo l_pipeline_graphics_create_info{};
+        l_pipeline_graphics_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        l_pipeline_graphics_create_info.layout = p_shader_allocate_info.shader_layout.layout;
+        l_pipeline_graphics_create_info.renderPass = p_shader_allocate_info.graphics_pass.render_pass.render_pass;
+
+        VkPipelineInputAssemblyStateCreateInfo l_inputassembly_state{};
+        l_inputassembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        l_inputassembly_state.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        l_inputassembly_state.primitiveRestartEnable = 0;
+
+        VkPipelineRasterizationStateCreateInfo l_rasterization_state{};
+        l_rasterization_state.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        l_rasterization_state.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+        l_rasterization_state.cullMode = VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
+        l_rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        l_rasterization_state.lineWidth = 1.0f;
+        l_rasterization_state.depthClampEnable = 0;
+        l_rasterization_state.rasterizerDiscardEnable = 0;
+        l_rasterization_state.depthClampEnable = 0;
+
+        VkPipelineColorBlendAttachmentState l_blendattachment_state{};
+        l_blendattachment_state.colorWriteMask = 0xf;
+        l_blendattachment_state.blendEnable = 0;
+        VkPipelineColorBlendStateCreateInfo l_blendattachment_state_create{};
+        l_blendattachment_state_create.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        l_blendattachment_state_create.attachmentCount = 1;
+        l_blendattachment_state_create.pAttachments = &l_blendattachment_state;
+
+        VkPipelineViewportStateCreateInfo l_viewport_state{};
+        l_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        l_viewport_state.viewportCount = 1;
+        l_viewport_state.scissorCount = 1;
+
+        VkDynamicState l_dynamicstates_enabled[2];
+        l_dynamicstates_enabled[0] = VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT;
+        l_dynamicstates_enabled[1] = VkDynamicState::VK_DYNAMIC_STATE_SCISSOR;
+        VkPipelineDynamicStateCreateInfo l_dynamicstates{};
+        l_dynamicstates.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        l_dynamicstates.dynamicStateCount = 2;
+        l_dynamicstates.pDynamicStates = l_dynamicstates_enabled;
+
+        VkPipelineDepthStencilStateCreateInfo l_depthstencil_state{};
+        l_depthstencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
+        {
+            l_depthstencil_state.depthTestEnable = 1;
+            l_depthstencil_state.depthWriteEnable = p_shader_allocate_info.shader_configuration.zwrite;
+            l_depthstencil_state.depthCompareOp = (VkCompareOp)p_shader_allocate_info.shader_configuration.ztest;
+            l_depthstencil_state.depthBoundsTestEnable = 0;
+
+            VkStencilOpState l_back{};
+            l_back.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+            l_back.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+            l_back.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+            l_depthstencil_state.back = l_back;
+            l_depthstencil_state.front = l_back;
+            l_depthstencil_state.stencilTestEnable = 0;
+        }
+
+        VkPipelineMultisampleStateCreateInfo l_multisample_state{};
+        l_multisample_state.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        l_multisample_state.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
+        for (loop(i, 0, l_vertex_input_attributes.Capacity))
+        {
+            const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = p_shader_allocate_info.shader_layout.vertex_input_layout.get(i);
+            l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
+        }
+
+        VkVertexInputBindingDescription l_vertex_input_binding{0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX};
+
+        VkPipelineVertexInputStateCreateInfo l_vertex_input_create{};
+        l_vertex_input_create.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        l_vertex_input_create.vertexBindingDescriptionCount = 1;
+        l_vertex_input_create.pVertexBindingDescriptions = &l_vertex_input_binding;
+        l_vertex_input_create.pVertexAttributeDescriptions = l_vertex_input_attributes.Memory;
+        l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
+
+        VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
+        Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build_begin_end(l_shader_stages, 0, 0);
+
+        if (p_shader_allocate_info.vertex_shader.module != NULL)
+        {
+            l_shader_stages_slice.Size += 1;
+            VkPipelineShaderStageCreateInfo& l_vertex_stage = l_shader_stages_slice.get(0);
+            l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+            l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
+            l_vertex_stage.pName = "main";
+        }
+
+        if (p_shader_allocate_info.fragment_shader.module != NULL)
+        {
+            l_shader_stages_slice.Size += 1;
+            VkPipelineShaderStageCreateInfo& l_fragment_stage = l_shader_stages_slice.get(1);
+            l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+            l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
+            l_fragment_stage.pName = "main";
+        };
+
+        l_pipeline_graphics_create_info.stageCount = (uint32_t)l_shader_stages_slice.Size;
+        l_pipeline_graphics_create_info.pStages = l_shader_stages;
+
+        l_pipeline_graphics_create_info.pVertexInputState = &l_vertex_input_create;
+        l_pipeline_graphics_create_info.pInputAssemblyState = &l_inputassembly_state;
+        l_pipeline_graphics_create_info.pRasterizationState = &l_rasterization_state;
+        l_pipeline_graphics_create_info.pColorBlendState = &l_blendattachment_state_create;
+        l_pipeline_graphics_create_info.pMultisampleState = &l_multisample_state;
+        l_pipeline_graphics_create_info.pViewportState = &l_viewport_state;
+
+        if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
+        {
+            l_pipeline_graphics_create_info.pDepthStencilState = &l_depthstencil_state;
+        }
+        l_pipeline_graphics_create_info.pDynamicState = &l_dynamicstates;
+
+        vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphics_create_info, NULL, &l_shader.shader));
+
+        l_vertex_input_attributes.free();
+
+        return l_shader;
+    };
+
+    inline void free(const GraphicsDevice& p_device)
+    {
+        vkDestroyPipeline(p_device.device, this->shader, NULL);
+    };
 
   private:
-    static VkFormat get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type);
+    inline static VkFormat get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type)
+    {
+        switch (p_primitive_type)
+        {
+        case PrimitiveSerializedTypes::Type::FLOAT32:
+            return VkFormat::VK_FORMAT_R32_SFLOAT;
+        case PrimitiveSerializedTypes::Type::FLOAT32_2:
+            return VkFormat::VK_FORMAT_R32G32_SFLOAT;
+        case PrimitiveSerializedTypes::Type::FLOAT32_3:
+            return VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
+        case PrimitiveSerializedTypes::Type::FLOAT32_4:
+            return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
+        default:
+            abort();
+        }
+    };
 };
 
 #define ShadowShaderUniformBufferParameter_t(Prefix) ShadowShaderUniformBufferParameter_##Prefix
@@ -252,19 +736,52 @@ struct Shader
 namespace ShadowShaderUniformBufferParameter
 {
 template <class ShadowShaderUniformBufferParameter_t(_), class ShadowBuffer_t(_)>
-static ShadowShaderUniformBufferParameter_t(_) allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                        const Token(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory);
+inline static ShadowShaderUniformBufferParameter_t(_) allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
+                                                               const Token(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory)
+{
+    ShadowShaderUniformBufferParameter_t(_) l_shader_unifor_buffer_parameter;
+    VkDescriptorSetAllocateInfo l_allocate_info{};
+    l_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    l_allocate_info.descriptorPool = p_graphics_device.shaderparameter_pool.descriptor_pool;
+    l_allocate_info.descriptorSetCount = 1;
+    l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
+
+    ShadowShaderUniformBufferParameter_c_set_memory(&l_shader_unifor_buffer_parameter, p_buffer_memory_token);
+    vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter)));
+
+    VkDescriptorBufferInfo l_descriptor_buffer_info;
+    l_descriptor_buffer_info.buffer = ShadowBuffer_c_get_buffer(&p_buffer_memory);
+    l_descriptor_buffer_info.offset = 0;
+    l_descriptor_buffer_info.range = ShadowBuffer_c_get_size(&p_buffer_memory);
+
+    VkWriteDescriptorSet l_write_descriptor_set{};
+    l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    l_write_descriptor_set.dstSet = ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter);
+    l_write_descriptor_set.descriptorCount = 1;
+    l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    l_write_descriptor_set.pBufferInfo = &l_descriptor_buffer_info;
+
+    vkUpdateDescriptorSets(p_graphics_device.device, 1, &l_write_descriptor_set, 0, NULL);
+
+    return l_shader_unifor_buffer_parameter;
 };
+}; // namespace ShadowShaderUniformBufferParameter
 
 struct ShaderUniformBufferHostParameter
 {
     VkDescriptorSet descriptor_set;
     Token(BufferHost) memory;
 
-    static ShaderUniformBufferHostParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory_token,
-                                                     const BufferHost& p_buffer_memory);
+    inline static ShaderUniformBufferHostParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferHost) p_buffer_memory_token,
+                                                            const BufferHost& p_buffer_memory)
+    {
+        return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferHostParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
+    };
 
-    void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device);
+    inline void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device)
+    {
+        vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
+    };
 };
 
 struct ShaderUniformBufferGPUParameter
@@ -272,10 +789,16 @@ struct ShaderUniformBufferGPUParameter
     VkDescriptorSet descriptor_set;
     Token(BufferGPU) memory;
 
-    static ShaderUniformBufferGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferGPU) p_buffer_memory_token,
-                                                    const BufferGPU& p_buffer_memory);
+    inline static ShaderUniformBufferGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(BufferGPU) p_buffer_memory_token,
+                                                           const BufferGPU& p_buffer_memory)
+    {
+        return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferGPUParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
+    };
 
-    void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device);
+    inline void ShadowShaderUniformBufferParameter_func_method_free(const GraphicsDevice& p_graphics_device)
+    {
+        vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
+    };
 };
 
 struct ShaderTextureGPUParameter
@@ -283,10 +806,40 @@ struct ShaderTextureGPUParameter
     VkDescriptorSet descriptor_set;
     Token(TextureGPU) texture;
 
-    static ShaderTextureGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(TextureGPU) p_texture_token,
-                                              const TextureGPU& p_texture);
+    inline static ShaderTextureGPUParameter allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout, const Token(TextureGPU) p_texture_token,
+                                                     const TextureGPU& p_texture)
+    {
+        ShaderTextureGPUParameter l_shader_texture_gpu_parameter;
+        VkDescriptorSetAllocateInfo l_allocate_info{};
+        l_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        l_allocate_info.descriptorPool = p_graphics_device.shaderparameter_pool.descriptor_pool;
+        l_allocate_info.descriptorSetCount = 1;
+        l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
 
-    void free(const GraphicsDevice& p_graphics_device);
+        l_shader_texture_gpu_parameter.texture = p_texture_token;
+        vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_texture_gpu_parameter.descriptor_set));
+
+        VkDescriptorImageInfo l_descriptor_image_info;
+        l_descriptor_image_info.imageView = p_texture.ImageView;
+        l_descriptor_image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        l_descriptor_image_info.sampler = p_graphics_device.texture_samplers.Default;
+
+        VkWriteDescriptorSet l_write_descriptor_set{};
+        l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        l_write_descriptor_set.dstSet = l_shader_texture_gpu_parameter.descriptor_set;
+        l_write_descriptor_set.descriptorCount = 1;
+        l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        l_write_descriptor_set.pImageInfo = &l_descriptor_image_info;
+
+        vkUpdateDescriptorSets(p_graphics_device.device, 1, &l_write_descriptor_set, 0, NULL);
+
+        return l_shader_texture_gpu_parameter;
+    };
+
+    inline void free(const GraphicsDevice& p_graphics_device)
+    {
+        vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
+    };
 };
 
 struct ShaderParameter
@@ -362,632 +915,6 @@ struct GraphicsHeap2
         this->shader_texture_gpu_parameters.free();
         this->material_parameters.free();
     };
-};
-
-inline ShaderLayoutParameters ShaderLayoutParameters::allocate(gc_t const p_device)
-{
-    ShaderLayoutParameters l_shader_layout_parameters;
-    l_shader_layout_parameters.parameter_set = Binding0{l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, (uint32)0),
-                                                        l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, (uint32)0),
-                                                        l_shader_layout_parameters.create_layout(p_device, ShaderLayoutParameterType::TEXTURE_FRAGMENT, (uint32)0)};
-    return l_shader_layout_parameters;
-};
-
-inline void ShaderLayoutParameters::free(gc_t const p_device)
-{
-    vkDestroyDescriptorSetLayout(p_device, this->parameter_set.uniformbuffer_vertex_layout, NULL);
-    vkDestroyDescriptorSetLayout(p_device, this->parameter_set.uniformbuffer_fragment_vertex_layout, NULL);
-    vkDestroyDescriptorSetLayout(p_device, this->parameter_set.texture_fragment_layout, NULL);
-};
-
-inline VkDescriptorSetLayout ShaderLayoutParameters::get_descriptorset_layout(const ShaderLayoutParameterType p_shader_layout_parameter_type) const
-{
-    switch (p_shader_layout_parameter_type)
-    {
-    case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX:
-        return this->parameter_set.uniformbuffer_vertex_layout;
-    case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT:
-        return this->parameter_set.uniformbuffer_fragment_vertex_layout;
-    case ShaderLayoutParameterType::TEXTURE_FRAGMENT:
-        return this->parameter_set.texture_fragment_layout;
-    default:
-        abort();
-    }
-};
-
-inline VkDescriptorSetLayout ShaderLayoutParameters::create_layout(gc_t const p_device, const ShaderLayoutParameterType p_shader_layout_parameter_type, const uint32 p_shader_binding)
-{
-    VkDescriptorType l_descriptor_type;
-    VkShaderStageFlags l_shader_stage;
-    switch (p_shader_layout_parameter_type)
-    {
-    case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX:
-        l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-        break;
-    case ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT:
-        l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT | VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-        break;
-    case ShaderLayoutParameterType::TEXTURE_FRAGMENT:
-        l_descriptor_type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        l_shader_stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-        break;
-    default:
-        abort();
-    }
-
-    VkDescriptorSetLayoutBinding l_binding = this->create_binding(p_shader_binding, l_descriptor_type, l_shader_stage);
-
-    VkDescriptorSetLayoutCreateInfo l_descriptorset_layot_create{};
-    l_descriptorset_layot_create.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    l_descriptorset_layot_create.bindingCount = 1;
-    l_descriptorset_layot_create.pBindings = &l_binding;
-
-    VkDescriptorSetLayout l_layout;
-    vk_handle_result(vkCreateDescriptorSetLayout(p_device, &l_descriptorset_layot_create, NULL, &l_layout));
-    return l_layout;
-};
-
-inline VkDescriptorSetLayoutBinding ShaderLayoutParameters::create_binding(const uint32 p_shader_binding, const VkDescriptorType p_descriptor_type, const VkShaderStageFlags p_shader_stage)
-{
-    VkDescriptorSetLayoutBinding l_camera_matrices_layout_binding{};
-    l_camera_matrices_layout_binding.binding = p_shader_binding;
-    l_camera_matrices_layout_binding.descriptorCount = 1;
-    l_camera_matrices_layout_binding.descriptorType = p_descriptor_type;
-    l_camera_matrices_layout_binding.stageFlags = p_shader_stage;
-    l_camera_matrices_layout_binding.pImmutableSamplers = nullptr;
-    return l_camera_matrices_layout_binding;
-};
-
-inline ShaderParameterPool ShaderParameterPool::allocate(const gc_t p_device, const uimax p_max_sets)
-{
-    VkDescriptorPoolSize l_types{};
-    l_types.descriptorCount = 4;
-
-    VkDescriptorPoolCreateInfo l_descriptor_pool_create_info{};
-    l_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    l_descriptor_pool_create_info.poolSizeCount = 1;
-    l_descriptor_pool_create_info.pPoolSizes = &l_types;
-    l_descriptor_pool_create_info.flags = VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    l_descriptor_pool_create_info.maxSets = (uint32_t)p_max_sets;
-
-    ShaderParameterPool l_shader_parameter_pool;
-    vk_handle_result(vkCreateDescriptorPool(p_device, &l_descriptor_pool_create_info, NULL, &l_shader_parameter_pool.descriptor_pool));
-    return l_shader_parameter_pool;
-};
-
-inline void ShaderParameterPool::free(const gc_t p_device)
-{
-    vkDestroyDescriptorPool(p_device, this->descriptor_pool, NULL);
-};
-
-inline TextureSamplers TextureSamplers::allocate(const gc_t p_device)
-{
-    TextureSamplers l_samplers;
-
-    VkSamplerCreateInfo l_sampler_create_info{};
-    l_sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    l_sampler_create_info.magFilter = VkFilter::VK_FILTER_NEAREST;
-    l_sampler_create_info.minFilter = VkFilter::VK_FILTER_NEAREST;
-    l_sampler_create_info.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    l_sampler_create_info.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    l_sampler_create_info.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    l_sampler_create_info.borderColor = VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    l_sampler_create_info.unnormalizedCoordinates = 0;
-    l_sampler_create_info.compareEnable = false;
-    l_sampler_create_info.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
-    l_sampler_create_info.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    l_sampler_create_info.mipLodBias = 0.0f;
-    l_sampler_create_info.maxLod = 0.0f;
-    l_sampler_create_info.minLod = 0.0f;
-
-    vk_handle_result(vkCreateSampler(p_device, &l_sampler_create_info, NULL, &l_samplers.Default));
-    return l_samplers;
-};
-
-inline void TextureSamplers::free(const gc_t p_device)
-{
-    vkDestroySampler(p_device, this->Default, NULL);
-};
-
-inline GraphicsDevice GraphicsDevice::allocate(GPUInstance& p_instance)
-{
-    GraphicsDevice l_graphics_device;
-    l_graphics_device.graphics_card = p_instance.graphics_card;
-    l_graphics_device.device = p_instance.logical_device;
-
-    vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family, 0, &l_graphics_device.graphics_queue);
-
-    l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family);
-    l_graphics_device.command_buffer = l_graphics_device.command_pool.allocate_command_buffer(l_graphics_device.device, l_graphics_device.graphics_queue);
-
-    l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000);
-    l_graphics_device.shaderlayout_parameters = ShaderLayoutParameters::allocate(l_graphics_device.device);
-
-    l_graphics_device.texture_samplers = TextureSamplers::allocate(l_graphics_device.device);
-
-    return l_graphics_device;
-};
-
-inline void GraphicsDevice::free()
-{
-    this->command_pool.free_command_buffer(this->device, this->command_buffer);
-    this->command_pool.free(this->device);
-
-    this->shaderparameter_pool.free(this->device);
-    this->shaderlayout_parameters.free(this->device);
-
-    this->texture_samplers.free(this->device);
-};
-
-inline TextureGPU TextureGPU::allocate(BufferMemory& p_buffer_memory, const ImageFormat& p_image_format)
-{
-    TextureGPU l_texture_gpu;
-    l_texture_gpu.Image = BufferAllocatorComposition::allocate_imagegpu_and_push_creation_event(p_buffer_memory.allocator, p_buffer_memory.events, p_image_format);
-
-    ImageGPU& l_image_gpu = p_buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image);
-
-    VkImageViewCreateInfo l_imageview_create_info{};
-    l_imageview_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    l_imageview_create_info.image = l_image_gpu.image;
-    switch (p_image_format.imageType)
-    {
-    case VkImageType::VK_IMAGE_TYPE_2D:
-        l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
-        break;
-    default:
-        abort();
-    }
-    l_imageview_create_info.format = p_image_format.format;
-    l_imageview_create_info.subresourceRange = VkImageSubresourceRange{p_image_format.imageAspect, 0, (uint32_t)p_image_format.mipLevels, 0, (uint32_t)p_image_format.arrayLayers};
-
-    vk_handle_result(vkCreateImageView(p_buffer_memory.allocator.device.device, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
-
-    return l_texture_gpu;
-};
-
-inline void TextureGPU::free(BufferMemory& p_buffer_memory)
-{
-    vkDestroyImageView(p_buffer_memory.allocator.device.device, this->ImageView, NULL);
-    BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, this->Image);
-};
-
-template <uint8 AttachmentCount> inline RenderPass RenderPass::allocate(const GraphicsDevice& p_device, const SliceN<RenderPassAttachment, AttachmentCount>& p_attachments)
-{
-
-#if __DEBUG
-    assert_true(AttachmentCount >= 1);
-#endif
-
-    VkAttachmentDescription l_attachments_raw[AttachmentCount];
-    Slice<VkAttachmentDescription> l_attachments = Slice<VkAttachmentDescription>::build_memory_elementnb(l_attachments_raw, AttachmentCount);
-
-    VkAttachmentReference l_color_attachments_ref_raw[AttachmentCount];
-    Slice<VkAttachmentReference> l_color_attachments_ref = Slice<VkAttachmentReference>::build_memory_elementnb(l_color_attachments_ref_raw, AttachmentCount);
-    uint8 l_color_attachments_ref_count = 0;
-
-    VkAttachmentReference l_depth_attachment_reference;
-
-    VkSubpassDescription l_subpass = VkSubpassDescription{};
-
-    for (loop(i, 0, AttachmentCount))
-    {
-
-        VkAttachmentDescription& l_attachment_description = l_attachments.get(i);
-        l_attachment_description = VkAttachmentDescription{};
-        l_attachment_description.format = p_attachments.get(i).image_format.format;
-        l_attachment_description.samples = p_attachments.get(i).image_format.samples;
-        l_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-        l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-        l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
-        l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-        l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-
-        if (p_attachments.get(i).type == AttachmentType::KHR)
-        {
-            l_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        }
-        else
-        {
-            l_attachment_description.finalLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_attachments.get(i).image_format.imageUsage);
-        }
-
-        switch (p_attachments.get(i).type)
-        {
-        case AttachmentType::COLOR:
-        {
-            VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
-            l_attachment_reference.attachment = (uint32)i;
-            l_attachment_reference.layout = l_attachment_description.finalLayout;
-            l_color_attachments_ref_count += 1;
-        }
-        break;
-        case AttachmentType::KHR:
-        {
-            VkAttachmentReference& l_attachment_reference = l_color_attachments_ref.get(l_color_attachments_ref_count);
-            l_attachment_reference.attachment = (uint32)i;
-            l_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
-            l_color_attachments_ref_count += 1;
-        }
-        break;
-        case AttachmentType::DEPTH:
-        {
-            l_depth_attachment_reference = VkAttachmentReference{};
-            l_depth_attachment_reference.attachment = (uint32)i;
-            l_depth_attachment_reference.layout = l_attachment_description.finalLayout;
-            l_subpass.pDepthStencilAttachment = &l_depth_attachment_reference;
-        }
-        break;
-        }
-    }
-
-    l_subpass.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
-    l_subpass.colorAttachmentCount = l_color_attachments_ref_count;
-    l_subpass.pColorAttachments = l_color_attachments_ref.Begin;
-
-    VkRenderPassCreateInfo l_renderpass_create_info{};
-    l_renderpass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    l_renderpass_create_info.attachmentCount = (uint32)l_attachments.Size;
-    l_renderpass_create_info.pAttachments = l_attachments.Begin;
-    l_renderpass_create_info.subpassCount = 1;
-    l_renderpass_create_info.pSubpasses = &l_subpass;
-
-    RenderPass l_render_pass_object;
-
-    vk_handle_result(vkCreateRenderPass(p_device.device, &l_renderpass_create_info, NULL, &l_render_pass_object.render_pass));
-    return l_render_pass_object;
-};
-
-inline void RenderPass::free(const GraphicsDevice& p_device)
-{
-    vkDestroyRenderPass(p_device.device, this->render_pass, NULL);
-};
-
-template <uint32 AttachmentCount>
-inline GraphicsPass GraphicsPass::allocate(const TransferDevice& p_transfer_device, const GraphicsDevice& p_graphics_device, const Token(Slice<Token(TextureGPU)>) p_allocated_attachment_textures,
-                                           const SliceN<RenderPassAttachment, AttachmentCount>& p_render_pass_attachments, const VkImageView* p_attachment_image_views)
-{
-
-#if __DEBUG
-    v3ui l_extend = p_render_pass_attachments.get(0).image_format.extent;
-    for (loop(i, 1, AttachmentCount))
-    {
-        assert_true(p_render_pass_attachments.get(i).image_format.extent == l_extend);
-    }
-#endif
-
-    RenderPass l_render_pass = RenderPass::allocate<AttachmentCount>(p_graphics_device, p_render_pass_attachments);
-
-    VkFramebufferCreateInfo l_framebuffer_create{};
-    l_framebuffer_create.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    l_framebuffer_create.attachmentCount = AttachmentCount;
-    l_framebuffer_create.pAttachments = p_attachment_image_views;
-    l_framebuffer_create.layers = 1;
-    l_framebuffer_create.width = p_render_pass_attachments.get(0).image_format.extent.x;
-    l_framebuffer_create.height = p_render_pass_attachments.get(0).image_format.extent.y;
-    l_framebuffer_create.renderPass = l_render_pass.render_pass;
-
-    GraphicsPass l_graphics_pass;
-
-#if __DEBUG
-    l_graphics_pass.attachement_layout = Span<RenderPassAttachment>::allocate(AttachmentCount);
-    l_graphics_pass.attachement_layout.slice.copy_memory_at_index(0, slice_from_slicen(&p_render_pass_attachments));
-#endif
-    vk_handle_result(vkCreateFramebuffer(p_transfer_device.device, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
-
-    l_graphics_pass.attachment_textures = p_allocated_attachment_textures;
-    l_graphics_pass.render_pass = l_render_pass;
-
-    return l_graphics_pass;
-};
-
-inline void GraphicsPass::free(const GraphicsDevice& p_graphics_device)
-{
-    this->render_pass.free(p_graphics_device);
-
-    vkDestroyFramebuffer(p_graphics_device.device, this->frame_buffer, NULL);
-
-#if __DEBUG
-    this->attachement_layout.free();
-#endif
-};
-
-inline ShaderLayout ShaderLayout::allocate(const GraphicsDevice& p_device, const Span<ShaderLayoutParameterType>& in_shaderlayout_parameter_types,
-                                           const Span<VertexInputParameter>& in_vertex_input_layout, const uimax in_vertex_element_size)
-{
-    VkPipelineLayoutCreateInfo l_pipeline_create_info{};
-    l_pipeline_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-
-    Span<VkDescriptorSetLayout> l_descriptor_set_layouts = Span<VkDescriptorSetLayout>::allocate(in_shaderlayout_parameter_types.Capacity);
-
-    for (loop(i, 0, in_shaderlayout_parameter_types.Capacity))
-    {
-        l_descriptor_set_layouts.get(i) = p_device.shaderlayout_parameters.get_descriptorset_layout(in_shaderlayout_parameter_types.get(i));
-    }
-
-    l_pipeline_create_info.setLayoutCount = (uint32_t)l_descriptor_set_layouts.Capacity;
-    l_pipeline_create_info.pSetLayouts = l_descriptor_set_layouts.Memory;
-
-    ShaderLayout l_shader_layout;
-    l_shader_layout.shader_layout_parameter_types = in_shaderlayout_parameter_types;
-    l_shader_layout.vertex_input_layout = in_vertex_input_layout;
-    l_shader_layout.vertex_element_size = in_vertex_element_size;
-    vk_handle_result(vkCreatePipelineLayout(p_device.device, &l_pipeline_create_info, NULL, &l_shader_layout.layout));
-
-    l_descriptor_set_layouts.free();
-
-    return l_shader_layout;
-};
-
-inline void ShaderLayout::free(const GraphicsDevice& p_device)
-{
-    vkDestroyPipelineLayout(p_device.device, this->layout, NULL);
-    this->shader_layout_parameter_types.free();
-    this->vertex_input_layout.free();
-};
-
-inline ShaderModule ShaderModule::allocate(const GraphicsDevice& p_graphics_device, const Slice<int8>& p_shader_compiled_str)
-{
-    VkShaderModuleCreateInfo l_shader_module_create_info{};
-    l_shader_module_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    l_shader_module_create_info.codeSize = p_shader_compiled_str.Size;
-    l_shader_module_create_info.pCode = (uint32_t*)p_shader_compiled_str.Begin;
-
-    ShaderModule l_shader_module;
-    vk_handle_result(vkCreateShaderModule(p_graphics_device.device, &l_shader_module_create_info, NULL, &l_shader_module.module));
-    return l_shader_module;
-};
-
-inline ShaderModule ShaderModule::build_default()
-{
-    return ShaderModule{NULL};
-};
-
-inline void ShaderModule::free(const GraphicsDevice& p_graphics_device)
-{
-    vkDestroyShaderModule(p_graphics_device.device, this->module, NULL);
-};
-
-inline Shader Shader::allocate(const GraphicsDevice& p_device, const ShaderAllocateInfo& p_shader_allocate_info)
-{
-    Shader l_shader;
-    l_shader.layout = p_shader_allocate_info.shader_layout;
-
-    Span<VkVertexInputAttributeDescription> l_vertex_input_attributes = Span<VkVertexInputAttributeDescription>::allocate(p_shader_allocate_info.shader_layout.vertex_input_layout.Capacity);
-
-    VkGraphicsPipelineCreateInfo l_pipeline_graphics_create_info{};
-    l_pipeline_graphics_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    l_pipeline_graphics_create_info.layout = p_shader_allocate_info.shader_layout.layout;
-    l_pipeline_graphics_create_info.renderPass = p_shader_allocate_info.graphics_pass.render_pass.render_pass;
-
-    VkPipelineInputAssemblyStateCreateInfo l_inputassembly_state{};
-    l_inputassembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    l_inputassembly_state.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    l_inputassembly_state.primitiveRestartEnable = 0;
-
-    VkPipelineRasterizationStateCreateInfo l_rasterization_state{};
-    l_rasterization_state.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    l_rasterization_state.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
-    l_rasterization_state.cullMode = VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
-    l_rasterization_state.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    l_rasterization_state.lineWidth = 1.0f;
-    l_rasterization_state.depthClampEnable = 0;
-    l_rasterization_state.rasterizerDiscardEnable = 0;
-    l_rasterization_state.depthClampEnable = 0;
-
-    VkPipelineColorBlendAttachmentState l_blendattachment_state{};
-    l_blendattachment_state.colorWriteMask = 0xf;
-    l_blendattachment_state.blendEnable = 0;
-    VkPipelineColorBlendStateCreateInfo l_blendattachment_state_create{};
-    l_blendattachment_state_create.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    l_blendattachment_state_create.attachmentCount = 1;
-    l_blendattachment_state_create.pAttachments = &l_blendattachment_state;
-
-    VkPipelineViewportStateCreateInfo l_viewport_state{};
-    l_viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    l_viewport_state.viewportCount = 1;
-    l_viewport_state.scissorCount = 1;
-
-    VkDynamicState l_dynamicstates_enabled[2];
-    l_dynamicstates_enabled[0] = VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT;
-    l_dynamicstates_enabled[1] = VkDynamicState::VK_DYNAMIC_STATE_SCISSOR;
-    VkPipelineDynamicStateCreateInfo l_dynamicstates{};
-    l_dynamicstates.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    l_dynamicstates.dynamicStateCount = 2;
-    l_dynamicstates.pDynamicStates = l_dynamicstates_enabled;
-
-    VkPipelineDepthStencilStateCreateInfo l_depthstencil_state{};
-    l_depthstencil_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
-    {
-        l_depthstencil_state.depthTestEnable = 1;
-        l_depthstencil_state.depthWriteEnable = p_shader_allocate_info.shader_configuration.zwrite;
-        l_depthstencil_state.depthCompareOp = (VkCompareOp)p_shader_allocate_info.shader_configuration.ztest;
-        l_depthstencil_state.depthBoundsTestEnable = 0;
-
-        VkStencilOpState l_back{};
-        l_back.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
-        l_back.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
-        l_back.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
-        l_depthstencil_state.back = l_back;
-        l_depthstencil_state.front = l_back;
-        l_depthstencil_state.stencilTestEnable = 0;
-    }
-
-    VkPipelineMultisampleStateCreateInfo l_multisample_state{};
-    l_multisample_state.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    l_multisample_state.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-
-    for (loop(i, 0, l_vertex_input_attributes.Capacity))
-    {
-        const ShaderLayout::VertexInputParameter& l_vertex_input_parameter = p_shader_allocate_info.shader_layout.vertex_input_layout.get(i);
-        l_vertex_input_attributes.get(i) = VkVertexInputAttributeDescription{(uint32_t)i, 0, get_primitivetype_format(l_vertex_input_parameter.type), (uint32_t)l_vertex_input_parameter.offset};
-    }
-
-    VkVertexInputBindingDescription l_vertex_input_binding{0, (uint32_t)p_shader_allocate_info.shader_layout.vertex_element_size, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX};
-
-    VkPipelineVertexInputStateCreateInfo l_vertex_input_create{};
-    l_vertex_input_create.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    l_vertex_input_create.vertexBindingDescriptionCount = 1;
-    l_vertex_input_create.pVertexBindingDescriptions = &l_vertex_input_binding;
-    l_vertex_input_create.pVertexAttributeDescriptions = l_vertex_input_attributes.Memory;
-    l_vertex_input_create.vertexAttributeDescriptionCount = (uint32_t)l_vertex_input_attributes.Capacity;
-
-    VkPipelineShaderStageCreateInfo l_shader_stages[2]{};
-    Slice<VkPipelineShaderStageCreateInfo> l_shader_stages_slice = Slice<VkPipelineShaderStageCreateInfo>::build_begin_end(l_shader_stages, 0, 0);
-
-    if (p_shader_allocate_info.vertex_shader.module != NULL)
-    {
-        l_shader_stages_slice.Size += 1;
-        VkPipelineShaderStageCreateInfo& l_vertex_stage = l_shader_stages_slice.get(0);
-        l_vertex_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_vertex_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-        l_vertex_stage.module = p_shader_allocate_info.vertex_shader.module;
-        l_vertex_stage.pName = "main";
-    }
-
-    if (p_shader_allocate_info.fragment_shader.module != NULL)
-    {
-        l_shader_stages_slice.Size += 1;
-        VkPipelineShaderStageCreateInfo& l_fragment_stage = l_shader_stages_slice.get(1);
-        l_fragment_stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_fragment_stage.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-        l_fragment_stage.module = p_shader_allocate_info.fragment_shader.module;
-        l_fragment_stage.pName = "main";
-    };
-
-    l_pipeline_graphics_create_info.stageCount = (uint32_t)l_shader_stages_slice.Size;
-    l_pipeline_graphics_create_info.pStages = l_shader_stages;
-
-    l_pipeline_graphics_create_info.pVertexInputState = &l_vertex_input_create;
-    l_pipeline_graphics_create_info.pInputAssemblyState = &l_inputassembly_state;
-    l_pipeline_graphics_create_info.pRasterizationState = &l_rasterization_state;
-    l_pipeline_graphics_create_info.pColorBlendState = &l_blendattachment_state_create;
-    l_pipeline_graphics_create_info.pMultisampleState = &l_multisample_state;
-    l_pipeline_graphics_create_info.pViewportState = &l_viewport_state;
-
-    if (p_shader_allocate_info.shader_configuration.ztest != ShaderConfiguration::CompareOp::Invalid)
-    {
-        l_pipeline_graphics_create_info.pDepthStencilState = &l_depthstencil_state;
-    }
-    l_pipeline_graphics_create_info.pDynamicState = &l_dynamicstates;
-
-    vk_handle_result(vkCreateGraphicsPipelines(p_device.device, VkPipelineCache{}, 1, &l_pipeline_graphics_create_info, NULL, &l_shader.shader));
-
-    l_vertex_input_attributes.free();
-
-    return l_shader;
-};
-
-inline void Shader::free(const GraphicsDevice& p_device)
-{
-    vkDestroyPipeline(p_device.device, this->shader, NULL);
-};
-
-inline VkFormat Shader::get_primitivetype_format(const PrimitiveSerializedTypes::Type p_primitive_type)
-{
-    switch (p_primitive_type)
-    {
-    case PrimitiveSerializedTypes::Type::FLOAT32:
-        return VkFormat::VK_FORMAT_R32_SFLOAT;
-    case PrimitiveSerializedTypes::Type::FLOAT32_2:
-        return VkFormat::VK_FORMAT_R32G32_SFLOAT;
-    case PrimitiveSerializedTypes::Type::FLOAT32_3:
-        return VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-    case PrimitiveSerializedTypes::Type::FLOAT32_4:
-        return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
-    default:
-        abort();
-    }
-};
-
-template <class ShadowShaderUniformBufferParameter_t(_), class ShadowBuffer_t(_)>
-inline ShadowShaderUniformBufferParameter_t(_) ShadowShaderUniformBufferParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                            const Token(ShadowBuffer_t(_)) p_buffer_memory_token, const ShadowBuffer_t(_) & p_buffer_memory)
-{
-    ShadowShaderUniformBufferParameter_t(_) l_shader_unifor_buffer_parameter;
-    VkDescriptorSetAllocateInfo l_allocate_info{};
-    l_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    l_allocate_info.descriptorPool = p_graphics_device.shaderparameter_pool.descriptor_pool;
-    l_allocate_info.descriptorSetCount = 1;
-    l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
-
-    ShadowShaderUniformBufferParameter_c_set_memory(&l_shader_unifor_buffer_parameter, p_buffer_memory_token);
-    vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter)));
-
-    VkDescriptorBufferInfo l_descriptor_buffer_info;
-    l_descriptor_buffer_info.buffer = ShadowBuffer_c_get_buffer(&p_buffer_memory);
-    l_descriptor_buffer_info.offset = 0;
-    l_descriptor_buffer_info.range = ShadowBuffer_c_get_size(&p_buffer_memory);
-
-    VkWriteDescriptorSet l_write_descriptor_set{};
-    l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    l_write_descriptor_set.dstSet = ShadowShaderUniformBufferParameter_c_get_descriptor_set(&l_shader_unifor_buffer_parameter);
-    l_write_descriptor_set.descriptorCount = 1;
-    l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    l_write_descriptor_set.pBufferInfo = &l_descriptor_buffer_info;
-
-    vkUpdateDescriptorSets(p_graphics_device.device, 1, &l_write_descriptor_set, 0, NULL);
-
-    return l_shader_unifor_buffer_parameter;
-};
-
-inline ShaderUniformBufferHostParameter ShaderUniformBufferHostParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                   const Token(BufferHost) p_buffer_memory_token, const BufferHost& p_buffer_memory)
-{
-    return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferHostParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
-};
-
-inline void ShaderUniformBufferHostParameter::free(const GraphicsDevice& p_graphics_device)
-{
-    vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
-};
-
-inline ShaderUniformBufferGPUParameter ShaderUniformBufferGPUParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                                 const Token(BufferGPU) p_buffer_memory_token, const BufferGPU& p_buffer_memory)
-{
-    return ShadowShaderUniformBufferParameter::allocate<ShaderUniformBufferGPUParameter>(p_graphics_device, p_descriptor_set_layout, p_buffer_memory_token, p_buffer_memory);
-};
-
-inline void ShaderUniformBufferGPUParameter::free(const GraphicsDevice& p_graphics_device)
-{
-    vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
-};
-
-inline ShaderTextureGPUParameter ShaderTextureGPUParameter::allocate(const GraphicsDevice& p_graphics_device, const VkDescriptorSetLayout p_descriptor_set_layout,
-                                                                     const Token(TextureGPU) p_texture_token, const TextureGPU& p_texture)
-{
-    ShaderTextureGPUParameter l_shader_texture_gpu_parameter;
-    VkDescriptorSetAllocateInfo l_allocate_info{};
-    l_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    l_allocate_info.descriptorPool = p_graphics_device.shaderparameter_pool.descriptor_pool;
-    l_allocate_info.descriptorSetCount = 1;
-    l_allocate_info.pSetLayouts = &p_descriptor_set_layout;
-
-    l_shader_texture_gpu_parameter.texture = p_texture_token;
-    vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_texture_gpu_parameter.descriptor_set));
-
-    VkDescriptorImageInfo l_descriptor_image_info;
-    l_descriptor_image_info.imageView = p_texture.ImageView;
-    l_descriptor_image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    l_descriptor_image_info.sampler = p_graphics_device.texture_samplers.Default;
-
-    VkWriteDescriptorSet l_write_descriptor_set{};
-    l_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    l_write_descriptor_set.dstSet = l_shader_texture_gpu_parameter.descriptor_set;
-    l_write_descriptor_set.descriptorCount = 1;
-    l_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    l_write_descriptor_set.pImageInfo = &l_descriptor_image_info;
-
-    vkUpdateDescriptorSets(p_graphics_device.device, 1, &l_write_descriptor_set, 0, NULL);
-
-    return l_shader_texture_gpu_parameter;
-};
-
-inline void ShaderTextureGPUParameter::free(const GraphicsDevice& p_graphics_device)
-{
-    vk_handle_result(vkFreeDescriptorSets(p_graphics_device.device, p_graphics_device.shaderparameter_pool.descriptor_pool, 1, &this->descriptor_set));
 };
 
 struct GraphicsAllocator2

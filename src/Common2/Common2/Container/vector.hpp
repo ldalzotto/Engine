@@ -324,10 +324,10 @@ template <class ElementType> struct Vector
 #define sv_func_push_back_element(p_element) push_back_element(p_element)
 #define sv_func_to_slice() to_slice()
 
-#define sv_c_get_size(p_shadow_vector) (p_shadow_vector)->get_size()
-#define sv_c_get(p_shadow_vector, p_index) (p_shadow_vector)->get(p_index)
-#define sv_c_erase_element_at_always(p_shadow_vector, p_index) (p_shadow_vector)->erase_element_at_always(p_index)
-#define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector)->push_back_element(p_element)
-#define sv_c_to_slice(p_shadow_vector) (p_shadow_vector)->to_slice()
+#define sv_c_get_size(p_shadow_vector) (p_shadow_vector).sv_func_get_size()
+#define sv_c_get(p_shadow_vector, p_index) (p_shadow_vector).sv_func_get(p_index)
+#define sv_c_erase_element_at_always(p_shadow_vector, p_index) (p_shadow_vector).sv_func_erase_element_at_always(p_index)
+#define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector).sv_func_push_back_element(p_element)
+#define sv_c_to_slice(p_shadow_vector) (p_shadow_vector).sv_func_to_slice()
 
 };
