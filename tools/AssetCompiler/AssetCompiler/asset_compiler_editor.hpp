@@ -3,9 +3,15 @@
 #include "QTCommon/qt_common.hpp"
 #include "AssetCompiler/asset_compiler.hpp"
 
+// TODO -> adding comments
+
+/*
+    A Token that identify a single asset compilation inside a AssetCompilationPass
+ */
 struct AssetSingleCompilationToken
 {
     Token(AssetCompilationPass) pass_token;
+    // The single asset compilation is represended by it's index
     uimax index;
 };
 
@@ -100,6 +106,13 @@ struct AssetCompilationThread
     inline int8 has_compilation_events()
     {
         return !this->input_events._data.compilation_passes.empty();
+    };
+
+    inline void sync_wait_for_processing_compilation_events()
+    {
+        while (this->has_compilation_events())
+        {
+        }
     };
 
     inline void push_asset_compilation_pass(const Token(AssetCompilationPass) p_asset_compilation_pass_token, const AssetCompilationPass& p_asset_compilation_pass)
@@ -268,9 +281,14 @@ struct AssetCompilationPassWidget
         return l_widget;
     };
 
-    inline void free()
+    inline void detach()
     {
         this->root->setParent(NULL);
+    };
+
+    inline void free()
+    {
+        this->detach();
         delete this->root;
         this->items.free();
     };
@@ -306,6 +324,51 @@ struct AssetCompilationPassWidget
     };
 };
 
+struct AssetCompilerWidgetHeap
+{
+    Vector<AssetCompilationPassWidget> asset_compilation_passes;
+    Vector<Token(AssetCompilationPass)> compilation_passes;
+
+    inline static AssetCompilerWidgetHeap allocate()
+    {
+        return AssetCompilerWidgetHeap{Vector<AssetCompilationPassWidget>::allocate(0), Vector<Token(AssetCompilationPass)>::allocate(0)};
+    };
+
+    inline void free()
+    {
+#if __DEBUG
+        assert_true(this->asset_compilation_passes.empty());
+        assert_true(this->compilation_passes.empty());
+#endif
+        this->asset_compilation_passes.free();
+        this->compilation_passes.free();
+    };
+
+    inline Token(AssetCompilationPassWidget) allocate_widget(AssetCompilationPassWidget& p_widget, const Token(AssetCompilationPass) p_pass)
+    {
+        this->asset_compilation_passes.push_back_element(p_widget);
+        this->compilation_passes.push_back_element(p_pass);
+        return tk_b(AssetCompilationPassWidget, this->asset_compilation_passes.Size - 1);
+    };
+
+    inline AssetCompilationPassWidget& get_widget(const Token(AssetCompilationPassWidget) p_widget_token)
+    {
+        return this->asset_compilation_passes.get(tk_v(p_widget_token));
+    };
+
+    inline Token(AssetCompilationPass) get_asset_compilation_pass_from_widget(const Token(AssetCompilationPassWidget) p_asset_compilation_pass_widget)
+    {
+        return this->compilation_passes.get(tk_v(p_asset_compilation_pass_widget));
+    };
+
+    inline void free_widget(const Token(AssetCompilationPassWidget) p_widget_token)
+    {
+        this->compilation_passes.erase_element_at_always(tk_v(p_widget_token));
+        this->asset_compilation_passes.get(tk_v(p_widget_token)).free();
+        this->asset_compilation_passes.erase_element_at_always(tk_v(p_widget_token));
+    };
+};
+
 struct AssetCompilationPassViewer
 {
     QWidget* root;
@@ -317,24 +380,28 @@ struct AssetCompilationPassViewer
         QLayoutWidget<QVBoxLayout, QWidget> display_widget;
     } widgets;
 
-    Vector<Token(AssetCompilationPassWidget)> displayed_compilation_passes;
+    struct Callbacks
+    {
+        void* closure;
+        void (*on_asset_compiler_pass_selection_change)(void*);
+    } callbacks;
 
-    Vector<AssetCompilationPassWidget>* asset_compilation_pass_widget_heap;
+    Vector<Token(AssetCompilationPassWidget)> displayed_asset_compilation_pass_widgets;
 
-    inline void allocate(Vector<AssetCompilationPassWidget>& p_asset_compilation_pass_widget_heap)
+    inline void allocate(Callbacks& p_callbacks)
     {
         this->root = new QWidget();
         this->widgets.main_layout = new QHBoxLayout(this->root);
         this->root->setLayout(this->widgets.main_layout);
 
-        this->asset_compilation_pass_widget_heap = &p_asset_compilation_pass_widget_heap;
-        this->displayed_compilation_passes = Vector<Token(AssetCompilationPassWidget)>::allocate(0);
+        this->callbacks = p_callbacks;
+        this->displayed_asset_compilation_pass_widgets = Vector<Token(AssetCompilationPassWidget)>::allocate(0);
 
         QListWidgetItemSelection<Token(AssetCompilationPassWidget)>::Callbacks l_compilation_passes_vector_callbacks;
         l_compilation_passes_vector_callbacks.closure = this;
-        l_compilation_passes_vector_callbacks.on_selection_changed = [](QListWidgetItemSelection<Token(AssetCompilationPassWidget)>* p_widget, void* p_closure) {
+        l_compilation_passes_vector_callbacks.on_selection_changed = [](auto, void* p_closure) {
             AssetCompilationPassViewer* thiz = (AssetCompilationPassViewer*)p_closure;
-            thiz->match_displayed_asset_compilation_with_selected();
+            thiz->callbacks.on_asset_compiler_pass_selection_change(thiz->callbacks.closure);
         };
         this->widgets.compilation_pass_list.allocate(this->root, l_compilation_passes_vector_callbacks);
         this->widgets.compilation_pass_list.root->setSelectionMode(QAbstractItemView::MultiSelection);
@@ -347,47 +414,21 @@ struct AssetCompilationPassViewer
     inline void free()
     {
 #if __DEBUG
-        assert_true(this->displayed_compilation_passes.empty());
+        assert_true(this->displayed_asset_compilation_pass_widgets.empty());
 #endif
-        this->displayed_compilation_passes.free();
+        this->displayed_asset_compilation_pass_widgets.free();
         this->widgets.compilation_pass_list.free();
     };
 
-    inline void add_item(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token, AssetCompilationPassWidget& p_compilation_pass_widget, const Slice<int8>& p_item_name)
+    inline void add_asset_compilation_to_selection(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token, const Slice<int8>& p_item_name)
     {
         QListWidgetItem* l_item = new QListWidgetItem();
         l_item->setText(p_item_name.Begin);
         this->widgets.compilation_pass_list.push_back_element(p_compilation_pass_widget_token, l_item);
     };
 
-    inline void match_displayed_asset_compilation_with_selected()
+    inline void remove_asset_compilation_selection(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token)
     {
-
-        for (loop(i, 0, this->displayed_compilation_passes.Size))
-        {
-            this->asset_compilation_pass_widget_heap->get(tk_v(this->displayed_compilation_passes.get(i))).root->setParent(NULL);
-        }
-        this->displayed_compilation_passes.clear();
-
-        for (loop(i, 0, this->widgets.compilation_pass_list.selected_items.Size))
-        {
-            AssetCompilationPassWidget& l_compilation_pass_widget = this->asset_compilation_pass_widget_heap->get(tk_v(this->widgets.compilation_pass_list.get_selected_item(i)));
-            this->widgets.display_widget.layout->addWidget(l_compilation_pass_widget.root);
-            this->displayed_compilation_passes.push_back_element(this->widgets.compilation_pass_list.get_selected_item(i));
-        }
-    };
-
-    inline void remove_AssetCompilationPassWidget_references(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token)
-    {
-
-        for (loop_reverse(i, 0, this->displayed_compilation_passes.Size))
-        {
-            if (tk_eq(this->displayed_compilation_passes.get(i), p_compilation_pass_widget_token))
-            {
-                this->displayed_compilation_passes.erase_element_at_always(i);
-            }
-        }
-
         for (loop_reverse(i, 0, this->widgets.compilation_pass_list.datas.Size))
         {
             if (tk_eq(this->widgets.compilation_pass_list.datas.get(i), p_compilation_pass_widget_token))
@@ -395,6 +436,50 @@ struct AssetCompilationPassViewer
                 this->widgets.compilation_pass_list.erase_element_at_always(i);
             }
         }
+    };
+
+    inline void remove_asset_compilation_widget(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token)
+    {
+        for (loop_reverse(i, 0, this->displayed_asset_compilation_pass_widgets.Size))
+        {
+            if (tk_eq(this->displayed_asset_compilation_pass_widgets.get(i), p_compilation_pass_widget_token))
+            {
+                this->displayed_asset_compilation_pass_widgets.erase_element_at_always(i);
+            }
+        }
+    };
+
+    inline void remove_asset_compilation_widget_and_selection(const Token(AssetCompilationPassWidget) p_compilation_pass_widget_token)
+    {
+        this->remove_asset_compilation_widget(p_compilation_pass_widget_token);
+        this->remove_asset_compilation_selection(p_compilation_pass_widget_token);
+    };
+
+    inline void remove_and_detach_all_asset_compilation_widgets(AssetCompilerWidgetHeap& p_asset_compiler_widget_heap)
+    {
+        for (loop_reverse(i, 0, this->displayed_asset_compilation_pass_widgets.Size))
+        {
+            Token(AssetCompilationPassWidget) l_widget = this->displayed_asset_compilation_pass_widgets.get(i);
+            p_asset_compiler_widget_heap.get_widget(l_widget).detach();
+            this->displayed_asset_compilation_pass_widgets.erase_element_at_always(i);
+        }
+        this->displayed_asset_compilation_pass_widgets.clear();
+    };
+
+    inline void push_selected_asset_compilations_to_view_widget(AssetCompilerWidgetHeap& p_asset_compiler_widget_heap)
+    {
+        for (loop(i, 0, this->widgets.compilation_pass_list.selected_items.Size))
+        {
+            AssetCompilationPassWidget& l_compilation_pass_widget = p_asset_compiler_widget_heap.get_widget(this->widgets.compilation_pass_list.get_selected_item(i));
+            this->widgets.display_widget.layout->addWidget(l_compilation_pass_widget.root);
+            this->displayed_asset_compilation_pass_widgets.push_back_element(this->widgets.compilation_pass_list.get_selected_item(i));
+        }
+    };
+
+    inline void match_displayed_asset_compilation_with_selected(AssetCompilerWidgetHeap& p_asset_compiler_widget_heap)
+    {
+        this->remove_and_detach_all_asset_compilation_widgets(p_asset_compiler_widget_heap);
+        this->push_selected_asset_compilations_to_view_widget(p_asset_compiler_widget_heap);
     };
 };
 
@@ -419,72 +504,72 @@ struct AssetCompilerWindow
 
     Vector<Token(AssetCompilationPass)> callbacks_asset_compilation_pass_buffer;
 
-    struct WidgetHeap
-    {
-        Vector<AssetCompilationPassWidget> asset_compilation_passes;
-    } widget_heap;
-
-    struct View
-    {
-        // TODO -> move this to the heap as the index is the same as the AssetCompilationPassWidget
-        Vector<Token(AssetCompilationPass)> compilation_passes;
-    } view;
+    AssetCompilerWidgetHeap widget_heap;
 
     inline void allocate(AssetCompilerPassHeap& p_asset_compiler_heap, const Callbacks& p_callbacks)
     {
         this->callbacks_asset_compilation_pass_buffer = Vector<Token(AssetCompilationPass)>::allocate(0);
-        this->view.compilation_passes = Vector<Token(AssetCompilationPass)>::allocate(0);
+        this->widget_heap = AssetCompilerWidgetHeap::allocate();
         this->allocate_widgets();
         this->setup_widget_layout();
         this->setup_widget_events(p_callbacks, p_asset_compiler_heap);
     };
 
-    inline void free(AssetCompilerPassHeap& p_asset_compiler_heap)
+    inline void free()
     {
-        for (loop_reverse(i, 0, this->view.compilation_passes.Size))
-        {
-            p_asset_compiler_heap.free_asset_compiler_pass(this->view.compilation_passes.get(i));
-            this->remove_asset_compilation(i);
-        }
-
-        this->widget_heap.asset_compilation_passes.free();
         this->widgets.asset_compilation_viewer.free();
-        this->view.compilation_passes.free();
+        this->widget_heap.free();
         this->callbacks_asset_compilation_pass_buffer.free();
     };
 
-    inline void set_compilation_asset_result(const AssetSingleCompilationToken p_asset_compilation_token, const int8 p_result)
+    inline void free_compiler_passes(AssetCompilerPassHeap& p_asset_compiler_heap)
     {
-        for (loop(i, 0, this->view.compilation_passes.Size))
+        for (loop_reverse(i, 0, this->widget_heap.compilation_passes.Size))
         {
-            if (tk_eq(this->view.compilation_passes.get(i), p_asset_compilation_token.pass_token))
+            p_asset_compiler_heap.free_asset_compiler_pass(this->widget_heap.compilation_passes.get(i));
+            this->free_asset_compilation_widget(tk_b(AssetCompilationPassWidget, i));
+        }
+    };
+
+    inline void free_with_asset_compiler_passes(AssetCompilerPassHeap& p_asset_compiler_heap)
+    {
+        this->free_compiler_passes(p_asset_compiler_heap);
+        this->free();
+    };
+
+    inline void set_compilation_asset_result(const AssetSingleCompilationToken p_asset_compilation_token, const int8 p_compilation_return)
+    {
+        for (loop(i, 0, this->widget_heap.compilation_passes.Size))
+        {
+            if (tk_eq(this->widget_heap.compilation_passes.get(i), p_asset_compilation_token.pass_token))
             {
-                this->widget_heap.asset_compilation_passes.get(i).set_asset_compilation_result(p_asset_compilation_token.index, p_result);
+                this->widget_heap.asset_compilation_passes.get(i).set_asset_compilation_result(p_asset_compilation_token.index, p_compilation_return);
                 break;
             }
         }
     };
 
-    inline Token(AssetCompilationPass) remove_asset_compilation(const uimax p_index)
+    inline Token(AssetCompilationPass) free_asset_compilation_widget(const Token(AssetCompilationPassWidget) p_widget)
     {
-        Token(AssetCompilationPass) l_return = this->view.compilation_passes.get(p_index);
-        this->view.compilation_passes.erase_element_at_always(p_index);
-
-        this->widgets.asset_compilation_viewer.remove_AssetCompilationPassWidget_references(tk_b(AssetCompilationPassWidget, p_index));
-        this->widget_heap.asset_compilation_passes.get(p_index).free();
-        this->widget_heap.asset_compilation_passes.erase_element_at_always(p_index);
-        return l_return;
+        Token(AssetCompilationPass) l_widget = this->widget_heap.get_asset_compilation_pass_from_widget(p_widget);
+        this->widgets.asset_compilation_viewer.remove_asset_compilation_widget_and_selection(p_widget);
+        this->widget_heap.free_widget(p_widget);
+        return l_widget;
     };
 
-    inline Span<Token<AssetCompilationPass>> remove_all_asset_compilation_pass_widgets()
+    inline void free_all_asset_compilation_pass_widgets_with_passes(AssetCompilerPassHeap& p_asset_compiler_heap)
     {
-        Span<Token<AssetCompilationPass>> l_removed_asset_compilation_passes = Span<Token<AssetCompilationPass>>::allocate(this->widget_heap.asset_compilation_passes.Size);
         for (loop_reverse(i, 0, this->widget_heap.asset_compilation_passes.Size))
         {
-            l_removed_asset_compilation_passes.get(i) = this->remove_asset_compilation(i);
+            p_asset_compiler_heap.free_asset_compiler_pass(this->widget_heap.get_asset_compilation_pass_from_widget(tk_b(AssetCompilationPassWidget, i)));
+            this->free_asset_compilation_widget(tk_b(AssetCompilationPassWidget, i));
         }
         this->widget_heap.asset_compilation_passes.clear();
-        return l_removed_asset_compilation_passes;
+    };
+
+    inline void on_compilation_pass_selection_changed()
+    {
+        this->widgets.asset_compilation_viewer.match_displayed_asset_compilation_with_selected(this->widget_heap);
     };
 
   private:
@@ -501,7 +586,13 @@ struct AssetCompilerWindow
 
         this->widget_heap.asset_compilation_passes = Vector<AssetCompilationPassWidget>::allocate(0);
 
-        this->widgets.asset_compilation_viewer.allocate(this->widget_heap.asset_compilation_passes);
+        AssetCompilationPassViewer::Callbacks l_asset_compilation_pass_viewer_callbacks{};
+        l_asset_compilation_pass_viewer_callbacks.closure = this;
+        l_asset_compilation_pass_viewer_callbacks.on_asset_compiler_pass_selection_change = [](void* p_closure) {
+            AssetCompilerWindow* thiz = (AssetCompilerWindow*)p_closure;
+            thiz->on_compilation_pass_selection_changed();
+        };
+        this->widgets.asset_compilation_viewer.allocate(l_asset_compilation_pass_viewer_callbacks);
         this->widgets.asset_compilation_viewer.root->setParent(this->root);
     };
 
@@ -526,10 +617,8 @@ struct AssetCompilerWindow
                 // this->widgets.main_layout->addWidget(l_compilation_pass_widget.root);
                 AssetCompilationPass& l_asset_compilation_pass = p_asset_compiler_heap.asset_compilation_passes.get(l_pass);
                 l_compilation_pass_widget.feed_with_compilation_pass(l_asset_compilation_pass);
-                this->widget_heap.asset_compilation_passes.push_back_element(l_compilation_pass_widget);
-                this->view.compilation_passes.push_back_element(l_pass);
-                this->widgets.asset_compilation_viewer.add_item(tk_b(AssetCompilationPassWidget, this->widget_heap.asset_compilation_passes.Size - 1), l_compilation_pass_widget,
-                                                                l_asset_compilation_pass.root_path.to_slice());
+                Token(AssetCompilationPassWidget) l_widget_token = this->widget_heap.allocate_widget(l_compilation_pass_widget, l_pass);
+                this->widgets.asset_compilation_viewer.add_asset_compilation_to_selection(l_widget_token, l_asset_compilation_pass.root_path.to_slice());
             }
             this->callbacks_asset_compilation_pass_buffer.clear();
         });
@@ -544,9 +633,10 @@ struct AssetCompilerComposition
 
     inline static void push_selected_assetcompilation_pass_to_thread(AssetCompilerWindow& p_window, AssetCompilerPassHeap& p_heap, AssetCompilationThread& p_thread)
     {
-        for (loop(i, 0, p_window.widgets.asset_compilation_viewer.displayed_compilation_passes.Size))
+        for (loop(i, 0, p_window.widgets.asset_compilation_viewer.displayed_asset_compilation_pass_widgets.Size))
         {
-            Token(AssetCompilationPass) l_asset_compilation_pass = p_window.view.compilation_passes.get(tk_v(p_window.widgets.asset_compilation_viewer.displayed_compilation_passes.get(i)));
+            Token(AssetCompilationPass) l_asset_compilation_pass =
+                p_window.widget_heap.compilation_passes.get(tk_v(p_window.widgets.asset_compilation_viewer.displayed_asset_compilation_pass_widgets.get(i)));
             p_thread.push_asset_compilation_pass(l_asset_compilation_pass, p_heap.asset_compilation_passes.get(l_asset_compilation_pass));
         }
     };
@@ -589,15 +679,8 @@ struct AssetCompilerEditor
         l_asset_compiler_window_cb.closure = this;
         l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
-            while (thiz->compilation_thread.has_compilation_events())
-            {
-            };
-            Span<Token<AssetCompilationPass>> l_removed_compilation_pass = thiz->window.remove_all_asset_compilation_pass_widgets();
-            for (loop(i, 0, l_removed_compilation_pass.Capacity))
-            {
-                thiz->heap.free_asset_compiler_pass(l_removed_compilation_pass.get(i));
-            }
-            l_removed_compilation_pass.free();
+            thiz->compilation_thread.sync_wait_for_processing_compilation_events();
+            thiz->window.free_all_asset_compilation_pass_widgets_with_passes(thiz->heap);
             // TODO -> remove absolute
             AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"),
                                                                                   thiz->asset_folder_root, in_out_asset_compilation_pass);
@@ -624,7 +707,7 @@ struct AssetCompilerEditor
         this->compilation_thread.stop_and_wait();
         AssetCompilerComposition::try_consume_output_thread_events(this->compilation_thread, this->window);
         this->compilation_thread.free();
-        this->window.free(this->heap);
+        this->window.free_with_asset_compiler_passes(this->heap);
         this->heap.free();
     };
 };
