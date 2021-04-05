@@ -22,8 +22,40 @@ struct AssetCompilationThread
     Thread::MainInput thread_input;
 
     ShaderCompiler shader_compiler;
-    int8 ask_exit;
-    int8 is_running;
+
+    struct RunningState_V2
+    {
+        enum class State
+        {
+            UNDEFINED = 0,
+            RUNNING = 1,
+            STOPPED = 2
+        };
+
+        inline static RunningState_V2 build()
+        {
+            RunningState_V2 l_s;
+            l_s.state = State::UNDEFINED;
+            return l_s;
+        };
+
+        inline int8 is_running()
+        {
+            return this->state == State::RUNNING;
+        };
+
+        inline void set_state(const State p_state)
+        {
+#if __DEBUG
+            assert_true(this->state != p_state);
+#endif
+            this->state = p_state;
+        };
+
+      private:
+        State state;
+
+    } running_state_V2;
 
     struct s_input_asset_compilation_pass_event
     {
@@ -57,18 +89,42 @@ struct AssetCompilationThread
         l_thread.input_events = MutexNative<s_input_events>::allocate();
         l_thread.output_result = MutexNative<s_output_result>::allocate();
         l_thread.shader_compiler = ShaderCompiler::allocate();
+        l_thread.running_state_V2 = RunningState_V2::build();
         return l_thread;
     };
 
-    inline void stop_and_free()
+    inline void start()
     {
-        this->stop_and_wait();
-        this->free();
+        this->running_state_V2.set_state(RunningState_V2::State::RUNNING);
+        this->_start();
+    };
+
+    inline void start_if_not_running()
+    {
+        if (!this->running_state_V2.is_running())
+        {
+            this->start();
+        }
+    };
+
+    inline void stop()
+    {
+        this->running_state_V2.set_state(RunningState_V2::State::STOPPED);
+        this->_stop_and_wait();
+    };
+
+    inline void stop_if_running()
+    {
+        if (this->running_state_V2.is_running())
+        {
+            this->stop();
+        }
     };
 
     inline void free()
     {
 #if __DEBUG
+        assert_true(!this->running_state_V2.is_running());
         assert_true(this->input_events._data.compilation_passes.empty());
         assert_true(this->output_result._data.compilation_results.empty());
 #endif
@@ -78,29 +134,6 @@ struct AssetCompilationThread
         this->output_result.free();
         this->output_result._data.compilation_results.free();
         this->shader_compiler.free();
-    };
-
-    inline void start()
-    {
-        this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
-        this->is_running = 1;
-    };
-
-    inline void pause(){
-        // TODO -> implement this
-    };
-
-    inline void unpause(){
-        // TODO -> implement this
-    };
-
-    inline void stop_and_wait()
-    {
-        this->ask_exit = 1;
-        Thread::wait_for_end_and_terminate(this->thread, -1);
-        this->is_running = 0;
     };
 
     inline int8 has_compilation_events()
@@ -118,7 +151,14 @@ struct AssetCompilationThread
     inline void push_asset_compilation_pass(const Token(AssetCompilationPass) p_asset_compilation_pass_token, const AssetCompilationPass& p_asset_compilation_pass)
     {
         this->input_events.acquire([&](s_input_events& p_input_events) {
+            if (this->running_state_V2.is_running() && !this->has_compilation_events())
+            {
+                this->stop();
+            }
+
             p_input_events.compilation_passes.push_back_element(s_input_asset_compilation_pass_event{p_asset_compilation_pass, p_asset_compilation_pass_token});
+
+            this->start_if_not_running();
         });
     };
 
@@ -131,18 +171,15 @@ struct AssetCompilationThread
   private:
     inline int8 _main()
     {
-        while (!this->ask_exit)
+        while (this->has_compilation_events())
         {
-            if (this->input_events._data.compilation_passes.Size > 0)
-            {
-                this->input_events.acquire([&](s_input_events& p_input_events) {
-                    for (loop(i, 0, p_input_events.compilation_passes.Size))
-                    {
-                        this->compile_asset_compilation_pass(p_input_events.compilation_passes.get(i));
-                    }
-                    p_input_events.compilation_passes.clear();
-                });
-            }
+            this->input_events.acquire([&](s_input_events& p_input_events) {
+                for (loop(i, 0, p_input_events.compilation_passes.Size))
+                {
+                    this->compile_asset_compilation_pass(p_input_events.compilation_passes.get(i));
+                }
+                p_input_events.compilation_passes.clear();
+            });
         }
         return 0;
     };
@@ -158,6 +195,18 @@ struct AssetCompilationThread
             });
         }
         l_execution.free();
+    };
+
+    inline void _start()
+    {
+        this->thread_input_args = (int8*)this;
+        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
+        this->thread = Thread::spawn_thread(this->thread_input);
+    };
+
+    inline void _stop_and_wait()
+    {
+        Thread::wait_for_end_and_terminate(this->thread, -1);
     };
 };
 
@@ -509,7 +558,6 @@ struct AssetCompilerWindow
     inline void allocate(AssetCompilerPassHeap& p_asset_compiler_heap, const Callbacks& p_callbacks)
     {
         this->callbacks_asset_compilation_pass_buffer = Vector<Token(AssetCompilationPass)>::allocate(0);
-        this->widget_heap = AssetCompilerWidgetHeap::allocate();
         this->allocate_widgets();
         this->setup_widget_layout();
         this->setup_widget_events(p_callbacks, p_asset_compiler_heap);
@@ -584,7 +632,7 @@ struct AssetCompilerWindow
         this->widgets.go_button = new QPushButton();
         this->widgets.go_button->setText("GO");
 
-        this->widget_heap.asset_compilation_passes = Vector<AssetCompilationPassWidget>::allocate(0);
+        this->widget_heap = AssetCompilerWidgetHeap::allocate();
 
         AssetCompilationPassViewer::Callbacks l_asset_compilation_pass_viewer_callbacks{};
         l_asset_compilation_pass_viewer_callbacks.closure = this;
@@ -692,7 +740,6 @@ struct AssetCompilerEditor
         this->window.allocate(this->heap, l_asset_compiler_window_cb);
 
         this->compilation_thread = AssetCompilationThread::allocate();
-        this->compilation_thread.start();
 
         this->compilation_thread_output_consumer = new QTimer();
         this->compilation_thread_output_consumer->setInterval(0);
@@ -704,7 +751,7 @@ struct AssetCompilerEditor
 
     inline void free()
     {
-        this->compilation_thread.stop_and_wait();
+        this->compilation_thread.stop_if_running();
         AssetCompilerComposition::try_consume_output_thread_events(this->compilation_thread, this->window);
         this->compilation_thread.free();
         this->window.free_with_asset_compiler_passes(this->heap);
