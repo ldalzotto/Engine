@@ -2,20 +2,17 @@
 
 #include "vector_of_vector.hpp"
 
-template <class ElementType> using PoolOfVectorMemory_t = VectorOfVector<ElementType>;
-
 template <class ElementType> using PoolOfVectorToken = Token(Slice<ElementType>);
-
-template <class ElementType> using PoolOfVectorFreeBlocks_t = Vector<PoolOfVectorToken<ElementType>>;
 
 /*
     A PoolOfVector is a wrapped VectorOfVector with pool allocation logic.
-    Any operation on nested vectors must be called with the (poolofvector_element_*) functions
+    Any operation on nested vectors must be called with the (poolofvector_element_*) functions.
+    The PoolOfVector can be linked with a Pool.
 */
 template <class ElementType> struct PoolOfVector
 {
-    PoolOfVectorMemory_t<ElementType> Memory;
-    PoolOfVectorFreeBlocks_t<ElementType> FreeBlocks;
+    VectorOfVector<ElementType> Memory;
+    Vector<PoolOfVectorToken<ElementType>> FreeBlocks;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {
@@ -47,33 +44,12 @@ template <class ElementType> struct PoolOfVector
 
     inline PoolOfVectorToken<ElementType> alloc_vector_with_values(const Slice<ElementType>& p_initial_elements)
     {
-        if (!this->FreeBlocks.empty())
-        {
-            PoolOfVectorToken<ElementType> l_token = this->FreeBlocks.get(this->FreeBlocks.Size - 1);
-            this->FreeBlocks.pop_back();
-            this->Memory.element_push_back_array(tk_v(l_token), p_initial_elements);
-            return l_token;
-        }
-        else
-        {
-            this->Memory.push_back_element(p_initial_elements);
-            return PoolOfVectorToken<ElementType>{this->Memory.varying_vector.get_size() - 1};
-        }
+        return PoolGenerics::allocate_element(*this, p_initial_elements, this->FreeBlocks, set_element, push_back_element);
     };
 
     inline PoolOfVectorToken<ElementType> alloc_vector()
     {
-        if (!this->FreeBlocks.empty())
-        {
-            PoolOfVectorToken<ElementType> l_token = this->FreeBlocks.get(this->FreeBlocks.Size - 1);
-            this->FreeBlocks.pop_back();
-            return l_token;
-        }
-        else
-        {
-            this->Memory.push_back();
-            return PoolOfVectorToken<ElementType>{this->Memory.varying_vector.get_size() - 1};
-        }
+        return PoolGenerics::allocate_element_empty(*this, this->FreeBlocks, push_back_element_empty);
     };
 
     inline void release_vector(const PoolOfVectorToken<ElementType> p_token)
@@ -179,5 +155,22 @@ template <class ElementType> struct PoolOfVector
             abort();
         }
 #endif
+    };
+
+    inline static uimax push_back_element_empty(PoolOfVector<ElementType>& p_pool)
+    {
+        p_pool.Memory.push_back();
+        return p_pool.Memory.varying_vector.get_size() - 1;
+    };
+
+    inline static uimax push_back_element(PoolOfVector<ElementType>& p_pool, const Slice<ElementType>& p_element)
+    {
+        p_pool.Memory.push_back_element(p_element);
+        return p_pool.Memory.varying_vector.get_size() - 1;
+    };
+
+    inline static void set_element(PoolOfVector<ElementType>& p_pool, const Token(Slice<ElementType>) p_token, const Slice<ElementType>& p_element)
+    {
+        p_pool.Memory.element_push_back_array(tk_v(p_token), p_element);
     };
 };

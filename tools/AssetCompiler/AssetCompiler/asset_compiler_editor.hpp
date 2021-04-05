@@ -375,11 +375,8 @@ struct AssetCompilationPassWidget
 
 struct AssetCompilerWidgetHeap
 {
-    // TODO -> we can have a better data structure here.
-    // The asset_compilation_passes and the compilation_passes are linked together
-    // We can have a "MultiPool"
     Pool<AssetCompilationPassWidget> asset_compilation_passes;
-    PoolIndexed<Token(AssetCompilationPass)> compilation_passes;
+    PoolIndexed<Token(AssetCompilationPass)> asset_compilation_passes_compilationtoken;
 
     inline static AssetCompilerWidgetHeap allocate()
     {
@@ -390,16 +387,16 @@ struct AssetCompilerWidgetHeap
     {
 #if __DEBUG
         assert_true(!this->asset_compilation_passes.has_allocated_elements());
-        assert_true(!this->compilation_passes.has_allocated_elements());
+        assert_true(!this->asset_compilation_passes_compilationtoken.has_allocated_elements());
 #endif
         this->asset_compilation_passes.free();
-        this->compilation_passes.free();
+        this->asset_compilation_passes_compilationtoken.free();
     };
 
     inline Token(AssetCompilationPassWidget) allocate_widget(AssetCompilationPassWidget& p_widget, const Token(AssetCompilationPass) p_pass)
     {
         Token(AssetCompilationPassWidget) l_token = this->asset_compilation_passes.alloc_element(p_widget);
-        this->compilation_passes.alloc_element(p_pass);
+        this->asset_compilation_passes_compilationtoken.alloc_element(p_pass);
         return l_token;
     };
 
@@ -410,7 +407,7 @@ struct AssetCompilerWidgetHeap
 
     inline Token(AssetCompilationPass) get_asset_compilation_pass_from_widget(const Token(AssetCompilationPassWidget) p_asset_compilation_pass_widget)
     {
-        return this->compilation_passes.get(tk_bf(Token(AssetCompilationPass), p_asset_compilation_pass_widget));
+        return this->asset_compilation_passes_compilationtoken.get(tk_bf(Token(AssetCompilationPass), p_asset_compilation_pass_widget));
     };
 
     inline AssetCompilationPassWidget& get_widget_from_asset_compilation_pass(const Token(AssetCompilationPass) p_asset_compilation_pass_token)
@@ -420,7 +417,7 @@ struct AssetCompilerWidgetHeap
 
     inline void free_widget(const Token(AssetCompilationPassWidget) p_widget_token)
     {
-        this->compilation_passes.release_element(tk_bf(Token(AssetCompilationPass), p_widget_token));
+        this->asset_compilation_passes_compilationtoken.release_element(tk_bf(Token(AssetCompilationPass), p_widget_token));
         this->asset_compilation_passes.get(p_widget_token).free();
         this->asset_compilation_passes.release_element(p_widget_token);
     };
@@ -582,7 +579,7 @@ struct AssetCompilerWindow
 
     inline void free_compiler_passes(AssetCompilerPassHeap& p_asset_compiler_heap)
     {
-        this->widget_heap.compilation_passes.foreach_reverse([&](const Token(Token(AssetCompilationPass)) p_token, const Token(AssetCompilationPass) p_asset_compilation_pass_token) {
+        this->widget_heap.asset_compilation_passes_compilationtoken.foreach_reverse([&](const Token(Token(AssetCompilationPass)) p_token, const Token(AssetCompilationPass) p_asset_compilation_pass_token) {
             p_asset_compiler_heap.free_asset_compiler_pass(p_asset_compilation_pass_token);
             this->free_asset_compilation_widget(tk_bf(AssetCompilationPassWidget, p_token));
         });
@@ -597,7 +594,7 @@ struct AssetCompilerWindow
     inline void set_compilation_asset_result(const AssetSingleCompilationToken p_asset_compilation_token, const int8 p_compilation_return)
     {
         // this->widget_heap.compilation_passes.get(p_asset_compilation_token.pass_token)
-        this->widget_heap.compilation_passes.foreach_breakable([&](const Token(Token(AssetCompilationPass)) p_token, const Token(AssetCompilationPass) p_asset_compilation_pass_token) {
+        this->widget_heap.asset_compilation_passes_compilationtoken.foreach_breakable([&](const Token(Token(AssetCompilationPass)) p_token, const Token(AssetCompilationPass) p_asset_compilation_pass_token) {
             if (tk_eq(p_token, p_asset_compilation_token.pass_token))
             {
                 this->widget_heap.get_widget_from_asset_compilation_pass(p_asset_compilation_pass_token).set_asset_compilation_result(p_asset_compilation_token.index, p_compilation_return);
@@ -694,7 +691,7 @@ struct AssetCompilerComposition
         for (loop(i, 0, p_window.widgets.asset_compilation_viewer.displayed_asset_compilation_pass_widgets.Size))
         {
             Token(AssetCompilationPassWidget) l_widget_token = p_window.widgets.asset_compilation_viewer.displayed_asset_compilation_pass_widgets.get(i);
-            Token(AssetCompilationPass) l_asset_compilation_pass = p_window.widget_heap.compilation_passes.get(tk_bf(Token(AssetCompilationPass), l_widget_token));
+            Token(AssetCompilationPass) l_asset_compilation_pass = p_window.widget_heap.get_asset_compilation_pass_from_widget(l_widget_token);
             p_thread.push_asset_compilation_pass(l_asset_compilation_pass, p_heap.asset_compilation_passes.get(l_asset_compilation_pass));
         }
     };
@@ -740,7 +737,6 @@ struct AssetCompilerEditor
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
             thiz->compilation_thread.sync_wait_for_processing_compilation_events();
             thiz->window.free_compiler_passes(thiz->heap);
-            // TODO -> remove absolute
             AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, p_compile_configuration_file, thiz->asset_folder_root, in_out_asset_compilation_pass);
         };
         l_asset_compiler_window_cb.on_go_button_pushed = [](AssetCompilerWindow* p_window, void* p_closure) {

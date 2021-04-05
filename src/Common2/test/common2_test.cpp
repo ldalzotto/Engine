@@ -715,10 +715,11 @@ inline void vectorofvector_test()
     l_vectorofvector_uimax.free();
 };
 
+// TODO -> adding a case that show that pool and poolofvector can be linked
 inline void poolofvector_test()
 {
-    PoolOfVector<uimax> l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
 
+    PoolOfVector<uimax> l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
     // poolofvector_alloc_vector poolofvector_element_push_back_element poolofvector_release_vector
     {
         PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
@@ -763,10 +764,10 @@ inline void poolofvector_test()
     }
 
     l_pool_of_vector.free();
-    l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
 
     // Element_ShadowVector
     {
+        l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
         PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
         auto l_shadow_vector_0 = l_pool_of_vector.get_element_as_shadow_vector(l_vector_0);
 
@@ -794,21 +795,57 @@ inline void poolofvector_test()
         assert_true(l_shadow_vector_0_slice.Size == 2);
         assert_true(l_shadow_vector_0_slice.get(0) == l_el_0);
         assert_true(l_shadow_vector_0_slice.get(1) == l_el_1);
+
+        l_pool_of_vector.free();
     }
 
-    l_pool_of_vector.free();
+    // The PoolOfVector be "linkable" to a Pool. This means that if we call allocation and release of both of the structure at the same time, then we will have the same pool layout
+    {
+        l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
+        Pool<uimax> l_pool = Pool<uimax>::allocate(0);
+
+        Token(Slice<uimax>) l_vec_0 = l_pool_of_vector.alloc_vector();
+        Token(uimax) l_val_0 = l_pool.alloc_element(0);
+
+        Token(Slice<uimax>) l_vec_1 = l_pool_of_vector.alloc_vector();
+        Token(uimax) l_val_1 = l_pool.alloc_element(0);
+
+        Token(Slice<uimax>) l_vec_2 = l_pool_of_vector.alloc_vector();
+        Token(uimax) l_val_2 = l_pool.alloc_element(0);
+
+        assert_true(tk_eq(l_val_0, l_vec_0));
+        assert_true(tk_eq(l_val_1, l_vec_1));
+        assert_true(tk_eq(l_val_2, l_vec_2));
+
+        l_pool_of_vector.release_vector(l_vec_1);
+        l_pool.release_element(l_val_1);
+
+        Token(Slice<uimax>) l_vec_3 = l_pool_of_vector.alloc_vector();
+        Token(uimax) l_val_3 = l_pool.alloc_element(0);
+
+        assert_true(tk_eq(l_val_3, l_vec_3));
+        assert_true(tk_eq(l_val_3, l_val_1));
+        assert_true(tk_eq(l_vec_3, l_vec_1));
+
+        l_pool.free();
+        l_pool_of_vector.free();
+    }
 };
 
 inline void pool_hashed_counted_test()
 {
     PoolHashedCounted<uimax, uimax> l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
     {
-        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate(10, 100);
+        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+            return 100;
+        });
 
         assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
 
-        l_pool_hashed_counted.increment_or_allocate(10, 100);
+        l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+            return 100;
+        });
 
         PoolHashedCounted<uimax, uimax>::CountElement* l_count_element = l_pool_hashed_counted.CountMap.get_value_nothashed(10);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
@@ -824,32 +861,15 @@ inline void pool_hashed_counted_test()
 
     // increment or allocate stateful
     {
-        PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine l_increment_or_allocate_sm = PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::build(l_pool_hashed_counted);
-        l_increment_or_allocate_sm.start(10);
-        while (l_increment_or_allocate_sm.state != PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::END)
-        {
-            if (l_increment_or_allocate_sm.state == PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::ALLOCATE)
-            {
-                l_increment_or_allocate_sm.allocate(10, 100);
-            }
-        }
-        l_increment_or_allocate_sm.assert_ended();
-
-        Token(uimax) l_value_token = l_increment_or_allocate_sm.allocated_token;
-
+        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+            return 100;
+        });
         assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
 
-        l_increment_or_allocate_sm = PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::build(l_pool_hashed_counted);
-        l_increment_or_allocate_sm.start(10);
-        while (l_increment_or_allocate_sm.state != PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::END)
-        {
-            if (l_increment_or_allocate_sm.state == PoolHashedCounted<uimax, uimax>::IncrementOrAllocateStateMachine::State::ALLOCATE)
-            {
-                l_increment_or_allocate_sm.allocate(10, 100);
-            }
-        }
-        l_increment_or_allocate_sm.assert_ended();
+        l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+            return 100;
+        });
 
         PoolHashedCounted<uimax, uimax>::CountElement* l_count_element = l_pool_hashed_counted.CountMap.get_value_nothashed(10);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));

@@ -67,7 +67,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
     };
 
-    inline Token(ElementType) increment_or_allocate(const KeyType& p_key, const ElementType& p_element)
+    template <class AllocationFunc> inline Token(ElementType) increment_or_allocate_v2(const KeyType& p_key, const AllocationFunc& p_allocation_func)
     {
         if (this->has_key_nothashed(p_key))
         {
@@ -75,66 +75,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         }
         else
         {
-            return this->push_back_element(p_key, p_element);
+            return this->push_back_element(p_key, p_allocation_func());
         }
-    };
-
-    struct IncrementOrAllocateStateMachine
-    {
-        PoolHashedCounted<KeyType, ElementType>* thiz;
-        enum class State
-        {
-            START = 0,
-            INCREMENT = 1,
-            ALLOCATE = 2,
-            END = 3
-        } state;
-        Token(ElementType) allocated_token;
-
-        inline static IncrementOrAllocateStateMachine build(PoolHashedCounted<KeyType, ElementType>& thiz)
-        {
-            return IncrementOrAllocateStateMachine{&thiz, State::START, tk_bd(ElementType)};
-        };
-
-        inline void start(const KeyType& p_key)
-        {
-            if (thiz->has_key_nothashed(p_key))
-            {
-                this->state = State::INCREMENT;
-                this->increment(p_key);
-                return;
-            }
-            else
-            {
-                this->state = State::ALLOCATE;
-                return;
-            }
-        }
-
-        inline void allocate(const KeyType& p_key, const ElementType& p_value)
-        {
-#if __DEBUG
-            assert_true(this->state == State::ALLOCATE);
-#endif
-            this->allocated_token = thiz->push_back_element(p_key, p_value);
-            this->state = State::END;
-        };
-
-        inline void assert_ended()
-        {
-#if __DEBUG
-            assert_true(this->state == State::END);
-#endif
-        };
-
-      private:
-        inline void increment(const KeyType& p_key)
-        {
-#if __DEBUG
-            assert_true(this->state == State::INCREMENT);
-#endif
-            this->allocated_token = thiz->increment(p_key);
-            this->state = State::END;
-        };
     };
 };

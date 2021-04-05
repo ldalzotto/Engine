@@ -50,26 +50,27 @@ struct RenderableObject
 */
 struct D3RendererHeap
 {
-    // TODO -> having a "MultiPool" here ?
     Pool<ShaderIndex> shaders;
     PoolOfVector<Token(Material)> shaders_to_materials;
+    Vector<Token(ShaderIndex)> shaders_indexed;
 
-    // TODO -> having a "MultiPool" here ?
     Pool<Material> materials;
     PoolOfVector<Token(RenderableObject)> material_to_renderable_objects;
 
     Pool<Mesh> meshes;
     Pool<RenderableObject> renderable_objects;
 
-    Vector<Token(ShaderIndex)> shaders_indexed;
-
     static D3RendererHeap allocate();
 
     void free();
 
+    Token(ShaderIndex) allocate_shader();
+
     void link_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material);
 
     void unlink_shader_with_material(const Token(ShaderIndex) p_shader, const Token(Material) p_material);
+
+    ShaderIndex& get_shader_by_index(const uimax p_index);
 
     void get_materials_and_renderableobject_linked_to_shader(const Token(ShaderIndex) p_shader, Vector<Token(Material)>* in_out_materials, Vector<Token(RenderableObject)>* in_out_renderableobject);
 
@@ -242,6 +243,11 @@ inline void D3RendererHeap::unlink_shader_with_material(const Token(ShaderIndex)
     }
 };
 
+inline ShaderIndex& D3RendererHeap::get_shader_by_index(const uimax p_index)
+{
+    return this->shaders.get(this->shaders_indexed.get(p_index));
+};
+
 inline void D3RendererHeap::get_materials_and_renderableobject_linked_to_shader(const Token(ShaderIndex) p_shader, Vector<Token(Material)>* in_out_materials,
                                                                                 Vector<Token(RenderableObject)>* in_out_renderableobject)
 {
@@ -296,7 +302,7 @@ inline Token(ShaderIndex) D3RendererAllocator::allocate_shader(const ShaderIndex
     uimax l_insertion_index = 0;
     for (loop(i, 0, this->heap.shaders_indexed.Size))
     {
-        if (this->heap.shaders.get(this->heap.shaders_indexed.get(i)).execution_order >= l_insertion_index)
+        if (this->heap.get_shader_by_index(i).execution_order >= l_insertion_index)
         {
             break;
         };

@@ -1,5 +1,42 @@
 #pragma once
 
+struct PoolGenerics
+{
+    template <class TokenOuterType, class PoolType, class Pool_PushBackElementEmpty_Func>
+    inline static TokenOuterType allocate_element_empty(PoolType& p_pool, Vector<TokenOuterType>& p_free_blocks, const Pool_PushBackElementEmpty_Func& p_pool_pushback_element_empty_func)
+    {
+        if (!p_free_blocks.empty())
+        {
+            TokenOuterType l_availble_token = p_free_blocks.get(p_free_blocks.Size - 1);
+            p_free_blocks.pop_back();
+            return l_availble_token;
+        }
+        else
+        {
+            uimax p_index = p_pool_pushback_element_empty_func(p_pool);
+            return TokenOuterType{p_index};
+        }
+    };
+
+    template <class TokenOuterType, class ElementType, class PoolType, class Pool_SetElement_Func, class Pool_PushBackelement_Func>
+    inline static TokenOuterType allocate_element(PoolType& p_pool, const ElementType& p_element, Vector<TokenOuterType>& p_free_blocks, const Pool_SetElement_Func& p_pool_set_element_func,
+                                                  const Pool_PushBackelement_Func& p_pool_pushback_element_func)
+    {
+        if (!p_free_blocks.empty())
+        {
+            TokenOuterType l_availble_token = p_free_blocks.get(p_free_blocks.Size - 1);
+            p_free_blocks.pop_back();
+            p_pool_set_element_func(p_pool, l_availble_token, p_element);
+            return l_availble_token;
+        }
+        else
+        {
+            uimax p_index = p_pool_pushback_element_func(p_pool, p_element);
+            return TokenOuterType{p_index};
+        }
+    };
+};
+
 /*
     A Pool is a non continous Vector where elements are acessed via Tokens.
     Generated Tokens are unique from it's source Pool.
@@ -76,33 +113,12 @@ template <class ElementType> struct Pool
 
     inline Token(ElementType) alloc_element_empty()
     {
-        if (!this->free_blocks.empty())
-        {
-            Token(ElementType) l_availble_token = this->free_blocks.get(this->free_blocks.Size - 1);
-            this->free_blocks.pop_back();
-            return l_availble_token;
-        }
-        else
-        {
-            this->memory.push_back_element_empty();
-            return Token(ElementType){this->memory.Size - 1};
-        }
+        PoolGenerics::allocate_element_empty(*this, this->free_blocks, push_back_element_empty);
     }
 
     inline Token(ElementType) alloc_element(const ElementType& p_element)
     {
-        if (!this->free_blocks.empty())
-        {
-            Token(ElementType) l_availble_token = this->free_blocks.get(this->free_blocks.Size - 1);
-            this->free_blocks.pop_back();
-            this->memory.get(tk_v(l_availble_token)) = p_element;
-            return l_availble_token;
-        }
-        else
-        {
-            this->memory.push_back_element(p_element);
-            return Token(ElementType){this->memory.Size - 1};
-        }
+        return PoolGenerics::allocate_element(*this, p_element, this->free_blocks, set_element, push_back_element);
     };
 
     inline void release_element(const Token(ElementType) p_token)
@@ -133,5 +149,22 @@ template <class ElementType> struct Pool
             abort();
         }
 #endif
+    };
+
+    inline static uimax push_back_element_empty(Pool<ElementType>& p_pool)
+    {
+        p_pool.memory.push_back_element_empty();
+        return p_pool.memory.Size - 1;
+    };
+
+    inline static uimax push_back_element(Pool<ElementType>& p_pool, const ElementType& p_element)
+    {
+        p_pool.memory.push_back_element(p_element);
+        return p_pool.memory.Size - 1;
+    };
+
+    inline static void set_element(Pool<ElementType>& p_pool, const Token(ElementType) p_token, const ElementType& p_element)
+    {
+        p_pool.memory.get(tk_v(p_token)) = p_element;
     };
 };
