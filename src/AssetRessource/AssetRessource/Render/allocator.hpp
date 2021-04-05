@@ -395,6 +395,7 @@ struct MeshRessourceComposition
     };
 };
 
+// TODO -> ressource depedencies are stored inside the ressource itself. Wouldn't it be better to store dependencies in a separated Pool ?
 struct ShaderRessourceUnit
 {
     PoolHashedCounted<hash_t, ShaderRessource> shaders;
@@ -564,6 +565,7 @@ struct ShaderRessourceComposition
     };
 };
 
+// TODO -> ressource depedencies are stored inside the ressource itself. Wouldn't it be better to store dependencies in a separated Pool ?
 struct MaterialRessourceUnit
 {
     PoolHashedCounted<hash_t, MaterialRessource> materials;

@@ -446,7 +446,7 @@ inline void d3renderer_cube()
     DestroyEngine(l_engine);
 
     l_database_path.free();
-}
+};
 
 int main()
 {

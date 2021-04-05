@@ -71,6 +71,7 @@ struct MeshRendererComponent
 
 struct RenderMiddleWare
 {
+    // TODO -> move this to a ressource unit ?
     Vector<MeshRendererComponent::AllocationEvent> mesh_renderer_allocation_events;
     Vector<MeshRendererComponent::FreeEvent> meshrenderer_free_events;
 

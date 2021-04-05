@@ -60,6 +60,18 @@ template <class ElementType> struct PoolIndexed
             p_foreach(l_token, this->Memory.get(l_token));
         }
     }
+    template <class ForeachSlot_t> inline void foreach_breakable(const ForeachSlot_t& p_foreach)
+    {
+        for (loop(i, 0, this->Indices.Size))
+        {
+            Token(ElementType) l_token = this->Indices.get(i);
+            if (p_foreach(l_token, this->Memory.get(l_token)))
+            {
+                break;
+            };
+        }
+    }
+
     template <class ForeachSlot_t> inline void foreach_reverse(const ForeachSlot_t& p_foreach)
     {
         for (loop_reverse(i, 0, this->Indices.Size))

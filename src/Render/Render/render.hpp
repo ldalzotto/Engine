@@ -50,14 +50,18 @@ struct RenderableObject
 */
 struct D3RendererHeap
 {
+    // TODO -> having a "MultiPool" here ?
     Pool<ShaderIndex> shaders;
+    PoolOfVector<Token(Material)> shaders_to_materials;
+
+    // TODO -> having a "MultiPool" here ?
     Pool<Material> materials;
+    PoolOfVector<Token(RenderableObject)> material_to_renderable_objects;
+
     Pool<Mesh> meshes;
     Pool<RenderableObject> renderable_objects;
 
     Vector<Token(ShaderIndex)> shaders_indexed;
-    PoolOfVector<Token(Material)> shaders_to_materials;
-    PoolOfVector<Token(RenderableObject)> material_to_renderable_objects;
 
     static D3RendererHeap allocate();
 
