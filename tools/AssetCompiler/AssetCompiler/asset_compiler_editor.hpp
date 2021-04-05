@@ -547,8 +547,9 @@ struct AssetCompilerWindow
     struct Widgets
     {
         QVBoxLayout* main_layout;
-        // QLayoutWidget<QHBoxLayout, QWidget> top_bar;
+        QLayoutWidget<QHBoxLayout, QWidget> top_bar;
         QPushButton* feed_tree_button;
+        QFileDialog* feed_tree_file_dialog;
         QPushButton* go_button;
         AssetCompilationPassViewer asset_compilation_viewer;
     } widgets;
@@ -556,7 +557,7 @@ struct AssetCompilerWindow
     struct Callbacks
     {
         void* closure;
-        void (*load_asset_tree)(AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure);
+        void (*load_asset_tree)(AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, const Slice<int8>& p_file_configuration, void* p_closure);
         void (*on_go_button_pushed)(AssetCompilerWindow* p_window, void* p_closure);
     } callbacks;
 
@@ -625,6 +626,8 @@ struct AssetCompilerWindow
         this->root = new QWidget();
         this->widgets.main_layout = new QVBoxLayout(this->root);
 
+        this->widgets.top_bar = QLayoutWidget<QHBoxLayout, QWidget>::allocate();
+
         this->widgets.feed_tree_button = new QPushButton();
         this->widgets.feed_tree_button->setText("FEED");
 
@@ -645,29 +648,37 @@ struct AssetCompilerWindow
 
     inline void setup_widget_layout()
     {
-        QLayoutBuilder l_layout_builder;
-        l_layout_builder.bind_layout(this->widgets.main_layout);
-        l_layout_builder.add_widget(this->widgets.feed_tree_button);
-        l_layout_builder.add_widget(this->widgets.go_button);
-        l_layout_builder.add_widget(this->widgets.asset_compilation_viewer.root);
+        this->widgets.top_bar.layout->addWidget(this->widgets.feed_tree_button);
+        this->widgets.top_bar.layout->addWidget(this->widgets.go_button);
+
+        this->widgets.main_layout->addWidget(this->widgets.top_bar.widget);
+        this->widgets.main_layout->addWidget(this->widgets.asset_compilation_viewer.root);
     };
 
     inline void setup_widget_events(const Callbacks& p_callbacks, AssetCompilerPassHeap& p_asset_compiler_heap)
     {
         this->callbacks = p_callbacks;
         QObject::connect(this->widgets.feed_tree_button, &QPushButton::released, [&]() {
-            this->callbacks.load_asset_tree(this, &this->callbacks_asset_compilation_pass_buffer, this->callbacks.closure);
-            for (loop(i, 0, this->callbacks_asset_compilation_pass_buffer.Size))
-            {
-                Token(AssetCompilationPass) l_pass = this->callbacks_asset_compilation_pass_buffer.get(i);
-                AssetCompilationPassWidget l_compilation_pass_widget = AssetCompilationPassWidget::allocate_empty();
-                // this->widgets.main_layout->addWidget(l_compilation_pass_widget.root);
-                AssetCompilationPass& l_asset_compilation_pass = p_asset_compiler_heap.asset_compilation_passes.get(l_pass);
-                l_compilation_pass_widget.feed_with_compilation_pass(l_asset_compilation_pass);
-                Token(AssetCompilationPassWidget) l_widget_token = this->widget_heap.allocate_widget(l_compilation_pass_widget, l_pass);
-                this->widgets.asset_compilation_viewer.add_asset_compilation_to_selection(l_widget_token, l_asset_compilation_pass.root_path.to_slice());
-            }
-            this->callbacks_asset_compilation_pass_buffer.clear();
+            this->widgets.feed_tree_file_dialog = new QFileDialog();
+            this->widgets.feed_tree_file_dialog->setNameFilters({"Asset configuration files (*.json)", "Any files (*)"});
+            QObject::connect(this->widgets.feed_tree_file_dialog, &QFileDialog::fileSelected, [&](const QString& p_file) {
+                // if (this->on_database_file_selected(p_file))
+                QByteArray l_configuration_file_path_arr = p_file.toLocal8Bit();
+                Slice<int8> l_configuration_file_path = slice_int8_build_rawstr(l_configuration_file_path_arr.data());
+                this->callbacks.load_asset_tree(this, &this->callbacks_asset_compilation_pass_buffer, l_configuration_file_path, this->callbacks.closure);
+                for (loop(i, 0, this->callbacks_asset_compilation_pass_buffer.Size))
+                {
+                    Token(AssetCompilationPass) l_pass = this->callbacks_asset_compilation_pass_buffer.get(i);
+                    AssetCompilationPassWidget l_compilation_pass_widget = AssetCompilationPassWidget::allocate_empty();
+                    // this->widgets.main_layout->addWidget(l_compilation_pass_widget.root);
+                    AssetCompilationPass& l_asset_compilation_pass = p_asset_compiler_heap.asset_compilation_passes.get(l_pass);
+                    l_compilation_pass_widget.feed_with_compilation_pass(l_asset_compilation_pass);
+                    Token(AssetCompilationPassWidget) l_widget_token = this->widget_heap.allocate_widget(l_compilation_pass_widget, l_pass);
+                    this->widgets.asset_compilation_viewer.add_asset_compilation_to_selection(l_widget_token, l_asset_compilation_pass.root_path.to_slice());
+                }
+                this->callbacks_asset_compilation_pass_buffer.clear();
+            });
+            this->widgets.feed_tree_file_dialog->open();
         });
         QObject::connect(this->widgets.go_button, &QPushButton::released, [&]() {
             this->callbacks.on_go_button_pushed(this, this->callbacks.closure);
@@ -724,13 +735,13 @@ struct AssetCompilerEditor
         this->asset_folder_root = p_asset_folder_root;
         AssetCompilerWindow::Callbacks l_asset_compiler_window_cb{};
         l_asset_compiler_window_cb.closure = this;
-        l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass, void* p_closure) {
+        l_asset_compiler_window_cb.load_asset_tree = [](AssetCompilerWindow* p_window, Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass,
+                                                        const Slice<int8>& p_compile_configuration_file, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
             thiz->compilation_thread.sync_wait_for_processing_compilation_events();
             thiz->window.free_compiler_passes(thiz->heap);
             // TODO -> remove absolute
-            AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, slice_int8_build_rawstr("E:/GameProjects/GameEngineLinux/_asset/asset/compile_conf.json"),
-                                                                                  thiz->asset_folder_root, in_out_asset_compilation_pass);
+            AssetCompilerPassComposition::allocate_passes_from_json_configuration(thiz->heap, p_compile_configuration_file, thiz->asset_folder_root, in_out_asset_compilation_pass);
         };
         l_asset_compiler_window_cb.on_go_button_pushed = [](AssetCompilerWindow* p_window, void* p_closure) {
             AssetCompilerEditor* thiz = (AssetCompilerEditor*)p_closure;
