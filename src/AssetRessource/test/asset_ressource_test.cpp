@@ -175,7 +175,7 @@ struct AssetRessource_TestAssertion
         int8 allocated;
     };
 
-    inline static void assert_material_allocation(AssetRessourceTestContext p_ctx, const Token(MaterialRessource) p_material_ressource, const AssertRessource& p_material_assert,
+    inline static void assert_material_allocation(AssetRessourceTestContext p_ctx, const Token<MaterialRessource> p_material_ressource, const AssertRessource& p_material_assert,
                                                   const Slice<AssertRessource>& p_material_textures, const AssertRessource& p_shader_assert, const AssertRessource& p_vertex_shader_assert,
                                                   const AssertRessource& p_fragment_shader_assert)
     {
@@ -208,13 +208,13 @@ struct AssetRessource_TestAssertion
         assert_ressource(p_ctx.render_ressource_allocator.shader_module_unit.shader_modules, l_fragment_shader_ressource, p_fragment_shader_assert);
     };
 
-    inline static void assert_mesh_allocation(AssetRessourceTestContext p_ctx, const Token(MeshRessource) p_mesh_ressource, const AssertRessource& p_mesh_assert)
+    inline static void assert_mesh_allocation(AssetRessourceTestContext p_ctx, const Token<MeshRessource> p_mesh_ressource, const AssertRessource& p_mesh_assert)
     {
         MeshRessource& l_mesh_ressource = p_ctx.render_ressource_allocator.mesh_unit.meshes.pool.get(p_mesh_ressource);
         assert_ressource(p_ctx.render_ressource_allocator.mesh_unit.meshes, l_mesh_ressource, p_mesh_assert);
     };
 
-    inline static void assert_texture_allocation(AssetRessourceTestContext p_ctx, const Token(TextureRessource) p_texture_ressource, const AssertRessource& p_texture_assert)
+    inline static void assert_texture_allocation(AssetRessourceTestContext p_ctx, const Token<TextureRessource> p_texture_ressource, const AssertRessource& p_texture_assert)
     {
         TextureRessource& l_texture_ressource = p_ctx.render_ressource_allocator.texture_unit.textures.pool.get(p_texture_ressource);
         assert_ressource(p_ctx.render_ressource_allocator.texture_unit.textures, l_texture_ressource, p_texture_assert);
@@ -290,17 +290,17 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             l_material_parameter_temp.free();
         }
 
-        Token(MeshRessource) l_mesh_ressource =
+        Token<MeshRessource> l_mesh_ressource =
             MeshRessourceComposition::allocate_or_increment_inline(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset});
 
         SliceN<TextureRessource::InlineAllocationInput, 1> l_material_ressource_texture_input_arr{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
-        Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_inline(
+        Token<MaterialRessource> l_material_ressource = MaterialRessourceComposition::allocate_or_increment_inline(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_ressource_texture_input_arr)},
             ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset}, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
 
-        Token(TextureRessource) l_material_texture_ressource =
+        Token<TextureRessource> l_material_texture_ressource =
             l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies
                 .get_vector(l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies)
                 .get(0)
@@ -319,10 +319,10 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             l_material_parameter_temp.free();
         }
 
-        Token(MeshRessource) l_mesh_ressource_2 =
+        Token<MeshRessource> l_mesh_ressource_2 =
             MeshRessourceComposition::allocate_or_increment_inline(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset});
         SliceN<TextureRessource::InlineAllocationInput, 1> l_material_ressource_2_arr{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
-        Token(MaterialRessource) l_material_ressource_2 = MaterialRessourceComposition::allocate_or_increment_inline(
+        Token<MaterialRessource> l_material_ressource_2 = MaterialRessourceComposition::allocate_or_increment_inline(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, MaterialRessource::InlineAllocationInput{1, l_material_asset_2, slice_from_slicen(&l_material_ressource_2_arr)},
             ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset}, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
@@ -356,9 +356,9 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             }
         }
 
-        Token(MeshRessource) l_mesh_ressource_3 =
+        Token<MeshRessource> l_mesh_ressource_3 =
             MeshRessourceComposition::allocate_or_increment_inline(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset});
-        Token(MaterialRessource) l_material_ressource_3 = MaterialRessourceComposition::allocate_or_increment_inline(
+        Token<MaterialRessource> l_material_ressource_3 = MaterialRessourceComposition::allocate_or_increment_inline(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, MaterialRessource::InlineAllocationInput{0}, ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
             ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader}, ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
@@ -494,16 +494,16 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
             l_material_parameter_temp.free();
         }
 
-        Token(MeshRessource) l_mesh_ressource =
+        Token<MeshRessource> l_mesh_ressource =
             MeshRessourceComposition::allocate_or_increment_inline(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset});
         SliceN<TextureRessource::InlineAllocationInput, 1> l_material_ressource_textureinput_arr{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
-        Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_inline(
+        Token<MaterialRessource> l_material_ressource = MaterialRessourceComposition::allocate_or_increment_inline(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_ressource_textureinput_arr)},
             ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset}, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader});
 
-        Token(TextureRessource) l_material_texture_ressource =
+        Token<TextureRessource> l_material_texture_ressource =
             l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies
                 .get_vector(l_ctx.render_ressource_allocator.material_unit.materials.pool.get(l_material_ressource).dependencies.dynamic_dependencies)
                 .get(0)
@@ -604,9 +604,9 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
     }
     {
 
-        Token(MeshRessource) l_mesh_ressource = MeshRessourceComposition::allocate_or_increment_database(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::DatabaseAllocationInput{l_mesh_id});
+        Token<MeshRessource> l_mesh_ressource = MeshRessourceComposition::allocate_or_increment_database(l_ctx.render_ressource_allocator.mesh_unit, MeshRessource::DatabaseAllocationInput{l_mesh_id});
         SliceN<TextureRessource::DatabaseAllocationInput, 1> l_material_ressource_textures_arr{TextureRessource::DatabaseAllocationInput{l_texture_id}};
-        Token(MaterialRessource) l_material_ressource = MaterialRessourceComposition::allocate_or_increment_database(
+        Token<MaterialRessource> l_material_ressource = MaterialRessourceComposition::allocate_or_increment_database(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, MaterialRessource::DatabaseAllocationInput{l_material_id, slice_from_slicen(&l_material_ressource_textures_arr)},
             ShaderRessource::DatabaseAllocationInput{l_shader_id}, ShaderModuleRessource::DatabaseAllocationInput{l_vertex_shader_id},
@@ -717,7 +717,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
     }
 
     {
-        Token(MaterialRessource) l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
+        Token<MaterialRessource> l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
@@ -817,7 +817,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
         l_mesh_asset.free();
     }
 
-    Token(MaterialRessource) l_material;
+    Token<MaterialRessource> l_material;
     {
         l_material = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
@@ -838,11 +838,11 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     l_ctx.reset_database();
 
     {
-        Token(MaterialRessource) l_material_2 = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
+        Token<MaterialRessource> l_material_2 = MaterialRessourceComposition::allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit, l_ctx.render_ressource_allocator.shader_module_unit,
             l_ctx.render_ressource_allocator.texture_unit, l_ctx.database_connection, l_ctx.asset_database, HashSlice(l_material_path));
 
-        assert_true(tk_eq(l_material_2, l_material));
+        assert_true(token_equals(l_material_2, l_material));
 
         assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 0);
         assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_allocation_events.Size == 0);

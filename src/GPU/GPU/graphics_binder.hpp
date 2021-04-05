@@ -163,7 +163,7 @@ struct GraphicsBinder
         l_renderpass_begin.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         l_renderpass_begin.renderPass = this->binded_graphics_pass->render_pass.render_pass;
 
-        Slice<Token(TextureGPU)> l_attachments = this->graphics_allocator.heap.renderpass_attachment_textures.get_vector(this->binded_graphics_pass->attachment_textures);
+        Slice<Token<TextureGPU>> l_attachments = this->graphics_allocator.heap.renderpass_attachment_textures.get_vector(this->binded_graphics_pass->attachment_textures);
         ImageFormat& l_target_format = this->buffer_allocator.gpu_images.get(this->graphics_allocator.heap.textures_gpu.get(l_attachments.get(0)).Image).format;
 
         l_renderpass_begin.renderArea = VkRect2D{VkOffset2D{0, 0}, VkExtent2D{(uint32_t)l_target_format.extent.x, (uint32_t)l_target_format.extent.y}};

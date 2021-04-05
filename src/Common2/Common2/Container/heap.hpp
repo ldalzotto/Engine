@@ -25,10 +25,10 @@ struct HeapA
 
     struct AllocatedElementReturn
     {
-        Token(SliceIndex) token;
+        Token<SliceIndex> token;
         uimax Offset;
 
-        inline static AllocatedElementReturn build(const Token(SliceIndex) p_token, const uimax p_offset)
+        inline static AllocatedElementReturn build(const Token<SliceIndex> p_token, const uimax p_offset)
         {
             return AllocatedElementReturn{p_token, p_offset};
         };
@@ -320,12 +320,12 @@ struct Heap
         return HeapA::allocate_element_norealloc_with_modulo_offset(*this, p_size, p_modulo_offset, out_chunk);
     };
 
-    inline SliceIndex* get(const Token(SliceIndex) p_chunk)
+    inline SliceIndex* get(const Token<SliceIndex> p_chunk)
     {
         return &this->AllocatedChunks.get(p_chunk);
     };
 
-    inline void release_element(const Token(SliceIndex) p_chunk)
+    inline void release_element(const Token<SliceIndex> p_chunk)
     {
         this->FreeChunks.push_back_element(this->AllocatedChunks.get(p_chunk));
         this->AllocatedChunks.release_element(p_chunk);
@@ -335,7 +335,7 @@ struct Heap
 struct HeapPagedToken
 {
     uimax PageIndex;
-    Token(SliceIndex) token;
+    Token<SliceIndex> token;
 };
 
 /*

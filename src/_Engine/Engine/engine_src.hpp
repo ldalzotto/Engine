@@ -27,7 +27,7 @@ struct Engine
     GPUContext gpu_context;
     D3Renderer renderer;
 
-    Token(Window) window;
+    Token<Window> window;
     GPUPresent present;
 
     RenderRessourceAllocator2 renderer_ressource_allocator;
@@ -95,7 +95,7 @@ struct Engine
         }
         else
         {
-            l_engine.window = tk_bd(Window);
+            l_engine.window = token_build_default<Window>();
             l_engine.present = {0};
         }
 

@@ -414,7 +414,7 @@ inline void compilation_pass(ShaderCompiler& p_shader_compiler)
     l_asset_compiler_configuration.local_passes.push_back_element(l_pass_1);
     l_asset_compiler_configuration.local_passes.push_back_element(l_pass_2);
 
-    Vector<Token(AssetCompilationPass)> l_passes = Vector<Token(AssetCompilationPass)>::allocate(0);
+    Vector<Token<AssetCompilationPass>> l_passes = Vector<Token<AssetCompilationPass>>::allocate(0);
     AssetCompilerPassComposition::allocate_passes_from_inline(l_heap, l_asset_compiler_configuration, slice_int8_build_rawstr(ASSET_FOLDER_PATH), &l_passes);
 
     assert_true(l_passes.Size == 4);

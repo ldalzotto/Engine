@@ -44,9 +44,9 @@ inline void material_viewer(qt_test& qt_app)
         }
         else if (l_frame_count == 2)
         {
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node, token_build_default<Node>()));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.camera_node, token_build_default<Node>()));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default<MeshRendererComponent>()));
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer_window.widgets.db_file_dialog;
             Span<int8> l_file_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
@@ -65,9 +65,9 @@ inline void material_viewer(qt_test& qt_app)
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.selected_material.toLocal8Bit().data()).compare(slice_int8_build_rawstr("material_1.json")));
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_1.obj")));
 
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node, token_build_default<Node>()));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.camera_node, token_build_default<Node>()));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default<MeshRendererComponent>()));
             });
         }
         else if (l_frame_count == 3)
@@ -109,9 +109,9 @@ inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
         }
         else if (l_frame_count == 2)
         {
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
-            assert_true(tk_eq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node, token_build_default<Node>()));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.camera_node, token_build_default<Node>()));
+            assert_true(token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default<MeshRendererComponent>()));
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer_window.widgets.db_file_dialog;
             Span<int8> l_file_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
@@ -130,9 +130,9 @@ inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.selected_material.toLocal8Bit().data()).compare(slice_int8_build_rawstr("material_1.json")));
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_1.obj")));
 
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.camera_node, tk_bd(Node)));
-                assert_true(tk_neq(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, tk_bd(MeshRendererComponent)));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node, token_build_default<Node>()));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.camera_node, token_build_default<Node>()));
+                assert_true(!token_equals(l_material_viewer_editor.material_viewer_engine_unit.material_node_meshrenderer, token_build_default<MeshRendererComponent>()));
             });
         }
         else if (l_frame_count == 3)

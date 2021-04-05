@@ -23,7 +23,7 @@ inline void bufferstep_test()
     Slice<Vertex> l_test_vertices = Slice<Vertex>::build_memory_elementnb(l_test_vertices_raw, 2);
     Slice<uint32> l_test_indices = Slice<uint32>::build_memory_elementnb(l_indices, 2);
 
-    Token(RenderableObject) l_renderable_object =
+    Token<RenderableObject> l_renderable_object =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_renderable_object, m44f_const::IDENTITY});
 
@@ -39,7 +39,7 @@ inline void bufferstep_test()
                     .get_mapped_memory()
                     .compare(Slice<m44f>::build_asint8_memory_singleelement(&m44f_const::IDENTITY)));
 
-    Token(RenderableObject) l_renderable_object2 =
+    Token<RenderableObject> l_renderable_object2 =
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_renderable_object2, m44f_const::IDENTITY});
 
@@ -62,18 +62,18 @@ inline void shader_linkto_material_allocation_test()
 
     {
         // When ShaderIndex are freed, the token value of the ShaderIndex is taken to also delete the link between ShaderIndex and Material.
-        ShaderIndex l_shader_index_executed_after = {5, tk_bd(Shader), tk_bd(ShaderLayout)};
-        Token(ShaderIndex) l_shader_index_executed_after_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_after);
+        ShaderIndex l_shader_index_executed_after = {5, token_build_default<Shader>(), token_build_default<ShaderLayout>()};
+        Token<ShaderIndex> l_shader_index_executed_after_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_after);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 1);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_after_token)).Size == 0);
 
-        ShaderIndex l_shader_index_executed_before = {1, tk_bd(Shader), tk_bd(ShaderLayout)};
-        Token(ShaderIndex) l_shader_index_executed_before_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_before);
+        ShaderIndex l_shader_index_executed_before = {1, token_build_default<Shader>(), token_build_default<ShaderLayout>()};
+        Token<ShaderIndex> l_shader_index_executed_before_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_before);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 2);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_after_token)).Size == 0);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(tk_bf(Slice<Token(Material)>, l_shader_index_executed_before_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_before_token)).Size == 0);
 
         l_renderer.allocator.free_shader(l_shader_index_executed_after_token);
         l_renderer.allocator.free_shader(l_shader_index_executed_before_token);
@@ -132,11 +132,11 @@ inline void draw_test()
     ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
     ShaderCompiled l_fragment_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::FRAGMENT, slice_int8_build_rawstr(p_fragment_litteral));
 
-    Token(ShaderModule) l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
-    Token(ShaderModule) l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
+    Token<ShaderModule> l_vertex_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_vertex_shader_compiled.get_compiled_binary());
+    Token<ShaderModule> l_fragment_shader_module = l_ctx.graphics_allocator.allocate_shader_module(l_fragment_shader_compiled.get_compiled_binary());
 
     SliceN<ShaderLayoutParameterType, 1> l_shader_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT};
-    Token(ShaderIndex) l_shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
+    Token<ShaderIndex> l_shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
         l_ctx.graphics_allocator, l_renderer.allocator, slice_from_slicen(&l_shader_layout_arr), 0, l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass),
         ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}, l_ctx.graphics_allocator.heap.shader_modules.get(l_vertex_shader_module),
         l_ctx.graphics_allocator.heap.shader_modules.get(l_fragment_shader_module));
@@ -154,13 +154,13 @@ inline void draw_test()
     l_green_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator,
                                                                   l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout), v3f{0.0f, 1.0f, 0.0f});
 
-    Token(Material) l_red_material_token = l_renderer.allocator.allocate_material(l_red_material);
-    Token(Material) l_green_material_token = l_renderer.allocator.allocate_material(l_green_material);
+    Token<Material> l_red_material_token = l_renderer.allocator.allocate_material(l_red_material);
+    Token<Material> l_green_material_token = l_renderer.allocator.allocate_material(l_green_material);
 
     l_renderer.heap().link_shader_with_material(l_shader, l_red_material_token);
     l_renderer.heap().link_shader_with_material(l_shader, l_green_material_token);
 
-    Token(RenderableObject) l_obj_1, l_obj_2, l_obj_3, l_obj_4;
+    Token<RenderableObject> l_obj_1, l_obj_2, l_obj_3, l_obj_4;
 
     {
         v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
@@ -218,7 +218,7 @@ inline void draw_test()
     l_ctx.submit_graphics_binder(l_binder);
     l_ctx.wait_for_completion();
 
-    Token(BufferHost) l_color_attachment_token =
+    Token<BufferHost> l_color_attachment_token =
         GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass), 0);
     {
         BufferStep::step(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events);

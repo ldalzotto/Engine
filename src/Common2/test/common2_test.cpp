@@ -301,15 +301,15 @@ inline void pool_test()
         assert_true(l_pool_sizet.get_free_size() == 0);
 
         uimax l_element = 3;
-        Token(uimax) l_token = l_pool_sizet.alloc_element(l_element);
+        Token<uimax> l_token = l_pool_sizet.alloc_element(l_element);
 
-        assert_true(tk_v(l_token) == 0);
+        assert_true(token_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
     }
 
     // pool_release_element - release elements
     {
-        Token(uimax) l_token = Token(uimax){0};
+        Token<uimax> l_token = Token<uimax>{0};
         l_pool_sizet.release_element(l_token);
 
         // memory is not deallocated
@@ -319,19 +319,19 @@ inline void pool_test()
     // pool_alloc_element - allocating an element while there is free slots
     {
         uimax l_element = 4;
-        Token(uimax) l_token = l_pool_sizet.alloc_element(l_element);
+        Token<uimax> l_token = l_pool_sizet.alloc_element(l_element);
 
         l_pool_sizet.alloc_element(cast(uimax, 10));
         l_pool_sizet.release_element(l_pool_sizet.alloc_element(cast(uimax, 10)));
         l_pool_sizet.alloc_element(cast(uimax, 10));
 
-        assert_true(tk_v(l_token) == 0);
+        assert_true(token_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
     }
 
     for (pool_loop(&l_pool_sizet, i))
     {
-        l_pool_sizet.get(Token(uimax){i});
+        l_pool_sizet.get(Token<uimax>{i});
     }
 
     {
@@ -734,7 +734,7 @@ inline void poolofvector_test()
         l_pool_of_vector.release_vector(l_vector_0);
 
         PoolOfVectorToken<uimax> l_vector_0_new = l_pool_of_vector.alloc_vector();
-        assert_true(tk_v(l_vector_0_new) == tk_v(l_vector_0));
+        assert_true(token_value(l_vector_0_new) == token_value(l_vector_0));
         l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 0);
     }
@@ -804,28 +804,28 @@ inline void poolofvector_test()
         l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
         Pool<uimax> l_pool = Pool<uimax>::allocate(0);
 
-        Token(Slice<uimax>) l_vec_0 = l_pool_of_vector.alloc_vector();
-        Token(uimax) l_val_0 = l_pool.alloc_element(0);
+        Token<Slice<uimax>> l_vec_0 = l_pool_of_vector.alloc_vector();
+        Token<uimax> l_val_0 = l_pool.alloc_element(0);
 
-        Token(Slice<uimax>) l_vec_1 = l_pool_of_vector.alloc_vector();
-        Token(uimax) l_val_1 = l_pool.alloc_element(0);
+        Token<Slice<uimax>> l_vec_1 = l_pool_of_vector.alloc_vector();
+        Token<uimax> l_val_1 = l_pool.alloc_element(0);
 
-        Token(Slice<uimax>) l_vec_2 = l_pool_of_vector.alloc_vector();
-        Token(uimax) l_val_2 = l_pool.alloc_element(0);
+        Token<Slice<uimax>> l_vec_2 = l_pool_of_vector.alloc_vector();
+        Token<uimax> l_val_2 = l_pool.alloc_element(0);
 
-        assert_true(tk_eq(l_val_0, l_vec_0));
-        assert_true(tk_eq(l_val_1, l_vec_1));
-        assert_true(tk_eq(l_val_2, l_vec_2));
+        assert_true(token_equals(l_val_0, l_vec_0));
+        assert_true(token_equals(l_val_1, l_vec_1));
+        assert_true(token_equals(l_val_2, l_vec_2));
 
         l_pool_of_vector.release_vector(l_vec_1);
         l_pool.release_element(l_val_1);
 
-        Token(Slice<uimax>) l_vec_3 = l_pool_of_vector.alloc_vector();
-        Token(uimax) l_val_3 = l_pool.alloc_element(0);
+        Token<Slice<uimax>> l_vec_3 = l_pool_of_vector.alloc_vector();
+        Token<uimax> l_val_3 = l_pool.alloc_element(0);
 
-        assert_true(tk_eq(l_val_3, l_vec_3));
-        assert_true(tk_eq(l_val_3, l_val_1));
-        assert_true(tk_eq(l_vec_3, l_vec_1));
+        assert_true(token_equals(l_val_3, l_vec_3));
+        assert_true(token_equals(l_val_3, l_val_1));
+        assert_true(token_equals(l_vec_3, l_vec_1));
 
         l_pool.free();
         l_pool_of_vector.free();
@@ -836,7 +836,7 @@ inline void pool_hashed_counted_test()
 {
     PoolHashedCounted<uimax, uimax> l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
     {
-        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+        Token<uimax> l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
             return 100;
         });
 
@@ -861,7 +861,7 @@ inline void pool_hashed_counted_test()
 
     // increment or allocate stateful
     {
-        Token(uimax) l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+        Token<uimax> l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
             return 100;
         });
         assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
@@ -887,15 +887,15 @@ inline void ntree_test()
 {
     NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
 
-    Token(uimax) l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
+    Token<uimax> l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
     l_uimax_tree.push_value(cast(uimax, 1), l_root);
-    Token(uimax) l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-    Token(uimax) l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+    Token<uimax> l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
+    Token<uimax> l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
 
     l_uimax_tree.push_value(cast(uimax, 4), l_2_node);
     l_uimax_tree.push_value(cast(uimax, 5), l_2_node);
 
-    Token(uimax) l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
+    Token<uimax> l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
 
     {
         assert_true(l_uimax_tree.Memory.get_size() == 7);
@@ -905,15 +905,15 @@ inline void ntree_test()
         {
             NTree<uimax>::Resolve l_root_element = l_uimax_tree.get(l_root);
             assert_true((*l_root_element.Element) == 0);
-            assert_true(tk_v(l_root_element.Node->parent) == (token_t)-1);
-            assert_true(tk_v(l_root_element.Node->index) == (token_t)0);
-            assert_true(tk_v(l_root_element.Node->childs) != (token_t)-1);
+            assert_true(token_value(l_root_element.Node->parent) == (token_t)-1);
+            assert_true(token_value(l_root_element.Node->index) == (token_t)0);
+            assert_true(token_value(l_root_element.Node->childs) != (token_t)-1);
 
-            Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
+            Slice<Token<NTreeNode>> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
             assert_true(l_childs_indices.Size == 3);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(tk_bf(uimax, l_childs_indices.get(i))) == i + 1);
+                assert_true(l_uimax_tree.get_value(token_build_from<uimax>( l_childs_indices.get(i))) == i + 1);
             }
         }
 
@@ -921,15 +921,15 @@ inline void ntree_test()
         {
             NTree<uimax>::Resolve l_2_element = l_uimax_tree.get(l_2_node);
             assert_true((*l_2_element.Element) == 2);
-            assert_true(tk_v(l_2_element.Node->parent) == (token_t)0);
-            assert_true(tk_v(l_2_element.Node->index) == (token_t)2);
-            assert_true(tk_v(l_2_element.Node->childs) != (token_t)-1);
+            assert_true(token_value(l_2_element.Node->parent) == (token_t)0);
+            assert_true(token_value(l_2_element.Node->index) == (token_t)2);
+            assert_true(token_value(l_2_element.Node->childs) != (token_t)-1);
 
-            Slice<Token(NTreeNode)> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
+            Slice<Token<NTreeNode>> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
             assert_true(l_childs_indices.Size == 2);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(tk_bf(uimax, l_childs_indices.get(i))) == i + 4);
+                assert_true(l_uimax_tree.get_value(token_build_from<uimax>( l_childs_indices.get(i))) == i + 4);
             }
         }
     }
@@ -938,7 +938,7 @@ inline void ntree_test()
     {
         uimax l_counter = 0;
 
-        l_uimax_tree.traverse3(tk_b(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+        l_uimax_tree.traverse3(token_build<NTreeNode>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
             l_counter += 1;
             *(p_node.Element) += 1;
         });
@@ -953,15 +953,15 @@ inline void ntree_test()
 
     // removal test
     {
-        l_uimax_tree.remove_node_recursively(tk_bf(NTreeNode, l_2_node));
+        l_uimax_tree.remove_node_recursively(token_build_from<NTreeNode>( l_2_node));
 
         NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
-        Slice<Token(NTreeNode)> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
+        Slice<Token<NTreeNode>> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
         assert_true(l_root_node_childs.Size == 2);
 
         {
             uimax l_counter = 0;
-            l_uimax_tree.traverse3(tk_b(NTreeNode, 0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+            l_uimax_tree.traverse3(token_build<NTreeNode>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
                 l_counter += 1;
                 *p_node.Element += 1;
             });
@@ -973,20 +973,20 @@ inline void ntree_test()
     // add_child
     {
         l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-        Token(uimax) l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
-        Token(uimax) l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        Token<uimax> l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        Token<uimax> l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
 
         assert_true(l_uimax_tree.add_child(l_3_node, l_2_2_node));
 
-        Slice<Token(NTreeNode)> l_2_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_2_node));
+        Slice<Token<NTreeNode>> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>( l_2_node));
         assert_true(l_2_node_childs.Size == 1);
-        assert_true(tk_v(l_2_node_childs.get(0)) == tk_v(l_2_1_node));
+        assert_true(token_value(l_2_node_childs.get(0)) == token_value(l_2_1_node));
 
-        Slice<Token(NTreeNode)> l_3_node_childs = l_uimax_tree.get_childs_from_node(tk_bf(NTreeNode, l_3_node));
+        Slice<Token<NTreeNode>> l_3_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>( l_3_node));
         assert_true(l_3_node_childs.Size == 2);
-        assert_true(tk_v(l_3_node_childs.get(1)) == tk_v(l_2_2_node));
+        assert_true(token_value(l_3_node_childs.get(1)) == token_value(l_2_2_node));
 
-        assert_true(tk_v(l_uimax_tree.get(l_2_2_node).Node->parent) == tk_v(l_3_node));
+        assert_true(token_value(l_uimax_tree.get(l_2_2_node).Node->parent) == token_value(l_3_node));
     }
 
     l_uimax_tree.free();
@@ -997,10 +997,10 @@ inline void assert_heap_integrity(Heap* p_heap)
     uimax l_calculated_size = 0;
     for (loop(i, 0, p_heap->AllocatedChunks.get_size()))
     {
-        // Token(SliceIndex)* l_chunk = ;
-        if (!p_heap->AllocatedChunks.is_element_free(Token(SliceIndex){i}))
+        // Token<SliceIndex>* l_chunk = ;
+        if (!p_heap->AllocatedChunks.is_element_free(Token<SliceIndex>{i}))
         {
-            l_calculated_size += p_heap->AllocatedChunks.get(Token(SliceIndex){i}).Size;
+            l_calculated_size += p_heap->AllocatedChunks.get(Token<SliceIndex>{i}).Size;
         };
     }
 
@@ -1017,9 +1017,9 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     uimax l_calculated_size = 0;
     for (loop(i, 0, p_heap_paged->AllocatedChunks.get_size()))
     {
-        if (!p_heap_paged->AllocatedChunks.is_element_free(Token(SliceIndex){i}))
+        if (!p_heap_paged->AllocatedChunks.is_element_free(Token<SliceIndex>{i}))
         {
-            l_calculated_size += p_heap_paged->AllocatedChunks.get(Token(SliceIndex){i}).Size;
+            l_calculated_size += p_heap_paged->AllocatedChunks.get(Token<SliceIndex>{i}).Size;
         };
     }
 
@@ -1182,7 +1182,7 @@ inline void heap_memory_test()
     HeapMemory l_heap_memory = HeapMemory::allocate(l_initial_heap_size);
 
     uimax l_element = 10;
-    Token(SliceIndex) l_sigle_sizet_chunk;
+    Token<SliceIndex> l_sigle_sizet_chunk;
 
     // single allocation
     {
@@ -1825,7 +1825,7 @@ inline void barrier_test()
 
 inline void native_window()
 {
-    Token(Window) l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    Token<Window> l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
     Window& l_allocated_window = WindowAllocator::get_window(l_window);
     assert_true(!l_allocated_window.is_closing);
 
@@ -1893,8 +1893,4 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
-    barrier_test();
-    native_window();
-
-    memleak_ckeck();
-};
+}

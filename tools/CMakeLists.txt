@@ -41,3 +41,7 @@ target_compile_definitions(MaterialViewerTest PUBLIC ASSET_FOLDER_PATH="${ASSET_
 add_executable(AssetCompilerEditorExec ./AssetCompiler/assetcompiler_standalone.cpp)
 target_link_libraries(AssetCompilerEditorExec PUBLIC AssetCompilerEditor)
 target_compile_definitions(AssetCompilerEditorExec PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/")
+
+add_executable(AssetCompilerEditorTest ./AssetCompiler/test/assetcompiler_tool_test.cpp)
+target_link_libraries(AssetCompilerEditorTest PUBLIC AssetCompilerEditor)
+target_compile_definitions(AssetCompilerEditorTest PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/")

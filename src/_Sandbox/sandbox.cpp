@@ -8,7 +8,7 @@ struct SandboxTestUtil
     inline static void render_texture_compare(Engine& p_engine, const Slice<int8>& p_compared_image_path)
     {
         ImageFormat l_rendertarget_texture_format;
-        Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+        Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
             &l_rendertarget_texture_format);
 
@@ -25,7 +25,7 @@ struct SandboxTestUtil
     inline static void render_texture_screenshot(Engine& p_engine, const Slice<int8>& p_path)
     {
         ImageFormat l_rendertarget_texture_format;
-        Token(BufferHost) l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+        Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_engine.gpu_context.buffer_memory, p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.graphics_allocator.heap.graphics_pass.get(p_engine.renderer.color_step.pass), 0,
             &l_rendertarget_texture_format);
 
@@ -119,7 +119,7 @@ inline void engine_thread_test()
     // only one engine
     {
         s_engine_cb engine_cb{};
-        Token(EngineExecutionUnit) l_engine_eu_1 =
+        Token<EngineExecutionUnit> l_engine_eu_1 =
             l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb.build_external_step_callback(), engine_cb.build_cleanup_callback());
         l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
         l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
@@ -139,9 +139,9 @@ inline void engine_thread_test()
     {
         s_engine_cb engine_cb_1{};
         s_engine_cb engine_cb_2{};
-        Token(EngineExecutionUnit) l_engine_eu_1 =
+        Token<EngineExecutionUnit> l_engine_eu_1 =
             l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_1.build_external_step_callback(), engine_cb_1.build_cleanup_callback());
-        Token(EngineExecutionUnit) l_engine_eu_2 =
+        Token<EngineExecutionUnit> l_engine_eu_2 =
             l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_2.build_external_step_callback(), engine_cb_2.build_cleanup_callback());
 
         l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
@@ -203,14 +203,14 @@ inline void engine_thread_test()
 
 struct BoxCollisionSandboxEnvironment
 {
-    Token(Node) moving_node;
-    Token(ColliderDetector) moving_node_collider_detector;
-    Token(Node) static_node;
-    Token(BoxColliderComponent) static_node_boxcollider_component;
+    Token<Node> moving_node;
+    Token<ColliderDetector> moving_node_collider_detector;
+    Token<Node> static_node;
+    Token<BoxColliderComponent> static_node_boxcollider_component;
 
     inline static BoxCollisionSandboxEnvironment build_default()
     {
-        return BoxCollisionSandboxEnvironment{tk_bd(Node), tk_bd(ColliderDetector), tk_bd(Node), tk_bd(BoxColliderComponent)};
+        return BoxCollisionSandboxEnvironment{token_build_default<Node>(), token_build_default<ColliderDetector>(), token_build_default<Node>(), token_build_default<BoxColliderComponent>()};
     };
 
     inline void step(EngineExternalStep p_step, Engine& p_engine)
@@ -230,7 +230,7 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
+                    assert_true(token_equals(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
                     assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_ENTER);
                 }
                 break;
@@ -242,7 +242,7 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
+                    assert_true(token_equals(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
                     assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_STAY);
                 }
                 break;
@@ -251,7 +251,7 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
+                    assert_true(token_equals(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
                     assert_true(l_0_trigger_events.get(0).state == Trigger::State::TRIGGER_EXIT);
                 }
                 break;
@@ -260,7 +260,7 @@ struct BoxCollisionSandboxEnvironment
                     BoxColliderComponent l_static_node_boxcollider =
                         p_engine.scene_middleware.collision_middleware.allocator.get_or_allocate_box_collider(p_engine.collision, this->static_node_boxcollider_component);
                     assert_true(l_0_trigger_events.Size == 1);
-                    assert_true(tk_eq(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
+                    assert_true(token_equals(l_0_trigger_events.get(0).other, l_static_node_boxcollider.box_collider));
                     assert_true(l_0_trigger_events.get(0).state == Trigger::State::NONE);
                 }
                 break;
@@ -275,14 +275,14 @@ struct BoxCollisionSandboxEnvironment
                 this->moving_node = p_engine.scene.add_node(transform{v3f{0.0f, 1.0f, 0.0f}, quat_const::IDENTITY, v3f_const::ONE}, Scene_const::root_node);
                 this->static_node = p_engine.scene.add_node(transform{v3f{2.0f, 1.0f, 0.0f}, quat_const::IDENTITY, v3f_const::ONE}, Scene_const::root_node);
 
-                Token(BoxColliderComponent) l_node_1_box_collider_component =
+                Token<BoxColliderComponent> l_node_1_box_collider_component =
                     p_engine.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(p_engine.collision, this->moving_node, BoxColliderComponentAsset{v3f_const::ONE});
-                p_engine.scene.add_node_component_by_value(this->moving_node, NodeComponent::build(BoxColliderComponent::Type, tk_v(l_node_1_box_collider_component)));
+                p_engine.scene.add_node_component_by_value(this->moving_node, NodeComponent::build(BoxColliderComponent::Type, token_value(l_node_1_box_collider_component)));
                 this->moving_node_collider_detector = p_engine.scene_middleware.collision_middleware.allocator.attach_collider_detector(p_engine.collision, l_node_1_box_collider_component);
 
                 this->static_node_boxcollider_component =
                     p_engine.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(p_engine.collision, this->static_node, BoxColliderComponentAsset{v3f_const::ONE});
-                p_engine.scene.add_node_component_by_value(this->static_node, NodeComponent::build(BoxColliderComponent::Type, tk_v(this->static_node_boxcollider_component)));
+                p_engine.scene.add_node_component_by_value(this->static_node, NodeComponent::build(BoxColliderComponent::Type, token_value(this->static_node_boxcollider_component)));
             }
             else if (FrameCount(p_engine) == 2 || FrameCount(p_engine) == 3 || FrameCount(p_engine) == 4 || FrameCount(p_engine) == 5 || FrameCount(p_engine) == 6 || FrameCount(p_engine) == 7)
             {
@@ -338,8 +338,8 @@ const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"))
 struct D3RendererCubeSandboxEnvironment
 {
 
-    Token(Node) camera_node;
-    Token(Node) l_square_root_node;
+    Token<Node> camera_node;
+    Token<Node> l_square_root_node;
 
     inline static D3RendererCubeSandboxEnvironment build_default()
     {
@@ -363,7 +363,7 @@ struct D3RendererCubeSandboxEnvironment
                 {
                     this->l_square_root_node = p_engine.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
 
-                    Token(Node) l_node = CreateNode(p_engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
+                    Token<Node> l_node = CreateNode(p_engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);
                     NodeAddMeshRenderer(p_engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
 
                     l_node = CreateNode(p_engine, transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE}, this->l_square_root_node);

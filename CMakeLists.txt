@@ -55,4 +55,5 @@ add_custom_target(
         COMMAND Sandbox
         COMMAND AssetCompilerTest
         COMMAND MaterialViewerTest
+        COMMAND AssetCompilerEditorTest
 )

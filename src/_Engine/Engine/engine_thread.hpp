@@ -52,7 +52,7 @@ struct EngineRunnerThread
 {
     struct EngineAllocationEvent
     {
-        Token(EngineExecutionUnit) token;
+        Token<EngineExecutionUnit> token;
         String database_path;
         uint32 width;
         uint32 height;
@@ -111,10 +111,10 @@ struct EngineRunnerThread
         Thread::wait_for_end_and_terminate(this->thread, -1);
     };
 
-    inline Token(EngineExecutionUnit) allocate_engine_execution_unit(const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height, const EngineExternalStepCallback& p_step_cb,
+    inline Token<EngineExecutionUnit> allocate_engine_execution_unit(const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height, const EngineExternalStepCallback& p_step_cb,
                                                                      const EngineExecutionUnit::CleanupCallback& p_cleanup_cb)
     {
-        Token(EngineExecutionUnit) l_engine;
+        Token<EngineExecutionUnit> l_engine;
         this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
         {
             l_engine = this->engines.alloc_element(EngineExecutionUnit{});
@@ -126,7 +126,7 @@ struct EngineRunnerThread
         return l_engine;
     };
 
-    inline EngineExecutionUnit* sync_wait_for_engine_execution_unit_to_be_allocated(const Token(EngineExecutionUnit) p_engine_exectuion_unit)
+    inline EngineExecutionUnit* sync_wait_for_engine_execution_unit_to_be_allocated(const Token<EngineExecutionUnit> p_engine_exectuion_unit)
     {
         while (this->allocation_events.Size > 0)
         {
@@ -185,29 +185,29 @@ struct EngineRunnerThread
     };
 
     // /!\ WARNING - this doesn't guarantee that a full frame have passed by.
-    template <class t_EndOfFrameFunc> inline void sync_engine_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
+    template <class t_EndOfFrameFunc> inline void sync_engine_at_end_of_frame(const Token<EngineExecutionUnit> p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
     {
-        EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_execution_unit_token));
+        EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from<EngineSyncrhonisation>( p_execution_unit_token));
         l_engine_sync.end_of_frame.ask_and_wait_for_sync_1();
         p_callback();
         l_engine_sync.end_of_frame.notify_sync_2();
     };
 
-    template <class t_EndOfFrameFunc> inline void sync_engine_wait_for_one_whole_frame_at_end_of_frame(const Token(EngineExecutionUnit) p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
+    template <class t_EndOfFrameFunc> inline void sync_engine_wait_for_one_whole_frame_at_end_of_frame(const Token<EngineExecutionUnit> p_execution_unit_token, const t_EndOfFrameFunc& p_callback)
     {
         this->sync_engine_at_end_of_frame(p_execution_unit_token, []() {
         });
         this->sync_engine_at_end_of_frame(p_execution_unit_token, p_callback);
     };
 
-    inline void free_engine_execution_unit(const Token(EngineExecutionUnit) p_engine_execution_unit)
+    inline void free_engine_execution_unit(const Token<EngineExecutionUnit> p_engine_execution_unit)
     {
         sync_start_of_step([&]() {
             this->engines.get(p_engine_execution_unit).close();
         });
     };
 
-    inline void free_engine_execution_unit_sync(const Token(EngineExecutionUnit) p_engine_execution_unit)
+    inline void free_engine_execution_unit_sync(const Token<EngineExecutionUnit> p_engine_execution_unit)
     {
         this->synchronization.start_of_step_barrier.ask_and_wait_for_sync_1();
         this->synchronization.end_of_step_barrier.ask_for_sync_1();
@@ -257,25 +257,25 @@ struct EngineRunnerThread
             l_configuration.render_size.y = l_event.height;
 
             this->engines.get(l_event.token).allocate(l_configuration, l_event.external_loop_callback, l_event.cleanup_callback);
-            this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, l_event.token)).spawned = 1;
+            this->engine_synchronisation.get(token_build_from<EngineSyncrhonisation>( l_event.token)).spawned = 1;
 
             l_event.free();
         }
 
         this->allocation_events.clear();
 
-        this->engines.foreach_reverse([&](Token(EngineExecutionUnit) p_engine_token, EngineExecutionUnit& p_engine) {
+        this->engines.foreach_reverse([&](Token<EngineExecutionUnit> p_engine_token, EngineExecutionUnit& p_engine) {
             if (p_engine.engine.abort_condition)
             {
                 p_engine.free();
                 this->engines.release_element(p_engine_token);
-                this->engine_synchronisation.release_element(tk_bf(EngineSyncrhonisation, p_engine_token));
+                this->engine_synchronisation.release_element(token_build_from<EngineSyncrhonisation>( p_engine_token));
             }
             else
             {
                 if (p_engine.single_frame_no_block())
                 {
-                    EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(tk_bf(EngineSyncrhonisation, p_engine_token));
+                    EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from<EngineSyncrhonisation>( p_engine_token));
                     if (!l_engine_sync.end_of_frame.is_opened())
                     {
                         l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
@@ -322,7 +322,7 @@ struct EngineRunnerThread
 
         this->engine_synchronisation.free();
 
-        this->engines.foreach ([](Token(EngineExecutionUnit) p_engine_token, EngineExecutionUnit& p_engine) {
+        this->engines.foreach ([](Token<EngineExecutionUnit> p_engine_token, EngineExecutionUnit& p_engine) {
             p_engine.free();
         });
         this->engines.free();

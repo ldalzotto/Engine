@@ -82,7 +82,7 @@ struct AssetCompilerPassHeap
         this->asset_compilation_passes.free();
     };
 
-    inline void free_asset_compiler_pass(const Token(AssetCompilationPass) p_asset_compiler_pass_token)
+    inline void free_asset_compiler_pass(const Token<AssetCompilationPass> p_asset_compiler_pass_token)
     {
         this->asset_compilation_passes.get(p_asset_compiler_pass_token).free();
         this->asset_compilation_passes.release_element(p_asset_compiler_pass_token);
@@ -212,14 +212,14 @@ struct AssetCompilerConfigurationJSON
 struct AssetCompilerPassComposition
 {
     inline static void allocate_passes_from_json_configuration(AssetCompilerPassHeap& p_asset_compiler_pass_heap, const Slice<int8>& p_configuration_file_path, const Slice<int8>& p_asset_folder_root,
-                                                               Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass)
+                                                               Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
     {
         AssetCompilerConfigurationJSON l_asset_compiler_configuration = AssetCompilerConfigurationJSON::allocate_from_json_file(p_configuration_file_path, p_asset_folder_root);
         allocate_passes_from_inline(p_asset_compiler_pass_heap, l_asset_compiler_configuration, p_asset_folder_root, in_out_asset_compilation_pass);
     };
 
     inline static void allocate_passes_from_inline(AssetCompilerPassHeap& p_asset_compiler_pass_heap, AssetCompilerConfigurationJSON& p_configuration_file, const Slice<int8>& p_asset_folder_root,
-                                                   Vector<Token(AssetCompilationPass)>* in_out_asset_compilation_pass)
+                                                   Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
     {
         Vector<AssetCompilationPass> l_passes = p_configuration_file.consume_and_merge_to_passes();
         for (loop(i, 0, l_passes.Size))

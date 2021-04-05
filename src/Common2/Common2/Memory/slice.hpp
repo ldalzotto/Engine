@@ -259,9 +259,9 @@ template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(c
 
 #if __TOKEN
 #define sliceoftoken_cast(CastedType, SourceSlice)                                                                                                                                                     \
-    Slice<Token(CastedType)>                                                                                                                                                                           \
+    Slice<Token<CastedType>>                                                                                                                                                                           \
     {                                                                                                                                                                                                  \
-        (SourceSlice).Size, (Token(CastedType)*)(SourceSlice).Begin                                                                                                                                    \
+        (SourceSlice).Size, (Token<CastedType>*)(SourceSlice).Begin                                                                                                                                    \
     }
 #else
 #define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice

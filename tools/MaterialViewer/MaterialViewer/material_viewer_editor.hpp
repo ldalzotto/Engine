@@ -7,11 +7,11 @@
 struct MaterialViewerEngineUnit
 {
     int8 is_running;
-    Token(EngineExecutionUnit) engine_execution_unit;
+    Token<EngineExecutionUnit> engine_execution_unit;
 
-    Token(Node) camera_node;
-    Token(Node) material_node;
-    Token(MeshRendererComponent) material_node_meshrenderer;
+    Token<Node> camera_node;
+    Token<Node> material_node;
+    Token<MeshRendererComponent> material_node_meshrenderer;
 
     struct SharedRessources
     {
@@ -32,10 +32,10 @@ struct MaterialViewerEngineUnit
 
     inline void set_sefault_values()
     {
-        this->engine_execution_unit = tk_bd(EngineExecutionUnit);
-        this->material_node_meshrenderer = tk_bd(MeshRendererComponent);
-        this->camera_node = tk_bd(Node);
-        this->material_node = tk_bd(Node);
+        this->engine_execution_unit = token_build_default<EngineExecutionUnit>();
+        this->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
+        this->camera_node = token_build_default<Node>();
+        this->material_node = token_build_default<Node>();
     };
 
     inline void free(EngineRunnerThread& p_engine_runner)
@@ -99,7 +99,7 @@ struct MaterialViewerEngineUnit
             thiz->shared.acquire([&](SharedRessources& p_shared){
               if (p_shared.change_requested)
               {
-                  if (tk_v(thiz->material_node_meshrenderer) != -1)
+                  if (token_value(thiz->material_node_meshrenderer) != -1)
                   {
                       NodeRemoveMeshRenderer(p_engine, thiz->material_node);
                   }
@@ -117,7 +117,7 @@ struct MaterialViewerEngineUnit
     {
         RemoveNode(p_engine, thiz->camera_node);
         RemoveNode(p_engine, thiz->material_node);
-        thiz->material_node_meshrenderer = tk_bd(MeshRendererComponent);
+        thiz->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
         thiz->is_running = 0;
     };
 };

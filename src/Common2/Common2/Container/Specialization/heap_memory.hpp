@@ -24,7 +24,7 @@ struct HeapMemory
         this->Memory.free();
     };
 
-    inline Token(SliceIndex) allocate_element(const Slice<int8>* p_element_bytes)
+    inline Token<SliceIndex> allocate_element(const Slice<int8>* p_element_bytes)
     {
         HeapA::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_bytes->Size, &l_heap_allocated_element));
@@ -32,14 +32,14 @@ struct HeapMemory
         return l_heap_allocated_element.token;
     };
 
-    inline Token(SliceIndex) allocate_empty_element(const uimax p_element_size)
+    inline Token<SliceIndex> allocate_empty_element(const uimax p_element_size)
     {
         HeapA::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
         return l_heap_allocated_element.token;
     };
 
-    inline Token(SliceIndex) allocate_empty_element_return_chunk(const uimax p_element_size, Slice<int8>* out_chunk)
+    inline Token<SliceIndex> allocate_empty_element_return_chunk(const uimax p_element_size, Slice<int8>* out_chunk)
     {
         HeapA::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
@@ -47,33 +47,33 @@ struct HeapMemory
         return l_heap_allocated_element.token;
     };
 
-    inline Token(SliceIndex) allocate_element(const Slice<int8> p_element_bytes)
+    inline Token<SliceIndex> allocate_element(const Slice<int8> p_element_bytes)
     {
         return this->allocate_element(&p_element_bytes);
     };
 
-    template <class ELementType> inline Token(SliceIndex) allocate_element_typed(const ELementType* p_element)
+    template <class ELementType> inline Token<SliceIndex> allocate_element_typed(const ELementType* p_element)
     {
         return this->allocate_element(Slice<ELementType>::build_asint8_memory_singleelement(p_element));
     };
 
-    template <class ELementType> inline Token(SliceIndex) allocate_element_typed(const ELementType p_element)
+    template <class ELementType> inline Token<SliceIndex> allocate_element_typed(const ELementType p_element)
     {
         return this->allocate_element_typed(&p_element);
     };
 
-    inline void release_element(const Token(SliceIndex) p_chunk)
+    inline void release_element(const Token<SliceIndex> p_chunk)
     {
         this->_Heap.release_element(p_chunk);
     };
 
-    inline Slice<int8> get(const Token(SliceIndex) p_chunk)
+    inline Slice<int8> get(const Token<SliceIndex> p_chunk)
     {
         SliceIndex* l_chunk_slice = this->_Heap.get(p_chunk);
         return Slice<int8>::build_memory_offset_elementnb(this->Memory.Memory, l_chunk_slice->Begin, l_chunk_slice->Size);
     };
 
-    template <class ElementType> inline ElementType* get_typed(const Token(SliceIndex) p_chunk)
+    template <class ElementType> inline ElementType* get_typed(const Token<SliceIndex> p_chunk)
     {
         return slice_cast_singleelement<ElementType>(this->get(p_chunk));
     };

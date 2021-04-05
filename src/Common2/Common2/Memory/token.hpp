@@ -17,34 +17,70 @@ inline int8 tokent_is_valid(const token_t* p_token)
     return *p_token != (token_t)-1;
 };
 
-#if __TOKEN
+#if __DEBUG
 
 template <class ElementType> struct Token
 {
     token_t tok;
 };
 
-#define tk_b(ElementType, TokenT)                                                                                                                                                                      \
-    Token<ElementType>                                                                                                                                                                                 \
-    {                                                                                                                                                                                                  \
-        (token_t)(TokenT)                                                                                                                                                                              \
-    }
+template <class ElementType, class OtherType> inline int8 token_equals(const Token<ElementType> p_left, const Token<OtherType> p_right)
+{
+    return p_left.tok == p_right.tok;
+};
 
-#define tk_v(TokenVariable) ((TokenVariable).tok)
+template <class CastedType, class ElementType> inline Token<CastedType> token_build_from(const Token<ElementType> p_token)
+{
+    return Token<CastedType>{p_token.tok};
+};
 
-#define Token(ElementType) Token<ElementType>
+template <class ElementType> inline token_t token_value(const Token<ElementType> p_token)
+{
+    return p_token.tok;
+};
 
-#else
+template <class ElementType> inline Token<ElementType> token_build_default()
+{
+    return Token<ElementType>{(token_t)-1};
+};
 
-#define tk_b(ElementType, TokenT) (token_t) TokenT
+template <class ElementType> inline Token<ElementType> token_build(const token_t p_token)
+{
+    return Token<ElementType>{p_token};
+};
 
-#define tk_v(TokenVariable) (TokenVariable)
+#elif __RELEASE
 
-#define Token(ElementType) uimax
+template <class ElementType> using Token = token_t;
+
+inline int8 token_equals(const token_t p_left, const token_t p_right)
+{
+    return p_left == p_right;
+}
+
+template <class CastedType>
+inline token_t token_build_from(const token_t p_token)
+{
+    return p_token;
+};
+
+inline token_t token_value(const token_t p_token)
+{
+    return p_token;
+};
+
+template <class ElementType>
+inline token_t token_build_default()
+{
+    return (token_t)-1;
+};
+
+template <class ElementType>
+inline token_t token_build(const token_t p_token)
+{
+    return p_token;
+};
 
 #endif
 
-#define tk_bd(ElementType) tk_b(ElementType, -1)
-#define tk_bf(ElementType, SourceToken) tk_b(ElementType, tk_v(SourceToken))
-#define tk_eq(Left, Right) (tk_v(Left) == tk_v(Right))
-#define tk_neq(Left, Right) (tk_v(Left) != tk_v(Right))
+
