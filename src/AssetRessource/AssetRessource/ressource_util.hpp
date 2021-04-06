@@ -13,8 +13,9 @@ struct RessourceComposition
     };
 
     template <class t_RessourceType, class t_RessourceAllocationEventType, class t_RessourceFreeEventType>
-    inline static FreeRessourceCompositionReturnCode free_ressource_composition_2(PoolHashedCounted<hash_t, t_RessourceType>& p_pool_hashed_counted, Vector<t_RessourceFreeEventType>& p_ressource_free_events,
-                                                    Vector<t_RessourceAllocationEventType>& p_ressource_allocation_events, const t_RessourceType& p_material)
+    inline static FreeRessourceCompositionReturnCode free_ressource_composition_2(PoolHashedCounted<hash_t, t_RessourceType>& p_pool_hashed_counted,
+                                                                                  Vector<t_RessourceFreeEventType>& p_ressource_free_events,
+                                                                                  Vector<t_RessourceAllocationEventType>& p_ressource_allocation_events, const t_RessourceType& p_material)
     {
         hash_t l_key = p_material.header.id;
 
@@ -53,12 +54,16 @@ struct RessourceComposition
         return FreeRessourceCompositionReturnCode::DECREMENTED;
     };
 
-
     /*
         If the the Ressource is allocated from the asset database, this function try to retrieve asset from database by it's id and map it to the asset value
     */
+    /*
+     * TODO -> we want to remove this function. What we want to be able to do is to not check allocation type but to have an array of asset database task that are executing in chunk, before the actual
+     *         allocation. In fact, this check is already done by the ressource allocation function called.
+     */
     template <class t_RessourceAssetType>
-    inline static void retrieve_ressource_asset_from_database_if_necessary(DatabaseConnection& p_database_conncetion, AssetDatabase& p_asset_database, const RessourceIdentifiedHeader& p_ressource_header, t_RessourceAssetType* in_out_asset)
+    inline static void retrieve_ressource_asset_from_database_if_necessary(DatabaseConnection& p_database_conncetion, AssetDatabase& p_asset_database,
+                                                                           const RessourceIdentifiedHeader& p_ressource_header, t_RessourceAssetType* in_out_asset)
     {
         switch (p_ressource_header.allocation_type)
         {
@@ -71,5 +76,4 @@ struct RessourceComposition
             abort();
         }
     };
-
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct BoxColliderComponentAsset
 {
     v3f half_extend;
@@ -59,7 +58,6 @@ struct CollisionMiddleware
 
     void step(Collision2& p_collision, Scene* p_scene);
 };
-
 
 inline CollisionAllocator CollisionAllocator::allocate_default()
 {

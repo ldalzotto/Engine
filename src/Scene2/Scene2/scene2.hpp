@@ -60,7 +60,7 @@ inline NodeEntry SceneTree::get_node(const Token<Node> p_node)
 
 inline NodeEntry SceneTree::get_node_parent(const NodeEntry& p_node)
 {
-    return this->get_node(token_build_from<Node>( p_node.Node->parent));
+    return this->get_node(token_build_from<Node>(p_node.Node->parent));
 };
 
 inline Slice<Token<Node>> SceneTree::get_node_childs(const NodeEntry& p_node)
@@ -132,7 +132,7 @@ inline void SceneTree::set_worldposition(const NodeEntry& p_node, const v3f& p_w
     }
     else
     {
-        NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+        NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
         this->set_localposition(p_node, (this->get_worldtolocal(l_parent) * v4f::build_v3f_s(p_world_position, 1.0f)).Vec3);
     }
 };
@@ -145,7 +145,7 @@ inline void SceneTree::set_worldrotation(const NodeEntry& p_node, const quat& p_
     }
     else
     {
-        NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+        NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
         this->set_localrotation(p_node, this->get_worldrotation(l_parent).inv() * p_world_rotation);
     }
 };
@@ -163,7 +163,7 @@ inline void SceneTree::set_worldscale(const NodeEntry& p_node, const v3f& p_worl
     }
     else
     {
-        NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+        NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
         set_localscale(p_node, p_world_scale * this->get_worldscalefactor(l_parent).inv());
     }
 };
@@ -181,7 +181,7 @@ inline quat SceneTree::get_worldrotation(const NodeEntry& p_node)
     }
     else
     {
-        NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+        NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
         return this->get_worldrotation(l_parent) * p_node.Element->local_transform.rotation;
     }
 };
@@ -194,7 +194,7 @@ inline v3f SceneTree::get_worldscalefactor(const NodeEntry& p_node)
     }
     else
     {
-        NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+        NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
         return this->get_worldscalefactor(l_parent) * p_node.Element->local_transform.scale;
     }
 };
@@ -212,7 +212,9 @@ inline m44f SceneTree::get_worldtolocal(const NodeEntry& p_node)
 
 inline void SceneTree::clear_nodes_state()
 {
-    this->node_tree.traverse3(token_build<NTreeNode>(0), [](const NodeEntry& p_node) { p_node.Element->state.haschanged_thisframe = false; });
+    this->node_tree.traverse3(token_build<NTreeNode>(0), [](const NodeEntry& p_node) {
+        p_node.Element->state.haschanged_thisframe = false;
+    });
 };
 
 inline Token<Node> SceneTree::allocate_node(const transform& p_initial_local_transform, const Token<Node> p_parent)
@@ -229,7 +231,9 @@ inline Token<Node> SceneTree::allocate_root_node()
 
 inline void SceneTree::mark_node_for_recalculation_recursive(const NodeEntry& p_node)
 {
-    this->node_tree.traverse3(token_build_from<NTreeNode>( p_node.Node->index), [](const NodeEntry& p_node) { p_node.Element->mark_for_recaluclation(); });
+    this->node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [](const NodeEntry& p_node) {
+        p_node.Element->mark_for_recaluclation();
+    });
 };
 
 inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
@@ -240,7 +244,7 @@ inline void SceneTree::updatematrices_if_necessary(const NodeEntry& p_node)
 
         if (p_node.has_parent())
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>( p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
             p_node.Element->localtoworld = this->get_localtoworld(l_parent) * p_node.Element->localtoworld;
         }
         p_node.Element->state.matrices_mustBe_recalculated = false;
@@ -348,23 +352,23 @@ inline void Scene::remove_node(const NodeEntry& p_node)
 
     NodeEntry l_node_copy = p_node;
     this->tree.node_tree.make_node_orphan(l_node_copy);
-    this->orphan_nodes.push_back_element(token_build_from<Node>( p_node.Node->index));
+    this->orphan_nodes.push_back_element(token_build_from<Node>(p_node.Node->index));
 
-    this->tree.node_tree.traverse3(token_build_from<NTreeNode>( p_node.Node->index), [this](const NodeEntry& p_tree_node) {
-        this->node_that_will_be_destroyed.push_back_element(token_build_from<Node>( p_tree_node.Node->index));
+    this->tree.node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [this](const NodeEntry& p_tree_node) {
+        this->node_that_will_be_destroyed.push_back_element(token_build_from<Node>(p_tree_node.Node->index));
 
-        Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>( p_tree_node.Node->index));
+        Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
         for (loop(i, 0, l_node_component_tokens.Size))
         {
-            this->component_removed_events.push_back_element(ComponentRemovedEvent::build(token_build_from<Node>( p_tree_node.Node->index), l_node_component_tokens.get(i)));
+            this->component_removed_events.push_back_element(ComponentRemovedEvent::build(token_build_from<Node>(p_tree_node.Node->index), l_node_component_tokens.get(i)));
         }
-        this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>( p_tree_node.Node->index));
+        this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
     });
 };
 
 inline void Scene::add_node_component_by_value(const Token<Node> p_node, const NodeComponent& p_component)
 {
-    this->node_to_components.element_push_back_element(token_build_from<Slice<NodeComponent>>( p_node), p_component);
+    this->node_to_components.element_push_back_element(token_build_from<Slice<NodeComponent>>(p_node), p_component);
 };
 
 template <class ComponentType> inline void Scene::add_node_component_typed(const Token<Node> p_node, const token_t p_component_ressource)
@@ -374,7 +378,7 @@ template <class ComponentType> inline void Scene::add_node_component_typed(const
 
 inline NodeComponent* Scene::get_node_component_by_type(const Token<Node> p_node, const component_t p_type)
 {
-    Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>( p_node));
+    Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
     for (loop(i, 0, l_components.Size))
     {
         NodeComponent& l_component = l_components.get(i);
@@ -394,7 +398,7 @@ template <class ComponentType> inline NodeComponent* Scene::get_node_component_t
 
 inline Slice<NodeComponent> Scene::get_node_components(const Token<Node> p_node)
 {
-    return this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>( p_node));
+    return this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
 };
 
 inline void Scene::remove_node_component(const Token<Node> p_node, const component_t p_component_type)
@@ -413,14 +417,14 @@ template <class ComponentType> inline void Scene::remove_node_component_typed(co
 
 inline int8 Scene::remove_node_component_by_type(const Token<Node> p_node, const component_t p_type, NodeComponent* out_component)
 {
-    Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>( p_node));
+    Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
     for (loop(i, 0, l_components.Size))
     {
         NodeComponent& l_component = l_components.get(i);
         if (l_component.type == p_type)
         {
             *out_component = l_component;
-            this->node_to_components.element_erase_element_at_always(token_build_from<Slice<NodeComponent>>( p_node), i);
+            this->node_to_components.element_erase_element_at_always(token_build_from<Slice<NodeComponent>>(p_node), i);
             this->component_removed_events.push_back_element(ComponentRemovedEvent::build(p_node, *out_component));
             return 1;
         }

@@ -463,8 +463,8 @@ struct ShaderRessourceUnit
         }
     };
 
-    inline Token<ShaderRessource>
-        allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const ShaderRessource::Asset& p_asset, const ShaderRessource::Dependencies& p_dependencies)
+    inline Token<ShaderRessource> allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const ShaderRessource::Asset& p_asset,
+                                                     const ShaderRessource::Dependencies& p_dependencies)
     {
         Token<ShaderRessource> l_shader_module_ressource =
             this->shaders.push_back_element(p_id, ShaderRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, token_build_default<ShaderIndex>(), p_dependencies});
@@ -500,9 +500,10 @@ struct ShaderRessourceUnit
 
 struct ShaderRessourceComposition
 {
-    inline static Token<ShaderRessource>
-        allocate_or_increment_inline(ShaderRessourceUnit& p_unit, ShaderModuleRessourceUnit& p_shader_module_unit, const ShaderRessource::InlineAllocationInput& p_inline_input,
-                                     const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input, const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input)
+    inline static Token<ShaderRessource> allocate_or_increment_inline(ShaderRessourceUnit& p_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                      const ShaderRessource::InlineAllocationInput& p_inline_input,
+                                                                      const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input,
+                                                                      const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input)
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
@@ -520,9 +521,10 @@ struct ShaderRessourceComposition
         }
     };
 
-    inline static Token<ShaderRessource>
-        allocate_or_increment_database(ShaderRessourceUnit& p_unit, ShaderModuleRessourceUnit& p_shader_module_unit, const ShaderRessource::DatabaseAllocationInput& p_inline_input,
-                                       const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input, const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
+    inline static Token<ShaderRessource> allocate_or_increment_database(ShaderRessourceUnit& p_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                        const ShaderRessource::DatabaseAllocationInput& p_inline_input,
+                                                                        const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                        const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
@@ -663,8 +665,8 @@ struct MaterialRessourceUnit
         }
     };
 
-    inline Token<MaterialRessource>
-        allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const MaterialRessource::Asset& p_asset, const MaterialRessource::Dependencies& p_dependencies)
+    inline Token<MaterialRessource> allocate_ressource(const hash_t p_id, const RessourceAllocationType p_ressource_allocation_type, const MaterialRessource::Asset& p_asset,
+                                                       const MaterialRessource::Dependencies& p_dependencies)
     {
         Token<MaterialRessource> l_shader_module_ressource =
             this->materials.push_back_element(p_id, MaterialRessource{RessourceIdentifiedHeader{p_ressource_allocation_type, 0, p_id}, token_build_default<Material>(), p_dependencies});
@@ -700,10 +702,11 @@ struct MaterialRessourceUnit
 
 struct MaterialRessourceComposition
 {
-    inline static Token<MaterialRessource>
-        allocate_or_increment_inline(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit, TextureRessourceUnit& p_texture_unit,
-                                     const MaterialRessource::InlineAllocationInput& p_inline_input, const ShaderRessource::InlineAllocationInput& p_shader_input,
-                                     const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input, const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input)
+    inline static Token<MaterialRessource> allocate_or_increment_inline(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                        TextureRessourceUnit& p_texture_unit, const MaterialRessource::InlineAllocationInput& p_inline_input,
+                                                                        const ShaderRessource::InlineAllocationInput& p_shader_input,
+                                                                        const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input,
+                                                                        const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input)
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
@@ -728,10 +731,11 @@ struct MaterialRessourceComposition
         }
     };
 
-    inline static Token<MaterialRessource>
-        allocate_database(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit, TextureRessourceUnit& p_texture_unit,
-                          const MaterialRessource::DatabaseAllocationInput& p_inline_input, const ShaderRessource::DatabaseAllocationInput& p_shader_input,
-                          const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input, const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
+    inline static Token<MaterialRessource> allocate_database(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                             TextureRessourceUnit& p_texture_unit, const MaterialRessource::DatabaseAllocationInput& p_inline_input,
+                                                             const ShaderRessource::DatabaseAllocationInput& p_shader_input,
+                                                             const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                             const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         MaterialRessource::Dependencies l_dependencies;
         l_dependencies.shader = ShaderRessourceComposition::allocate_or_increment_database(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
@@ -746,10 +750,11 @@ struct MaterialRessourceComposition
         return p_unit.allocate_ressource(p_inline_input.id, RessourceAllocationType::ASSET_DATABASE, MaterialRessource::Asset{}, l_dependencies);
     };
 
-    inline static Token<MaterialRessource>
-        allocate_or_increment_database(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit, TextureRessourceUnit& p_texture_unit,
-                                       const MaterialRessource::DatabaseAllocationInput& p_inline_input, const ShaderRessource::DatabaseAllocationInput& p_shader_input,
-                                       const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input, const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
+    inline static Token<MaterialRessource> allocate_or_increment_database(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                          TextureRessourceUnit& p_texture_unit, const MaterialRessource::DatabaseAllocationInput& p_inline_input,
+                                                                          const ShaderRessource::DatabaseAllocationInput& p_shader_input,
+                                                                          const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                          const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         if (p_unit.is_ressource_id_allocated(p_inline_input.id))
         {
@@ -764,9 +769,9 @@ struct MaterialRessourceComposition
         }
     };
 
-    inline static Token<MaterialRessource>
-        allocate_or_increment_database_and_load_dependecies(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
-                                                            TextureRessourceUnit& p_texture_unit, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id)
+    inline static Token<MaterialRessource> allocate_or_increment_database_and_load_dependecies(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit,
+                                                                                               ShaderModuleRessourceUnit& p_shader_module_unit, TextureRessourceUnit& p_texture_unit,
+                                                                                               DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id)
     {
         if (p_unit.is_ressource_id_allocated(p_id))
         {

@@ -1,5 +1,9 @@
 site_name: EngineCPP
 theme: 'windmill'
+nav:
+    - 'Architecture Overview': 'architecture_overview.md'
+    - 'Render': 'render.md'
+    - 'GPU': 'gpu.md'
 extra_javascript:
     - ./js/custom.js
 extra_css:
