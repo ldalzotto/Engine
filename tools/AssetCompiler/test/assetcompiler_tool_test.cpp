@@ -30,9 +30,19 @@ struct qt_test
 // TODO -> write test
 /*
     1/ Loading configurations from file and ensure that the requested compilation pass have been taken into account
-    2/
+       Then execute compilation and assert result.
+       Ensure that only the selected pass are processed.
 
+    2/ Configuration file reloading.
 */
+
+inline void compilation_execution(qt_test& p_qt_test)
+{
+    AssetCompilerEditor l_asset_compiler_editor{};
+    l_asset_compiler_editor.allocate();
+
+    l_asset_compiler_editor.free();
+};
 
 int main(int argc, char* argv[])
 {

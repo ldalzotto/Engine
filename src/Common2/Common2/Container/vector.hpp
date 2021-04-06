@@ -234,12 +234,29 @@ template <class ElementType> struct Vector
         }
     };
 
-    template<class Predicate_t>
-    inline void erase_if(const Predicate_t& p_predicate)
+    // TODO -> write test
+    inline void erase_array_at_always(const uimax p_index, const uimax p_size)
     {
-        for(loop_reverse(i, 0, this->Size))
+        uimax l_insert_head = p_index + p_size;
+#if __DEBUG
+        this->bound_check(l_insert_head);
+#endif
+
+        if (l_insert_head == this->Size - 1)
         {
-            if(p_predicate(this->get(i)))
+            this->pop_back_array(p_size);
+        }
+        else
+        {
+            this->erase_array_at(p_index, p_size);
+        }
+    };
+
+    template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
+    {
+        for (loop_reverse(i, 0, this->Size))
+        {
+            if (p_predicate(this->get(i)))
             {
                 this->erase_element_at_always(i);
             }
@@ -248,7 +265,7 @@ template <class ElementType> struct Vector
 
     inline void erase_all_elements_that_matches_element(const ElementType& p_compared_element)
     {
-        this->erase_if([&](const ElementType& p_element){
+        this->erase_if([&](const ElementType& p_element) {
             return p_element == p_compared_element;
         });
     };
@@ -329,5 +346,4 @@ template <class ElementType> struct Vector
 #define sv_c_erase_element_at_always(p_shadow_vector, p_index) (p_shadow_vector).sv_func_erase_element_at_always(p_index)
 #define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector).sv_func_push_back_element(p_element)
 #define sv_c_to_slice(p_shadow_vector) (p_shadow_vector).sv_func_to_slice()
-
 };

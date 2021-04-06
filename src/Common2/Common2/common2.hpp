@@ -66,6 +66,7 @@
 #include "./Container/Specialization/heap_memory.hpp"
 
 #include "./Functional/string_functions.hpp"
+#include "./Functional/path.hpp"
 
 #include "./File/file.hpp"
 #include "./File/shared_lib_loader.hpp"

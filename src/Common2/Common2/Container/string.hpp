@@ -39,12 +39,25 @@ struct String
     inline void erase_array_at(const uimax p_index, const uimax p_size)
     {
 #if __DEBUG
-        if ((p_index + p_size) == this->get_size() - 1)
+        if ((p_index + p_size) == this->get_length())
         {
             abort();
         }
 #endif
         this->Memory.erase_array_at(p_index, p_size);
+    };
+
+    inline void pop_back_array(const uimax p_size){
+        #if __DEBUG
+        assert_true(this->get_length() >= p_size);
+        #endif
+
+        this->Memory.erase_array_at(this->get_length() - p_size, p_size);
+    };
+
+    inline void erase_array_at_always(const uimax p_index, const uimax p_size)
+    {
+        this->Memory.erase_array_at_always(p_index, p_size);
     };
 
     inline int8& get(const uimax p_index)

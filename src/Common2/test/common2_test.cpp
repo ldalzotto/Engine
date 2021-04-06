@@ -72,6 +72,43 @@ inline void slice_span_test()
     }
 };
 
+inline void slice_functional_algorithm_test()
+{
+    // find
+    {
+        Slice<int8> l_char_slice = slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch.");
+
+        uimax l_index;
+        assert_true(l_char_slice.find(slice_int8_build_rawstr("efor"), &l_index) == 1);
+        assert_true(l_index == 27);
+
+        // no found
+        l_index = 0;
+        assert_true(l_char_slice.find(slice_int8_build_rawstr("eforc"), &l_index) == 0);
+    }
+
+    // last_index_of
+    {
+        Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path");
+        Slice<int8> l_compared = slice_int8_build_rawstr("/");
+        uimax l_index;
+        assert_true(l_path_slice.last_index_of(l_compared, &l_index));
+        assert_true(l_index == 9);
+        assert_true(l_path_slice.get(l_index) == '/');
+        assert_true(!l_path_slice.last_index_of(slice_int8_build_rawstr("m"), &l_index));
+    }
+
+    // last_index_of_not_endofslice
+    {
+        Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path/");
+        Slice<int8> l_compared = slice_int8_build_rawstr("/");
+        uimax l_index;
+        assert_true(l_path_slice.last_index_of_not_endofslice(l_compared, &l_index));
+        assert_true(l_index == 9);
+        assert_true(l_path_slice.get(l_index) == '/');
+    }
+};
+
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
@@ -913,7 +950,7 @@ inline void ntree_test()
             assert_true(l_childs_indices.Size == 3);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(token_build_from<uimax>( l_childs_indices.get(i))) == i + 1);
+                assert_true(l_uimax_tree.get_value(token_build_from<uimax>(l_childs_indices.get(i))) == i + 1);
             }
         }
 
@@ -929,7 +966,7 @@ inline void ntree_test()
             assert_true(l_childs_indices.Size == 2);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(token_build_from<uimax>( l_childs_indices.get(i))) == i + 4);
+                assert_true(l_uimax_tree.get_value(token_build_from<uimax>(l_childs_indices.get(i))) == i + 4);
             }
         }
     }
@@ -953,7 +990,7 @@ inline void ntree_test()
 
     // removal test
     {
-        l_uimax_tree.remove_node_recursively(token_build_from<NTreeNode>( l_2_node));
+        l_uimax_tree.remove_node_recursively(token_build_from<NTreeNode>(l_2_node));
 
         NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
         Slice<Token<NTreeNode>> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
@@ -978,11 +1015,11 @@ inline void ntree_test()
 
         assert_true(l_uimax_tree.add_child(l_3_node, l_2_2_node));
 
-        Slice<Token<NTreeNode>> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>( l_2_node));
+        Slice<Token<NTreeNode>> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>(l_2_node));
         assert_true(l_2_node_childs.Size == 1);
         assert_true(token_value(l_2_node_childs.get(0)) == token_value(l_2_1_node));
 
-        Slice<Token<NTreeNode>> l_3_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>( l_3_node));
+        Slice<Token<NTreeNode>> l_3_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>(l_3_node));
         assert_true(l_3_node_childs.Size == 2);
         assert_true(token_value(l_3_node_childs.get(1)) == token_value(l_2_2_node));
 
@@ -1239,21 +1276,18 @@ inline void string_test()
     }
 
     l_str.free();
-    l_str = String::allocate(l_initial_string_capacity);
-    l_str.append(slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch."));
+};
 
-    // find
-    {
-        uimax l_index;
-        assert_true(l_str.to_slice().find(slice_int8_build_rawstr("efor"), &l_index) == 1);
-        assert_true(l_index == 27);
-
-        // no found
-        l_index = 0;
-        assert_true(l_str.to_slice().find(slice_int8_build_rawstr("eforc"), &l_index) == 0);
-    }
-
-    l_str.free();
+inline void path_test()
+{
+    String l_path_str = String::allocate_elements(slice_int8_build_rawstr("E:/path/to/file.json"));
+    assert_true(Path::move_up(&l_path_str));
+    assert_true(slice_int8_build_rawstr("E:/path/to/").compare(l_path_str.to_slice()));
+    assert_true(Path::move_up(&l_path_str));
+    assert_true(slice_int8_build_rawstr("E:/path/").compare(l_path_str.to_slice()));
+    assert_true(Path::move_up(&l_path_str));
+    assert_true(slice_int8_build_rawstr("E:/").compare(l_path_str.to_slice()));
+    assert_true(!Path::move_up(&l_path_str));
 };
 
 inline void fromstring_test()
@@ -1872,6 +1906,7 @@ inline void native_window()
 int main(int argc, int8** argv)
 {
     slice_span_test();
+    slice_functional_algorithm_test();
     vector_test();
     hashmap_test();
     pool_test();
@@ -1886,6 +1921,7 @@ int main(int argc, int8** argv)
     heappaged_test();
     heap_memory_test();
     string_test();
+    path_test();
     fromstring_test();
     deserialize_json_test();
     serialize_json_test();

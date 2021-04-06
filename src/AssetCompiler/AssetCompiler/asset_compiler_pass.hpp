@@ -218,6 +218,17 @@ struct AssetCompilerPassComposition
         allocate_passes_from_inline(p_asset_compiler_pass_heap, l_asset_compiler_configuration, p_asset_folder_root, in_out_asset_compilation_pass);
     };
 
+    inline static void allocate_passes_from_json_configuration_with_assetroot_as_configuration_file_path(AssetCompilerPassHeap& p_asset_compiler_pass_heap,
+                                                                                                         const Slice<int8>& p_configuration_file_path,
+                                                                                                         Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
+    {
+        String l_configuration_file_path_str = String::allocate_elements(p_configuration_file_path);
+        Path::move_up(&l_configuration_file_path_str);
+        AssetCompilerPassComposition::allocate_passes_from_json_configuration(p_asset_compiler_pass_heap, p_configuration_file_path, l_configuration_file_path_str.to_slice(),
+                                                                              in_out_asset_compilation_pass);
+        l_configuration_file_path_str.free();
+    };
+
     inline static void allocate_passes_from_inline(AssetCompilerPassHeap& p_asset_compiler_pass_heap, AssetCompilerConfigurationJSON& p_configuration_file, const Slice<int8>& p_asset_folder_root,
                                                    Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
     {
