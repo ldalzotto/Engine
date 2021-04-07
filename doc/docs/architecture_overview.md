@@ -22,7 +22,7 @@ Some execution unit within the main loop are called "user logic". These executio
 
 ## Scene Tree
 
-An Engine instance is associated to a unique Scene Tree. The Scene Tree is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. ([scene tree](Scene.md))
+An Engine instance is associated to a unique Scene Tree. The Scene Tree is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. ([scene tree](scene.md))
 
 <svg-inline src="architecture_overview_scene_tree.svg"></svg-inline>
 

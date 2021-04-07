@@ -3,6 +3,7 @@ theme: 'windmill'
 nav:
     - 'Architecture Overview': 'architecture_overview.md'
     - 'Ressource': 'ressource.md'
+    - 'Scene': 'scene.md'
     - 'Render': 'render.md'
     - 'GPU': 'gpu.md'
 extra_javascript:
