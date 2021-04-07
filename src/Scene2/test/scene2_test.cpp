@@ -73,9 +73,13 @@ inline void add_remove_setparent_node()
         assert_true(l_scene.get_node_childs(l_scene.get_node(Scene_const::root_node)).Size == 1);
 
         // deleted nodes have been pushed to the deleted node stack
-        assert_true(l_scene.node_that_will_be_destroyed.Size == 4);
+        assert_true(l_scene.scene_events.orphan_nodes_to_be_destroyed.Size == 1);
         l_scene.step();
-        assert_true(l_scene.node_that_will_be_destroyed.Size == 0);
+        assert_true(l_scene.scene_events.orphan_nodes_to_be_destroyed.Size == 0);
+        assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_1));
+        assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_2));
+        assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_3));
+        assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_5));
     }
 
     l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();
@@ -101,16 +105,16 @@ inline void add_remove_component()
 
         l_scene.step();
 
-        assert_true(l_scene.component_removed_events.Size == 0);
+        assert_true(l_scene.scene_events.component_removed_events.Size == 0);
 
         l_scene.remove_node_component_typed<ComponentTest>(l_node_1); // ensuring that no error
         assert_true(l_scene.get_node_component_typed<ComponentTest2>(l_node_1) != NULL);
         assert_true(l_scene.get_node_component_typed<ComponentTest2>(l_node_1)->resource == l_component_test_2_resource);
 
         // One component removed event have been generated
-        assert_true(l_scene.component_removed_events.Size == 1);
-        assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
-        assert_true(token_equals(l_scene.component_removed_events.get(0).node, l_node_1));
+        assert_true(l_scene.scene_events.component_removed_events.Size == 1);
+        assert_true(l_scene.scene_events.component_removed_events.get(0).value.type == ComponentTest::Type);
+        assert_true(token_equals(l_scene.scene_events.component_removed_events.get(0).node, l_node_1));
     }
 
     {
@@ -130,15 +134,15 @@ inline void add_remove_component()
 
         l_scene.step();
 
-        assert_true(l_scene.component_removed_events.Size == 0);
+        assert_true(l_scene.scene_events.component_removed_events.Size == 0);
 
         l_scene.remove_node(l_scene.get_node(l_node_1));
 
-        assert_true(l_scene.component_removed_events.Size == 2);
-        assert_true(l_scene.component_removed_events.get(0).value.type == ComponentTest::Type);
-        assert_true(token_equals(l_scene.component_removed_events.get(0).node, l_node_1));
-        assert_true(l_scene.component_removed_events.get(1).value.type == ComponentTest2::Type);
-        assert_true(token_equals(l_scene.component_removed_events.get(1).node, l_node_1));
+        assert_true(l_scene.scene_events.component_removed_events.Size == 2);
+        assert_true(l_scene.scene_events.component_removed_events.get(0).value.type == ComponentTest::Type);
+        assert_true(token_equals(l_scene.scene_events.component_removed_events.get(0).node, l_node_1));
+        assert_true(l_scene.scene_events.component_removed_events.get(1).value.type == ComponentTest2::Type);
+        assert_true(token_equals(l_scene.scene_events.component_removed_events.get(1).node, l_node_1));
 
         l_scene.step();
     }
@@ -185,14 +189,14 @@ inline void component_consume()
         l_scene.add_node_component_typed<ComponentTest2>(l_node_2, 1);
 
         component_consume_callbacks l_callbacks = component_consume_callbacks::build_default();
-        assert_true(l_scene.component_removed_events.Size == 0);
+        assert_true(l_scene.scene_events.component_removed_events.Size == 0);
         // l_scene.consume_component_events_stateful(l_callbacks);
 
         // assert_true(l_callbacks.component_test_1_added_called);
         // assert_true(l_callbacks.component_test_2_added_called);
 
         l_scene.remove_node_component_typed<ComponentTest2>(l_node_1);
-        assert_true(l_scene.component_removed_events.Size == 1); // 1 component from l_node_1
+        assert_true(l_scene.scene_events.component_removed_events.Size == 1); // 1 component from l_node_1
 
         l_scene.consume_component_events_stateful(l_callbacks);
 
@@ -201,7 +205,7 @@ inline void component_consume()
 
         l_scene.remove_node(l_scene.get_node(l_node_1));
 
-        assert_true(l_scene.component_removed_events.Size == 2); // 1 components from l_node_1 and 1 from l_node_2
+        assert_true(l_scene.scene_events.component_removed_events.Size == 2); // 1 components from l_node_1 and 1 from l_node_2
 
         l_scene.consume_component_events_stateful(l_callbacks);
         assert_true(l_callbacks.component_test_2_removed_called == 2);

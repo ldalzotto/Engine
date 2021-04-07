@@ -20,9 +20,9 @@ Some execution unit within the main loop are called "user logic". These executio
 
 > Custom logic execution units are likely to create node, add component or move node. Thus, we must be sure that all scene middleware steps are called before the scene tree events are cleaned.
 
-## Scene Tree
+## Scene
 
-An Engine instance is associated to a unique Scene Tree. The Scene Tree is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. ([scene tree](scene.md))
+An Engine instance is associated to a unique Scene. The Scene is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. ([scene](scene.md))
 
 <svg-inline src="architecture_overview_scene_tree.svg"></svg-inline>
 
@@ -32,7 +32,7 @@ The allocation steps act as an interface for allocating system objects. Allocati
 
 ## Scene middleware
 
-Scene middlewares are where node component ressources are stored. They act as the communication layer between the scene tree and the internal systems.
+Scene middlewares are where node component ressources are stored. They act as the communication layer between the scene and the internal systems.
 
 Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
 The Scene Middlewares are the consumers of this state. When a Node has moved, it's they send events to internal systems to take this change into account. ([scene middleware](SceneMiddleware.md)).

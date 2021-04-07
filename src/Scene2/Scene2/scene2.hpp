@@ -237,8 +237,9 @@ struct SceneTree
 
     inline void clear_nodes_state()
     {
+        // TODO -> can't we iterate on the pool tree pool vector instead of traversing ?
         this->node_tree.traverse3(token_build<NTreeNode>(0), [](const NodeEntry& p_node) {
-          p_node.Element->state.haschanged_thisframe = false;
+            p_node.Element->state.haschanged_thisframe = false;
         });
     };
 
@@ -256,7 +257,7 @@ struct SceneTree
     inline void mark_node_for_recalculation_recursive(const NodeEntry& p_node)
     {
         this->node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [](const NodeEntry& p_node) {
-          p_node.Element->mark_for_recaluclation();
+            p_node.Element->mark_for_recaluclation();
         });
     };
     inline void updatematrices_if_necessary(const NodeEntry& p_node)
@@ -290,15 +291,10 @@ namespace Scene_const
 const Token<Node> root_node = token_build<Node>(0);
 };
 
-/*
-    A Scene is a functional object that enhance the SceneTree by allocating Components to every Nodes.
-    Components are typed tokens that points to an external allocated resource.
-    - When a Component is added, we suppose that external resource token has already been allocated.
-    - When a Component is released, then it's value is pushed to the component_removed_events stack. This stack is
-      consumed by caller and release the external allocated resource.
-*/
-struct Scene
+struct SceneEvents
 {
+    Vector<Token<Node>> orphan_nodes_to_be_destroyed;
+
     /*
         When we add or remove components on a Scene, component events are generated.
         These events can be consumed by consumer.
@@ -315,18 +311,42 @@ struct Scene
             return ComponentRemovedEvent{p_node, p_component_value};
         };
     };
+    Vector<ComponentRemovedEvent> component_removed_events;
+
+    inline static SceneEvents allocate_default()
+    {
+        return SceneEvents{Vector<Token<Node>>::allocate(0), Vector<ComponentRemovedEvent>::allocate(0)};
+    };
+
+    inline void free()
+    {
+#if __DEBUG
+        assert_true(this->orphan_nodes_to_be_destroyed.empty());
+        assert_true(this->component_removed_events.empty());
+#endif
+
+        this->orphan_nodes_to_be_destroyed.free();
+        this->component_removed_events.free();
+    };
+};
+
+/*
+    A Scene is a functional object that enhance the SceneTree by allocating Components to every Nodes.
+    Components are typed tokens that points to an external allocated resource.
+    - When a Component is added, we suppose that external resource token has already been allocated.
+    - When a Component is released, then it's value is pushed to the component_removed_events stack. This stack is consumed by caller and release the external allocated resource.
+*/
+struct Scene
+{
 
     SceneTree tree;
     PoolOfVector<NodeComponent> node_to_components;
 
-    Vector<Token<Node>> orphan_nodes;
-    Vector<Token<Node>> node_that_will_be_destroyed;
-    Vector<ComponentRemovedEvent> component_removed_events;
+    SceneEvents scene_events;
 
     inline static Scene allocate_default()
     {
-        Scene l_scene = Scene{SceneTree::allocate_default(), PoolOfVector<NodeComponent>::allocate_default(), Vector<Token<Node>>::allocate(0), Vector<Token<Node>>::allocate(0),
-                              Vector<ComponentRemovedEvent>::allocate(0)};
+        Scene l_scene = Scene{SceneTree::allocate_default(), PoolOfVector<NodeComponent>::allocate_default(), SceneEvents::allocate_default()};
         l_scene.node_to_components.alloc_vector();
         return l_scene;
     };
@@ -335,30 +355,32 @@ struct Scene
     {
         this->step_destroy_resource_only();
 
+#if __DEBUG
+        // TODO -> tree empty check ? There is still the root node instanciated
+#endif
+
         this->tree.free();
-        this->orphan_nodes.free();
-        this->node_that_will_be_destroyed.free();
-        this->component_removed_events.free();
+        this->scene_events.free();
         this->node_to_components.free();
     };
 
     template <class ComponentRemovedCallbackFunc> inline void consume_component_events()
     {
-        for (vector_loop(&this->component_removed_events, i))
+        for (vector_loop(&this->scene_events.component_removed_events, i))
         {
-            ComponentRemovedEvent& l_component_event = this->component_removed_events.get(i);
+            SceneEvents::ComponentRemovedEvent& l_component_event = this->scene_events.component_removed_events.get(i);
             ComponentRemovedCallbackFunc::on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
         };
-        this->component_removed_events.clear();
+        this->scene_events.component_removed_events.clear();
     };
     template <class ComponentRemovedCallbackObj> inline void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
     {
-        for (vector_loop(&this->component_removed_events, i))
+        for (vector_loop(&this->scene_events.component_removed_events, i))
         {
-            ComponentRemovedEvent& l_component_event = this->component_removed_events.get(i);
+            SceneEvents::ComponentRemovedEvent& l_component_event = this->scene_events.component_removed_events.get(i);
             p_closure.on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
         };
-        this->component_removed_events.clear();
+        this->scene_events.component_removed_events.clear();
     };
 
     template <class ComponentRemovedCallbackFunc> inline void free_and_consume_component_events()
@@ -404,17 +426,17 @@ struct Scene
 
         NodeEntry l_node_copy = p_node;
         this->tree.node_tree.make_node_orphan(l_node_copy);
-        this->orphan_nodes.push_back_element(token_build_from<Node>(p_node.Node->index));
+        this->scene_events.orphan_nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_node.Node->index));
 
         this->tree.node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [this](const NodeEntry& p_tree_node) {
-          this->node_that_will_be_destroyed.push_back_element(token_build_from<Node>(p_tree_node.Node->index));
 
-          Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
-          for (loop(i, 0, l_node_component_tokens.Size))
-          {
-              this->component_removed_events.push_back_element(ComponentRemovedEvent::build(token_build_from<Node>(p_tree_node.Node->index), l_node_component_tokens.get(i)));
-          }
-          this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
+            Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
+            for (loop(i, 0, l_node_component_tokens.Size))
+            {
+                this->scene_events.component_removed_events.push_back_element(
+                    SceneEvents::ComponentRemovedEvent::build(token_build_from<Node>(p_tree_node.Node->index), l_node_component_tokens.get(i)));
+            }
+            this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
         });
     };
 
@@ -478,7 +500,7 @@ struct Scene
             {
                 *out_component = l_component;
                 this->node_to_components.element_erase_element_at_always(token_build_from<Slice<NodeComponent>>(p_node), i);
-                this->component_removed_events.push_back_element(ComponentRemovedEvent::build(p_node, *out_component));
+                this->scene_events.component_removed_events.push_back_element(SceneEvents::ComponentRemovedEvent::build(p_node, *out_component));
                 return 1;
             }
         }
@@ -494,27 +516,16 @@ struct Scene
     };
     inline void destroy_orphan_nodes()
     {
-        for (vector_loop(&this->orphan_nodes, i))
+        for (vector_loop(&this->scene_events.orphan_nodes_to_be_destroyed, i))
         {
-            this->tree.remove_node(this->tree.get_node(this->orphan_nodes.get(i)));
+            this->tree.remove_node(this->tree.get_node(this->scene_events.orphan_nodes_to_be_destroyed.get(i)));
         }
-        this->orphan_nodes.clear();
-        this->node_that_will_be_destroyed.clear();
+        this->scene_events.orphan_nodes_to_be_destroyed.clear();
     };
 
     inline void destroy_component_removed_events()
     {
-        /*
- for (vector_loop(&this->component_events, i))
- {
- ComponentEvent& l_component_event = this->component_events.get(i);
- if (l_component_event.state == ComponentEvent::State::REMOVED)
- {
- this->tree.free_component(l_component_event.component);
- };
- }
- */
-        this->component_removed_events.clear();
+        this->scene_events.component_removed_events.clear();
     };
 };
 
