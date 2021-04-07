@@ -2,6 +2,7 @@ site_name: EngineCPP
 theme: 'windmill'
 nav:
     - 'Architecture Overview': 'architecture_overview.md'
+    - 'Ressource': 'ressource.md'
     - 'Render': 'render.md'
     - 'GPU': 'gpu.md'
 extra_javascript:

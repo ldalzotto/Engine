@@ -1,5 +1,3 @@
-# Render
-
 The Render module is the 3D renderer of the engine. It registers all graphics objects and organize them in a hierarchy
 to call GPU graphics bindings against them. <br/>
 The render module creates an internal 2D render target texture and draw the hierachy to it every frame.

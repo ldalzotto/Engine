@@ -14,7 +14,11 @@ Here is the engine chain of execution represented as a graph:
 ## Main loop
 
 The main loop is composed of execution units. Execution units are step that trigger all dependant execution block in the order defined by the dependencies. <br/>
-For exemple, we can see that the Render system is updated when the following execution units are completed : Render allocation, Render middleware.
+For exemple, we can see that the Render system is updated when the following execution units are completed : Render allocation, Render middleware and the GPU buffer step.
+
+Some execution unit within the main loop are called "user logic". These execution units are hooks that the engine user can hook on to execute custom logic at this specific point.
+
+> Custom logic execution units are likely to create node, add component or move node. Thus, we must be sure that all scene middleware steps are called before the scene tree events are cleaned.
 
 ## Scene Tree
 
@@ -24,7 +28,7 @@ An Engine instance is associated to a unique Scene Tree. The Scene Tree is a hie
 
 ## Allocations
 
-The allocation steps act as an interface for allocating system objects. Allocations input can either be provided directly by the user or by requesting the asset database. ([ressource](Ressource.md))
+The allocation steps act as an interface for allocating system objects. Allocations input can either be provided directly by the user or by requesting the asset database. ([ressource](ressource.md))
 
 ## Scene middleware
 

@@ -10,10 +10,9 @@ struct EngineConfiguration
 
 enum class EngineExternalStep : int8
 {
-    BEFORE_COLLISION = 0,
-    AFTER_COLLISION = BEFORE_COLLISION + 1,
-    BEFORE_UPDATE = AFTER_COLLISION + 1,
-    END_OF_FRAME = BEFORE_UPDATE + 1
+    BEFORE_UPDATE = 0,
+    AFTER_UPDATE = BEFORE_UPDATE + 1,
+    END_OF_FRAME = AFTER_UPDATE + 1
 };
 
 struct Engine
@@ -178,21 +177,23 @@ struct EngineLoopFunctions
     {
         p_engine.clock.newupdate(p_delta);
 
-        p_callback_step.step(EngineExternalStep::BEFORE_COLLISION, p_engine);
 
-        p_engine.scene_middleware.collision_middleware.step(p_engine.collision, &p_engine.scene);
-        p_engine.collision.step();
-
-        p_callback_step.step(EngineExternalStep::AFTER_COLLISION, p_engine);
         p_callback_step.step(EngineExternalStep::BEFORE_UPDATE, p_engine);
+
+        Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
+        p_engine.scene.consume_component_events_stateful(l_component_releaser);
 
         p_engine.scene_middleware.render_middleware.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
         p_engine.renderer_ressource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
         p_engine.renderer_ressource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.database_connection, p_engine.asset_database);
         p_engine.scene_middleware.render_middleware.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator, p_engine.asset_database);
-
         p_engine.scene_middleware.collision_middleware.step(p_engine.collision, &p_engine.scene);
         p_engine.scene_middleware.render_middleware.step(p_engine.renderer, p_engine.gpu_context, &p_engine.scene);
+
+        p_engine.collision.step();
+
+        p_callback_step.step(EngineExternalStep::AFTER_UPDATE, p_engine);
+
     };
 
     inline static void render(Engine& p_engine)
@@ -221,8 +222,6 @@ struct EngineLoopFunctions
 
     template <class ExternalCallbackStep> inline static void end_of_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
     {
-        Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
-        p_engine.scene.consume_component_events_stateful(l_component_releaser);
         p_engine.scene.step();
         p_callback_step.step(EngineExternalStep::END_OF_FRAME, p_engine);
     };

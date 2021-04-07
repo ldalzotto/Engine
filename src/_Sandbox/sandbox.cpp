@@ -65,7 +65,7 @@ inline void resize_test()
             }
             else if (p_engine.clock.framecount == 3)
             {
-                if (p_step == EngineExternalStep::BEFORE_COLLISION)
+                if (p_step == EngineExternalStep::BEFORE_UPDATE)
                 {
                     p_engine.close();
                 }
@@ -217,7 +217,7 @@ struct BoxCollisionSandboxEnvironment
     {
         switch (p_step)
         {
-        case EngineExternalStep::BEFORE_COLLISION:
+        case EngineExternalStep::BEFORE_UPDATE:
         {
             if (FrameCount(p_engine) == 1)
             {
@@ -233,9 +233,23 @@ struct BoxCollisionSandboxEnvironment
                     p_engine.scene_middleware.collision_middleware.allocator.allocate_box_collider_component(p_engine.collision, this->static_node, BoxColliderComponentAsset{v3f_const::ONE});
                 p_engine.scene.add_node_component_by_value(this->static_node, NodeComponent::build(BoxColliderComponent::Type, token_value(this->static_node_boxcollider_component)));
             }
+
+            else if (FrameCount(p_engine) == 2 || FrameCount(p_engine) == 3 || FrameCount(p_engine) == 4 || FrameCount(p_engine) == 5 || FrameCount(p_engine) == 6 || FrameCount(p_engine) == 7)
+            {
+                NodeEntry l_node_1_value = p_engine.scene.get_node(this->moving_node);
+                p_engine.scene.tree.set_localposition(l_node_1_value, p_engine.scene.tree.get_localposition(l_node_1_value) + v3f{1.0f, 0.0f, 0.0f});
+            }
+
+            else if (FrameCount(p_engine) == 8)
+            {
+                p_engine.scene.remove_node(p_engine.scene.get_node(this->moving_node));
+                p_engine.scene.remove_node(p_engine.scene.get_node(this->static_node));
+
+                p_engine.close();
+            }
         }
         break;
-        case EngineExternalStep::AFTER_COLLISION:
+        case EngineExternalStep::AFTER_UPDATE:
         {
             if (FrameCount(p_engine) >= 1 && FrameCount(p_engine) <= 7)
             {
@@ -283,23 +297,6 @@ struct BoxCollisionSandboxEnvironment
                 }
                 break;
                 }
-            }
-        }
-        break;
-        case EngineExternalStep::BEFORE_UPDATE:
-        {
-            if (FrameCount(p_engine) == 1 || FrameCount(p_engine) == 2 || FrameCount(p_engine) == 3 || FrameCount(p_engine) == 4 || FrameCount(p_engine) == 5 || FrameCount(p_engine) == 6)
-            {
-                NodeEntry l_node_1_value = p_engine.scene.get_node(this->moving_node);
-                p_engine.scene.tree.set_localposition(l_node_1_value, p_engine.scene.tree.get_localposition(l_node_1_value) + v3f{1.0f, 0.0f, 0.0f});
-            }
-
-            if (FrameCount(p_engine) == 8)
-            {
-                p_engine.scene.remove_node(p_engine.scene.get_node(this->moving_node));
-                p_engine.scene.remove_node(p_engine.scene.get_node(this->static_node));
-
-                p_engine.close();
             }
         }
         break;
