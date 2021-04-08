@@ -47,7 +47,7 @@ struct JSONDeserializer
     {
         JSONUtil::remove_spaces(p_source);
         uimax l_start_index;
-        p_source.to_slice().find(slice_int8_build_rawstr("{"), &l_start_index);
+        Slice_find(p_source.to_slice(), slice_int8_build_rawstr("{"), &l_start_index);
         l_start_index += 1;
         return allocate(p_source.to_slice(), p_source.to_slice().slide_rv(l_start_index));
     };
@@ -80,7 +80,7 @@ struct JSONDeserializer
 
                 FieldNode l_field_node;
                 uimax l_field_value_delta;
-                if (l_next_field_value_with_quotes.slide_rv(1).find(slice_int8_build_rawstr("\""), &l_field_value_delta))
+                if (Slice_find(l_next_field_value_with_quotes.slide_rv(1), slice_int8_build_rawstr("\""), &l_field_value_delta))
                 {
                     l_field_node.value = l_next_field_value_with_quotes.slide_rv(1);
                     l_field_node.value.Size = l_field_value_delta;
@@ -241,7 +241,7 @@ struct JSONDeserializer
 
         uimax l_new_field_index;
 
-        if (out_field_whole_value->find(slice_int8_build_rawstr(","), &l_new_field_index) || out_field_whole_value->find(slice_int8_build_rawstr("}"), &l_new_field_index))
+        if (Slice_find(*out_field_whole_value, slice_int8_build_rawstr(","), &l_new_field_index) || Slice_find(*out_field_whole_value, slice_int8_build_rawstr("}"), &l_new_field_index))
         {
             out_field_whole_value->Size = l_new_field_index;
             return 1;
@@ -308,7 +308,7 @@ struct JSONDeserializer
             *out_plain_value_whole = p_source;
             Slice<int8> l_plain_value_with_trail = p_source.slide_rv(1);
             uimax l_end_index;
-            if (l_plain_value_with_trail.find(slice_int8_build_rawstr("\""), &l_end_index))
+            if (Slice_find(l_plain_value_with_trail, slice_int8_build_rawstr("\""), &l_end_index))
             {
                 *out_plain_value_only = Slice<int8>::build_begin_end(l_plain_value_with_trail.Begin, 0, l_end_index);
                 out_plain_value_whole->Size = l_end_index + 2; // To add the "

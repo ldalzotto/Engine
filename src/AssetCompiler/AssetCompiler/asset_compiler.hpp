@@ -33,7 +33,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (Slice_find(l_asset_path, slice_int8_build_rawstr("."), &l_last_dot_index))
     {
         l_asset_path.slide(l_last_dot_index + 1);
     };
@@ -143,7 +143,7 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
     Slice<int8> l_asset_path = p_asset_file.path_slice;
 
     uimax l_last_dot_index = -1;
-    while (l_asset_path.find(slice_int8_build_rawstr("."), &l_last_dot_index))
+    while (Slice_find(l_asset_path, slice_int8_build_rawstr("."), &l_last_dot_index))
     {
         l_asset_path.slide(l_last_dot_index + 1);
     };

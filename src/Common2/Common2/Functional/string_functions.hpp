@@ -7,7 +7,7 @@ struct FromString
         if (p_string.Size > 0)
         {
             uimax l_dot_index;
-            if (p_string.find(slice_int8_build_rawstr("."), &l_dot_index))
+            if (Slice_find(p_string, slice_int8_build_rawstr("."), &l_dot_index))
             {
                 if (p_string.get(0) == '-')
                 {

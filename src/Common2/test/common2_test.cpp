@@ -79,12 +79,12 @@ inline void slice_functional_algorithm_test()
         Slice<int8> l_char_slice = slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch.");
 
         uimax l_index;
-        assert_true(l_char_slice.find(slice_int8_build_rawstr("efor"), &l_index) == 1);
+        assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("efor"), &l_index) == 1);
         assert_true(l_index == 27);
 
         // no found
         l_index = 0;
-        assert_true(l_char_slice.find(slice_int8_build_rawstr("eforc"), &l_index) == 0);
+        assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("eforc"), &l_index) == 0);
     }
 
     // last_index_of
@@ -92,10 +92,10 @@ inline void slice_functional_algorithm_test()
         Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path");
         Slice<int8> l_compared = slice_int8_build_rawstr("/");
         uimax l_index;
-        assert_true(l_path_slice.last_index_of(l_compared, &l_index));
+        assert_true(Slice_last_index_of(l_path_slice, l_compared, &l_index));
         assert_true(l_index == 9);
         assert_true(l_path_slice.get(l_index) == '/');
-        assert_true(!l_path_slice.last_index_of(slice_int8_build_rawstr("m"), &l_index));
+        assert_true(!Slice_last_index_of(l_path_slice, slice_int8_build_rawstr("m"), &l_index));
     }
 
     // last_index_of_not_endofslice
@@ -103,7 +103,7 @@ inline void slice_functional_algorithm_test()
         Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path/");
         Slice<int8> l_compared = slice_int8_build_rawstr("/");
         uimax l_index;
-        assert_true(l_path_slice.last_index_of_not_endofslice(l_compared, &l_index));
+        assert_true(Slice_last_index_of_not_endofslice(l_path_slice, l_compared, &l_index));
         assert_true(l_index == 9);
         assert_true(l_path_slice.get(l_index) == '/');
     }

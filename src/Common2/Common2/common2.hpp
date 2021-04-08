@@ -47,6 +47,7 @@
 #include "./Functional/hash.hpp"
 
 #include "./Functional/sort.hpp"
+#include "./Functional/slice_algorithm.hpp"
 
 #include "./Container/vector.hpp"
 #include "./Container/hashmap.hpp"

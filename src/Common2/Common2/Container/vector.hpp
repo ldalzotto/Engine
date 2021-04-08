@@ -234,7 +234,6 @@ template <class ElementType> struct Vector
         }
     };
 
-    // TODO -> write test
     inline void erase_array_at_always(const uimax p_index, const uimax p_size)
     {
         uimax l_insert_head = p_index + p_size;
