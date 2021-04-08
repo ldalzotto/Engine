@@ -3,6 +3,7 @@ theme: 'windmill'
 nav:
     - 'Architecture Overview': 'architecture_overview.md'
     - 'Ressource': 'ressource.md'
+    - 'AssetDatabase': 'asset_database.md'
     - 'Scene': 'scene.md'
     - 'Scene Middleware': 'scene_middleware.md'
     - 'Render': 'render.md'
