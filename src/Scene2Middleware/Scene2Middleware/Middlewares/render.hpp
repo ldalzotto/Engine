@@ -245,7 +245,7 @@ struct RenderMiddleWare
         this->camera_component.allocated = 0;
     };
 
-    // TODO -> there is a window for optimization. The fact that we iterate over mesh renderers and that only scene_node, force_update and node.haschanged_thisframe is required for the condition
+    // TODO -> there is an opportunity for optimization. The fact that we iterate over mesh renderers and that only scene_node, force_update and node.haschanged_thisframe is required for the condition
     //         may provoque some cache loading of unused data (renderable_object and dependencies). This is a use case for a struct of array.
     inline void step(D3Renderer& p_renderer, GPUContext& p_gpu_context, Scene* p_scene)
     {

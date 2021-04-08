@@ -84,6 +84,11 @@ struct SceneTree
     };
     inline void free()
     {
+#if __DEBUG
+        NodeEntry l_root_node = this->get_node(token_build<Node>(0));
+        assert_true(this->get_node_childs(l_root_node).Size == 0);
+#endif
+
         this->node_tree.free();
     };
 
@@ -294,6 +299,7 @@ const Token<Node> root_node = token_build<Node>(0);
 struct SceneEvents
 {
     Vector<Token<Node>> orphan_nodes_to_be_destroyed;
+    Vector<Token<Node>> nodes_to_be_destroyed; // This event is used to break links between node and components
 
     /*
         When we add or remove components on a Scene, component events are generated.
@@ -315,7 +321,7 @@ struct SceneEvents
 
     inline static SceneEvents allocate_default()
     {
-        return SceneEvents{Vector<Token<Node>>::allocate(0), Vector<ComponentRemovedEvent>::allocate(0)};
+        return SceneEvents{Vector<Token<Node>>::allocate(0), Vector<Token<Node>>::allocate(0), Vector<ComponentRemovedEvent>::allocate(0)};
     };
 
     inline void free()
@@ -323,10 +329,12 @@ struct SceneEvents
 #if __DEBUG
         assert_true(this->orphan_nodes_to_be_destroyed.empty());
         assert_true(this->component_removed_events.empty());
+        assert_true(this->nodes_to_be_destroyed.empty());
 #endif
 
         this->orphan_nodes_to_be_destroyed.free();
         this->component_removed_events.free();
+        this->nodes_to_be_destroyed.free();
     };
 };
 
@@ -354,10 +362,6 @@ struct Scene
     inline void free()
     {
         this->step_destroy_resource_only();
-
-#if __DEBUG
-        // TODO -> tree empty check ? There is still the root node instanciated
-#endif
 
         this->tree.free();
         this->scene_events.free();
@@ -396,8 +400,7 @@ struct Scene
 
     inline void step()
     {
-        this->destroy_orphan_nodes();
-        this->destroy_component_removed_events();
+        this->step_destroy_resource_only();
         this->tree.clear_nodes_state();
     };
 
@@ -429,14 +432,13 @@ struct Scene
         this->scene_events.orphan_nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_node.Node->index));
 
         this->tree.node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [this](const NodeEntry& p_tree_node) {
-
             Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
             for (loop(i, 0, l_node_component_tokens.Size))
             {
                 this->scene_events.component_removed_events.push_back_element(
                     SceneEvents::ComponentRemovedEvent::build(token_build_from<Node>(p_tree_node.Node->index), l_node_component_tokens.get(i)));
             }
-            this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
+            this->scene_events.nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_tree_node.Node->index));
         });
     };
 
@@ -512,15 +514,26 @@ struct Scene
     inline void step_destroy_resource_only()
     {
         this->destroy_orphan_nodes();
+        this->destroy_node_to_component_links();
         this->destroy_component_removed_events();
     };
     inline void destroy_orphan_nodes()
     {
         for (vector_loop(&this->scene_events.orphan_nodes_to_be_destroyed, i))
         {
-            this->tree.remove_node(this->tree.get_node(this->scene_events.orphan_nodes_to_be_destroyed.get(i)));
+            Token<Node> l_node_to_destroy = this->scene_events.orphan_nodes_to_be_destroyed.get(i);
+            this->tree.remove_node(this->tree.get_node(l_node_to_destroy));
         }
         this->scene_events.orphan_nodes_to_be_destroyed.clear();
+    };
+
+    inline void destroy_node_to_component_links()
+    {
+        for (loop(i, 0, this->scene_events.nodes_to_be_destroyed.Size))
+        {
+            this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(this->scene_events.nodes_to_be_destroyed.get(i)));
+        }
+        this->scene_events.nodes_to_be_destroyed.clear();
     };
 
     inline void destroy_component_removed_events()

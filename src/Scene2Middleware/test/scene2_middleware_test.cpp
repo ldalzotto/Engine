@@ -257,6 +257,7 @@ inline void collision_middleware_component_allocation()
 
         l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
         l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node));
     }
 
     {
@@ -278,6 +279,7 @@ inline void collision_middleware_component_allocation()
 
         l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
         l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(l_component_releaser);
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node));
     }
 
     l_ctx.free_collision_only(l_component_releaser);
@@ -302,6 +304,7 @@ inline void collision_middleware_queuing_for_calculation()
         assert_true(l_ctx.scene_middleware.collision_middleware.allocator.box_collider_is_queued_for_detection(l_ctx.collision, l_box_collider_component));
 
         l_ctx.scene.remove_node_component_typed<BoxColliderComponent>(l_node);
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node));
     }
 
     l_ctx.free_collision_only(component_releaser);
@@ -411,6 +414,8 @@ inline void render_middleware_inline_allocation()
         }
 
         l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_2));
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_3));
         l_ctx.scene.remove_node(l_ctx.scene.get_node(l_camera_node));
 
         l_ctx.scene.consume_component_events_stateful<ComponentReleaser2>(component_releaser);
@@ -503,6 +508,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
             assert_true(l_ctx.render_ressource_allocator.material_unit.materials.empty());
             assert_true(!l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies.has_allocated_elements());
         }
+
+        l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
     }
     l_ctx.free_render_only(component_releaser);
 }

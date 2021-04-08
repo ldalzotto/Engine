@@ -752,7 +752,6 @@ inline void vectorofvector_test()
     l_vectorofvector_uimax.free();
 };
 
-// TODO -> adding a case that show that pool and poolofvector can be linked
 inline void poolofvector_test()
 {
 
