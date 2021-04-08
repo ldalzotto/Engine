@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO -> by default, all functions must use the hashed key value
 template <class KeyType, class ElementType> struct PoolHashedCounted
 {
     struct CountElement

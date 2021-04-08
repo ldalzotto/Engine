@@ -150,18 +150,24 @@ struct MeshRessource
         };
     };
 
+    struct DatabaseAllocationInput
+    {
+        hash_t id;
+    };
+
+    struct DatabaseAllocationEvent
+    {
+        hash_t id;
+        Token<MeshRessource> allocated_ressource;
+    };
+
     struct InlineAllocationInput
     {
         hash_t id;
         Asset asset;
     };
 
-    struct DatabaseAllocationInput
-    {
-        hash_t id;
-    };
-
-    struct AllocationEvent
+    struct InlineAllocationEvent
     {
         MeshRessource::Asset asset;
         Token<MeshRessource> allocated_ressource;
@@ -169,7 +175,7 @@ struct MeshRessource
 
     struct FreeEvent
     {
-        Token<MeshRessource> ressource;
+        Token<MeshRessource> allocated_ressource;
 
         inline static FreeEvent build_from_token(const Token<MeshRessource> p_ressource)
         {
@@ -192,7 +198,8 @@ struct ShaderRessource
 
     inline static ShaderRessource build_from_id(const hash_t p_id)
     {
-        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(), Dependencies{token_build_default<ShaderModuleRessource>(), token_build_default<ShaderModuleRessource>()}};
+        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(),
+                               Dependencies{token_build_default<ShaderModuleRessource>(), token_build_default<ShaderModuleRessource>()}};
     };
 
     struct Asset
@@ -353,18 +360,25 @@ struct TextureRessource
         };
     };
 
-    struct InlineAllocationInput
-    {
-        hash_t id;
-        Asset asset;
-    };
 
     struct DatabaseAllocationInput
     {
         hash_t id;
     };
 
-    struct AllocationEvent
+    struct DatabaseAllocationEvent
+    {
+        hash_t id;
+        Token<TextureRessource> allocated_ressource;
+    };
+
+    struct InlineAllocationInput
+    {
+        hash_t id;
+        Asset asset;
+    };
+
+    struct InlineAllocationEvent
     {
         Asset asset;
         Token<TextureRessource> allocated_ressource;
@@ -372,7 +386,7 @@ struct TextureRessource
 
     struct FreeEvent
     {
-        Token<TextureRessource> ressource;
+        Token<TextureRessource> allocated_ressource;
     };
 };
 

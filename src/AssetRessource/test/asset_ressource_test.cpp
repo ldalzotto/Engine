@@ -372,7 +372,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             AssetRessource_TestAssertion::assert_mesh_allocation(l_ctx, l_mesh_ressource_3, AssetRessource_TestAssertion::AssertRessource{l_mesh_id, 3, 1});
         }
 
-        l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource_3);
+        MeshRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.mesh_unit, l_mesh_ressource_3);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material_ressource_3);
 
@@ -399,7 +399,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
         l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
 
-        l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource_2);
+        MeshRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.mesh_unit, l_mesh_ressource_2);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material_ressource_2);
 
@@ -422,7 +422,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
             assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes.CountMap.get_value_nothashed(l_mesh_id)->counter == 1);
         }
 
-        l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource);
+        MeshRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.mesh_unit, l_mesh_ressource);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material_ressource);
 
@@ -519,7 +519,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame(CachedCompiledShad
             AssetRessource_TestAssertion::assert_texture_allocation(l_ctx, l_material_texture_ressource, AssetRessource_TestAssertion::AssertRessource{l_material_texture_id, 1, 0});
         }
 
-        l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource);
+        MeshRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.mesh_unit, l_mesh_ressource);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material_ressource);
 
@@ -612,7 +612,7 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
             ShaderRessource::DatabaseAllocationInput{l_shader_id}, ShaderModuleRessource::DatabaseAllocationInput{l_vertex_shader_id},
             ShaderModuleRessource::DatabaseAllocationInput{l_fragment_shader_id});
 
-        assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes_allocation_events.Size == 1);
+        assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes_database_allocation_events.Size == 1);
         assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 1);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
@@ -627,7 +627,7 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
             AssetRessource_TestAssertion::assert_mesh_allocation(l_ctx, l_mesh_ressource, AssetRessource_TestAssertion::AssertRessource{l_mesh_id, 1, 1});
         }
 
-        l_ctx.render_ressource_allocator.mesh_unit.release_ressource(l_mesh_ressource);
+        MeshRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.mesh_unit, l_mesh_ressource);
         MaterialRessourceComposition::decrement_or_release(l_ctx.render_ressource_allocator.material_unit, l_ctx.render_ressource_allocator.shader_unit,
                                                            l_ctx.render_ressource_allocator.shader_module_unit, l_ctx.render_ressource_allocator.texture_unit, l_material_ressource);
 
@@ -730,7 +730,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
         }
 
         assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 1);
-        assert_true(l_ctx.render_ressource_allocator.texture_unit.textures_allocation_events.Size == 1);
+        assert_true(l_ctx.render_ressource_allocator.texture_unit.texture_database_allocation_events.Size == 1);
         assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_allocation_events.Size == 1);
         assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_modules_allocation_events.Size == 2);
 

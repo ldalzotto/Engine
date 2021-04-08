@@ -204,7 +204,7 @@ struct MeshRendererComponentComposition
             p_meshrenderer_component_unit.mesh_renderers.release_element(p_mesh_renderer);
         }
 
-        p_render_ressource_allocator.mesh_unit.release_ressource(l_mesh_renderer.dependencies.mesh);
+        MeshRessourceComposition::decrement_or_release(p_render_ressource_allocator.mesh_unit, l_mesh_renderer.dependencies.mesh);
         MaterialRessourceComposition::decrement_or_release(p_render_ressource_allocator.material_unit, p_render_ressource_allocator.shader_unit, p_render_ressource_allocator.shader_module_unit,
                                                            p_render_ressource_allocator.texture_unit, l_mesh_renderer.dependencies.material);
     };
