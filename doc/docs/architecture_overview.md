@@ -35,7 +35,7 @@ The allocation steps act as an interface for allocating system objects. Allocati
 Scene middlewares are where node component ressources are stored. They act as the communication layer between the scene and the internal systems.
 
 Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
-The Scene Middlewares are the consumers of this state. When a Node has moved, it's they send events to internal systems to take this change into account. ([scene middleware](SceneMiddleware.md)).
+The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. ([scene middleware](SceneMiddleware.md)).
 
 # Interaction with user
 

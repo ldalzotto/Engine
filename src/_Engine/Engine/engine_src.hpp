@@ -183,10 +183,10 @@ struct EngineLoopFunctions
         Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
         p_engine.scene.consume_component_events_stateful(l_component_releaser);
 
-        p_engine.scene_middleware.render_middleware.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
         p_engine.renderer_ressource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
         p_engine.renderer_ressource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.database_connection, p_engine.asset_database);
-        p_engine.scene_middleware.render_middleware.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator, p_engine.asset_database);
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator, p_engine.asset_database);
         p_engine.scene_middleware.collision_middleware.step(p_engine.collision, &p_engine.scene);
         p_engine.scene_middleware.render_middleware.step(p_engine.renderer, p_engine.gpu_context, &p_engine.scene);
 

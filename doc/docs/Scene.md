@@ -1,7 +1,7 @@
 A node hierarchy where every node can have components.
 
 The node hierarchy allows to position points in 3D space where parent movement influence the child position. <br/>
-Components are functionality attached to the node that communicate with internal systems vie the scene middleware.
+Components are functionality attached to the node that communicate with internal systems via the scene middleware.
 
 # Architecture
 

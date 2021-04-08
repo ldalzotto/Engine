@@ -4,6 +4,7 @@ nav:
     - 'Architecture Overview': 'architecture_overview.md'
     - 'Ressource': 'ressource.md'
     - 'Scene': 'scene.md'
+    - 'Scene Middleware': 'scene_middleware.md'
     - 'Render': 'render.md'
     - 'GPU': 'gpu.md'
 extra_javascript:

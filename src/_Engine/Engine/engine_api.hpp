@@ -44,16 +44,16 @@ inline void NodeAddWorldRotation(Engine& p_engine, const Token<Node> p_node, con
 inline CameraComponent& NodeAddCamera(Engine& p_engine, const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset)
 {
     p_engine.scene_middleware.render_middleware.allocate_camera_inline(p_camera_asset, p_node);
-    p_engine.scene.add_node_component_by_value(p_node, CameraComponentAsset_SceneCommunication::construct_nodecomponent());
+    p_engine.scene.add_node_component_by_value(p_node, CameraComponentAsset_SceneCommunication::build_nodecomponent());
     return p_engine.scene_middleware.render_middleware.camera_component;
 };
 
 inline Token<MeshRendererComponent> NodeAddMeshRenderer(Engine& p_engine, const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id)
 {
-    Token<MeshRendererComponent> l_mesh_renderer = RenderMiddleWare_AllocationComposition::allocate_meshrenderer_database_and_load_dependecies(
-        p_engine.scene_middleware.render_middleware, p_engine.renderer_ressource_allocator, p_engine.database_connection, p_engine.asset_database,
-        MeshRendererComponent::AssetDependencies{p_material_id, p_mesh_id}, p_node);
-    p_engine.scene.add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::construct_nodecomponent(l_mesh_renderer));
+    Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_database_and_load_dependecies(
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit, p_engine.renderer_ressource_allocator, p_engine.database_connection, p_engine.asset_database,
+        MeshRendererComponent::DatabaseAllocationLoadDependenciesInput{p_material_id, p_mesh_id}, p_node);
+    p_engine.scene.add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
     return l_mesh_renderer;
 };
 

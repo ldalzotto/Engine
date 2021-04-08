@@ -2,26 +2,9 @@
 
 namespace BoxColliderComponentAsset_SceneCommunication
 {
-inline static BoxColliderComponentAsset from_json(JSONDeserializer& p_json_deserialiazer)
+inline static NodeComponent build_nodecomponent(const Token<BoxColliderComponent> p_component)
 {
-    BoxColliderComponentAsset l_return;
-    JSONDeserializer l_deserializer;
-    p_json_deserialiazer.next_object("half_extend", &l_deserializer);
-    l_return.half_extend = MathJSONDeserialization::_v3f(&l_deserializer);
-    l_deserializer.free();
-    return l_return;
-};
-
-inline static void to_json(const BoxColliderComponentAsset& p_component, JSONSerializer* in_out_json_serializer)
-{
-    in_out_json_serializer->start_object(slice_int8_build_rawstr("half_extend"));
-    MathJSONSerialization::_v3f(p_component.half_extend, in_out_json_serializer);
-    in_out_json_serializer->end_object();
-};
-
-inline static NodeComponent construct_nodecomponent(const Token<BoxColliderComponent> p_ressource)
-{
-    return NodeComponent{BoxColliderComponent::Type, token_value(p_ressource)};
+    return NodeComponent{BoxColliderComponent::Type, token_value(p_component)};
 };
 
 inline static BoxColliderComponentAsset desconstruct_nodecomponent(SceneMiddleware& p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
@@ -38,7 +21,7 @@ inline static void on_node_component_removed(SceneMiddleware* p_scene_middleware
 namespace CameraComponentAsset_SceneCommunication
 {
 
-inline static NodeComponent construct_nodecomponent()
+inline static NodeComponent build_nodecomponent()
 {
     return NodeComponent{CameraComponent::Type, tokent_build_default()};
 };
@@ -57,14 +40,14 @@ inline static void on_node_component_removed(RenderMiddleWare& p_render_middlewa
 
 namespace MeshRendererComponentAsset_SceneCommunication
 {
-inline static NodeComponent construct_nodecomponent(const Token<MeshRendererComponent> p_component)
+inline static NodeComponent build_nodecomponent(const Token<MeshRendererComponent> p_component)
 {
     return NodeComponent{MeshRendererComponent::Type, token_value(p_component)};
 };
 
 inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
 {
-    RenderMiddleWare_AllocationComposition::free_meshrenderer_with_dependencies(p_render_middleware, p_render_ressource_allocator, token_build<MeshRendererComponent>(p_node_component.resource));
+    MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_ressource_allocator, token_build<MeshRendererComponent>(p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
@@ -73,7 +56,6 @@ inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Col
 {
     switch (p_node_component.type)
     {
-
     case BoxColliderComponent::Type:
     {
         BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware, p_collision, p_node_component);
