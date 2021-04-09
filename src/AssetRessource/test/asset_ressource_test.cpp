@@ -382,7 +382,7 @@ inline void render_middleware_inline_allocation(CachedCompiledShaders& p_cached_
            The MeshRenderer has been removed from the RenderRessourceAllocator.
        */
         {
-            assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 0);
+            assert_true(l_ctx.render_ressource_allocator.material_unit.materials_inline_allocation_events.Size == 0);
             assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes_allocation_events.Size == 0);
             assert_true(l_ctx.render_ressource_allocator.material_unit.materials.CountMap.get_value_nothashed(0)->counter == 1);
             assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes.CountMap.get_value_nothashed(l_mesh_id)->counter == 2);

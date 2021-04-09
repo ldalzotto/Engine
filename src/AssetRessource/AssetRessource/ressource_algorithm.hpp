@@ -61,19 +61,26 @@ struct RessourceAlgorithm
         return p_ressources.increment_nothashed(p_id);
     };
 
-    template <class RessourceType, class RessourceAssetType, class RessourceInlineAllocationEventType, class RessourceObjectBuilderFunc>
-    inline static Token<RessourceType> push_ressource_to_be_allocated_inline(PoolHashedCounted<hash_t, RessourceType>& p_ressources,
-                                                                             Vector<RessourceInlineAllocationEventType>& p_ressource_allocation_events, const hash_t p_id,
-                                                                             const RessourceAssetType& p_asset, const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
+    template <class RessourceType, class RessourceAllocationEventType>
+    inline static Token<RessourceType> push_ressource_to_be_allocated_database_v2(PoolHashedCounted<hash_t, RessourceType>& p_ressources, const RessourceType& p_ressource,
+                                                                      Vector<RessourceAllocationEventType>& p_ressource_allocation_events, const hash_t p_id)
     {
-        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id}));
-        p_ressource_allocation_events.push_back_element(RessourceInlineAllocationEventType{p_asset, l_ressource});
+        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource);
+        p_ressource_allocation_events.push_back_element(RessourceAllocationEventType{p_id, l_ressource});
         return l_ressource;
     };
 
-    template <class RessourceType, class RessourceInlineAllocationEventType, class RessourceAssetType, class RessourceObjectBuilderFunc>
-    inline static Token<RessourceType> allocate_or_increment_inline(PoolHashedCounted<hash_t, RessourceType>& p_ressources, Vector<RessourceInlineAllocationEventType>& p_ressource_allocation_events,
-                                                                    const hash_t p_id, const RessourceAssetType& p_asset, const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
+    template <class RessourceType, class RessourceAssetType, class RessourceAllocationEventType>
+    inline static Token<RessourceType> push_ressource_to_be_allocated_inline_v2(PoolHashedCounted<hash_t, RessourceType>& p_ressources,const RessourceType& p_ressource,
+                                                                                  Vector<RessourceAllocationEventType>& p_ressource_allocation_events, const hash_t p_id, const RessourceAssetType& p_asset)
+    {
+        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource);
+        p_ressource_allocation_events.push_back_element(RessourceAllocationEventType{p_asset, l_ressource});
+        return l_ressource;
+    };
+
+    template <class RessourceType, class RessourceDatabaseEventAllocator>
+    inline static Token<RessourceType> allocate_or_increment_inline_v2(PoolHashedCounted<hash_t, RessourceType>& p_ressources, const hash_t p_id,  const RessourceDatabaseEventAllocator& p_ressource_database_event_allocator)
     {
         if (p_ressources.has_key_nothashed(p_id))
         {
@@ -84,24 +91,13 @@ struct RessourceAlgorithm
         }
         else
         {
-            return RessourceAlgorithm::push_ressource_to_be_allocated_inline(p_ressources, p_ressource_allocation_events, p_id, p_asset, p_ressource_object_builder_func);
+            return p_ressource_database_event_allocator(RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id});
         }
     };
 
-    template <class RessourceType, class RessourceDatabaseAllocationEventType, class RessourceObjectBuilderFunc>
-    inline static Token<RessourceType> push_ressource_to_be_allocated_database(PoolHashedCounted<hash_t, RessourceType>& p_ressources,
-                                                                               Vector<RessourceDatabaseAllocationEventType>& p_ressource_allocation_events, const hash_t p_id,
-                                                                               const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
-    {
-        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::ASSET_DATABASE, 0, p_id}));
-        p_ressource_allocation_events.push_back_element(RessourceDatabaseAllocationEventType{p_id, l_ressource});
-        return l_ressource;
-    };
-
-    template <class RessourceType, class RessourceDatabaseAllocationEventType, class RessourceObjectBuilderFunc>
-    inline static Token<RessourceType> allocate_or_increment_database(PoolHashedCounted<hash_t, RessourceType>& p_ressources,
-                                                                      Vector<RessourceDatabaseAllocationEventType>& p_ressource_allocation_events, const hash_t p_id,
-                                                                      const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
+    template <class RessourceType, class RessourceDatabaseEventAllocator>
+    inline static Token<RessourceType> allocate_or_increment_database_v2(PoolHashedCounted<hash_t, RessourceType>& p_ressources, const hash_t p_id,
+                                                                         const RessourceDatabaseEventAllocator& p_ressource_database_event_allocator)
     {
         if (p_ressources.has_key_nothashed(p_id))
         {
@@ -112,25 +108,8 @@ struct RessourceAlgorithm
         }
         else
         {
-            return RessourceAlgorithm::push_ressource_to_be_allocated_database(p_ressources, p_ressource_allocation_events, p_id, p_ressource_object_builder_func);
+            return p_ressource_database_event_allocator(RessourceIdentifiedHeader{RessourceAllocationType::ASSET_DATABASE, 0, p_id});
         }
-    };
-
-    // TODO -> move to function definition ?
-    template <class RessourceType> inline static RessourceType ressourceobject_builder_default(const RessourceIdentifiedHeader& p_header)
-    {
-        return RessourceType{p_header};
-    };
-
-    template <class RessourceType, class WithAssetDependenciesFunc>
-    inline static void with_asset_dependencies(DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id,
-                                               const WithAssetDependenciesFunc& p_with_asset_dependencies_func)
-    {
-        using RessourceType_AsserDependencies = RessourceType::AssetDependencies;
-        auto l_asset_dependencies = RessourceType_AsserDependencies{p_asset_database.get_asset_dependencies_blob(p_database_connection, p_id)};
-        auto l_asset_dependencies_value = RessourceType::AssetDependencies::Value::build_from_asset(l_asset_dependencies);
-        p_with_asset_dependencies_func(l_asset_dependencies_value);
-        l_asset_dependencies.free();
     };
 
     template <class RessourceType, class RessourceDatabaseAllocationEventType, class RessourceInlineAllocationEventType, class RessourceAllocationFunc>
