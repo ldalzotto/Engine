@@ -118,13 +118,21 @@ struct TextureRessourceUnit
     inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         RessourceAlgorithm::allocation_step(this->textures, this->texture_database_allocation_events, this->textures_allocation_events, p_database_connection, p_asset_database,
-                                            [&](TextureRessource& p_ressource, const TextureRessource::Asset::Value& p_value) {
-                                                p_ressource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(
-                                                    p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory, ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
-                                                TextureGPU& l_texture_gpu = p_gpu_context.graphics_allocator.heap.textures_gpu.get(p_ressource.texture);
-                                                BufferReadWrite::write_to_imagegpu(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_texture_gpu.Image,
-                                                                                   p_gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image), p_value.pixels);
-                                            });
+                                            TextureRessourceAllocation{p_gpu_context});
+    };
+
+    struct TextureRessourceAllocation
+    {
+        GPUContext& gpu_context;
+
+        inline void operator()(TextureRessource& p_ressource, const TextureRessource::Asset::Value& p_value) const
+        {
+            p_ressource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(gpu_context.graphics_allocator, gpu_context.buffer_memory,
+                                                                                                                     ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
+            TextureGPU& l_texture_gpu = gpu_context.graphics_allocator.heap.textures_gpu.get(p_ressource.texture);
+            BufferReadWrite::write_to_imagegpu(gpu_context.buffer_memory.allocator, gpu_context.buffer_memory.events, l_texture_gpu.Image,
+                                               gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image), p_value.pixels);
+        }
     };
 };
 
@@ -270,15 +278,23 @@ struct ShaderRessourceUnit
                                 AssetDatabase& p_asset_database)
     {
         RessourceAlgorithm::allocation_step(this->shaders, this->shaders_database_allocation_events, this->shaders_allocation_events, p_database_connection, p_asset_database,
-                                            [&](ShaderRessource& p_mesh_ressource, const ShaderRessource::Asset::Value& p_value) {
-                                                ShaderModuleRessource& l_vertex_shader = p_shader_module_unit.shader_modules.pool.get(p_mesh_ressource.dependencies.vertex_shader);
-                                                ShaderModuleRessource& l_fragment_shader = p_shader_module_unit.shader_modules.pool.get(p_mesh_ressource.dependencies.fragment_shader);
-                                                p_mesh_ressource.shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
-                                                    p_gpu_context.graphics_allocator, p_renderer.allocator, p_value.specific_parameters, p_value.execution_order,
-                                                    p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass), p_value.shader_configuration,
-                                                    p_gpu_context.graphics_allocator.heap.shader_modules.get(l_vertex_shader.shader_module),
-                                                    p_gpu_context.graphics_allocator.heap.shader_modules.get(l_fragment_shader.shader_module));
-                                            });
+                                            ShaderRessourceAllocation{p_shader_module_unit, p_renderer, p_gpu_context});
+    };
+
+    struct ShaderRessourceAllocation
+    {
+        ShaderModuleRessourceUnit& shader_module_unit;
+        D3Renderer& renderer;
+        GPUContext& gpu_context;
+        inline void operator()(ShaderRessource& p_mesh_ressource, const ShaderRessource::Asset::Value& p_value) const
+        {
+            ShaderModuleRessource& l_vertex_shader = shader_module_unit.shader_modules.pool.get(p_mesh_ressource.dependencies.vertex_shader);
+            ShaderModuleRessource& l_fragment_shader = shader_module_unit.shader_modules.pool.get(p_mesh_ressource.dependencies.fragment_shader);
+            p_mesh_ressource.shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
+                gpu_context.graphics_allocator, renderer.allocator, p_value.specific_parameters, p_value.execution_order,
+                gpu_context.graphics_allocator.heap.graphics_pass.get(renderer.color_step.pass), p_value.shader_configuration,
+                gpu_context.graphics_allocator.heap.shader_modules.get(l_vertex_shader.shader_module), gpu_context.graphics_allocator.heap.shader_modules.get(l_fragment_shader.shader_module));
+        };
     };
 };
 
@@ -422,8 +438,8 @@ struct MaterialRessourceComposition
     {
         return RessourceAlgorithm::allocate_or_increment_inline(p_unit.materials, p_unit.materials_allocation_events, p_inline_input.id, p_inline_input.asset,
                                                                 [&](const RessourceIdentifiedHeader& p_header) {
-                                                                    return materialressource_inline_allocate(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input,
-                                                                                                             p_shader_input, p_vertex_shader_input, p_fragment_shader_input, p_header);
+                                                                    return materialressource_inline_allocate_recursively(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input,
+                                                                                                                         p_shader_input, p_vertex_shader_input, p_fragment_shader_input, p_header);
                                                                 });
     };
 
@@ -434,11 +450,11 @@ struct MaterialRessourceComposition
                                                              const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
     {
 
-        return RessourceAlgorithm::push_ressource_to_be_allocated_database(p_unit.materials, p_unit.materials_database_allocation_events, p_inline_input.id,
-                                                                           [&](const RessourceIdentifiedHeader& p_header) {
-                                                                               return materialressource_database_allocate(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input,
-                                                                                                                          p_shader_input, p_vertex_shader_input, p_fragment_shader_input, p_header);
-                                                                           });
+        return RessourceAlgorithm::push_ressource_to_be_allocated_database(
+            p_unit.materials, p_unit.materials_database_allocation_events, p_inline_input.id, [&](const RessourceIdentifiedHeader& p_header) {
+                return materialressource_database_allocate_recursively(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input,
+                                                                       p_fragment_shader_input, p_header);
+            });
     };
 
     inline static Token<MaterialRessource> allocate_or_increment_database(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
@@ -448,8 +464,8 @@ struct MaterialRessourceComposition
                                                                           const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         return RessourceAlgorithm::allocate_or_increment_database(p_unit.materials, p_unit.materials_database_allocation_events, p_inline_input.id, [&](const RessourceIdentifiedHeader& p_header) {
-            return materialressource_database_allocate(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input,
-                                                       p_header);
+            return materialressource_database_allocate_recursively(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input,
+                                                                   p_fragment_shader_input, p_header);
         });
     };
 
@@ -465,10 +481,10 @@ struct MaterialRessourceComposition
                     l_material_database_input.id = p_id;
                     l_material_database_input.texture_dependencies_input = *(Slice<TextureRessource::DatabaseAllocationInput>*)&p_asset_dependencies_value.textures;
 
-                    l_ressource = materialressource_database_allocate(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, l_material_database_input,
-                                                                      ShaderRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader},
-                                                                      ShaderModuleRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader_dependencies.vertex_module},
-                                                                      ShaderModuleRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader_dependencies.fragment_module}, p_header);
+                    l_ressource = materialressource_database_allocate_recursively(
+                        p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, l_material_database_input, ShaderRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader},
+                        ShaderModuleRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader_dependencies.vertex_module},
+                        ShaderModuleRessource::DatabaseAllocationInput{p_asset_dependencies_value.shader_dependencies.fragment_module}, p_header);
                 });
             return l_ressource;
         });
@@ -484,38 +500,44 @@ struct MaterialRessourceComposition
     };
 
   private:
-    inline static MaterialRessource materialressource_database_allocate(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
-                                                                        TextureRessourceUnit& p_texture_unit, const MaterialRessource::DatabaseAllocationInput& p_inline_input,
-                                                                        const ShaderRessource::DatabaseAllocationInput& p_shader_input,
-                                                                        const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input,
-                                                                        const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input, const RessourceIdentifiedHeader& p_header)
+    inline static MaterialRessource materialressource_database_allocate_recursively(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                                    TextureRessourceUnit& p_texture_unit, const MaterialRessource::DatabaseAllocationInput& p_inline_input,
+                                                                                    const ShaderRessource::DatabaseAllocationInput& p_shader_input,
+                                                                                    const ShaderModuleRessource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                                    const ShaderModuleRessource::DatabaseAllocationInput& p_fragment_shader_input,
+                                                                                    const RessourceIdentifiedHeader& p_header)
     {
-        MaterialRessource::Dependencies l_dependencies;
-        l_dependencies.shader = ShaderRessourceComposition::allocate_or_increment_database(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
-        Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span<MaterialRessource::DynamicDependency>::allocate(p_inline_input.texture_dependencies_input.Size);
-        for (loop(i, 0, l_dynamic_textures.Capacity))
-        {
-            l_dynamic_textures.get(i) =
-                MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_database(p_texture_unit, p_inline_input.texture_dependencies_input.get(i))};
-        }
-        l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
-        l_dynamic_textures.free();
-        return MaterialRessource{p_header, token_build_default<Material>(), l_dependencies};
+        return materialressource_T_allocate_recursively(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input,
+                                                        p_header, ShaderRessourceComposition::allocate_or_increment_database, TextureRessourceComposition::allocate_or_increment_database);
     };
 
-    inline static MaterialRessource materialressource_inline_allocate(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
-                                                                      TextureRessourceUnit& p_texture_unit, const MaterialRessource::InlineAllocationInput& p_inline_input,
-                                                                      const ShaderRessource::InlineAllocationInput& p_shader_input,
-                                                                      const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input,
-                                                                      const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input, const RessourceIdentifiedHeader& p_header)
+    inline static MaterialRessource materialressource_inline_allocate_recursively(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit,
+                                                                                  TextureRessourceUnit& p_texture_unit, const MaterialRessource::InlineAllocationInput& p_inline_input,
+                                                                                  const ShaderRessource::InlineAllocationInput& p_shader_input,
+                                                                                  const ShaderModuleRessource::InlineAllocationInput& p_vertex_shader_input,
+                                                                                  const ShaderModuleRessource::InlineAllocationInput& p_fragment_shader_input,
+                                                                                  const RessourceIdentifiedHeader& p_header)
+    {
+        return materialressource_T_allocate_recursively(p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input,
+                                                        p_header, ShaderRessourceComposition::allocate_or_increment_inline, TextureRessourceComposition::allocate_or_increment_inline);
+    };
+
+    template <class MaterialRessourceAllocationInput, class ShaderRessourceAllocationInputType, class ShaderModuleRessourceAllocationInput, class ShaderRessourceAllocateOrIncrementFunc,
+              class TextureRessourceAllocateofIncrementFunc>
+    inline static MaterialRessource
+    materialressource_T_allocate_recursively(MaterialRessourceUnit& p_unit, ShaderRessourceUnit& p_shader_unit, ShaderModuleRessourceUnit& p_shader_module_unit, TextureRessourceUnit& p_texture_unit,
+                                             const MaterialRessourceAllocationInput& p_material_ressource_allocation_input, const ShaderRessourceAllocationInputType& p_shader_input,
+                                             const ShaderModuleRessourceAllocationInput& p_vertex_shader_input, const ShaderModuleRessourceAllocationInput& p_fragment_shader_input,
+                                             const RessourceIdentifiedHeader& p_header, const ShaderRessourceAllocateOrIncrementFunc& p_shader_ressource_allocate_or_increment_func,
+                                             const TextureRessourceAllocateofIncrementFunc& p_texture_ressource_allocate_or_increment_func)
     {
         MaterialRessource::Dependencies l_dependencies;
-        l_dependencies.shader = ShaderRessourceComposition::allocate_or_increment_inline(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
-        Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span<MaterialRessource::DynamicDependency>::allocate(p_inline_input.texture_dependencies_input.Size);
+        l_dependencies.shader = p_shader_ressource_allocate_or_increment_func(p_shader_unit, p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
+        Span<MaterialRessource::DynamicDependency> l_dynamic_textures = Span<MaterialRessource::DynamicDependency>::allocate(p_material_ressource_allocation_input.texture_dependencies_input.Size);
         for (loop(i, 0, l_dynamic_textures.Capacity))
         {
             l_dynamic_textures.get(i) =
-                MaterialRessource::DynamicDependency{TextureRessourceComposition::allocate_or_increment_inline(p_texture_unit, p_inline_input.texture_dependencies_input.get(i))};
+                MaterialRessource::DynamicDependency{p_texture_ressource_allocate_or_increment_func(p_texture_unit, p_material_ressource_allocation_input.texture_dependencies_input.get(i))};
         }
         l_dependencies.dynamic_dependencies = p_unit.material_dynamic_dependencies.alloc_vector_with_values(l_dynamic_textures.slice);
         l_dynamic_textures.free();
