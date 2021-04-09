@@ -613,7 +613,7 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
             ShaderModuleRessource::DatabaseAllocationInput{l_fragment_shader_id});
 
         assert_true(l_ctx.render_ressource_allocator.mesh_unit.meshes_database_allocation_events.Size == 1);
-        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 1);
+        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_database_allocation_events.Size == 1);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
         l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
@@ -729,10 +729,10 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
                                                                      AssetRessource_TestAssertion::AssertRessource{l_fragment_shader_id, 1, 0});
         }
 
-        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 1);
+        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_database_allocation_events.Size == 1);
         assert_true(l_ctx.render_ressource_allocator.texture_unit.texture_database_allocation_events.Size == 1);
-        assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_allocation_events.Size == 1);
-        assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_modules_allocation_events.Size == 2);
+        assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_database_allocation_events.Size == 1);
+        assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_module_database_allocation_events.Size == 2);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
         l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
@@ -844,9 +844,9 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
 
         assert_true(token_equals(l_material_2, l_material));
 
-        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_allocation_events.Size == 0);
-        assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_allocation_events.Size == 0);
-        assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_modules_allocation_events.Size == 0);
+        assert_true(l_ctx.render_ressource_allocator.material_unit.materials_database_allocation_events.Size == 0);
+        assert_true(l_ctx.render_ressource_allocator.shader_unit.shaders_database_allocation_events.Size == 0);
+        assert_true(l_ctx.render_ressource_allocator.shader_module_unit.shader_module_database_allocation_events.Size == 0);
 
         l_ctx.render_ressource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
         l_ctx.render_ressource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);

@@ -27,7 +27,7 @@ struct VaryingSlice
         return VaryingSlice{p_memory, p_chunks};
     };
 
-    inline uimax get_size()
+    inline uimax get_size() const
     {
         return this->chunks.Size;
     };
@@ -36,6 +36,11 @@ struct VaryingSlice
     {
         SliceIndex& l_chunk = this->chunks.get(p_index);
         return Slice<int8>::build_memory_offset_elementnb(this->memory.Begin, l_chunk.Begin, l_chunk.Size);
+    };
+
+    inline const Slice<int8> get_element(const uimax p_index) const
+    {
+        return ((VaryingSlice*)this)->get_element(p_index);
     };
 
     template <class ElementType> inline Slice<ElementType> get_element_typed(const uimax p_index)

@@ -69,18 +69,24 @@ struct ShaderModuleRessource
         };
     };
 
+    struct DatabaseAllocationInput
+    {
+        hash_t id;
+    };
+
+    struct DatabaseAllocationEvent
+    {
+        hash_t id;
+        Token<ShaderModuleRessource> allocated_ressource;
+    };
+
     struct InlineAllocationInput
     {
         hash_t id;
         Asset asset;
     };
 
-    struct DatabaseAllocationInput
-    {
-        hash_t id;
-    };
-
-    struct AllocationEvent
+    struct InlineAllocationEvent
     {
         Asset asset;
         Token<ShaderModuleRessource> allocated_ressource;
@@ -88,7 +94,7 @@ struct ShaderModuleRessource
 
     struct FreeEvent
     {
-        Token<ShaderModuleRessource> ressource;
+        Token<ShaderModuleRessource> allocated_ressource;
 
         inline static FreeEvent build_from_token(const Token<ShaderModuleRessource> p_token)
         {
@@ -286,26 +292,32 @@ struct ShaderRessource
         };
     };
 
+    struct DatabaseAllocationInput
+    {
+        hash_t id;
+    };
+
+    struct DatabaseAllocationEvent
+    {
+        hash_t id;
+        Token<ShaderRessource> allocated_ressource;
+    };
+
+    struct InlineAllocationEvent
+    {
+        ShaderRessource::Asset asset;
+        Token<ShaderRessource> allocated_ressource;
+    };
+
     struct InlineAllocationInput
     {
         hash_t id;
         Asset asset;
     };
 
-    struct DatabaseAllocationInput
-    {
-        hash_t id;
-    };
-
-    struct AllocationEvent
-    {
-        ShaderRessource::Asset asset;
-        Token<ShaderRessource> allocated_ressource;
-    };
-
     struct FreeEvent
     {
-        Token<ShaderRessource> ressource;
+        Token<ShaderRessource> allocated_ressource;
 
         inline static ShaderRessource::FreeEvent build_from_token(const Token<ShaderRessource> p_token)
         {
@@ -359,7 +371,6 @@ struct TextureRessource
             this->allocated_binary.free();
         };
     };
-
 
     struct DatabaseAllocationInput
     {
@@ -422,7 +433,7 @@ struct MaterialRessource
             {
                 VaryingSlice parameters;
 
-                inline ShaderParameter::Type get_parameter_type(const uimax p_index)
+                inline ShaderParameter::Type get_parameter_type(const uimax p_index) const
                 {
                     return *(ShaderParameter::Type*)this->parameters.get_element(p_index).Begin;
                 };
@@ -435,12 +446,22 @@ struct MaterialRessource
                     return slice_cast<hash_t>(this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type))).Begin;
                 };
 
+                inline const hash_t* get_parameter_texture_gpu_value(const uimax p_index) const
+                {
+                    return ((Parameters*)this)->get_parameter_texture_gpu_value(p_index);
+                }
+
                 inline Slice<int8> get_parameter_uniform_host_value(const uimax p_index)
                 {
 #if __DEBUG
                     assert_true(this->get_parameter_type(p_index) == ShaderParameter::Type::UNIFORM_HOST);
 #endif
                     return this->parameters.get_element(p_index).slide_rv(sizeof(ShaderParameter::Type));
+                };
+
+                inline const Slice<int8> get_parameter_uniform_host_value(const uimax p_index) const
+                {
+                    return ((Parameters*)this)->get_parameter_uniform_host_value(p_index);
                 };
 
                 inline static void add_parameter_texture(VaryingVector& p_parameters, const hash_t p_texture_hash)
@@ -536,6 +557,18 @@ struct MaterialRessource
         };
     };
 
+    struct DatabaseAllocationInput
+    {
+        hash_t id;
+        Slice<TextureRessource::DatabaseAllocationInput> texture_dependencies_input;
+    };
+
+    struct DatabaseAllocationEvent
+    {
+        hash_t id;
+        Token<MaterialRessource> allocated_ressource;
+    };
+
     struct InlineAllocationInput
     {
         hash_t id;
@@ -543,13 +576,7 @@ struct MaterialRessource
         Slice<TextureRessource::InlineAllocationInput> texture_dependencies_input;
     };
 
-    struct DatabaseAllocationInput
-    {
-        hash_t id;
-        Slice<TextureRessource::DatabaseAllocationInput> texture_dependencies_input;
-    };
-
-    struct AllocationEvent
+    struct InlineAllocationEvent
     {
         Asset asset;
         Token<MaterialRessource> allocated_ressource;
@@ -557,6 +584,6 @@ struct MaterialRessource
 
     struct FreeEvent
     {
-        Token<MaterialRessource> ressource;
+        Token<MaterialRessource> allocated_ressource;
     };
 };
