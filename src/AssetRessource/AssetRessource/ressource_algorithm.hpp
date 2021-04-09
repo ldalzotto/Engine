@@ -5,7 +5,6 @@
 */
 struct RessourceAlgorithm
 {
-    // TODO -> update the PoolHashedCounted for hashed key value call
     template <class RessourceType, class RessourceInlineAllocationEventType, class RessourceDatabaseAllocationEventType, class RessourceFreeEventType, class RessourceReleaseFunc>
     inline static void decrement_or_release_ressource_by_token_v3(PoolHashedCounted<hash_t, RessourceType>& p_pool_hashed_counted, Vector<RessourceFreeEventType>& p_ressource_free_events,
                                                                   Vector<RessourceInlineAllocationEventType>& p_ressource_inline_allocation_events,
@@ -13,22 +12,22 @@ struct RessourceAlgorithm
                                                                   const RessourceReleaseFunc& p_ressource_release_func)
     {
         RessourceType& l_ressource = p_pool_hashed_counted.pool.get(p_ressource_token);
-        hash_t l_id = l_ressource.header.id;
+        hash_t l_hashed_id = p_pool_hashed_counted.CountMap.hash_key(l_ressource.header.id);
 
         if (l_ressource.header.allocated)
         {
-            auto* l_counted_element = p_pool_hashed_counted.decrement(l_id);
+            auto* l_counted_element = p_pool_hashed_counted.decrement(l_hashed_id);
             if (l_counted_element->counter == 0)
             {
                 p_ressource_free_events.push_back_element(RessourceFreeEventType{l_counted_element->token});
                 // We don't remove the pool because it is handles by the free event
-                p_pool_hashed_counted.CountMap.erase_key_nothashed(l_id);
+                p_pool_hashed_counted.CountMap.erase_key(l_hashed_id);
                 p_ressource_release_func(l_ressource);
             }
         }
         else
         {
-            auto* l_counted_element = p_pool_hashed_counted.decrement(l_id);
+            auto* l_counted_element = p_pool_hashed_counted.decrement(l_hashed_id);
             if (l_counted_element->counter == 0)
             {
                 for (loop_reverse(i, 0, p_ressource_inline_allocation_events.Size))
@@ -50,7 +49,7 @@ struct RessourceAlgorithm
                     }
                 }
 
-                p_pool_hashed_counted.CountMap.erase_key_nothashed(l_id);
+                p_pool_hashed_counted.CountMap.erase_key(l_hashed_id);
                 p_ressource_release_func(l_ressource);
                 p_pool_hashed_counted.pool.release_element(p_ressource_token);
             }
@@ -59,7 +58,7 @@ struct RessourceAlgorithm
 
     template <class RessourceType> inline static Token<RessourceType> increment_ressource(PoolHashedCounted<hash_t, RessourceType>& p_ressources, const hash_t p_id)
     {
-        return p_ressources.increment(p_id);
+        return p_ressources.increment_nothashed(p_id);
     };
 
     template <class RessourceType, class RessourceAssetType, class RessourceInlineAllocationEventType, class RessourceObjectBuilderFunc>
@@ -67,8 +66,7 @@ struct RessourceAlgorithm
                                                                              Vector<RessourceInlineAllocationEventType>& p_ressource_allocation_events, const hash_t p_id,
                                                                              const RessourceAssetType& p_asset, const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
     {
-        // Token<RessourceType> l_ressource = p_ressources.push_back_element(p_id, RessourceType{RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id}});
-        Token<RessourceType> l_ressource = p_ressources.push_back_element(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id}));
+        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id}));
         p_ressource_allocation_events.push_back_element(RessourceInlineAllocationEventType{p_asset, l_ressource});
         return l_ressource;
     };
@@ -80,7 +78,7 @@ struct RessourceAlgorithm
         if (p_ressources.has_key_nothashed(p_id))
         {
 #if __DEBUG
-            assert_true(p_ressources.get(p_id).header.allocation_type == RessourceAllocationType::INLINE);
+            assert_true(p_ressources.get_nothashed(p_id).header.allocation_type == RessourceAllocationType::INLINE);
 #endif
             return RessourceAlgorithm::increment_ressource(p_ressources, p_id);
         }
@@ -95,7 +93,7 @@ struct RessourceAlgorithm
                                                                                Vector<RessourceDatabaseAllocationEventType>& p_ressource_allocation_events, const hash_t p_id,
                                                                                const RessourceObjectBuilderFunc& p_ressource_object_builder_func)
     {
-        Token<RessourceType> l_ressource = p_ressources.push_back_element(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::ASSET_DATABASE, 0, p_id}));
+        Token<RessourceType> l_ressource = p_ressources.push_back_element_nothashed(p_id, p_ressource_object_builder_func(RessourceIdentifiedHeader{RessourceAllocationType::ASSET_DATABASE, 0, p_id}));
         p_ressource_allocation_events.push_back_element(RessourceDatabaseAllocationEventType{p_id, l_ressource});
         return l_ressource;
     };
@@ -108,7 +106,7 @@ struct RessourceAlgorithm
         if (p_ressources.has_key_nothashed(p_id))
         {
 #if __DEBUG
-            assert_true(p_ressources.get(p_id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
+            assert_true(p_ressources.get_nothashed(p_id).header.allocation_type == RessourceAllocationType::ASSET_DATABASE);
 #endif
             return RessourceAlgorithm::increment_ressource(p_ressources, p_id);
         }
@@ -124,16 +122,16 @@ struct RessourceAlgorithm
         return RessourceType{p_header};
     };
 
-    template<class RessourceType, class WithAssetDependenciesFunc> inline static void with_asset_dependencies(DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id,
+    template <class RessourceType, class WithAssetDependenciesFunc>
+    inline static void with_asset_dependencies(DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id,
                                                const WithAssetDependenciesFunc& p_with_asset_dependencies_func)
     {
-        auto l_asset_dependencies = RessourceType::AssetDependencies{p_asset_database.get_asset_dependencies_blob(p_database_connection, p_id)};
+        using RessourceType_AsserDependencies = RessourceType::AssetDependencies;
+        auto l_asset_dependencies = RessourceType_AsserDependencies{p_asset_database.get_asset_dependencies_blob(p_database_connection, p_id)};
         auto l_asset_dependencies_value = RessourceType::AssetDependencies::Value::build_from_asset(l_asset_dependencies);
         p_with_asset_dependencies_func(l_asset_dependencies_value);
         l_asset_dependencies.free();
     };
-
-
 
     template <class RessourceType, class RessourceDatabaseAllocationEventType, class RessourceInlineAllocationEventType, class RessourceAllocationFunc>
     inline static void allocation_step(PoolHashedCounted<hash_t, RessourceType>& p_ressources, Vector<RessourceDatabaseAllocationEventType>& p_ressource_database_allocation_events,

@@ -186,6 +186,12 @@ template <class KeyType, class ElementType> struct HashMap
         this->Slots.get(l_hash) = 0;
     };
 
+
+    inline hash_t hash_key(const KeyType& p_key)
+    {
+        return HashMap_HashFn<KeyType>::Hashmap_HashFn_Hash(p_key, this->Memory.Capacity);
+    };
+
   private:
     inline void rehash_to(HashMap<KeyType, ElementType>* in_out_new_map)
     {
@@ -199,10 +205,6 @@ template <class KeyType, class ElementType> struct HashMap
         }
     };
 
-    inline hash_t hash_key(const KeyType& p_key)
-    {
-        return HashMap_HashFn<KeyType>::Hashmap_HashFn_Hash(p_key, this->Memory.Capacity);
-    };
 
     inline hash_t mod_key(const hash_t p_hash)
     {

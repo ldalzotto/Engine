@@ -1,6 +1,5 @@
 #pragma once
 
-// TODO -> by default, all functions must use the hashed key value
 template <class KeyType, class ElementType> struct PoolHashedCounted
 {
     struct CountElement
@@ -33,16 +32,21 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return this->CountMap.has_key_nothashed(p_key);
     };
 
-    inline Token<ElementType> increment(const KeyType& p_key)
+    inline Token<ElementType> increment(const hash_t p_key)
     {
-        CountElement* l_counted_element = this->CountMap.get_value_nothashed(p_key);
+        CountElement* l_counted_element = this->CountMap.get_value(p_key);
         l_counted_element->counter += 1;
         return l_counted_element->token;
     };
 
-    inline CountElement* decrement(const KeyType& p_key)
+    inline Token<ElementType> increment_nothashed(const KeyType& p_key)
     {
-        CountElement* l_counted_element = this->CountMap.get_value_nothashed(p_key);
+        return this->increment(this->CountMap.hash_key(p_key));
+    };
+
+    inline CountElement* decrement(const hash_t p_key)
+    {
+        CountElement* l_counted_element = this->CountMap.get_value(p_key);
 #if __DEBUG
         assert_true(l_counted_element->counter != 0);
 #endif
@@ -50,33 +54,48 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
         return l_counted_element;
     };
 
-    inline Token<ElementType> push_back_element(const KeyType& p_key, const ElementType& p_element)
+    inline CountElement* decrement_nothashed(const KeyType& p_key)
+    {
+        return this->decrement(this->CountMap.hash_key(p_key));
+    };
+
+    inline Token<ElementType> push_back_element_nothashed(const KeyType& p_key, const ElementType& p_element)
     {
         Token<ElementType> l_allocated_token = this->pool.alloc_element(p_element);
         this->CountMap.push_key_value_nothashed(p_key, CountElement{l_allocated_token, 1});
         return l_allocated_token;
     };
 
-    inline void remove_element(const KeyType& p_key, const Token<ElementType> p_element)
+    inline void remove_element(const hash_t p_key, const Token<ElementType> p_element)
     {
         this->pool.release_element(p_element);
-        this->CountMap.erase_key_nothashed(p_key);
+        this->CountMap.erase_key(p_key);
     };
 
-    inline ElementType& get(const KeyType& p_key)
+    inline void remove_element_nothashed(const KeyType& p_key, const Token<ElementType> p_element)
     {
-        return this->pool.get(this->CountMap.get_value_nothashed(p_key)->token);
+        this->remove_element(this->CountMap.hash_key(p_key), p_element);
+    };
+
+    inline ElementType& get(const hash_t p_key)
+    {
+        return this->pool.get(this->CountMap.get_value(p_key)->token);
+    };
+
+    inline ElementType& get_nothashed(const KeyType& p_key)
+    {
+        return this->get(this->CountMap.hash_key(p_key));
     };
 
     template <class AllocationFunc> inline Token<ElementType> increment_or_allocate_v2(const KeyType& p_key, const AllocationFunc& p_allocation_func)
     {
         if (this->has_key_nothashed(p_key))
         {
-            return this->increment(p_key);
+            return this->increment_nothashed(p_key);
         }
         else
         {
-            return this->push_back_element(p_key, p_allocation_func());
+            return this->push_back_element_nothashed(p_key, p_allocation_func());
         }
     };
 };
