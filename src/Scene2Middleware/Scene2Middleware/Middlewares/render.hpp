@@ -1,5 +1,8 @@
 #pragma once
 
+/*
+    Attach a camera object to a node.
+*/
 struct CameraComponent
 {
     static constexpr component_t Type = HashRaw_constexpr(STR(CameraComponent));
@@ -32,6 +35,9 @@ struct CameraComponent
     };
 };
 
+/*
+    Attach a renderable object and a linked material to a node.
+*/
 struct MeshRendererComponent
 {
     struct Dependencies
@@ -69,6 +75,9 @@ struct MeshRendererComponent
     };
 };
 
+/*
+    Allocate render components
+*/
 struct MeshRendererComponentUnit
 {
     Vector<MeshRendererComponent::AllocationEvent> mesh_renderer_allocation_events;
@@ -140,6 +149,7 @@ struct MeshRendererComponentUnit
     };
 };
 
+// TODO -> we can implement a generalization like the one in the AssetRessource
 struct MeshRendererComponentComposition
 {
     inline static Token<MeshRendererComponent>
@@ -210,6 +220,10 @@ struct MeshRendererComponentComposition
     };
 };
 
+/*
+    The render middleware is the interface between the scene and the render system. <br/>
+    It update scene component render state when associated nodes are moving.
+*/
 struct RenderMiddleWare
 {
     MeshRendererComponentUnit meshrenderer_component_unit;

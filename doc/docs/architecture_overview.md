@@ -22,20 +22,23 @@ Some execution unit within the main loop are called "user logic". These executio
 
 ## Scene
 
-An Engine instance is associated to a unique Scene. The Scene is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. ([scene](scene.md))
+An Engine instance is associated to a unique Scene. The Scene is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. <br/>
+See ([scene](scene.md)).
 
 <svg-inline src="architecture_overview_scene_tree.svg"></svg-inline>
 
 ## Allocations
 
-The allocation steps act as an interface for allocating system objects. Allocations input can either be provided directly by the user or by requesting the asset database. ([ressource](ressource.md))
+The allocation steps act as an interface for allocating system objects. Allocations input can either be provided directly by the user or by requesting the asset database. <br/>
+See ([ressource](ressource.md)).
 
 ## Scene middleware
 
 Scene middlewares are where node component ressources are stored. They act as the communication layer between the scene and the internal systems.
 
 Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
-The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. ([scene middleware](SceneMiddleware.md)).
+The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. <br/>
+See ([scene middleware](scene_middleware.md)).
 
 # Interaction with user
 
@@ -49,4 +52,5 @@ If we want to make a node display a 3D mesh, the user must :
 
 All assets (3DModels, textures, user defined assets...) are stored in a unique local database. Asset files are written either in a human readable format (.json, .obj, ...) or compressed (.png). However, when stored in the database, they are compiled into a blob that allows the engine to map it to internal objects with little efforts.
 
-This compilation is done during the build process, so we eliminate the runtime overhead of loading and decoding file formats. ([asset database](AssetDatabase.md))
+This compilation is done during the build process, so we eliminate the runtime overhead of loading and decoding file formats. <br/>
+See ([asset database](asset_database.md))

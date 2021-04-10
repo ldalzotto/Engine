@@ -1,11 +1,15 @@
-site_name: EngineCPP
+site_name: From Scratch
 theme: 'windmill'
 nav:
     - 'Architecture Overview': 'architecture_overview.md'
     - 'Ressource': 'ressource.md'
+    - 'Ressources':
+          - 'Render ressource': 'render_ressource.md'
     - 'AssetDatabase': 'asset_database.md'
     - 'Scene': 'scene.md'
     - 'Scene Middleware': 'scene_middleware.md'
+    - 'Scene Middlewares':
+          - 'Render middleware': 'render_middleware.md'
     - 'Render': 'render.md'
     - 'GPU': 'gpu.md'
 extra_javascript:

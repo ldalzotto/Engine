@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO -> remove forward declaration
+// TODO -> Instead of having constraints on normalized vectors, we can create a type (v3fn) that is ensured to be normalized and used in the "normalized API".
 
 namespace Math_const
 {
