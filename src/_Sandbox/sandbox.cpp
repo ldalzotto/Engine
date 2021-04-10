@@ -40,8 +40,7 @@ struct SandboxTestUtil
 
 inline void resize_test()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/resize_test/asset.db"));
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/resize_test/asset.db"));
     {
     }
     EngineConfiguration l_configuration{};
@@ -88,8 +87,7 @@ inline void engine_thread_test()
     EngineRunnerThread l_thread = EngineRunnerThread::allocate();
     l_thread.start();
 
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/thread_test/asset.db"));
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/thread_test/asset.db"));
 
     struct s_engine_cb
     {
@@ -308,8 +306,7 @@ struct BoxCollisionSandboxEnvironment
 
 inline void boxcollision()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/boxcollision/asset.db"));
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/boxcollision/asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase();
@@ -407,8 +404,7 @@ struct D3RendererCubeSandboxEnvironment
         {
             if (p_engine.clock.framecount == 20 || p_engine.clock.framecount == 40)
             {
-                String l_image_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-                l_image_path.append(slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
+                String l_image_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/d3renderer_cube/frame/frame_"));
                 ToString::auimax_append(p_engine.clock.framecount, l_image_path);
                 l_image_path.append(slice_int8_build_rawstr(".jpg"));
 
@@ -430,8 +426,7 @@ struct D3RendererCubeSandboxEnvironment
 
 inline void d3renderer_cube()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
     {
     }
     EngineConfiguration l_configuration{};

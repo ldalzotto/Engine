@@ -69,11 +69,9 @@ inline void compile_modificationts_cache(ShaderCompiler& p_shader_compiler)
     String l_tmp_asset_path;
     File l_tmp_file;
     {
-        String l_src_asset_path = String::allocate_elements(l_asset_root_path.slice);
-        l_src_asset_path.append(slice_int8_build_rawstr("material_asset_test.json"));
+        String l_src_asset_path = String::allocate_elements_2(l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
 
-        l_tmp_asset_path = String::allocate_elements(l_asset_root_path.slice);
-        l_tmp_asset_path.append(slice_int8_build_rawstr("tmp.json"));
+        l_tmp_asset_path = String::allocate_elements_2(l_asset_root_path.slice, slice_int8_build_rawstr("tmp.json"));
         l_tmp_file = File::create_or_open(l_tmp_asset_path.to_slice());
         File l_src_file = File::open(l_src_asset_path.to_slice());
 
@@ -96,8 +94,7 @@ inline void compile_modificationts_cache(ShaderCompiler& p_shader_compiler)
 
     // We simulate a write operation
     {
-        String l_src_asset_path = String::allocate_elements(l_asset_root_path.slice);
-        l_src_asset_path.append(slice_int8_build_rawstr("material_asset_test.json"));
+        String l_src_asset_path = String::allocate_elements_2(l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
         File l_src_file = File::open(l_src_asset_path.to_slice());
         Span<int8> l_buf = l_src_file.read_file_allocate();
         l_tmp_file.write_file(l_buf.slice);
@@ -383,10 +380,8 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
 
 inline void compilation_pass(ShaderCompiler& p_shader_compiler)
 {
-    String l_db_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_db_path.append(slice_int8_build_rawstr("asset.db"));
-    String l_db_2_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_db_2_path.append(slice_int8_build_rawstr("asset_2.db"));
+    String l_db_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
+    String l_db_2_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset_2.db"));
     {
         File l_db = File::create_or_open(l_db_path.to_slice());
         l_db.erase();
@@ -462,10 +457,143 @@ inline void compilation_pass(ShaderCompiler& p_shader_compiler)
     l_db_2_path.free();
 };
 
-inline void compilation_pass_configuration_serialization(){
-    // TODO -> write test
-    // const int8* l_configuration_json = MULTILINE();
-    // AssetCompilerConfigurationJSON l_configuration = AssetCompilerConfigurationJSON::allocate_from_json();
+inline void compilation_pass_configuration_serialization()
+{
+    struct AssetCompilationPassAsserter
+    {
+        inline static void _assert(const AssetCompilationPass& p_pass, const Slice<int8>& p_root_path, const Slice<int8>& p_database_path, const Slice<Slice<int8>>& p_asset_to_compiles)
+        {
+            assert_true(p_root_path.compare(p_pass.root_path.to_slice()));
+            assert_true(p_database_path.compare(p_pass.database_path.to_slice()));
+            assert_true(p_pass.assets_to_compile.Size == p_asset_to_compiles.Size);
+            for (loop(i, 0, p_pass.assets_to_compile.Size))
+            {
+                assert_true(p_asset_to_compiles.get(i).compare(p_pass.assets_to_compile.get(i).to_slice()));
+            }
+        };
+    };
+
+    struct AssetsToCompile
+    {
+        Vector<Span<int8>> assets_to_compile;
+
+        inline static AssetsToCompile allocate_default()
+        {
+            return AssetsToCompile{Vector<Span<int8>>::allocate(0)};
+        };
+
+        inline void push_asset(const Span<int8>& p_asset)
+        {
+            this->assets_to_compile.push_back_element(p_asset);
+        }
+
+        inline Slice<Slice<int8>> to_slice()
+        {
+            Slice<Span<int8>> l_slice = this->assets_to_compile.to_slice();
+            return *(Slice<Slice<int8>>*)&l_slice;
+        };
+
+        inline void clear()
+        {
+            for (loop(i, 0, this->assets_to_compile.Size))
+            {
+                this->assets_to_compile.get(i).free();
+            }
+            this->assets_to_compile.clear();
+        };
+        inline void free()
+        {
+            for (loop(i, 0, this->assets_to_compile.Size))
+            {
+                this->assets_to_compile.get(i).free();
+            }
+            this->assets_to_compile.free();
+        };
+    };
+
+    String l_configuration_file_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("compilation_pass_configuration_serialization.json"));
+
+    const int8* l_path_absolute_prefix = "absolute_prefix/";
+    String l_common_asset_path = String::allocate_elements_2(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("common/"));
+
+    const int8* l_asset_file = "asset.db";
+
+    AssetCompilerConfigurationJSON l_configuration_json =
+        AssetCompilerConfigurationJSON::allocate_from_json_file(l_configuration_file_path.to_slice(), slice_int8_build_rawstr(l_path_absolute_prefix));
+    Vector<AssetCompilationPass> l_asset_configuration_passes = l_configuration_json.consume_and_merge_to_passes();
+
+    assert_true(l_asset_configuration_passes.Size == 2 * 3);
+
+    AssetsToCompile l_assets_to_compile_test = AssetsToCompile::allocate_default();
+    {
+        Span<int8> l_asset_database_path = Span<int8>::allocate_slice_3(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_1/"), slice_int8_build_rawstr(l_asset_file));
+        Span<int8> l_pass_1_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_1/"));
+
+        AssetCompilationPass& l_pass_0 = l_asset_configuration_passes.get(0);
+        AssetCompilationPass& l_pass_1 = l_asset_configuration_passes.get(1);
+
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common1")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common2")));
+        AssetCompilationPassAsserter::_assert(l_pass_0, l_common_asset_path.to_slice(), l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+        l_assets_to_compile_test.clear();
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_1")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_2")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_3")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_4")));
+        AssetCompilationPassAsserter::_assert(l_pass_1, l_pass_1_root_path.slice, l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+
+        l_assets_to_compile_test.clear();
+        l_pass_1_root_path.free();
+        l_asset_database_path.free();
+    }
+    {
+        Span<int8> l_asset_database_path = Span<int8>::allocate_slice_3(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_2/"), slice_int8_build_rawstr(l_asset_file));
+        Span<int8> l_pass_1_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_2/"));
+
+        AssetCompilationPass& l_pass_2 = l_asset_configuration_passes.get(2);
+        AssetCompilationPass& l_pass_3 = l_asset_configuration_passes.get(3);
+
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common1")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common2")));
+        AssetCompilationPassAsserter::_assert(l_pass_2, l_common_asset_path.to_slice(), l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+        l_assets_to_compile_test.clear();
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_1")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("file_2")));
+        AssetCompilationPassAsserter::_assert(l_pass_3, l_pass_1_root_path.slice, l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+
+        l_assets_to_compile_test.clear();
+        l_pass_1_root_path.free();
+        l_asset_database_path.free();
+    }
+    {
+        Span<int8> l_asset_database_path = Span<int8>::allocate_slice_3(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_3/"), slice_int8_build_rawstr(l_asset_file));
+        Span<int8> l_pass_1_root_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(l_path_absolute_prefix), slice_int8_build_rawstr("pass_3/"));
+
+        AssetCompilationPass& l_pass_4 = l_asset_configuration_passes.get(4);
+        AssetCompilationPass& l_pass_5 = l_asset_configuration_passes.get(5);
+
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common1")));
+        l_assets_to_compile_test.push_asset(Span<int8>::allocate_slice(slice_int8_build_rawstr("common2")));
+        AssetCompilationPassAsserter::_assert(l_pass_4, l_common_asset_path.to_slice(), l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+        l_assets_to_compile_test.clear();
+        AssetCompilationPassAsserter::_assert(l_pass_5, l_pass_1_root_path.slice, l_asset_database_path.slice, l_assets_to_compile_test.to_slice());
+
+        l_assets_to_compile_test.clear();
+        l_pass_1_root_path.free();
+        l_asset_database_path.free();
+    }
+
+
+    l_assets_to_compile_test.free();
+
+    for (loop(i, 0, l_asset_configuration_passes.Size))
+    {
+        l_asset_configuration_passes.get(i).free();
+    }
+    l_asset_configuration_passes.free();
+
+    l_common_asset_path.free();
+    l_configuration_file_path.free();
 };
 
 int main()

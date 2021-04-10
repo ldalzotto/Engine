@@ -36,6 +36,20 @@ template <class ElementType> struct Vector
         return l_vector;
     };
 
+    inline static Vector<ElementType> allocate_capacity_elements_2(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements_0, const Slice<ElementType>& p_initial_elements_1)
+    {
+        Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_inital_capacity);
+        l_vector.push_back_array_2(p_initial_elements_0, p_initial_elements_1);
+        return l_vector;
+    };
+
+    inline static Vector<ElementType> allocate_capacity_elements_3(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements_0, const Slice<ElementType>& p_initial_elements_1, const Slice<ElementType>& p_initial_elements_2)
+    {
+        Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_inital_capacity);
+        l_vector.push_back_array_3(p_initial_elements_0, p_initial_elements_1, p_initial_elements_2);
+        return l_vector;
+    };
+
     inline Slice<ElementType> to_slice() const
     {
         return Slice<ElementType>::build_memory_elementnb(this->Memory.Memory, this->Size);
@@ -120,6 +134,15 @@ template <class ElementType> struct Vector
         this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size);
         this->Memory.slice.copy_memory_at_index_2(this->Size, p_elements_0, p_elements_1);
         this->Size += (p_elements_0.Size + p_elements_1.Size);
+
+        return 1;
+    };
+
+    inline int8 push_back_array_3(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
+    {
+        this->Memory.resize_until_capacity_met(this->Size + p_elements_0.Size + p_elements_1.Size + p_elements_2.Size);
+        this->Memory.slice.copy_memory_at_index_3(this->Size, p_elements_0, p_elements_1, p_elements_2);
+        this->Size += (p_elements_0.Size + p_elements_1.Size + p_elements_2.Size);
 
         return 1;
     };

@@ -20,6 +20,21 @@ struct String
         return l_string;
     };
 
+    inline static String allocate_elements_2(const Slice<int8>& p_initial_elements_0, const Slice<int8>& p_initial_elements_1)
+    {
+        String l_string = String{Vector<int8>::allocate_capacity_elements_2(p_initial_elements_0.Size + p_initial_elements_1.Size + 1, p_initial_elements_0, p_initial_elements_1)};
+        l_string.Memory.push_back_element((int8)NULL);
+        return l_string;
+    };
+
+    inline static String allocate_elements_3(const Slice<int8>& p_initial_elements_0, const Slice<int8>& p_initial_elements_1, const Slice<int8>& p_initial_elements_2)
+    {
+        String l_string = String{Vector<int8>::allocate_capacity_elements_3(p_initial_elements_0.Size + p_initial_elements_1.Size + +p_initial_elements_2.Size + 1, p_initial_elements_0,
+                                                                            p_initial_elements_1, p_initial_elements_2)};
+        l_string.Memory.push_back_element((int8)NULL);
+        return l_string;
+    };
+
     inline void free()
     {
         this->Memory.free();
@@ -47,10 +62,11 @@ struct String
         this->Memory.erase_array_at(p_index, p_size);
     };
 
-    inline void pop_back_array(const uimax p_size){
-        #if __DEBUG
+    inline void pop_back_array(const uimax p_size)
+    {
+#if __DEBUG
         assert_true(this->get_length() >= p_size);
-        #endif
+#endif
 
         this->Memory.erase_array_at(this->get_length() - p_size, p_size);
     };

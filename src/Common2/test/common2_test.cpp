@@ -1621,8 +1621,7 @@ inline void serialize_deserialize_binary_test()
 
 inline void file_test()
 {
-    String l_file_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_file_path.append(slice_int8_build_rawstr("file_test.txt"));
+    String l_file_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txt"));
 
     {
         File l_tmp_file = File::create_or_open(l_file_path.to_slice());
@@ -1649,8 +1648,7 @@ inline void file_test()
 
 inline void database_test()
 {
-    String l_database_path = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-    l_database_path.append(slice_int8_build_rawstr("asset.db"));
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
     {
         File l_tmp_file = File::create_or_open(l_database_path.to_slice());
         l_tmp_file.erase();
@@ -1750,8 +1748,7 @@ inline void database_test()
     // Wrong file silent
 
     {
-        String l_non_db_file = String::allocate_elements(slice_int8_build_rawstr(ASSET_FOLDER_PATH));
-        l_non_db_file.append(slice_int8_build_rawstr("non_db_file.txt"));
+        String l_non_db_file = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("non_db_file.txt"));
         DatabaseConnection l_connection = DatabaseConnection::allocate(l_non_db_file.to_slice());
         assert_true(DatabaseConnection_is_valid_silent(l_connection) == 0);
         l_connection.free();
