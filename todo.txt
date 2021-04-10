@@ -2,6 +2,4 @@
     * Internal state checked by the middleware by iterating over registered entities ?
     * Or events stored in the scene when a node has changed. These events will be consumed and pushed to middleware depending of components.
 
-2/ Designing a library that generalize deferred allocation. That can be used for ressource allocation and scene middleware component objects.
-
-3/ Migrating the collision allocation to the new system.
+2/ Migrating the collision allocation to the new system.
