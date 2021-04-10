@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Ressource - EngineCPP</title>
+    <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/highlight.css">
+    <link href="../css/custom.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../js/jquery-3.2.1.min.js"></script>
+    <script src="../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "Architecture", url: "#_top", children: [
+          ]},
+          {title: "Allocation/Deallocation", url: "#allocationdeallocation", children: [
+          ]},
+          {title: "Allocation modes", url: "#allocation-modes", children: [
+          ]},
+          {title: "Ressource identification", url: "#ressource-identification", children: [
+          ]},
+          {title: "Ressource dependencies", url: "#ressource-dependencies", children: [
+          ]},
+        ];
+
+    </script>
+    <script src="../js/base.js"></script>
+      <script src="../js/custom.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../asset_database/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../asset_database/" class="btn btn-xs btn-link">
+        AssetDatabase
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../architecture_overview/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../architecture_overview/" class="btn btn-xs btn-link">
+        Architecture Overview
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <p>A Ressource is an instanciated object that load data from the the asset database to allocate a system internal object.
+The ressource object doesn't have any logic, it simply holds references to the allocated internal object.</p>
+<h1 id="architecture">Architecture</h1>
+<p><svg-inline src="ressource_architecture.svg"></svg-inline></p>
+<p>Every ressource is associated to an allocation unit. This allocation unit is responsible of handling all allocation and
+deallocation inputs. If the criteria is met, it stores the event in a buffer that is later consumed by the main loop.</p>
+<h1 id="allocationdeallocation">Allocation/Deallocation</h1>
+<p>When an allocation is requested, the allocation unit generate a ressource token that is returned to the caller. Also, an
+internal allocation event is generated. The consumer can retrieve the allocated ressource by providing the returned
+token. When a deallocation is requested, the allocation unit generate a deallocation event. The token is invalid when
+the event is consumed and that the ressource has been freed.</p>
+<p>The same ressource can be allocated multiple times. When that happens, the same ressource token is returned and the
+usage counter in incremented by one. Deallocation request make the counter decready by one. As soon as the counter
+reaches zero, the deallocation event is generated.</p>
+<h1 id="allocation-modes">Allocation modes</h1>
+<p>The ressource allocation input can be provided by two ways:</p>
+<p><strong> Requested to the database: </strong>
+If the ressource input is requested to the database, the caller provide the asset path used by the database to retrieve
+the asset. <br/></p>
+<p><strong> Provided inline: </strong>
+If the ressource input is provided inline, the caller provide the same data as if it were retrieved by the database.</p>
+<p>Allocation events are processed in the following order for a single allocation unit :</p>
+<p><svg-inline src="ressource_allocation_order.svg""></svg-inline></p>
+<h1 id="ressource-identification">Ressource identification</h1>
+<p>All ressources are associated to an internal id. <br/>
+When the ressource input is provided inline, the ressource id is given by the caller. <br/>
+When the ressource input is provided by the database, the ressource id is computed by the hash of the asset path.</p>
+<h1 id="ressource-dependencies">Ressource dependencies</h1>
+<p>Ressources can be linked together (for example, a Mateial is linked to Shader) introducing an allocation and
+deallocation execution order. A goal of the allocation units is to handle the recursive allocation/deallocation of
+linked internal system objects, to that the internal systems can blindfully execute requests from the allocation unit.</p>
+<p>If ressource A needs ressource B to work, then the allocation order will be : (B) -&gt; (A). And the deallocation order : (
+A) -&gt; (B).</p>
+<p><svg-inline src="ressource_dependencies.svg"></svg-inline></p>
+<p>When the ressource allocation input is provided inline, it is up to the caller to provide input for the requested
+ressource and it's dependencies. <br/>
+When the ressource allocation input is provided by the database, then an additional asset database request is performed
+to retrieve asset id dependencies.</p>
+<p><svg-inline src="ressource_allocation_database_dependencies.svg"></svg-inline></p>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../asset_database/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../asset_database/" class="btn btn-xs btn-link">
+        AssetDatabase
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../architecture_overview/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../architecture_overview/" class="btn btn-xs btn-link">
+        Architecture Overview
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+  <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>

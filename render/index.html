@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Render - EngineCPP</title>
+    <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/highlight.css">
+    <link href="../css/custom.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../js/jquery-3.2.1.min.js"></script>
+    <script src="../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "Architecture", url: "#_top", children: [
+          ]},
+          {title: "Data model", url: "#data-model", children: [
+          ]},
+          {title: "Render hierarchy", url: "#render-hierarchy", children: [
+              {title: "Shader ordering", url: "#shader-ordering" },
+          ]},
+          {title: "Model matrix update", url: "#model-matrix-update", children: [
+          ]},
+        ];
+
+    </script>
+    <script src="../js/base.js"></script>
+      <script src="../js/custom.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../gpu/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../gpu/" class="btn btn-xs btn-link">
+        GPU
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../scene_middleware/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../scene_middleware/" class="btn btn-xs btn-link">
+        Scene Middleware
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <p>The Render module is the 3D renderer of the engine. It registers all graphics objects and organize them in a hierarchy
+to call GPU graphics bindings against them. <br/>
+The render module creates an internal 2D render target texture and draw the hierachy to it every frame.</p>
+<h1 id="architecture">Architecture</h1>
+<p><svg-inline src="./D3Renderer_arch.svg"></svg-inline></p>
+<p>The render module is composed of :</p>
+<ul>
+<li>ColorStep : responsible of the graphics passes supported by the module.</li>
+<li>D3RendererHeap : holds values of the render hierarchy.</li>
+<li>D3RendererAllocator : ensure the coherence of the render hierarchy (links between graphics objects).</li>
+<li>D3RendererEvents : acts as a buffer that store references of all renderable objects that will update it's model
+  matrix.</li>
+</ul>
+<h1 id="data-model">Data model</h1>
+<pre><code>
+* RenderableObject
+    * Mesh
+    * ShaderUniformBufferHostParameter (model)
+
+* Mesh
+    * BufferGPU (vertices_buffer)
+    * BufferGPU (indices_buffer)
+
+* ShaderIndex
+    * Shader
+    * ShaderLayout
+
+(ShaderIndex)(1)--(0..*)(Material)(1)--(0..*)(RenderableObject)
+(RenderableObject)(1)--(1)(Mesh)
+
+</code></pre>
+<p><strong>Mesh:</strong></p>
+<p>Holds reference to a vertex and index GPU buffer. <br/>
+It is up to the render module consumer to define the vertex buffer format. It must match with the shader vertex
+input. <br/>
+By default, mesh buffers are GPU allocated because we suppose that their vamue won't be modified often.</p>
+<p><strong>RenderableObject:</strong></p>
+<p>The renderable object is the representation of an object in 3D space with it's shape. <br/>
+It holds a reference to a Mesh and a model matrix. The model matrix is alaways host shader parameter because it's value
+is subject to change often.</p>
+<p><strong>Camera:</strong></p>
+<p>The camera is from where the whole hierarchy is rendered. <br/></p>
+<blockquote>
+<p><strong>WARNING</strong>: only one instance of camera can be instantiated for now.</p>
+</blockquote>
+<p><strong>ShaderIndex:</strong></p>
+<p>A shader index is a Shader with a layout and an execution order.</p>
+<h1 id="render-hierarchy">Render hierarchy</h1>
+<p>Every frame, the render hierarchy is binded to a GraphicsBinder by following an order :</p>
+<p><svg-inline src="./render_hierarchy.svg"></svg-inline></p>
+<p>This hierarchy impose that global buffer are binded before everything else and that the model buffer is binded at the
+very end. <br/>
+This contraint is translated in the shader source code :</p>
+<pre><code>
+struct Camera
+{
+    mat4 view;
+    mat4 projection;
+};
+
+layout(set = 0, binding = 0) uniform camera { Camera cam; };
+// insert all material buffer or samplers
+layout(set = END, binding = 0) uniform model { mat4 mod; };
+
+</code></pre>
+<h2 id="shader-ordering">Shader ordering</h2>
+<p>ShaderIndex inside the hierarchy are ordered by their execution order. This will come useful when we want to add
+transparency pass for exemple.</p>
+<h1 id="model-matrix-update">Model matrix update</h1>
+<p>Once a RenderableObject has been allocated, consumers of the render module can notify the renderer that an object has
+moved (pos, rot, scale) by sending a ModelUpdateEvent.</p>
+<p>When consumed, the ModelUpdateEvent will update the model buffer by the inputted matrix.</p>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../gpu/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../gpu/" class="btn btn-xs btn-link">
+        GPU
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../scene_middleware/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../scene_middleware/" class="btn btn-xs btn-link">
+        Scene Middleware
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+  <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>

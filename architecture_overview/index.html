@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>Architecture Overview - EngineCPP</title>
+    <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/highlight.css">
+    <link href="../css/custom.css" rel="stylesheet">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../js/jquery-3.2.1.min.js"></script>
+    <script src="../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "The philosophy of the engine", url: "#_top", children: [
+          ]},
+          {title: "Execution graph", url: "#execution-graph", children: [
+              {title: "Main loop", url: "#main-loop" },
+              {title: "Scene", url: "#scene" },
+              {title: "Allocations", url: "#allocations" },
+              {title: "Scene middleware", url: "#scene-middleware" },
+          ]},
+          {title: "Interaction with user", url: "#interaction-with-user", children: [
+          ]},
+          {title: "Asset management", url: "#asset-management", children: [
+          ]},
+        ];
+
+    </script>
+    <script src="../js/base.js"></script>
+      <script src="../js/custom.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../ressource/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../ressource/" class="btn btn-xs btn-link">
+        Ressource
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h1 id="the-philosophy-of-the-engine">The philosophy of the engine</h1>
+<p>The execution flow of the engine can be seen as a succession of shader pass execution. <br/>
+For example, let's say that the engine needs to allocate some render objects. What the engine does is reading a buffer where is stored all events of allocation and execute them all before continuing exectuion. <br/>
+The whole engine comes together by chaining multiple execution passes in the right order in order to draw a frame.</p>
+<h1 id="execution-graph">Execution graph</h1>
+<p>Here is the engine chain of execution represented as a graph:</p>
+<p><svg-inline src="architecture_overview_execution.svg"></svg-inline></p>
+<h2 id="main-loop">Main loop</h2>
+<p>The main loop is composed of execution units. Execution units are step that trigger all dependant execution block in the order defined by the dependencies. <br/>
+For exemple, we can see that the Render system is updated when the following execution units are completed : Render allocation, Render middleware and the GPU buffer step.</p>
+<p>Some execution unit within the main loop are called "user logic". These execution units are hooks that the engine user can hook on to execute custom logic at this specific point.</p>
+<blockquote>
+<p>Custom logic execution units are likely to create node, add component or move node. Thus, we must be sure that all scene middleware steps are called before the scene tree events are cleaned.</p>
+</blockquote>
+<h2 id="scene">Scene</h2>
+<p>An Engine instance is associated to a unique Scene. The Scene is a hierachical collection of Nodes located in 3D space. Every nodes can have multiple components attached to them. These components act as a link between the user and the internal systems. (<a href="../scene/">scene</a>)</p>
+<p><svg-inline src="architecture_overview_scene_tree.svg"></svg-inline></p>
+<h2 id="allocations">Allocations</h2>
+<p>The allocation steps act as an interface for allocating system objects. Allocations input can either be provided directly by the user or by requesting the asset database. (<a href="../ressource/">ressource</a>)</p>
+<h2 id="scene-middleware">Scene middleware</h2>
+<p>Scene middlewares are where node component ressources are stored. They act as the communication layer between the scene and the internal systems.</p>
+<p>Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
+The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. (<a href="SceneMiddleware.md">scene middleware</a>).</p>
+<h1 id="interaction-with-user">Interaction with user</h1>
+<p>If we want to make a node display a 3D mesh, the user must :</p>
+<ol>
+<li>Allocate a Node and set it's 3D coordinates.</li>
+<li>Allocate a mesh renderer component ressource from the render middleware.</li>
+<li>Add a component to the Node and link it with the mesh renderer token.</li>
+</ol>
+<h1 id="asset-management">Asset management</h1>
+<p>All assets (3DModels, textures, user defined assets...) are stored in a unique local database. Asset files are written either in a human readable format (.json, .obj, ...) or compressed (.png). However, when stored in the database, they are compiled into a blob that allows the engine to map it to internal objects with little efforts.</p>
+<p>This compilation is done during the build process, so we eliminate the runtime overhead of loading and decoding file formats. (<a href="AssetDatabase.md">asset database</a>)</p>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../ressource/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../ressource/" class="btn btn-xs btn-link">
+        Ressource
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+  <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>
