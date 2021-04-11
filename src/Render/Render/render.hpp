@@ -60,27 +60,102 @@ struct D3RendererHeap
     Pool<Mesh> meshes;
     Pool<RenderableObject> renderable_objects;
 
-    static D3RendererHeap allocate();
+    inline static D3RendererHeap allocate()
+    {
+        D3RendererHeap l_heap;
 
-    void free();
+        l_heap.shaders = Pool<ShaderIndex>::allocate(0);
+        l_heap.materials = Pool<Material>::allocate(0);
+        l_heap.meshes = Pool<Mesh>::allocate(0);
+        l_heap.renderable_objects = Pool<RenderableObject>::allocate(0);
+        l_heap.shaders_indexed = Vector<Token<ShaderIndex>>::allocate(0);
+        l_heap.shaders_to_materials = PoolOfVector<Token<Material>>::allocate_default();
+        l_heap.material_to_renderable_objects = PoolOfVector<Token<RenderableObject>>::allocate_default();
+        return l_heap;
+    };
 
-    Token<ShaderIndex> allocate_shader();
+    inline void free()
+    {
+#if __DEBUG
+        assert_true(!this->shaders.has_allocated_elements());
+        assert_true(!this->materials.has_allocated_elements());
+        assert_true(!this->meshes.has_allocated_elements());
+        assert_true(!this->renderable_objects.has_allocated_elements());
+        assert_true(this->shaders_indexed.empty());
+        assert_true(!this->shaders_to_materials.has_allocated_elements());
+        assert_true(!this->material_to_renderable_objects.has_allocated_elements());
+#endif
 
-    void link_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material);
+        this->shaders.free();
+        this->materials.free();
+        this->meshes.free();
+        this->renderable_objects.free();
+        this->shaders_indexed.free();
+        this->shaders_to_materials.free();
+        this->material_to_renderable_objects.free();
+    };
 
-    void unlink_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material);
+    inline void link_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
+    {
+        this->shaders_to_materials.element_push_back_element(token_build_from<Slice<Token<Material>>>(p_shader), p_material);
+    };
 
-    ShaderIndex& get_shader_by_index(const uimax p_index);
+    inline void unlink_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
+    {
+        auto l_materials = this->get_materials_from_shader(p_shader);
+        for (loop(i, 0, l_materials.get_size()))
+        {
+            if (token_equals(l_materials.get(i), p_material))
+            {
+                l_materials.erase_element_at_always(i);
+                return;
+            }
+        }
+    };
 
-    void get_materials_and_renderableobject_linked_to_shader(const Token<ShaderIndex> p_shader, Vector<Token<Material>>* in_out_materials, Vector<Token<RenderableObject>>* in_out_renderableobject);
+    inline ShaderIndex& get_shader_by_index(const uimax p_index)
+    {
+        return this->shaders.get(this->shaders_indexed.get(p_index));
+    };
 
-    PoolOfVector<Token<Material>>::Element_ShadowVector get_materials_from_shader(const Token<ShaderIndex> p_shader);
+    inline void get_materials_and_renderableobject_linked_to_shader(const Token<ShaderIndex> p_shader, Vector<Token<Material>>* in_out_materials,
+                                                                    Vector<Token<RenderableObject>>* in_out_renderableobject)
+    {
+        auto l_materials = this->get_materials_from_shader(p_shader);
+        for (loop(i, 0, l_materials.get_size()))
+        {
+            in_out_renderableobject->push_back_array(this->get_renderableobjects_from_material(l_materials.get(i)).to_slice());
+        }
+        in_out_materials->push_back_array(l_materials.to_slice());
+    };
 
-    void link_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object);
+    inline PoolOfVector<Token<Material>>::Element_ShadowVector get_materials_from_shader(const Token<ShaderIndex> p_shader)
+    {
+        return this->shaders_to_materials.get_element_as_shadow_vector(token_build_from<Slice<Token<Material>>>(p_shader));
+    };
 
-    void unlink_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object);
+    inline void link_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
+    {
+        this->material_to_renderable_objects.element_push_back_element(token_build_from<Slice<Token<RenderableObject>>>(p_material), p_renderable_object);
+    };
 
-    PoolOfVector<Token<RenderableObject>>::Element_ShadowVector get_renderableobjects_from_material(const Token<Material> p_material);
+    inline void unlink_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
+    {
+        auto l_linked_renderable_objects = this->get_renderableobjects_from_material(p_material);
+        for (loop(i, 0, l_linked_renderable_objects.get_size()))
+        {
+            if (token_equals(l_linked_renderable_objects.get(i), p_renderable_object))
+            {
+                l_linked_renderable_objects.erase_element_at_always(i);
+                return;
+            }
+        }
+    };
+
+    inline PoolOfVector<Token<RenderableObject>>::Element_ShadowVector get_renderableobjects_from_material(const Token<Material> p_material)
+    {
+        return this->material_to_renderable_objects.get_element_as_shadow_vector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
+    };
 };
 
 /*
@@ -90,25 +165,82 @@ struct D3RendererAllocator
 {
     D3RendererHeap heap;
 
-    static D3RendererAllocator allocate();
+    inline static D3RendererAllocator allocate()
+    {
+        return D3RendererAllocator{D3RendererHeap::allocate()};
+    };
 
-    void free();
+    inline void free()
+    {
+        this->heap.free();
+    };
 
-    Token<ShaderIndex> allocate_shader(const ShaderIndex& p_shader);
+    inline Token<ShaderIndex> allocate_shader(const ShaderIndex& p_shader)
+    {
+        uimax l_insertion_index = 0;
+        for (loop(i, 0, this->heap.shaders_indexed.Size))
+        {
+            if (this->heap.get_shader_by_index(i).execution_order >= l_insertion_index)
+            {
+                break;
+            };
+        };
 
-    void free_shader(const Token<ShaderIndex> p_shader);
+        Token<ShaderIndex> l_shader = this->heap.shaders.alloc_element(p_shader);
+        this->heap.shaders_to_materials.alloc_vector();
 
-    Token<Material> allocate_material(const Material& p_material);
+        this->heap.shaders_indexed.insert_element_at_always(l_shader, l_insertion_index);
+        return l_shader;
+    };
 
-    void free_material(const Token<Material> p_material);
+    inline void free_shader(const Token<ShaderIndex> p_shader)
+    {
+        ShaderIndex& l_shader = this->heap.shaders.get(p_shader);
 
-    Token<Mesh> allocate_mesh(const Mesh& p_mesh);
+        for (loop_reverse(j, 0, this->heap.shaders_indexed.Size))
+        {
+            if (token_equals(this->heap.shaders_indexed.get(j), p_shader))
+            {
+                this->heap.shaders_indexed.erase_element_at_always(j);
+                break;
+            }
+        }
 
-    void free_mesh(const Token<Mesh> p_mesh);
+        this->heap.shaders_to_materials.release_vector(token_build_from<Slice<Token<Material>>>(p_shader));
+        this->heap.shaders.release_element(p_shader);
+    };
 
-    Token<RenderableObject> allocate_renderable_object(const RenderableObject& p_renderable_object);
+    inline Token<Material> allocate_material(const Material& p_material)
+    {
+        this->heap.material_to_renderable_objects.alloc_vector();
+        return this->heap.materials.alloc_element(p_material);
+    };
 
-    void free_renderable_object(const Token<RenderableObject> p_rendereable_object);
+    inline void free_material(const Token<Material> p_material)
+    {
+        this->heap.material_to_renderable_objects.release_vector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
+        this->heap.materials.release_element(p_material);
+    };
+
+    inline Token<Mesh> allocate_mesh(const Mesh& p_mesh)
+    {
+        return this->heap.meshes.alloc_element(p_mesh);
+    };
+
+    inline void free_mesh(const Token<Mesh> p_mesh)
+    {
+        this->heap.meshes.release_element(p_mesh);
+    };
+
+    inline Token<RenderableObject> allocate_renderable_object(const RenderableObject& p_renderable_object)
+    {
+        return this->heap.renderable_objects.alloc_element(p_renderable_object);
+    };
+
+    inline void free_renderable_object(const Token<RenderableObject> p_rendereable_object)
+    {
+        this->heap.renderable_objects.release_element(p_rendereable_object);
+    };
 };
 
 struct D3RendererEvents
@@ -121,12 +253,34 @@ struct D3RendererEvents
 
     Vector<RenderableObject_ModelUpdateEvent> model_update_events;
 
-    static D3RendererEvents allocate();
+    inline static D3RendererEvents allocate()
+    {
+        return D3RendererEvents{Vector<RenderableObject_ModelUpdateEvent>::allocate(0)};
+    };
 
-    void free();
+    inline void free()
+    {
+#if __DEBUG
+        assert_true(this->model_update_events.empty());
+#endif
 
-    void push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent);
-    void remove_renderableobject_references(const Token<RenderableObject> p_renderable_object);
+        this->model_update_events.free();
+    };
+
+    inline void push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
+    {
+        this->model_update_events.push_back_element(p_modelupdateevent);
+    };
+    inline void remove_renderableobject_references(const Token<RenderableObject> p_renderable_object)
+    {
+        for (loop_reverse(i, 0, this->model_update_events.Size))
+        {
+            if (token_equals(this->model_update_events.get(i).renderable_object, p_renderable_object))
+            {
+                this->model_update_events.erase_element_at_always(i);
+            }
+        }
+    };
 };
 
 namespace ColorStep_const
@@ -155,17 +309,82 @@ struct ColorStep
         int8 color_attachment_sample;
     };
 
-    static ColorStep allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info);
+    inline static ColorStep allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info)
+    {
+        ColorStep l_step;
 
-    void free(GPUContext& p_gpu_context);
+        Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate(1);
+        l_global_buffer_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
+        Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
 
-    void set_camera(GPUContext& p_gpu_context, const Camera& p_camera);
+        ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
+        if (p_allocate_info.attachment_host_read)
+        {
+            l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
+        }
+        if (p_allocate_info.color_attachment_sample)
+        {
+            l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+        }
 
-    void set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov);
+        SliceN<RenderPassAttachment, 2> l_attachments = {
+            RenderPassAttachment{AttachmentType::COLOR,
+                                 ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions,
+                                                             (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))},
+            RenderPassAttachment{AttachmentType::DEPTH,
+                                 ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions,
+                                                             (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))}};
 
-    void set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up);
+        l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
+        SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
+        l_step.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
+        l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
+        l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
-    Slice<Camera> get_camera(GPUContext& p_gpu_context);
+        Camera l_empty_camera{};
+        l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
+        l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
+                                                                            p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
+
+        return l_step;
+    };
+
+    inline void free(GPUContext& p_gpu_context)
+    {
+        this->clear_values.free();
+        p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
+        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
+        this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
+    };
+
+    inline void set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
+    {
+        p_gpu_context.buffer_memory.allocator.host_buffers
+            .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
+                     .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
+                     .memory)
+            .get_mapped_effective_memory()
+            .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+    };
+
+    inline void set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
+    {
+        this->get_camera(p_gpu_context).get(0).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
+    };
+
+    inline void set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
+    {
+        this->get_camera(p_gpu_context).get(0).view = m44f::view(p_world_position, p_forward, p_up);
+    };
+
+    inline Slice<Camera> get_camera(GPUContext& p_gpu_context)
+    {
+        return slice_cast<Camera>(p_gpu_context.buffer_memory.allocator.host_buffers
+                                      .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
+                                               .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
+                                               .memory)
+                                      .get_mapped_effective_memory());
+    };
 };
 
 /*
@@ -179,196 +398,93 @@ struct D3Renderer
     D3RendererEvents events;
     ColorStep color_step;
 
-    static D3Renderer allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info);
-
-    void free(GPUContext& p_gpu_context);
-
-    D3RendererHeap& heap();
-
-    void buffer_step(GPUContext& p_gpu_context);
-
-    void graphics_step(GraphicsBinder& p_graphics_binder);
-};
-
-inline D3RendererHeap D3RendererHeap::allocate()
-{
-    D3RendererHeap l_heap;
-
-    l_heap.shaders = Pool<ShaderIndex>::allocate(0);
-    l_heap.materials = Pool<Material>::allocate(0);
-    l_heap.meshes = Pool<Mesh>::allocate(0);
-    l_heap.renderable_objects = Pool<RenderableObject>::allocate(0);
-    l_heap.shaders_indexed = Vector<Token<ShaderIndex>>::allocate(0);
-    l_heap.shaders_to_materials = PoolOfVector<Token<Material>>::allocate_default();
-    l_heap.material_to_renderable_objects = PoolOfVector<Token<RenderableObject>>::allocate_default();
-    return l_heap;
-};
-
-inline void D3RendererHeap::free()
-{
-#if __DEBUG
-    assert_true(!this->shaders.has_allocated_elements());
-    assert_true(!this->materials.has_allocated_elements());
-    assert_true(!this->meshes.has_allocated_elements());
-    assert_true(!this->renderable_objects.has_allocated_elements());
-    assert_true(this->shaders_indexed.empty());
-    assert_true(!this->shaders_to_materials.has_allocated_elements());
-    assert_true(!this->material_to_renderable_objects.has_allocated_elements());
-#endif
-
-    this->shaders.free();
-    this->materials.free();
-    this->meshes.free();
-    this->renderable_objects.free();
-    this->shaders_indexed.free();
-    this->shaders_to_materials.free();
-    this->material_to_renderable_objects.free();
-};
-
-inline void D3RendererHeap::link_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
-{
-    this->shaders_to_materials.element_push_back_element(token_build_from<Slice<Token<Material>>>( p_shader), p_material);
-};
-
-inline void D3RendererHeap::unlink_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
-{
-    auto l_materials = this->get_materials_from_shader(p_shader);
-    for (loop(i, 0, l_materials.get_size()))
+    inline static D3Renderer allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
     {
-        if (token_equals(l_materials.get(i), p_material))
-        {
-            l_materials.erase_element_at_always(i);
-            return;
-        }
-    }
-};
-
-inline ShaderIndex& D3RendererHeap::get_shader_by_index(const uimax p_index)
-{
-    return this->shaders.get(this->shaders_indexed.get(p_index));
-};
-
-inline void D3RendererHeap::get_materials_and_renderableobject_linked_to_shader(const Token<ShaderIndex> p_shader, Vector<Token<Material>>* in_out_materials,
-                                                                                Vector<Token<RenderableObject>>* in_out_renderableobject)
-{
-    auto l_materials = this->get_materials_from_shader(p_shader);
-    for (loop(i, 0, l_materials.get_size()))
-    {
-        in_out_renderableobject->push_back_array(this->get_renderableobjects_from_material(l_materials.get(i)).to_slice());
-    }
-    in_out_materials->push_back_array(l_materials.to_slice());
-};
-
-inline PoolOfVector<Token<Material>>::Element_ShadowVector D3RendererHeap::get_materials_from_shader(const Token<ShaderIndex> p_shader)
-{
-    return this->shaders_to_materials.get_element_as_shadow_vector(token_build_from<Slice<Token<Material>>>( p_shader));
-};
-
-inline void D3RendererHeap::link_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
-{
-    this->material_to_renderable_objects.element_push_back_element(token_build_from<Slice<Token<RenderableObject>>>( p_material), p_renderable_object);
-};
-
-inline void D3RendererHeap::unlink_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
-{
-    auto l_linked_renderable_objects = this->get_renderableobjects_from_material(p_material);
-    for (loop(i, 0, l_linked_renderable_objects.get_size()))
-    {
-        if (token_equals(l_linked_renderable_objects.get(i), p_renderable_object))
-        {
-            l_linked_renderable_objects.erase_element_at_always(i);
-            return;
-        }
-    }
-};
-
-inline PoolOfVector<Token<RenderableObject>>::Element_ShadowVector D3RendererHeap::get_renderableobjects_from_material(const Token<Material> p_material)
-{
-    return this->material_to_renderable_objects.get_element_as_shadow_vector(token_build_from<Slice<Token<RenderableObject>>>( p_material));
-};
-
-inline D3RendererAllocator D3RendererAllocator::allocate()
-{
-    return D3RendererAllocator{D3RendererHeap::allocate()};
-};
-
-inline void D3RendererAllocator::free()
-{
-    this->heap.free();
-};
-
-inline Token<ShaderIndex> D3RendererAllocator::allocate_shader(const ShaderIndex& p_shader)
-{
-    uimax l_insertion_index = 0;
-    for (loop(i, 0, this->heap.shaders_indexed.Size))
-    {
-        if (this->heap.get_shader_by_index(i).execution_order >= l_insertion_index)
-        {
-            break;
-        };
+        return D3Renderer{D3RendererAllocator::allocate(), D3RendererEvents::allocate(), ColorStep::allocate(p_gpu_context, p_allocation_info)};
     };
 
-    Token<ShaderIndex> l_shader = this->heap.shaders.alloc_element(p_shader);
-    this->heap.shaders_to_materials.alloc_vector();
-
-    this->heap.shaders_indexed.insert_element_at_always(l_shader, l_insertion_index);
-    return l_shader;
-};
-
-inline void D3RendererAllocator::free_shader(const Token<ShaderIndex> p_shader)
-{
-    ShaderIndex& l_shader = this->heap.shaders.get(p_shader);
-
-    for (loop_reverse(j, 0, this->heap.shaders_indexed.Size))
+    inline void free(GPUContext& p_gpu_context)
     {
-        if (token_equals(this->heap.shaders_indexed.get(j), p_shader))
+        this->buffer_step(p_gpu_context);
+
+        this->allocator.free();
+        this->events.free();
+        this->color_step.free(p_gpu_context);
+    };
+
+    inline D3RendererHeap& heap()
+    {
+        return this->allocator.heap;
+    };
+
+    inline void buffer_step(GPUContext& p_gpu_context)
+    {
+        for (loop(i, 0, this->events.model_update_events.Size))
         {
-            this->heap.shaders_indexed.erase_element_at_always(j);
-            break;
+            auto& l_event = this->events.model_update_events.get(i);
+
+            Slice<int8> l_mapped_memory =
+                p_gpu_context.buffer_memory.allocator.host_buffers
+                    .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
+                    .get_mapped_effective_memory();
+
+            l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
+        };
+
+        this->events.model_update_events.clear();
+    };
+
+    inline void graphics_step(GraphicsBinder& p_graphics_binder)
+    {
+        p_graphics_binder.bind_shader_layout(p_graphics_binder.graphics_allocator.heap.shader_layouts.get(this->color_step.global_buffer_layout));
+        p_graphics_binder.bind_material(this->color_step.global_material);
+
+        p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->color_step.pass), this->color_step.clear_values.slice);
+
+        for (loop(i, 0, this->heap().shaders_indexed.Size))
+        {
+            Token<ShaderIndex> l_shader_token = this->heap().shaders_indexed.get(i);
+            ShaderIndex& l_shader_index = this->heap().shaders.get(l_shader_token);
+            p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(l_shader_index.shader_index));
+
+            auto l_materials = this->heap().get_materials_from_shader(l_shader_token);
+            for (loop(j, 0, l_materials.get_size()))
+            {
+                Token<Material> l_material = l_materials.get(j);
+                p_graphics_binder.bind_material(this->heap().materials.get(l_material));
+
+                auto l_renderable_objects = this->heap().get_renderableobjects_from_material(l_material);
+
+                for (loop(k, 0, l_renderable_objects.get_size()))
+                {
+                    Token<RenderableObject> l_renderable_object_token = l_renderable_objects.get(k);
+                    RenderableObject& l_renderable_object = this->heap().renderable_objects.get(l_renderable_object_token);
+
+                    p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
+
+                    Mesh& l_mesh = this->allocator.heap.meshes.get(l_renderable_object.mesh);
+                    p_graphics_binder.bind_vertex_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.vertices_buffer));
+                    p_graphics_binder.bind_index_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.indices_buffer), BufferIndexType::UINT32);
+                    p_graphics_binder.draw_indexed(l_mesh.indices_count);
+
+                    p_graphics_binder.pop_shaderbufferhost_parameter();
+                }
+
+                p_graphics_binder.pop_material_bind(this->heap().materials.get(l_material));
+            }
         }
-    }
 
-    this->heap.shaders_to_materials.release_vector(token_build_from<Slice<Token<Material>>>( p_shader));
-    this->heap.shaders.release_element(p_shader);
-};
+        p_graphics_binder.end_render_pass();
 
-inline Token<Material> D3RendererAllocator::allocate_material(const Material& p_material)
-{
-    this->heap.material_to_renderable_objects.alloc_vector();
-    return this->heap.materials.alloc_element(p_material);
-};
-
-inline void D3RendererAllocator::free_material(const Token<Material> p_material)
-{
-    this->heap.material_to_renderable_objects.release_vector(token_build_from<Slice<Token<RenderableObject>>>( p_material));
-    this->heap.materials.release_element(p_material);
-};
-
-inline Token<Mesh> D3RendererAllocator::allocate_mesh(const Mesh& p_mesh)
-{
-    return this->heap.meshes.alloc_element(p_mesh);
-};
-
-inline void D3RendererAllocator::free_mesh(const Token<Mesh> p_mesh)
-{
-    this->heap.meshes.release_element(p_mesh);
-};
-
-inline Token<RenderableObject> D3RendererAllocator::allocate_renderable_object(const RenderableObject& p_renderable_object)
-{
-    return this->heap.renderable_objects.alloc_element(p_renderable_object);
-};
-
-inline void D3RendererAllocator::free_renderable_object(const Token<RenderableObject> p_rendereable_object)
-{
-    this->heap.renderable_objects.release_element(p_rendereable_object);
+        p_graphics_binder.pop_material_bind(this->color_step.global_material);
+    };
 };
 
 struct D3RendererAllocatorComposition
 {
 
-    inline static Token<Mesh>
-        allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
+    inline static Token<Mesh> allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
+                                                         const Slice<uint32>& p_initial_indices)
     {
         Mesh l_mesh;
         Slice<int8> l_initial_vertices_binary = p_initial_vertices.build_asint8();
@@ -413,8 +529,8 @@ struct D3RendererAllocatorComposition
         p_render_allocator.free_material(p_material);
     };
 
-    inline static Token<RenderableObject>
-        allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token<Mesh> p_mesh)
+    inline static Token<RenderableObject> allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+                                                                                  const Token<Mesh> p_mesh)
     {
         RenderableObject l_renderable_object;
         l_renderable_object.mesh = p_mesh;
@@ -435,9 +551,9 @@ struct D3RendererAllocatorComposition
         p_render_allocator.free_renderable_object(p_renderable_object);
     };
 
-    inline static Token<RenderableObject>
-        allocate_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                         const Slice<Vertex>& p_initial_vertices, const Slice<uint32>& p_initial_indices)
+    inline static Token<RenderableObject> allocate_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+                                                                                           D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
+                                                                                           const Slice<uint32>& p_initial_indices)
     {
         Token<Mesh> l_mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
         return allocate_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_mesh);
@@ -458,10 +574,10 @@ struct D3RendererAllocatorComposition
         free_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_renderable_object.mesh);
     };
 
-    inline static Token<ShaderIndex>
-        allocate_colorstep_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Slice<ShaderLayoutParameterType>& p_specific_parameters,
-                                                    const uimax p_execution_order, const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration,
-                                                    const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
+    inline static Token<ShaderIndex> allocate_colorstep_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+                                                                                 const Slice<ShaderLayoutParameterType>& p_specific_parameters, const uimax p_execution_order,
+                                                                                 const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration,
+                                                                                 const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
     {
         Span<ShaderLayoutParameterType> l_span =
             Span<ShaderLayoutParameterType>::allocate_slice_3(slice_from_slicen(&ColorStep_const::shaderlayout_before), p_specific_parameters, slice_from_slicen(&ColorStep_const::shaderlayout_after));
@@ -508,190 +624,4 @@ struct D3RendererAllocatorComposition
 
         free_shader_with_shaderlayout(p_graphics_allocator, p_render_allocator, p_shader);
     };
-};
-
-inline D3RendererEvents D3RendererEvents::allocate()
-{
-    return D3RendererEvents{Vector<RenderableObject_ModelUpdateEvent>::allocate(0)};
-};
-
-inline void D3RendererEvents::free()
-{
-#if __DEBUG
-    assert_true(this->model_update_events.empty());
-#endif
-
-    this->model_update_events.free();
-};
-
-inline void D3RendererEvents::push_modelupdateevent(const RenderableObject_ModelUpdateEvent& p_modelupdateevent)
-{
-    this->model_update_events.push_back_element(p_modelupdateevent);
-};
-
-inline void D3RendererEvents::remove_renderableobject_references(const Token<RenderableObject> p_renderable_object)
-{
-    for (loop_reverse(i, 0, this->model_update_events.Size))
-    {
-        if (token_equals(this->model_update_events.get(i).renderable_object, p_renderable_object))
-        {
-            this->model_update_events.erase_element_at_always(i);
-        }
-    }
-};
-
-inline ColorStep ColorStep::allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info)
-{
-    ColorStep l_step;
-
-    Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-    l_global_buffer_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
-    Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
-
-    ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
-    if (p_allocate_info.attachment_host_read)
-    {
-        l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
-    }
-    if (p_allocate_info.color_attachment_sample)
-    {
-        l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
-    }
-
-    SliceN<RenderPassAttachment, 2> l_attachments = {
-        RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT |
-                                                                                                                                           (ImageUsageFlags)l_additional_attachment_usage_flags))},
-        RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT |
-                                                                                                                                           (ImageUsageFlags)l_additional_attachment_usage_flags))}};
-
-    l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
-    SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
-    l_step.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
-    l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
-    l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
-
-    Camera l_empty_camera{};
-    l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
-    l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
-                                                                        p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
-
-    return l_step;
-};
-
-inline void ColorStep::free(GPUContext& p_gpu_context)
-{
-    this->clear_values.free();
-    p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
-    GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
-    this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
-};
-
-inline void ColorStep::set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
-{
-    p_gpu_context.buffer_memory.allocator.host_buffers
-        .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                 .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                 .memory)
-        .get_mapped_effective_memory()
-        .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
-};
-
-inline void ColorStep::set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
-{
-    this->get_camera(p_gpu_context).get(0).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
-};
-
-inline void ColorStep::set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
-{
-    this->get_camera(p_gpu_context).get(0).view = m44f::view(p_world_position, p_forward, p_up);
-};
-
-inline Slice<Camera> ColorStep::get_camera(GPUContext& p_gpu_context)
-{
-    return slice_cast<Camera>(p_gpu_context.buffer_memory.allocator.host_buffers
-                                  .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                                           .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                                           .memory)
-                                  .get_mapped_effective_memory());
-};
-
-inline D3Renderer D3Renderer::allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
-{
-    return D3Renderer{D3RendererAllocator::allocate(), D3RendererEvents::allocate(), ColorStep::allocate(p_gpu_context, p_allocation_info)};
-};
-
-inline void D3Renderer::free(GPUContext& p_gpu_context)
-{
-    this->buffer_step(p_gpu_context);
-
-    this->allocator.free();
-    this->events.free();
-    this->color_step.free(p_gpu_context);
-};
-
-inline D3RendererHeap& D3Renderer::heap()
-{
-    return this->allocator.heap;
-};
-
-inline void D3Renderer::buffer_step(GPUContext& p_gpu_context)
-{
-    for (loop(i, 0, this->events.model_update_events.Size))
-    {
-        auto& l_event = this->events.model_update_events.get(i);
-
-        Slice<int8> l_mapped_memory =
-            p_gpu_context.buffer_memory.allocator.host_buffers
-                .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(this->allocator.heap.renderable_objects.get(l_event.renderable_object).model).memory)
-                .get_mapped_effective_memory();
-
-        l_mapped_memory.copy_memory(Slice<m44f>::build_asint8_memory_singleelement(&l_event.model_matrix));
-    };
-
-    this->events.model_update_events.clear();
-};
-
-inline void D3Renderer::graphics_step(GraphicsBinder& p_graphics_binder)
-{
-    p_graphics_binder.bind_shader_layout(p_graphics_binder.graphics_allocator.heap.shader_layouts.get(this->color_step.global_buffer_layout));
-    p_graphics_binder.bind_material(this->color_step.global_material);
-
-    p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->color_step.pass), this->color_step.clear_values.slice);
-
-    for (loop(i, 0, this->heap().shaders_indexed.Size))
-    {
-        Token<ShaderIndex> l_shader_token = this->heap().shaders_indexed.get(i);
-        ShaderIndex& l_shader_index = this->heap().shaders.get(l_shader_token);
-        p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(l_shader_index.shader_index));
-
-        auto l_materials = this->heap().get_materials_from_shader(l_shader_token);
-        for (loop(j, 0, l_materials.get_size()))
-        {
-            Token<Material> l_material = l_materials.get(j);
-            p_graphics_binder.bind_material(this->heap().materials.get(l_material));
-
-            auto l_renderable_objects = this->heap().get_renderableobjects_from_material(l_material);
-
-            for (loop(k, 0, l_renderable_objects.get_size()))
-            {
-                Token<RenderableObject> l_renderable_object_token = l_renderable_objects.get(k);
-                RenderableObject& l_renderable_object = this->heap().renderable_objects.get(l_renderable_object_token);
-
-                p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
-
-                Mesh& l_mesh = this->allocator.heap.meshes.get(l_renderable_object.mesh);
-                p_graphics_binder.bind_vertex_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.vertices_buffer));
-                p_graphics_binder.bind_index_buffer_gpu(p_graphics_binder.buffer_allocator.gpu_buffers.get(l_mesh.indices_buffer), BufferIndexType::UINT32);
-                p_graphics_binder.draw_indexed(l_mesh.indices_count);
-
-                p_graphics_binder.pop_shaderbufferhost_parameter();
-            }
-
-            p_graphics_binder.pop_material_bind(this->heap().materials.get(l_material));
-        }
-    }
-
-    p_graphics_binder.end_render_pass();
-
-    p_graphics_binder.pop_material_bind(this->color_step.global_material);
 };
