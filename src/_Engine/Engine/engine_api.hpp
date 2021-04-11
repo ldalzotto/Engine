@@ -61,3 +61,16 @@ inline void NodeRemoveMeshRenderer(Engine& p_engine, const Token<Node> p_node)
 {
     p_engine.scene.remove_node_component(p_node, MeshRendererComponent::Type);
 };
+
+inline Token<Material> MeshRenderer_GetMaterial(Engine& p_engine, const Token<MeshRendererComponent> p_mesh_renderer)
+{
+    p_engine.renderer_ressource_allocator.material_unit.materials.pool.get(
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.mesh_renderers.get(p_mesh_renderer).dependencies.material);
+};
+
+template <class ElementType> inline ElementType& Material_GetParameter(Engine& p_engine, const Token<Material> p_material, const uimax p_index)
+{
+    return p_engine.renderer.heap()
+        .materials.get(p_material)
+        .template get_buffer_host_parameter_memory_typed<ElementType>(p_engine.gpu_context.graphics_allocator, p_engine.gpu_context.buffer_memory.allocator, p_index);
+};

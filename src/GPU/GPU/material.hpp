@@ -131,7 +131,7 @@ struct Material
         this->add_and_allocate_buffer_host_parameter(p_graphics_allocator, p_buffer_allocator, p_shader_layout, Slice<ElementType>::build_asint8_memory_singleelement(&p_memory));
     };
 
-    inline Token<BufferHost> get_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, const uimax p_index)
+    inline Slice<int8> get_buffer_host_parameter_memory(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const uimax p_index)
     {
         ShaderParameter& l_shader_parameter = p_graphics_allocator.heap.material_parameters.get_vector(this->parameters).get(this->set_index_offset + p_index);
 
@@ -139,7 +139,12 @@ struct Material
         assert_true(l_shader_parameter.type == ShaderParameter::Type::UNIFORM_HOST);
 #endif
 
-        return p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_shader_parameter.uniform_host).memory;
+        return p_buffer_allocator.host_buffers.get(p_graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_shader_parameter.uniform_host).memory).get_mapped_effective_memory();
+    };
+
+    template <class ElementType> inline ElementType& get_buffer_host_parameter_memory_typed(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const uimax p_index)
+    {
+        return *(ElementType*)this->get_buffer_host_parameter_memory(p_graphics_allocator, p_buffer_allocator, p_index).Begin;
     };
 
     inline void add_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, const ShaderLayout& p_shader_layout, const Token<BufferGPU> p_buffer_gpu_token, const BufferGPU& p_buffer_gpu)
@@ -218,4 +223,6 @@ struct Material
 
         return p_graphics_allocator.heap.shader_texture_gpu_parameters.get(l_shader_parameter.texture_gpu).texture;
     };
+
+    // inline void set_
 };

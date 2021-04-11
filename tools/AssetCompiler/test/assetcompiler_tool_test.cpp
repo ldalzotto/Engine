@@ -27,15 +27,6 @@ struct qt_test
     };
 };
 
-// TODO -> write test
-/*
-    1/ Loading configurations from file and ensure that the requested compilation pass have been taken into account
-       Then execute compilation and assert result.
-       Ensure that only the selected pass are processed.
-
-    2/ Configuration file reloading.
-*/
-
 /*
     4 asset passes, first two selected, 1 error
 */

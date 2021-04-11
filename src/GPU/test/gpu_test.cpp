@@ -965,13 +965,14 @@ inline void gpu_texture_mapping()
         Token<ShaderLayout> l_first_shader_layout;
         Token<ShaderModule> l_vertex_first_shader_module, l_fragment_first_shader_module;
         {
-            SliceN<ShaderLayout::VertexInputParameter, 2>l_shader_vertex_input_primitives_arr{ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
-                                                          ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
-            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives = Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
+            SliceN<ShaderLayout::VertexInputParameter, 2> l_shader_vertex_input_primitives_arr{
+                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, offsetof(vertex, position)},
+                ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(vertex, uv)}};
+            Span<ShaderLayout::VertexInputParameter> l_shader_vertex_input_primitives =
+                Span<ShaderLayout::VertexInputParameter>::allocate_slice(slice_from_slicen(&l_shader_vertex_input_primitives_arr));
 
-            SliceN<ShaderLayoutParameterType, 1>l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
-            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters =
-                Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
+            SliceN<ShaderLayoutParameterType, 1> l_first_shader_layout_parameters_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
+            Span<ShaderLayoutParameterType> l_first_shader_layout_parameters = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_first_shader_layout_parameters_arr));
 
             l_first_shader_layout = l_graphics_allocator.allocate_shader_layout(l_first_shader_layout_parameters, l_shader_vertex_input_primitives, sizeof(vertex));
 
@@ -1139,8 +1140,9 @@ inline void gpu_present()
                                                                            (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)));
 
     // ShowWindow(hwnd, SW_NORMAL);
-    GPUPresent l_gpu_present = GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_window.handle, v3ui{l_window.client_width, l_window.client_height, 1}, l_render_target_texture,
-                                                    l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
+    GPUPresent l_gpu_present =
+        GPUPresent::allocate(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_window.handle, v3ui{l_window.client_width, l_window.client_height, 1},
+                             l_render_target_texture, l_vertex_compilder.get_compiled_binary(), l_fragment_compilder.get_compiled_binary());
 
     assert_true(l_gpu_present.device.surface_capacilities.currentExtent.width == l_window.client_width);
     assert_true(l_gpu_present.device.surface_capacilities.currentExtent.height == l_window.client_height);
@@ -1178,7 +1180,7 @@ inline void gpu_present()
 
         Token<ImageGPU> l_render_target_image = l_gpu_context.graphics_allocator.heap.textures_gpu.get(l_render_target_texture).Image;
         BufferReadWrite::write_to_imagegpu(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events, l_render_target_image,
-            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
+                                           l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
 
         l_render_target_color.free();
 
@@ -1230,6 +1232,44 @@ inline void gpu_present()
     WindowAllocator::free(l_window_token);
 };
 
+inline void gpu_material_parameter_set()
+{
+    SliceN<GPUExtension, 1> l_gpu_extension_arr{GPUExtension::WINDOW_PRESENT};
+    GPUContext l_gpu_context = GPUContext::allocate(slice_from_slicen(&l_gpu_extension_arr));
+    GraphicsAllocator2& l_graphics_allocator = l_gpu_context.graphics_allocator;
+    BufferMemory& l_buffer_memory = l_gpu_context.buffer_memory;
+
+    SliceN<ShaderLayoutParameterType, 2> l_material_layout_parameter_types_arr = {ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
+    Span<ShaderLayoutParameterType> l_material_layout_parameter_types = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_material_layout_parameter_types_arr));
+    Span<ShaderLayout::VertexInputParameter> l_vertex_parameters = Span<ShaderLayout::VertexInputParameter>::allocate(0);
+    Token<ShaderLayout> l_material_layout = l_graphics_allocator.allocate_shader_layout(l_material_layout_parameter_types, l_vertex_parameters, 0);
+
+    Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
+    l_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shader_layouts.get(l_material_layout), (uimax)100);
+    l_material.add_and_allocate_buffer_host_parameter_typed(l_graphics_allocator, l_buffer_memory.allocator, l_graphics_allocator.heap.shader_layouts.get(l_material_layout), (uimax)300);
+
+    {
+        uimax& l_param_0 = l_material.get_buffer_host_parameter_memory_typed<uimax>(l_graphics_allocator, l_buffer_memory.allocator, (uimax)0);
+        assert_true(l_param_0 == 100);
+        l_param_0 = 200;
+    }
+    {
+        uimax& l_param_0 = l_material.get_buffer_host_parameter_memory_typed<uimax>(l_graphics_allocator, l_buffer_memory.allocator, (uimax)0);
+        assert_true(l_param_0 == 200);
+        uimax& l_param_1 = l_material.get_buffer_host_parameter_memory_typed<uimax>(l_graphics_allocator, l_buffer_memory.allocator, (uimax)1);
+        assert_true(l_param_1 == 300);
+        l_param_1 = 400;
+    }
+    {
+        uimax& l_param_1 = l_material.get_buffer_host_parameter_memory_typed<uimax>(l_graphics_allocator, l_buffer_memory.allocator, (uimax)1);
+        assert_true(l_param_1 == 400);
+    }
+
+    l_material.free(l_graphics_allocator, l_buffer_memory);
+    l_graphics_allocator.free_shader_layout(l_material_layout);
+
+    l_gpu_context.free();
+};
 
 int main()
 {
@@ -1240,7 +1280,7 @@ int main()
     int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_0, (void**)&rdoc_api);
     assert_true(ret == 1);
 #endif
-
+    
     gpu_buffer_allocation();
     gpu_image_allocation();
     gpu_renderpass_clear();
@@ -1249,6 +1289,7 @@ int main()
     gpu_draw_indexed();
     gpu_texture_mapping();
     gpu_present();
+    gpu_material_parameter_set();
 
     memleak_ckeck();
 };

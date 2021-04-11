@@ -13,7 +13,8 @@
     }
 
 #else
-#define sc_handle_error(ShaderCompiledPtr, ShaderPtr, Code) Code
+#define sc_handle_error(glslang_program_t_ptr, glslang_shader_s_ptr, Code) Code
+#define sc_handle_error_silent(glslang_program_t_ptr, glslang_shader_s_ptr, Code) Code
 #endif
 
 #include "glslang/Include/ResourceLimits.h"

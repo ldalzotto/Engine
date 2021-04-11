@@ -359,31 +359,22 @@ struct ColorStep
 
     inline void set_camera(GPUContext& p_gpu_context, const Camera& p_camera)
     {
-        p_gpu_context.buffer_memory.allocator.host_buffers
-            .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                     .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                     .memory)
-            .get_mapped_effective_memory()
-            .copy_memory(Slice<Camera>::build_asint8_memory_singleelement(&p_camera));
+        this->get_camera(p_gpu_context) = p_camera;
     };
 
     inline void set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
     {
-        this->get_camera(p_gpu_context).get(0).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
+        this->get_camera(p_gpu_context).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
     };
 
     inline void set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
     {
-        this->get_camera(p_gpu_context).get(0).view = m44f::view(p_world_position, p_forward, p_up);
+        this->get_camera(p_gpu_context).view = m44f::view(p_world_position, p_forward, p_up);
     };
 
-    inline Slice<Camera> get_camera(GPUContext& p_gpu_context)
+    inline Camera& get_camera(GPUContext& p_gpu_context)
     {
-        return slice_cast<Camera>(p_gpu_context.buffer_memory.allocator.host_buffers
-                                      .get(p_gpu_context.graphics_allocator.heap.shader_uniform_buffer_host_parameters
-                                               .get(p_gpu_context.graphics_allocator.heap.material_parameters.get_vector(this->global_material.parameters).get(0).uniform_host)
-                                               .memory)
-                                      .get_mapped_effective_memory());
+        return this->global_material.get_buffer_host_parameter_memory_typed<Camera>(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator, 0);
     };
 };
 
