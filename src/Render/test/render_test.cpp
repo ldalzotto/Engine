@@ -184,13 +184,13 @@ inline void draw_test()
             l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, Slice<Vertex>::build_memory_elementnb(l_vertices, 14), Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3));
     }
 
-    m44f l_model = m44f::trs(v3f{2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
+    m44f l_model = m44f::trs(v3f{2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE.vec3);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_1, l_model});
-    l_model = m44f::trs(v3f{-2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
+    l_model = m44f::trs(v3f{-2.0f, 0.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE.vec3);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_2, l_model});
-    l_model = m44f::trs(v3f{0.0f, 2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
+    l_model = m44f::trs(v3f{0.0f, 2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE.vec3);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_3, l_model});
-    l_model = m44f::trs(v3f{0.0f, -2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE);
+    l_model = m44f::trs(v3f{0.0f, -2.0f, 0.0f}, m33f_const::IDENTITY, v3f_const::ONE.vec3);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_obj_4, l_model});
 
     l_renderer.heap().link_material_with_renderable_object(l_red_material_token, l_obj_1);

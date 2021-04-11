@@ -1,5 +1,17 @@
 #pragma once
 
+// #define __MATH_DISABLE_NORMALIZATION_CHECK 1
+
+#if __DEBUG
+#if __MATH_DISABLE_NORMALIZATION_CHECK
+#define __MATH_NORMALIZATION_CHECK 0
+#else
+#define __MATH_NORMALIZATION_CHECK 1
+#endif
+#else
+#define __MATH_NORMALIZATION_CHECK 0
+#endif
+
 inline int8 Math::equals(const float32 p_left, const float32 p_right)
 {
     return fabsf(p_left - p_right) <= Limits::tol_f;
@@ -136,6 +148,25 @@ inline int8 v3f_assert_is_normalized(const v3f& p_vec)
     return Math::equals(p_vec.length(), 1.0f);
 };
 
+inline int8 v3fn_assert_is_normalized(const v3fn& p_vec)
+{
+    return v3f_assert_is_normalized(p_vec.vec3);
+};
+
+inline int8 v4f_assert_is_normalized(const v4f& p_vec)
+{
+    return Math::equals(p_vec.length(), 1.0f);
+};
+inline int8 v4fn_assert_is_normalized(const v4fn& p_vec)
+{
+    return v4f_assert_is_normalized(p_vec.Vec4);
+};
+
+inline int8 quat_assert_is_normalized(const quat& p_quat)
+{
+    return v4f_assert_is_normalized(p_quat.Points);
+};
+
 inline v3f v3f::operator+(const v3f& p_other) const
 {
     return v3f{this->x + p_other.x, this->y + p_other.y, this->z + p_other.z};
@@ -189,9 +220,11 @@ inline float32 v3f::length() const
     return sqrtf(l_squared.x + l_squared.y + l_squared.z);
 };
 
-inline v3f v3f::normalize() const
+inline v3fn v3f::normalize() const
 {
-    return this->operator*(1.0f / this->length());
+    v3fn l_return;
+    l_return.vec3 = this->operator*(1.0f / this->length());
+    return l_return;
 };
 
 inline v3f v3f::inv() const
@@ -201,17 +234,12 @@ inline v3f v3f::inv() const
 
 inline v3f v3f::project(const v3f& p_projected_on) const
 {
-    return this->normalize().project_normalized(p_projected_on.normalize());
+    return this->normalize().project(p_projected_on.normalize());
 };
 
-inline v3f v3f::project_normalized(const v3f& p_projected_on) const
+inline v3f v3f::project(const v3fn& p_projected_on) const
 {
-#if __DEBUG
-    assert_true(v3f_assert_is_normalized(*this));
-    assert_true(v3f_assert_is_normalized(p_projected_on));
-#endif
-
-    return p_projected_on * this->dot(p_projected_on);
+    return this->normalize().project(p_projected_on);
 };
 
 inline float32 v3f::distance(const v3f& p_end) const
@@ -224,20 +252,33 @@ inline float32 v3f::angle_unsigned(const v3f& p_end) const
     return acosf(this->dot(p_end) / (this->length() * p_end.length()));
 };
 
-inline float32 v3f::angle_unsigned_normalized(const v3f& p_end_normalized) const
+inline float32 v3f::angle_unsigned(const v3fn& p_end) const
 {
-#ifdef __DEBUG
-    v3f_assert_is_normalized(*this);
-    v3f_assert_is_normalized(p_end_normalized);
+#if __MATH_NORMALIZATION_CHECK
+    v3fn_assert_is_normalized(p_end);
 #endif
-
-    return acosf(this->dot(p_end_normalized));
+    return acosf(this->dot(p_end.vec3) / (this->length()));
 };
 
 inline int8 v3f::anglesign(const v3f& p_end, const v3f& p_ref_axis) const
 {
     float32 l_dot = this->cross(p_end).dot(p_ref_axis);
     return l_dot >= Limits::tol_f ? 1 : -1;
+};
+
+inline int8 v3f::anglesign(const v3f& p_end, const v3fn& p_ref_axis) const
+{
+    return this->anglesign(p_end, p_ref_axis.vec3);
+};
+
+inline int8 v3f::anglesign(const v3fn& p_end, const v3f& p_ref_axis) const
+{
+    return this->anglesign(p_end.vec3, p_ref_axis);
+};
+
+inline int8 v3f::anglesign(const v3fn& p_end, const v3fn& p_ref_axis) const
+{
+    return this->anglesign(p_end.vec3, p_ref_axis.vec3);
 };
 
 inline v3f v3f::rotate(const quat& p_rotation) const
@@ -250,20 +291,185 @@ inline quat v3f::euler_to_quat() const
     v3f l_cos = v3f{cosf(this->Points[0] * 0.5f), cosf(this->Points[1] * 0.5f), cosf(this->Points[2] * 0.5f)};
     v3f l_sin = v3f{sinf(this->Points[0] * 0.5f), sinf(this->Points[1] * 0.5f), sinf(this->Points[2] * 0.5f)};
 
-    return quat{l_sin.x * l_cos.y * l_cos.z - l_cos.x * l_sin.y * l_sin.z, l_cos.x * l_sin.y * l_cos.z + l_sin.x * l_cos.y * l_sin.z, l_cos.x * l_cos.y * l_sin.z - l_sin.x * l_sin.y * l_cos.z,
-                l_cos.x * l_cos.y * l_cos.z + l_sin.x * l_sin.y * l_sin.z};
+    quat l_return = quat{l_sin.x * l_cos.y * l_cos.z - l_cos.x * l_sin.y * l_sin.z, l_cos.x * l_sin.y * l_cos.z + l_sin.x * l_cos.y * l_sin.z,
+                         l_cos.x * l_cos.y * l_sin.z - l_sin.x * l_sin.y * l_cos.z, l_cos.x * l_cos.y * l_cos.z + l_sin.x * l_sin.y * l_sin.z};
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(quat_assert_is_normalized(l_return));
+#endif
+    return l_return;
 };
 
 inline quat v3f::from_to(const v3f& p_to) const
 {
-    return this->normalize().from_to_normalized(p_to.normalize());
+    return this->normalize().from_to(p_to.normalize());
 };
 
-inline quat v3f::from_to_normalized(const v3f& p_to) const
+inline quat v3f::from_to(const v3fn& p_to) const
 {
-#ifdef __DEBUG
-    v3f_assert_is_normalized(*this);
-    v3f_assert_is_normalized(p_to);
+    return this->normalize().from_to(p_to);
+};
+
+inline v3f v3fn::operator+(const v3f& p_other) const
+{
+    return this->vec3.operator+(p_other);
+};
+
+inline v3f v3fn::operator+(const v3fn& p_other) const
+{
+    return this->vec3.operator+(p_other.vec3);
+};
+
+inline v3f v3fn::operator*(const float32 p_other) const
+{
+    return this->vec3.operator*(p_other);
+};
+
+inline v3f v3fn::operator*(const v3f& p_other) const
+{
+    return this->vec3.operator*(p_other);
+};
+
+inline v3f v3fn::operator*(const v3fn& p_other) const
+{
+    return this->vec3.operator*(p_other.vec3);
+};
+
+inline v3f v3fn::operator-(const v3f& p_other) const
+{
+    return this->vec3.operator-(p_other);
+};
+
+inline v3f v3fn::operator-(const v3fn& p_other) const
+{
+    return this->vec3.operator-(p_other.vec3);
+};
+
+inline int8 v3fn::operator==(const v3f& p_other) const
+{
+    return this->vec3.operator==(p_other);
+};
+
+inline int8 v3fn::operator==(const v3fn& p_other) const
+{
+    return this->vec3.operator==(p_other.vec3);
+};
+
+inline int8 v3fn::operator!=(const v3f& p_other) const
+{
+    return this->vec3.operator!=(p_other);
+};
+
+inline int8 v3fn::operator!=(const v3fn& p_other) const
+{
+    return this->vec3.operator!=(p_other.vec3);
+};
+
+inline float32& v3fn::operator[](const uint8 p_index)
+{
+    return this->Points[p_index];
+};
+
+inline float32 v3fn::dot(const v3f& p_other) const
+{
+    return this->vec3.dot(p_other);
+};
+
+inline float32 v3fn::dot(const v3fn& p_other) const
+{
+    return this->vec3.dot(p_other.vec3);
+};
+
+inline v3f v3fn::cross(const v3f& p_other) const
+{
+    return this->vec3.cross(p_other);
+};
+
+inline v3f v3fn::cross(const v3fn& p_other) const
+{
+    return this->vec3.cross(p_other.vec3);
+};
+
+inline float32 v3fn::length() const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(*this));
+#endif
+    return 1.0f;
+};
+
+inline v3f v3fn::project(const v3fn& p_projected_on) const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(*this));
+    assert_true(v3fn_assert_is_normalized(p_projected_on));
+#endif
+
+    return p_projected_on * this->dot(p_projected_on);
+};
+
+inline float32 v3fn::angle_unsigned(const v3f& p_end) const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(*this));
+#endif
+
+    return acosf(this->dot(p_end) / (p_end.length()));
+};
+
+inline float32 v3fn::angle_unsigned(const v3fn& p_end) const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(*this));
+    assert_true(v3fn_assert_is_normalized(p_end));
+#endif
+
+    return acosf(this->dot(p_end));
+};
+
+inline int8 v3fn::anglesign(const v3f& p_end, const v3f& p_ref_axis) const
+{
+    return this->vec3.anglesign(p_end, p_ref_axis);
+};
+
+inline int8 v3fn::anglesign(const v3f& p_end, const v3fn& p_ref_axis) const
+{
+    return this->vec3.anglesign(p_end, p_ref_axis);
+};
+
+inline int8 v3fn::anglesign(const v3fn& p_end, const v3f& p_ref_axis) const
+{
+    return this->vec3.anglesign(p_end, p_ref_axis);
+};
+
+inline int8 v3fn::anglesign(const v3fn& p_end, const v3fn& p_ref_axis) const
+{
+    return this->vec3.anglesign(p_end, p_ref_axis);
+};
+
+inline v3fn v3fn::rotate(const quat& p_rotation) const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(*this));
+#endif
+
+    v3fn l_return = (p_rotation * quat::build_v3fn_f(*this, 0.0f) * p_rotation.inv()).Vec3ns.Vec;
+
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v3fn_assert_is_normalized(l_return));
+#endif
+    return l_return;
+};
+
+inline quat v3fn::euler_to_quat() const
+{
+    return this->vec3.euler_to_quat();
+};
+
+inline quat v3fn::from_to(const v3fn& p_to) const
+{
+#if __MATH_NORMALIZATION_CHECK
+    v3fn_assert_is_normalized(*this);
+    v3fn_assert_is_normalized(p_to);
 #endif
 
     float32 l_costtheta = this->dot(p_to);
@@ -272,24 +478,35 @@ inline quat v3f::from_to_normalized(const v3f& p_to) const
         return quat_const::IDENTITY;
     }
 
-    v3f l_rotation_axis;
-
-    if (l_costtheta < -Math_const::one_f + Limits::tol_f)
     {
-        l_rotation_axis = v3f_const::FORWARD.cross(*this);
-        if (l_rotation_axis.length() < Limits::tol_f)
+        v3f l_rotation_axis;
+
+        if (l_costtheta < -Math_const::one_f + Limits::tol_f)
         {
-            l_rotation_axis = v3f_const::RIGHT.cross(*this);
+            l_rotation_axis = v3f_const::FORWARD.cross(*this);
+            if (l_rotation_axis.length() < Limits::tol_f)
+            {
+                l_rotation_axis = v3f_const::RIGHT.cross(*this);
+            }
+            v3fn l_rotation_axis_normalized = l_rotation_axis.normalize();
+            return quat::rotate_around(l_rotation_axis_normalized, Math_const::PI);
         }
-        l_rotation_axis = l_rotation_axis.normalize();
-        return quat::rotate_around(l_rotation_axis, Math_const::PI);
     }
 
-    l_rotation_axis = this->cross(p_to);
+    v3f l_rotation_axis = this->cross(p_to);
     float32 l_s = sqrtf((Math_const::one_f + l_costtheta) * 2.0f);
     float32 l_invs = 1.0f / l_s;
 
-    return quat{l_rotation_axis.x * l_invs, l_rotation_axis.y * l_invs, l_rotation_axis.z * l_invs, l_s * 0.5f};
+    quat l_return = quat{l_rotation_axis.x * l_invs, l_rotation_axis.y * l_invs, l_rotation_axis.z * l_invs, l_s * 0.5f};
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(quat_assert_is_normalized(l_return));
+#endif
+    return l_return;
+};
+
+inline quat v3fn::from_to(const v3f& p_to) const
+{
+    return this->from_to(p_to.normalize());
 };
 
 inline int8 v3ui::operator==(const v3ui& p_other) const
@@ -340,6 +557,13 @@ inline float32 v4f::length() const
     return sqrtf(l_squared.x + l_squared.y + l_squared.z + l_squared.w);
 };
 
+inline v4fn v4f::normalize() const
+{
+    v4fn l_return;
+    l_return.Vec4 = this->operator*(1.0f / this->length());
+    return l_return;
+};
+
 inline v4f v4f::sRGB_to_linear() const
 {
     return v4f{Math::sRGB_to_linear_float32(this->x), Math::sRGB_to_linear_float32(this->y), Math::sRGB_to_linear_float32(this->z), Math::sRGB_to_linear_float32(this->w)};
@@ -353,6 +577,44 @@ inline v4f v4f::linear_to_sRGB() const
 inline v4ui8 v4f::to_uint8_color() const
 {
     return v4ui8{(uint8)nearbyintf(this->x * uint8_max), (uint8)nearbyintf(this->y * uint8_max), (uint8)nearbyintf(this->z * uint8_max), (uint8)nearbyintf(this->w * uint8_max)};
+};
+
+inline v4f v4fn::operator+(const v4fn& p_other) const
+{
+    return this->Vec4.operator+(p_other.Vec4);
+};
+
+inline int8 v4fn::operator==(const v4fn& p_other) const
+{
+    return this->Vec4.operator==(p_other.Vec4);
+};
+
+inline int8 v4fn::operator!=(const v4fn& p_other) const
+{
+    return this->Vec4.operator!=(p_other.Vec4);
+};
+
+inline v4f v4fn::operator*(const float32 p_other) const
+{
+    return this->Vec4.operator*(p_other);
+};
+
+inline v4f v4fn::operator*(const v4fn& p_other) const
+{
+    return this->Vec4.operator*(p_other.Vec4);
+};
+
+inline float32& v4fn::operator[](const uint8 p_index)
+{
+    return this->Points[p_index];
+};
+
+inline float32 v4fn::length() const
+{
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v4fn_assert_is_normalized(*this));
+#endif
+    return 1.0f;
 };
 
 inline int8 v4ui8::operator==(const v4ui8& p_other) const
@@ -380,9 +642,13 @@ inline v4f v4ui8::to_color_f() const
     return v4f{(float)this->x / uint8_max, (float)this->y / uint8_max, (float)this->z / uint8_max, (float)this->w / uint8_max};
 };
 
-inline quat quat::rotate_around(const v3f& p_axis, const float32 p_angle)
+inline quat quat::rotate_around(const v3fn& p_axis, const float32 p_angle)
 {
-    return quat::build_v3f_f(p_axis * sinf(p_angle * 0.5f), cosf(p_angle * 0.5f));
+    quat l_return = quat::build_v3f_f(p_axis * sinf(p_angle * 0.5f), cosf(p_angle * 0.5f));
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(quat_assert_is_normalized(l_return));
+#endif
+    return l_return;
 };
 
 inline int8 quat::operator==(const quat& p_other) const
@@ -403,7 +669,7 @@ inline quat quat::operator*(const quat& p_other) const
 
 inline quat quat::normalize() const
 {
-    return quat::build_v4f(this->Points * (1.0f / this->Points.length()));
+    return quat::build_v4fn(this->Points.normalize());
 };
 
 inline quat quat::inv() const
@@ -413,9 +679,13 @@ inline quat quat::inv() const
 
 inline quat quat::cross(const quat& p_other) const
 {
-    v3f l_rotated_left = v3f_const::FORWARD.rotate(*this).normalize();
-    v3f l_rotated_right = v3f_const::FORWARD.rotate(p_other).normalize();
-    return quat::rotate_around(l_rotated_left.cross(l_rotated_right), 0.0f);
+    v3fn l_rotated_left = v3f_const::FORWARD.rotate(*this);
+    v3fn l_rotated_right = v3f_const::FORWARD.rotate(p_other);
+    quat l_return = quat::rotate_around(l_rotated_left.cross(l_rotated_right).normalize(), 0.0f);
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(quat_assert_is_normalized(l_return));
+#endif
+    return l_return;
 };
 
 inline m33f quat::to_axis() const
@@ -443,9 +713,9 @@ inline m33f quat::to_axis() const
     // Forward
     l_return.Col2 = v3f{(2 * l_qxz) + (2 * l_qyw), (2 * l_qyz) - (2 * l_qxw), 1 - (2 * l_qxx) - (2 * l_qyy)};
 
-    l_return.Col0 = l_return.Col0.normalize();
-    l_return.Col1 = l_return.Col1.normalize();
-    l_return.Col2 = l_return.Col2.normalize();
+    l_return.Col0 = l_return.Col0.normalize().vec3;
+    l_return.Col1 = l_return.Col1.normalize().vec3;
+    l_return.Col2 = l_return.Col2.normalize().vec3;
 
     return l_return;
 };
@@ -513,22 +783,22 @@ inline quat m33f::to_rotation() const
     {
     case 0:
     {
-        return quat{l_biggestDiagonalValue, (l_right.y + l_up.x) * mult, (l_forward.x + l_right.z) * mult, (l_up.z - l_forward.y) * mult};
+        return quat{l_biggestDiagonalValue, (l_right.y + l_up.x) * mult, (l_forward.x + l_right.z) * mult, (l_up.z - l_forward.y) * mult}.normalize();
     }
     break;
     case 1:
     {
-        return quat{(l_right.y + l_up.x) * mult, l_biggestDiagonalValue, (l_up.z + l_forward.y) * mult, (l_forward.x - l_right.z) * mult};
+        return quat{(l_right.y + l_up.x) * mult, l_biggestDiagonalValue, (l_up.z + l_forward.y) * mult, (l_forward.x - l_right.z) * mult}.normalize();
     }
     break;
     case 2:
     {
-        return quat{(l_forward.x + l_right.z) * mult, (l_up.z + l_forward.y) * mult, l_biggestDiagonalValue, (l_right.y - l_up.x) * mult};
+        return quat{(l_forward.x + l_right.z) * mult, (l_up.z + l_forward.y) * mult, l_biggestDiagonalValue, (l_right.y - l_up.x) * mult}.normalize();
     }
     break;
     case 3:
     {
-        return quat{(l_up.z - l_forward.y) * mult, (l_forward.x - l_right.z) * mult, (l_right.y - l_up.x) * mult, l_biggestDiagonalValue};
+        return quat{(l_up.z - l_forward.y) * mult, (l_forward.x - l_right.z) * mult, (l_right.y - l_up.x) * mult, l_biggestDiagonalValue}.normalize();
     }
     break;
     }
@@ -561,22 +831,17 @@ inline v3f& m33f::operator[](const uint8 p_index)
     return this->Points2D[p_index];
 };
 
-inline m33f m33f::lookat(const v3f& p_origin, const v3f& p_target, const v3f& p_up)
+inline m33f m33f::lookat(const v3f& p_origin, const v3f& p_target, const v3fn& p_up)
 {
-    return m33f::looat_normalized(p_origin, p_target, p_up.normalize());
-};
-
-inline m33f m33f::looat_normalized(const v3f& p_origin, const v3f& p_target, const v3f& p_up_normalized)
-{
-#if __DEBUG
-    v3f_assert_is_normalized(p_up_normalized);
+#if __MATH_NORMALIZATION_CHECK
+    v3fn_assert_is_normalized(p_up);
 #endif
 
     m33f l_return = m33f_const::IDENTITY;
 
-    l_return.Forward = (p_target - p_origin).normalize();
-    l_return.Right = p_up_normalized.cross(l_return.Forward).normalize(); // (Up x Forward  is Right)
-    l_return.Up = l_return.Forward.cross(l_return.Right).normalize();     // (Forward x Right is Up)
+    l_return.Forward = (p_target - p_origin).normalize().vec3;
+    l_return.Right = p_up.cross(l_return.Forward).normalize().vec3;        // (Up x Forward  is Right)
+    l_return.Up = l_return.Forward.cross(l_return.Right).normalize().vec3; // (Forward x Right is Up)
 
     return l_return;
 };
@@ -725,9 +990,9 @@ inline m44f m44f::build_rotation(const m33f& p_axis)
     return m44f::build_columns(v4f::build_v3f_s(p_axis.Points2D[0], 0.0f), v4f::build_v3f_s(p_axis.Points2D[1], 0.0f), v4f::build_v3f_s(p_axis.Points2D[2], 0.0f), v4f{0.0f, 0.0f, 0.0f, 1.0f});
 };
 
-inline m44f m44f::build_rotation(const v3f& p_right, const v3f& p_up, const v3f& p_forward)
+inline m44f m44f::build_rotation(const v3fn& p_right, const v3fn& p_up, const v3fn& p_forward)
 {
-    return m44f::build_columns(v4f::build_v3f_s(p_right, 0.0f), v4f::build_v3f_s(p_up, 0.0f), v4f::build_v3f_s(p_forward, 0.0f), v4f{0.0f, 0.0f, 0.0f, 1.0f});
+    return m44f::build_columns(v4f::build_v3fn_s(p_right, 0.0f), v4f::build_v3fn_s(p_up, 0.0f), v4f::build_v3fn_s(p_forward, 0.0f), v4f{0.0f, 0.0f, 0.0f, 1.0f});
 };
 
 inline m44f m44f::build_scale(const v3f& p_scale)
@@ -737,6 +1002,12 @@ inline m44f m44f::build_scale(const v3f& p_scale)
 
 inline m44f m44f::trs(const m44f& p_translation, const m44f& p_rotation, const m44f& p_scale)
 {
+#if __MATH_NORMALIZATION_CHECK
+    assert_true(v4f_assert_is_normalized(p_rotation.Col0));
+    assert_true(v4f_assert_is_normalized(p_rotation.Col1));
+    assert_true(v4f_assert_is_normalized(p_rotation.Col2));
+    assert_true(v4f_assert_is_normalized(p_rotation.Col3));
+#endif
     return (p_translation * p_rotation) * p_scale;
 };
 
@@ -749,27 +1020,32 @@ inline m44f m44f::lookat_rotation(const v3f& p_origin, const v3f& p_target, cons
 {
     m44f l_return = m44f_const::IDENTITY;
 
-    l_return.Forward.Vec3 = (p_target - p_origin).normalize();
-    l_return.Right.Vec3 = p_up.cross(l_return.Forward.Vec3).normalize();
-    l_return.Up.Vec3 = l_return.Forward.Vec3.cross(l_return.Right.Vec3).normalize();
+    l_return.Forward.Vec3 = (p_target - p_origin).normalize().vec3;
+    l_return.Right.Vec3 = p_up.cross(l_return.Forward.Vec3).normalize().vec3;
+    l_return.Up.Vec3 = l_return.Forward.Vec3.cross(l_return.Right.Vec3).normalize().vec3;
 
     return l_return;
 };
 
-inline m44f m44f::view(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
+inline m44f m44f::lookat_rotation(const v3f& p_origin, const v3f& p_target, const v3fn& p_up)
 {
-    return m44f::view_normalized(p_world_position, p_forward, p_up.normalize());
+    return m44f::lookat_rotation(p_origin, p_target, p_up.vec3);
 };
 
-inline m44f m44f::view_normalized(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up_normalized)
+inline m44f m44f::view(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
 {
-#ifdef __DEBUG
-    v3f_assert_is_normalized(p_up_normalized);
+    return m44f::view(p_world_position, p_forward, p_up.normalize());
+};
+
+inline m44f m44f::view(const v3f& p_world_position, const v3f& p_forward, const v3fn& p_up)
+{
+#if __MATH_NORMALIZATION_CHECK
+    v3fn_assert_is_normalized(p_up);
 #endif
     v3f l_target = p_forward;
     l_target = p_world_position + l_target;
-    v3f l_up = p_up_normalized * -1.0f;
-    return m44f::trs(m44f::build_translation(p_world_position), m44f::lookat_rotation(p_world_position, l_target, l_up), m44f::build_scale(v3f_const::ONE)).inv();
+    v3f l_up = p_up * -1.0f;
+    return m44f::trs(m44f::build_translation(p_world_position), m44f::lookat_rotation(p_world_position, l_target, l_up), m44f::build_scale(v3f_const::ONE.vec3)).inv();
 };
 
 inline m44f m44f::perspective(const float32 p_fov, const float32 p_aspect, const float32 p_near, const float32 p_far)

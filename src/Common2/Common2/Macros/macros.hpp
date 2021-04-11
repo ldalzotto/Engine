@@ -21,6 +21,11 @@
     Iteratorname < EndNumber;                                                                                                                                                                          \
     Iteratorname++
 
+#define loop_int8(Iteratorname, BeginNumber, EndNumber)                                                                                                                                                \
+    int8 Iteratorname = BeginNumber;                                                                                                                                                                   \
+    Iteratorname < EndNumber;                                                                                                                                                                          \
+    Iteratorname++
+
 #define loop_reverse(Iteratorname, BeginNumber, EndNumber)                                                                                                                                             \
     uimax Iteratorname = EndNumber - 1;                                                                                                                                                                \
     Iteratorname != ((uimax)BeginNumber - 1);                                                                                                                                                          \

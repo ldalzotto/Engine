@@ -27,7 +27,7 @@ inline void add_remove_setparent_node()
 {
     Scene l_scene = Scene::allocate_default();
 
-    transform l_node_1_transform = transform{v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO};
+    transform l_node_1_transform = transform{v3f_const::FORWARD.vec3, quat_const::IDENTITY, v3f_const::ZERO.vec3};
 
     Token<Node> l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
     {
@@ -104,7 +104,7 @@ inline void add_remove_component()
 
     // Added components are directly added to the associated node of the SceneTree
     {
-        transform l_node_1_transform = transform{v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO};
+        transform l_node_1_transform = transform{v3f_const::FORWARD.vec3, quat_const::IDENTITY, v3f_const::ZERO.vec3};
         Token<Node> l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
         token_t l_component_test_resource = 1;
         l_scene.add_node_component_typed<ComponentTest>(l_node_1, l_component_test_resource);
@@ -142,7 +142,7 @@ inline void add_remove_component()
     // deleting a node with components will generate events that can be consumed
     {
 
-        transform l_node_1_transform = transform{v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO};
+        transform l_node_1_transform = transform{v3f_const::FORWARD.vec3, quat_const::IDENTITY, v3f_const::ZERO.vec3};
         Token<Node> l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
         l_scene.add_node_component_typed<ComponentTest>(l_node_1, 0);
         l_scene.add_node_component_typed<ComponentTest2>(l_node_1, 0);
@@ -195,7 +195,7 @@ inline void component_consume()
 
     // Checking that when components are removed and events are consumed, proper on_component_removed callback is called
     {
-        transform l_node_1_transform = transform{v3f_const::FORWARD, quat_const::IDENTITY, v3f_const::ZERO};
+        transform l_node_1_transform = transform{v3f_const::FORWARD.vec3, quat_const::IDENTITY, v3f_const::ZERO.vec3};
         Token<Node> l_node_1 = l_scene.add_node(l_node_1_transform, Scene_const::root_node);
         Token<Node> l_node_2 = l_scene.add_node(l_node_1_transform, l_node_1);
 
@@ -235,8 +235,8 @@ inline void math_hierarchy()
     Scene l_scene = Scene::allocate_default();
 
     Token<Node> l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build<Node>(0));
-    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
-    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
+    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE.vec3, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
+    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
 
     NodeEntry l_node_1_val = l_scene.get_node(l_node_1);
     NodeEntry l_node_2_val = l_scene.get_node(l_node_2);
@@ -452,8 +452,8 @@ inline void scenetreeasset_merge()
     Scene l_scene = Scene::allocate_default();
 
     Token<Node> l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build<Node>(0));
-    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
-    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
+    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE.vec3, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
+    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
 
     assert_true(l_scene.get_node_childs(l_scene.get_node(l_node_3)).Size == 0);
 
@@ -529,8 +529,8 @@ inline void scene_to_sceneasset()
     Scene l_scene = Scene::allocate_default();
 
     Token<Node> l_node_1 = l_scene.add_node(transform_const::ORIGIN, token_build<Node>(0));
-    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
-    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE}, l_node_1);
+    Token<Node> l_node_2 = l_scene.add_node(transform{v3f_const::ONE.vec3, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
+    Token<Node> l_node_3 = l_scene.add_node(transform{v3f{-1.0f, -1.0f, -1.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, l_node_1);
 
     l_scene.add_node_component_typed<CameraTestComponent>(l_node_1, 0);
     l_scene.add_node_component_typed<MeshRendererTestComponent>(l_node_1, 1);

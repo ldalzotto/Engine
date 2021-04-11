@@ -93,7 +93,7 @@ struct MaterialViewerEngineUnit
             if (l_frame_count == 1)
             {
                 thiz->camera_node = CreateNode(p_engine, transform_const::ORIGIN);
-                thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE});
+                thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
                 NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
             }
             thiz->shared.acquire([&](SharedRessources& p_shared){

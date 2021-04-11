@@ -73,7 +73,7 @@ inline void CollisionAllocator::free()
 
 inline Token<BoxColliderComponent> CollisionAllocator::allocate_box_collider_component(Collision2& p_collision, const Token<Node> p_scene_node, const BoxColliderComponentAsset& p_asset)
 {
-    Token<BoxCollider> l_box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO, p_asset.half_extend});
+    Token<BoxCollider> l_box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO.vec3, p_asset.half_extend});
     return this->box_colliders.alloc_element(BoxColliderComponent{1, p_scene_node, l_box_collider});
 };
 
@@ -95,7 +95,7 @@ inline BoxColliderComponent& CollisionAllocator::get_or_allocate_box_collider(Co
             if (token_equals(p_box_collider_token, l_box_collider_token))
             {
                 BoxColliderComponent& l_box_collider_component = this->box_colliders.get(l_box_collider_token);
-                l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
+                l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO.vec3, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
                 l_box_collider_component.force_update = 1;
                 this->box_colliders_waiting_for_allocation.erase_element_at(i);
                 this->box_colliders_asset_waiting_for_allocation.erase_element_at(i);
@@ -178,7 +178,7 @@ inline void CollisionAllocator::allocate_awaiting_entities(Collision2& p_collisi
         for (loop(i, 0, this->box_colliders_waiting_for_allocation.Size))
         {
             BoxColliderComponent& l_box_collider_component = this->box_colliders.get(this->box_colliders_waiting_for_allocation.get(i));
-            l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
+            l_box_collider_component.box_collider = p_collision.allocate_boxcollider(aabb{v3f_const::ZERO.vec3, this->box_colliders_asset_waiting_for_allocation.get(i).half_extend});
             l_box_collider_component.force_update = 1;
         }
 

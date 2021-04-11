@@ -1,8 +1,5 @@
 #pragma once
 
-// TODO -> remove forward declaration
-// TODO -> Instead of having constraints on normalized vectors, we can create a type (v3fn) that is ensured to be normalized and used in the "normalized API".
-
 namespace Math_const
 {
 const float32 zero_f = 0.0f;
@@ -43,9 +40,11 @@ struct Math
 
 struct v2f;
 struct v3f;
+struct v3fn;
 struct v3i;
 struct v3ui;
 struct v4f;
+struct v4fn;
 struct v4ui8;
 struct quat;
 struct m44f;
@@ -110,21 +109,27 @@ struct alignas(sizeof(float32)) v3f
 
     float32 length() const;
 
-    v3f normalize() const;
+    v3fn normalize() const;
 
     v3f inv() const;
 
     v3f project(const v3f& p_projected_on) const;
 
-    v3f project_normalized(const v3f& p_projected_on) const;
+    v3f project(const v3fn& p_projected_on) const;
 
     float32 distance(const v3f& p_end) const;
 
     float32 angle_unsigned(const v3f& p_end) const;
 
-    float32 angle_unsigned_normalized(const v3f& p_end_normalized) const;
+    float32 angle_unsigned(const v3fn& p_end) const;
 
     int8 anglesign(const v3f& p_end, const v3f& p_ref_axis) const;
+
+    int8 anglesign(const v3f& p_end, const v3fn& p_ref_axis) const;
+
+    int8 anglesign(const v3fn& p_end, const v3f& p_ref_axis) const;
+
+    int8 anglesign(const v3fn& p_end, const v3fn& p_ref_axis) const;
 
     v3f rotate(const quat& p_rotation) const;
 
@@ -132,16 +137,85 @@ struct alignas(sizeof(float32)) v3f
 
     quat from_to(const v3f& p_to) const;
 
-    quat from_to_normalized(const v3f& p_to) const;
+    quat from_to(const v3fn& p_to) const;
+};
+
+struct alignas(sizeof(float32)) v3fn
+{
+    union
+    {
+        float32 Points[3];
+        struct
+        {
+            float32 x, y, z;
+        };
+        v3f vec3;
+    };
+
+    v3f operator+(const v3f& p_other) const;
+
+    v3f operator+(const v3fn& p_other) const;
+
+    v3f operator*(const float32 p_other) const;
+
+    v3f operator*(const v3f& p_other) const;
+
+    v3f operator*(const v3fn& p_other) const;
+
+    v3f operator-(const v3f& p_other) const;
+
+    v3f operator-(const v3fn& p_other) const;
+
+    int8 operator==(const v3f& p_other) const;
+
+    int8 operator==(const v3fn& p_other) const;
+
+    int8 operator!=(const v3f& p_other) const;
+
+    int8 operator!=(const v3fn& p_other) const;
+
+    float32& operator[](const uint8 p_index);
+
+    float32 dot(const v3f& p_other) const;
+
+    float32 dot(const v3fn& p_other) const;
+
+    v3f cross(const v3f& p_other) const;
+
+    v3f cross(const v3fn& p_other) const;
+
+    float32 length() const;
+
+    v3f project(const v3fn& p_projected_on) const;
+
+    float32 angle_unsigned(const v3f& p_end) const;
+
+    float32 angle_unsigned(const v3fn& p_end) const;
+
+    int8 anglesign(const v3f& p_end, const v3f& p_ref_axis) const;
+
+    int8 anglesign(const v3f& p_end, const v3fn& p_ref_axis) const;
+
+    int8 anglesign(const v3fn& p_end, const v3f& p_ref_axis) const;
+
+    int8 anglesign(const v3fn& p_end, const v3fn& p_ref_axis) const;
+
+    v3fn rotate(const quat& p_rotation) const;
+
+    quat euler_to_quat() const;
+
+    quat from_to(const v3fn& p_to) const;
+
+    quat from_to(const v3f& p_to) const;
 };
 
 namespace v3f_const
 {
-const v3f ZERO = {0.0f, 0.0f, 0.0f};
-const v3f ONE = {1.0f, 1.0f, 1.0f};
-const v3f RIGHT = {1.0f, 0.0f, 0.0f};
-const v3f UP = {0.0f, 1.0f, 0.0f};
-const v3f FORWARD = {0.0f, 0.0f, 1.0f};
+const v3fn ZERO = {0.0f, 0.0f, 0.0f};
+const v3fn ONE = {1.0f, 1.0f, 1.0f};
+const v3fn RIGHT = {1.0f, 0.0f, 0.0f};
+const v3fn UP = {0.0f, 1.0f, 0.0f};
+const v3fn FORWARD = {0.0f, 0.0f, 1.0f};
 }; // namespace v3f_const
 
 struct alignas(sizeof(int32)) v3i
@@ -193,6 +267,11 @@ struct alignas(sizeof(float32)) v4f
         return v4f{p_v3f.x, p_v3f.y, p_v3f.z, p_s};
     };
 
+    inline static v4f build_v3fn_s(const v3fn& p_v3f, const float32 p_s)
+    {
+        return v4f{p_v3f.x, p_v3f.y, p_v3f.z, p_s};
+    };
+
     v4f operator+(const v4f& p_other) const;
 
     int8 operator==(const v4f& p_other) const;
@@ -207,11 +286,48 @@ struct alignas(sizeof(float32)) v4f
 
     float32 length() const;
 
+    v4fn normalize() const;
+
     v4f sRGB_to_linear() const;
 
     v4f linear_to_sRGB() const;
 
     v4ui8 to_uint8_color() const;
+};
+
+struct alignas(sizeof(float32)) v4fn
+{
+    union
+    {
+        float32 Points[4];
+        struct
+        {
+            float32 x, y, z, w;
+        };
+        struct
+        {
+            v3f Vec3;
+            float32 Vec3_w;
+        };
+        struct
+        {
+            v4f Vec4;
+        };
+    };
+
+    v4f operator+(const v4fn& p_other) const;
+
+    int8 operator==(const v4fn& p_other) const;
+
+    int8 operator!=(const v4fn& p_other) const;
+
+    v4f operator*(const float32 p_other) const;
+
+    v4f operator*(const v4fn& p_other) const;
+
+    float32& operator[](const uint8 p_index);
+
+    float32 length() const;
 };
 
 struct alignas(sizeof(uint8)) v4ui8
@@ -251,6 +367,11 @@ struct quat
             v3f Vec;
             float32 Scal;
         } Vec3s;
+        struct
+        {
+            v3fn Vec;
+            float32 Scal;
+        } Vec3ns;
     };
 
     inline static quat build_v3f_f(const v3f& p_vec, const float32 p_scal)
@@ -258,12 +379,19 @@ struct quat
         return quat{p_vec.x, p_vec.y, p_vec.z, p_scal};
     };
 
-    inline static quat build_v4f(const v4f& p_quat)
+    inline static quat build_v3fn_f(const v3fn& p_vec, const float32 p_scal)
+    {
+        return quat{p_vec.x, p_vec.y, p_vec.z, p_scal};
+    };
+
+    inline static quat build_v4fn(const v4fn& p_quat)
     {
         return quat{p_quat.x, p_quat.y, p_quat.z, p_quat.w};
     };
 
-    static quat rotate_around(const v3f& p_axis, const float32 p_angle);
+    // static quat rotate_around(const v3f& p_axis, const float32 p_angle);
+
+    static quat rotate_around(const v3fn& p_axis, const float32 p_angle);
 
     int8 operator==(const quat& p_other) const;
 
@@ -278,6 +406,7 @@ struct quat
     quat cross(const quat& p_other) const;
 
     m33f to_axis() const; // Converts a quat rotation to 3D axis
+
     v3f euler() const;
 };
 
@@ -315,9 +444,7 @@ struct alignas(sizeof(float32)) m33f
 
     v3f& operator[](const uint8 p_index);
 
-    static m33f lookat(const v3f& p_origin, const v3f& p_target, const v3f& p_up);
-
-    static m33f looat_normalized(const v3f& p_origin, const v3f& p_target, const v3f& p_up_normalized);
+    static m33f lookat(const v3f& p_origin, const v3f& p_target, const v3fn& p_up);
 
     quat to_rotation() const; // Converts a 3D axis matrix to rotation as quaternion
 };
@@ -380,7 +507,7 @@ struct alignas(sizeof(float32)) m44f
 
     static m44f build_rotation(const m33f& p_axis);
 
-    static m44f build_rotation(const v3f& p_right, const v3f& p_up, const v3f& p_forward);
+    static m44f build_rotation(const v3fn& p_right, const v3fn& p_up, const v3fn& p_forward);
 
     static m44f build_scale(const v3f& p_scale);
 
@@ -388,13 +515,14 @@ struct alignas(sizeof(float32)) m44f
 
     static m44f trs(const v3f& p_translation, const m33f& p_axis, const v3f& p_scale);
 
-    // If p_up is already normalized, we can use the cheaper version : lookat_rotation_normalized
     static m44f lookat_rotation(const v3f& p_origin, const v3f& p_target, const v3f& p_up);
+
+    static m44f lookat_rotation(const v3f& p_origin, const v3f& p_target, const v3fn& p_up);
 
     // If p_up is already normalized, we can use the cheaper version : view_normalized
     static m44f view(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up);
 
-    static m44f view_normalized(const v3f& p_world_position, const v3f& p_forward, const v3f& p_up_normalized);
+    static m44f view(const v3f& p_world_position, const v3f& p_forward, const v3fn& p_up);
 
     static m44f perspective(const float32 p_fov, const float32 p_aspect, const float32 p_near, const float32 p_far);
 };
@@ -415,7 +543,7 @@ struct transform
 
 namespace transform_const
 {
-const transform ORIGIN = transform{v3f_const::ZERO, quat_const::IDENTITY, v3f_const::ONE};
+const transform ORIGIN = transform{v3f_const::ZERO.vec3, quat_const::IDENTITY, v3f_const::ONE.vec3};
 };
 
 struct transform_pa
