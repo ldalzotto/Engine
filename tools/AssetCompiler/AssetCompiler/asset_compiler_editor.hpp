@@ -1,9 +1,8 @@
 #pragma once
 
-#include "QTCommon/qt_common.hpp"
+#include "QTCommon/qt_include.hpp"
 #include "AssetCompiler/asset_compiler.hpp"
-
-// TODO -> adding comments
+#include "QTCommon/qt_utility.hpp"
 
 /*
     A Token that identify a single asset compilation inside a AssetCompilationPass
@@ -210,79 +209,9 @@ struct AssetCompilationThread
     };
 };
 
-template <class ElementType> struct QListWidgetItemSelection
-{
-    QListWidget* root;
-    Vector<ElementType> datas;
-    Vector<QListWidgetItem*> item_widgets;
-
-    Vector<Token<ElementType>> selected_items;
-
-    struct Callbacks
-    {
-        void* closure;
-        void (*on_selection_changed)(QListWidgetItemSelection<ElementType>* thiz, void* p_closure);
-    } callbacks;
-
-    inline void allocate(QWidget* p_parent, const Callbacks& p_callbacks)
-    {
-        this->root = new QListWidget(p_parent);
-        this->datas = Vector<ElementType>::allocate(0);
-        this->selected_items = Vector<Token<ElementType>>::allocate(0);
-        this->item_widgets = Vector<QListWidgetItem*>::allocate(0);
-
-        this->callbacks = p_callbacks;
-
-        QObject::connect(this->root, &QListWidget::itemSelectionChanged, [&]() {
-            QList<QListWidgetItem*> l_selected_items = this->root->selectedItems();
-            this->selected_items.clear();
-            QList<QListWidgetItem*>::iterator l_selected_items_it;
-            for (l_selected_items_it = l_selected_items.begin(); l_selected_items_it != l_selected_items.end(); ++l_selected_items_it)
-            {
-                QListWidgetItem* l_item = *(l_selected_items_it.operator QListWidgetItem**());
-                this->selected_items.push_back_element(token_build<ElementType>(this->root->row(l_item)));
-            }
-            this->on_selection_changed();
-        });
-    };
-
-    inline void free()
-    {
-        this->datas.free();
-        this->selected_items.free();
-        this->item_widgets.free();
-    };
-
-    inline void on_selection_changed()
-    {
-        if (this->callbacks.on_selection_changed)
-        {
-            this->callbacks.on_selection_changed(this, this->callbacks.closure);
-        }
-    };
-
-    inline void push_back_element(const ElementType& p_data, QListWidgetItem* p_widget)
-    {
-        this->root->addItem(p_widget);
-        this->item_widgets.push_back_element(p_widget);
-        this->datas.push_back_element(p_data);
-    };
-
-    inline ElementType& get_selected_item(const uimax p_index)
-    {
-        return this->datas.get(token_value(this->selected_items.get(p_index)));
-    };
-
-    inline void erase_element_at_always(const uimax p_index)
-    {
-        this->datas.erase_element_at_always(p_index);
-        // this->root->removeItemWidget
-        this->root->removeItemWidget(this->item_widgets.get(p_index));
-        delete this->item_widgets.get(p_index);
-        this->item_widgets.erase_element_at_always(p_index);
-    };
-};
-
+/*
+    Widget that display all assets that are going to be compiled in a single pass.
+*/
 struct AssetCompilationPassWidget
 {
     QWidget* root;
@@ -298,14 +227,24 @@ struct AssetCompilationPassWidget
     {
         QListWidgetItem* widget;
 
+        enum class CompilationState
+        {
+            UNDEFINED = 0,
+            NONE = 1,
+            SUCCESS = 2,
+            FAILURE = 3
+        } compilation_state;
+
         inline void set_compilation_result(int8 p_result)
         {
             if (p_result)
             {
+                this->compilation_state = CompilationState::SUCCESS;
                 this->widget->setBackground(QBrush(QColor(171, 255, 171)));
             }
             else
             {
+                this->compilation_state = CompilationState::FAILURE;
                 this->widget->setBackground(QBrush(QColor(255, 171, 171)));
             }
         };
@@ -362,7 +301,7 @@ struct AssetCompilationPassWidget
             QListWidgetItem* l_item = new QListWidgetItem();
             l_item->setText(p_asset_compilation_pass.assets_to_compile.get(i).to_slice().Begin);
             this->widgets.assets_to_compile->addItem(l_item);
-            this->items.push_back_element(Item{l_item});
+            this->items.push_back_element(Item{l_item, Item::CompilationState::NONE});
         }
     };
 
@@ -423,6 +362,9 @@ struct AssetCompilerWidgetHeap
     };
 };
 
+/*
+    Display asset compilation pass selection and a list of AssetCompilationPassWidget list that matches to the selected one.
+*/
 struct AssetCompilationPassViewer
 {
     QWidget* root;
@@ -524,7 +466,7 @@ struct AssetCompilationPassViewer
     {
         for (loop(i, 0, this->widgets.compilation_pass_list.selected_items.Size))
         {
-            AssetCompilationPassWidget& l_compilation_pass_widget = p_asset_compiler_widget_heap.get_widget(this->widgets.compilation_pass_list.get_selected_item(i));
+            AssetCompilationPassWidget& l_compilation_pass_widget = this->get_asset_compilationpass_widget_from_selecteditem_index(p_asset_compiler_widget_heap, i);
             this->widgets.display_widget.layout->addWidget(l_compilation_pass_widget.root);
             this->displayed_asset_compilation_pass_widgets.push_back_element(this->widgets.compilation_pass_list.get_selected_item(i));
         }
@@ -534,6 +476,15 @@ struct AssetCompilationPassViewer
     {
         this->remove_and_detach_all_asset_compilation_widgets(p_asset_compiler_widget_heap);
         this->push_selected_asset_compilations_to_view_widget(p_asset_compiler_widget_heap);
+    };
+
+    inline AssetCompilationPassWidget& get_asset_compilationpass_widget_from_selecteditem_index(AssetCompilerWidgetHeap& p_asset_compiler_widget_heap, const uimax p_index)
+    {
+        return p_asset_compiler_widget_heap.get_widget(this->widgets.compilation_pass_list.get_selected_item(p_index));
+    };
+    inline AssetCompilationPassWidget& get_asset_compilationpass_widget_from_heap_index(AssetCompilerWidgetHeap& p_asset_compiler_widget_heap, const uimax p_index)
+    {
+        return p_asset_compiler_widget_heap.get_widget(this->widgets.compilation_pass_list.datas.get(p_index));
     };
 };
 

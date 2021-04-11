@@ -72,42 +72,40 @@ inline void slice_span_test()
     }
 };
 
-inline void slice_functional_algorithm_test()
+inline void slice_functional_algorithm_test(){// find
+                                              {Slice<int8> l_char_slice = slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch.");
+
+uimax l_index;
+assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("efor"), &l_index) == 1);
+assert_true(l_index == 27);
+
+// no found
+l_index = 0;
+assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("eforc"), &l_index) == 0);
+}
+
+// last_index_of
 {
-    // find
-    {
-        Slice<int8> l_char_slice = slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch.");
+    Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path");
+    Slice<int8> l_compared = slice_int8_build_rawstr("/");
+    uimax l_index;
+    assert_true(Slice_last_index_of(l_path_slice, l_compared, &l_index));
+    assert_true(l_index == 9);
+    assert_true(l_path_slice.get(l_index) == '/');
+    assert_true(!Slice_last_index_of(l_path_slice, slice_int8_build_rawstr("m"), &l_index));
+}
 
-        uimax l_index;
-        assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("efor"), &l_index) == 1);
-        assert_true(l_index == 27);
-
-        // no found
-        l_index = 0;
-        assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("eforc"), &l_index) == 0);
-    }
-
-    // last_index_of
-    {
-        Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path");
-        Slice<int8> l_compared = slice_int8_build_rawstr("/");
-        uimax l_index;
-        assert_true(Slice_last_index_of(l_path_slice, l_compared, &l_index));
-        assert_true(l_index == 9);
-        assert_true(l_path_slice.get(l_index) == '/');
-        assert_true(!Slice_last_index_of(l_path_slice, slice_int8_build_rawstr("m"), &l_index));
-    }
-
-    // last_index_of_not_endofslice
-    {
-        Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path/");
-        Slice<int8> l_compared = slice_int8_build_rawstr("/");
-        uimax l_index;
-        assert_true(Slice_last_index_of_not_endofslice(l_path_slice, l_compared, &l_index));
-        assert_true(l_index == 9);
-        assert_true(l_path_slice.get(l_index) == '/');
-    }
-};
+// last_index_of_not_endofslice
+{
+    Slice<int8> l_path_slice = slice_int8_build_rawstr("This/is/a/path/");
+    Slice<int8> l_compared = slice_int8_build_rawstr("/");
+    uimax l_index;
+    assert_true(Slice_last_index_of_not_endofslice(l_path_slice, l_compared, &l_index));
+    assert_true(l_index == 9);
+    assert_true(l_path_slice.get(l_index) == '/');
+}
+}
+;
 
 inline void vector_test()
 {
@@ -1644,6 +1642,15 @@ inline void file_test()
     l_file.erase();
 
     l_file_path.free();
+
+    // non null terminated path
+    Span<int8> l_file_path_not_null_terminated = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txtabcd"));
+    l_file_path_not_null_terminated.Capacity -= 4;
+    {
+        File l_tmp_file = File::create_or_open(l_file_path_not_null_terminated.slice);
+        l_tmp_file.erase();
+    }
+    l_file_path_not_null_terminated.free();
 };
 
 inline void database_test()

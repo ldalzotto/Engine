@@ -44,4 +44,4 @@ target_compile_definitions(AssetCompilerEditorExec PUBLIC ASSET_FOLDER_ROOT="${A
 
 add_executable(AssetCompilerEditorTest ./AssetCompiler/test/assetcompiler_tool_test.cpp)
 target_link_libraries(AssetCompilerEditorTest PUBLIC AssetCompilerEditor)
-target_compile_definitions(AssetCompilerEditorTest PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/")
+target_compile_definitions(AssetCompilerEditorTest PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/AssetCompilerTool")

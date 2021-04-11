@@ -1,8 +1,9 @@
 #pragma once
 
-#include "QTCommon/qt_common.hpp"
+#include "QTCommon/qt_include.hpp"
 #include "Engine/engine.hpp"
 #include "AssetCompiler/asset_compiler.hpp"
+#include "QTCommon/qt_utility.hpp"
 
 struct MaterialViewerEngineUnit
 {

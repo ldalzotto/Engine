@@ -50,7 +50,7 @@ inline void material_viewer(qt_test& qt_app)
 
             QFileDialog* fd = l_material_viewer_editor.material_viewer_window.widgets.db_file_dialog;
             Span<int8> l_file_path = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
-            fd->fileSelected(QString::fromLocal8Bit(l_file_path.slice.Begin, l_file_path.slice.Size));
+            QFileDialog_simulate_pick(fd, l_file_path.slice);
             assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.database_file.toLocal8Bit().data()).compare(l_file_path.slice));
             fd->close();
             l_file_path.free();
@@ -143,16 +143,16 @@ inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
             });
             l_elapsed_time_before_close_app_last_frame = clock_currenttime_mics();
         }
-        else if(l_frame_count >= 4) {
+        else if (l_frame_count >= 4)
+        {
             l_elapsed_time_before_close_app += (clock_currenttime_mics() - l_elapsed_time_before_close_app_last_frame);
             l_elapsed_time_before_close_app_last_frame = clock_currenttime_mics();
-            if(l_elapsed_time_before_close_app >= (1000.0f / 60.0f))
+            if (l_elapsed_time_before_close_app >= (1000.0f / 60.0f))
             {
                 l_material_viewer_editor.free();
                 qt_app.close();
                 l_main_loop.stop();
             }
-
         }
 
         l_frame_count += 1;
