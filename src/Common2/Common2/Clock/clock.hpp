@@ -3,7 +3,7 @@
 struct Clock
 {
     uimax framecount;
-    float32 elapsedtime;
+    float32 totaltime;
     float32 deltatime;
 
     inline static Clock allocate_default()
@@ -19,7 +19,7 @@ struct Clock
     inline void newupdate(float32 p_delta)
     {
         this->deltatime = p_delta;
-        this->elapsedtime += p_delta;
+        this->totaltime += p_delta;
     }
 };
 

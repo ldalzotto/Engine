@@ -1,5 +1,12 @@
-1/ Deciding about how scene tree node movements are handled by the middlewares.
+
+1/ Writing a command line tool that execute asset compilation.
+   Also check error crash when shader failed ? :(
+
+2/ We can improve the shader compiler so that we only need to write shader program parts that are not common.
+   On compilation, the shader compiler can append the common parts.
+
+3/ Deciding about how scene tree node movements are handled by the middlewares.
     * Internal state checked by the middleware by iterating over registered entities ?
     * Or events stored in the scene when a node has changed. These events will be consumed and pushed to middleware depending of components.
 
-2/ Migrating the collision allocation to the new system.
+4/ Migrating the collision allocation to the new system.

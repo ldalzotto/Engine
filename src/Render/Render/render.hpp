@@ -285,7 +285,7 @@ struct D3RendererEvents
 
 namespace ColorStep_const
 {
-SliceN<ShaderLayoutParameterType, 1> shaderlayout_before = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
+SliceN<ShaderLayoutParameterType, 2> shaderlayout_before = SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT};
 SliceN<ShaderLayoutParameterType, 1> shaderlayout_after = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
 SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN<ShaderLayout::VertexInputParameter, 2>{
     ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0}, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)}};
@@ -302,6 +302,16 @@ struct ColorStep
     Token<ShaderLayout> global_buffer_layout;
     Material global_material;
 
+    struct GlobalParameter_Time
+    {
+        float32 totaltime;
+
+        inline static GlobalParameter_Time allocate_default()
+        {
+            return GlobalParameter_Time{0.0f};
+        };
+    };
+
     struct AllocateInfo
     {
         v3ui render_target_dimensions;
@@ -313,8 +323,7 @@ struct ColorStep
     {
         ColorStep l_step;
 
-        Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate(1);
-        l_global_buffer_parameters.get(0) = ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX;
+        Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&ColorStep_const::shaderlayout_before));
         Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
 
         ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
@@ -345,6 +354,9 @@ struct ColorStep
         l_step.global_material = Material::allocate_empty(p_gpu_context.graphics_allocator, 0);
         l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
                                                                             p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout), l_empty_camera);
+        l_step.global_material.add_and_allocate_buffer_host_parameter_typed(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator,
+                                                                            p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_step.global_buffer_layout),
+                                                                            GlobalParameter_Time::allocate_default());
 
         return l_step;
     };
@@ -374,7 +386,19 @@ struct ColorStep
 
     inline Camera& get_camera(GPUContext& p_gpu_context)
     {
+        // TODO -> we can cache the material property token instead of retrieving it every time
         return this->global_material.get_buffer_host_parameter_memory_typed<Camera>(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator, 0);
+    };
+
+    inline void set_totaltime(GPUContext& p_gpu_context, const float32 p_total_time)
+    {
+        this->get_time(p_gpu_context).totaltime = p_total_time;
+    };
+
+    inline GlobalParameter_Time& get_time(GPUContext& p_gpu_context)
+    {
+        // TODO -> we can cache the material property token instead of retrieving it every time
+        return this->global_material.get_buffer_host_parameter_memory_typed<GlobalParameter_Time>(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory.allocator, 1);
     };
 };
 
@@ -396,7 +420,7 @@ struct D3Renderer
 
     inline void free(GPUContext& p_gpu_context)
     {
-        this->buffer_step(p_gpu_context);
+        this->buffer_step(p_gpu_context, 0.0f);
 
         this->allocator.free();
         this->events.free();
@@ -408,7 +432,7 @@ struct D3Renderer
         return this->allocator.heap;
     };
 
-    inline void buffer_step(GPUContext& p_gpu_context)
+    inline void buffer_step(GPUContext& p_gpu_context, const float32 p_totaltime)
     {
         for (loop(i, 0, this->events.model_update_events.Size))
         {
@@ -423,6 +447,8 @@ struct D3Renderer
         };
 
         this->events.model_update_events.clear();
+
+        this->color_step.set_totaltime(p_gpu_context, p_totaltime);
     };
 
     inline void graphics_step(GraphicsBinder& p_graphics_binder)

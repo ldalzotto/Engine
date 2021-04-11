@@ -198,7 +198,7 @@ struct EngineLoopFunctions
 
     inline static void render(Engine& p_engine)
     {
-        p_engine.renderer.buffer_step(p_engine.gpu_context);
+        p_engine.renderer.buffer_step(p_engine.gpu_context, p_engine.clock.totaltime);
         p_engine.gpu_context.buffer_step_and_submit();
         GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
         l_graphics_binder.start();
@@ -212,7 +212,7 @@ struct EngineLoopFunctions
 
     inline static void render_headless(Engine& p_engine)
     {
-        p_engine.renderer.buffer_step(p_engine.gpu_context);
+        p_engine.renderer.buffer_step(p_engine.gpu_context, p_engine.clock.totaltime);
         p_engine.gpu_context.buffer_step_and_submit();
         GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
         p_engine.renderer.graphics_step(l_graphics_binder);

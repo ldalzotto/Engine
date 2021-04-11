@@ -12,7 +12,6 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 #endif
 
-
 inline void bufferstep_test()
 {
     GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -27,7 +26,7 @@ inline void bufferstep_test()
         D3RendererAllocatorComposition::allocate_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_test_vertices, l_test_indices);
     l_renderer.events.push_modelupdateevent(D3RendererEvents::RenderableObject_ModelUpdateEvent{l_renderable_object, m44f_const::IDENTITY});
 
-    l_renderer.buffer_step(l_ctx);
+    l_renderer.buffer_step(l_ctx, 0.0f);
 
     assert_true(l_renderer.events.model_update_events.Size == 0);
 
@@ -66,14 +65,14 @@ inline void shader_linkto_material_allocation_test()
         Token<ShaderIndex> l_shader_index_executed_after_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_after);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 1);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>(l_shader_index_executed_after_token)).Size == 0);
 
         ShaderIndex l_shader_index_executed_before = {1, token_build_default<Shader>(), token_build_default<ShaderLayout>()};
         Token<ShaderIndex> l_shader_index_executed_before_token = l_renderer.allocator.allocate_shader(l_shader_index_executed_before);
 
         assert_true(l_renderer.allocator.heap.shaders_to_materials.Memory.varying_vector.get_size() == 2);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_after_token)).Size == 0);
-        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>( l_shader_index_executed_before_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>(l_shader_index_executed_after_token)).Size == 0);
+        assert_true(l_renderer.allocator.heap.shaders_to_materials.get_vector(token_build_from<Slice<Token<Material>>>(l_shader_index_executed_before_token)).Size == 0);
 
         l_renderer.allocator.free_shader(l_shader_index_executed_after_token);
         l_renderer.allocator.free_shader(l_shader_index_executed_before_token);
@@ -106,8 +105,14 @@ inline void draw_test()
 						mat4 projection; \n
 				}; \n
 
+                        struct Time \n
+                        { \n
+                            float totaltime; \n
+                        }; \n
+
 						layout(set = 0, binding = 0) uniform camera { Camera cam; }; \n
-						layout(set = 2, binding = 0) uniform model { mat4 mod; }; \n
+                        layout(set = 1, binding = 0) uniform s_time { Time time; }; \n
+						layout(set = 3, binding = 0) uniform model { mat4 mod; }; \n
 
 						void main()\n
 				{ \n
@@ -121,7 +126,13 @@ inline void draw_test()
 
 						layout(location = 0) out vec4 outColor;\n
 
-						layout(set = 1, binding = 0) uniform color { vec3 col; }; \n
+                                              struct Time \n
+                                          { \n
+                                              float totaltime; \n
+                                          }; \n
+
+                        layout(set = 1, binding = 0) uniform s_time { Time time; }; \n
+						layout(set = 2, binding = 0) uniform color { vec3 col; }; \n
 
 						void main()\n
 				{ \n
@@ -146,11 +157,11 @@ inline void draw_test()
     l_vertex_shader_compiled.free();
     l_fragment_shader_compiled.free();
 
-    Material l_red_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
+    Material l_red_material = Material::allocate_empty(l_ctx.graphics_allocator, (uint32)ColorStep_const::shaderlayout_before.Size());
     l_red_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout),
                                                                 v3f{1.0f, 0.0f, 0.0f});
 
-    Material l_green_material = Material::allocate_empty(l_ctx.graphics_allocator, 1);
+    Material l_green_material = Material::allocate_empty(l_ctx.graphics_allocator, (uint32)ColorStep_const::shaderlayout_before.Size());
     l_green_material.add_and_allocate_buffer_host_parameter_typed(l_ctx.graphics_allocator, l_ctx.buffer_memory.allocator,
                                                                   l_ctx.graphics_allocator.heap.shader_layouts.get(l_shader_value.shader_layout), v3f{0.0f, 1.0f, 0.0f});
 
@@ -206,7 +217,7 @@ inline void draw_test()
         l_renderer.color_step.set_camera(l_ctx, Camera{l_view, l_projection});
     }
 
-    l_renderer.buffer_step(l_ctx);
+    l_renderer.buffer_step(l_ctx, 0.0f);
 
     l_ctx.buffer_step_and_submit();
 
@@ -349,6 +360,8 @@ inline void draw_test()
     l_ctx.free();
     l_shader_compiler.free();
 };
+
+// TDOO -> adding a test that make use of all global buffers. because if we don't use them, errors may be missed
 
 int main()
 {

@@ -471,7 +471,7 @@ struct MaterialRessourceUnit
                 ShaderRessource& l_shader = p_shader_unit.shaders.pool.get(p_ressource.dependencies.shader);
                 ShaderIndex& l_shader_index = p_renderer.allocator.heap.shaders.get(l_shader.shader);
 
-                Material l_material_value = Material::allocate_empty(p_gpu_context.graphics_allocator, 1);
+                Material l_material_value = Material::allocate_empty(p_gpu_context.graphics_allocator, (uint32)ColorStep_const::shaderlayout_before.Size());
 
                 for (loop(j, 0, p_value.parameters.parameters.get_size()))
                 {
