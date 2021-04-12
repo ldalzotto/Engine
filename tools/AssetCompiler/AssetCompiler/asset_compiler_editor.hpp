@@ -64,6 +64,7 @@ struct AssetCompilationThread
 
     struct s_input_events
     {
+        volatile uimax compilation_passes_size;
         Vector<s_input_asset_compilation_pass_event> compilation_passes;
     };
 
@@ -137,7 +138,7 @@ struct AssetCompilationThread
 
     inline int8 has_compilation_events()
     {
-        return !this->input_events._data.compilation_passes.empty();
+        return this->input_events._data.compilation_passes_size != 0;
     };
 
     inline void sync_wait_for_processing_compilation_events()
@@ -156,7 +157,7 @@ struct AssetCompilationThread
             }
 
             p_input_events.compilation_passes.push_back_element(s_input_asset_compilation_pass_event{p_asset_compilation_pass, p_asset_compilation_pass_token});
-
+            p_input_events.compilation_passes_size = p_input_events.compilation_passes.Size;
             this->start_if_not_running();
         });
     };
@@ -178,6 +179,7 @@ struct AssetCompilationThread
                     this->compile_asset_compilation_pass(p_input_events.compilation_passes.get(i));
                 }
                 p_input_events.compilation_passes.clear();
+                p_input_events.compilation_passes_size = p_input_events.compilation_passes.Size;
             });
         }
         return 0;
