@@ -4,6 +4,10 @@
 #if __DEBUG
 #define sc_handle_error(glslang_program_t_ptr, glslang_shader_s_ptr, Code) ShaderCompiler_ErrorHandler((glslang_shader_s_ptr), (glslang_program_t_ptr), (Code))
 
+#else
+#define sc_handle_error(glslang_program_t_ptr, glslang_shader_s_ptr, Code) Code
+#endif
+
 #define sc_handle_error_silent(glslang_program_t_ptr, glslang_shader_s_ptr, Code)                                                                                                                      \
     {                                                                                                                                                                                                  \
         if (!ShaderCompiler_ErrorHandler_silent((glslang_shader_s_ptr), (glslang_program_t_ptr), (Code)))                                                                                              \
@@ -11,11 +15,6 @@
             return 0;                                                                                                                                                                                  \
         }                                                                                                                                                                                              \
     }
-
-#else
-#define sc_handle_error(glslang_program_t_ptr, glslang_shader_s_ptr, Code) Code
-#define sc_handle_error_silent(glslang_program_t_ptr, glslang_shader_s_ptr, Code) Code
-#endif
 
 #include "glslang/Include/ResourceLimits.h"
 
