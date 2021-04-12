@@ -43,7 +43,8 @@ template <class ElementType> struct Vector
         return l_vector;
     };
 
-    inline static Vector<ElementType> allocate_capacity_elements_3(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements_0, const Slice<ElementType>& p_initial_elements_1, const Slice<ElementType>& p_initial_elements_2)
+    inline static Vector<ElementType> allocate_capacity_elements_3(const uimax p_inital_capacity, const Slice<ElementType>& p_initial_elements_0, const Slice<ElementType>& p_initial_elements_1,
+                                                                   const Slice<ElementType>& p_initial_elements_2)
     {
         Vector<ElementType> l_vector = Vector<ElementType>::allocate(p_inital_capacity);
         l_vector.push_back_array_3(p_initial_elements_0, p_initial_elements_1, p_initial_elements_2);
