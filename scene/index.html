@@ -11,7 +11,7 @@
     
     <link rel="shortcut icon" href="../img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>Scene - EngineCPP</title>
+    <title>Scene - From Scratch</title>
     <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
     <link href="../css/base.css" rel="stylesheet">
@@ -89,20 +89,20 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     
 
     <p>A node hierarchy where every node can have components.</p>
-<p>The node hierarchy allows to position points in 3D space where parent movement influence the child position. <br/>
+<p>The node hierarchy allows positioning points in 3D space where parent movement influence the child position. <br/>
 Components are functionality attached to the node that communicate with internal systems via the scene middleware.</p>
 <h1 id="architecture">Architecture</h1>
 <p><svg-inline src="scene_architecture.svg"></svg-inline></p>
 <ul>
-<li>Node: a point int 3D space.</li>
-<li>SceneTree: the hierachical view of nodes. All node movement must be done through the SceneTree.</li>
+<li>Node: a point in 3D space.</li>
+<li>SceneTree: the hierarchical view of nodes. All node movement must be done through the SceneTree.</li>
 <li>Component: a component is a typed external object associated to a node.</li>
 <li>Scene: an object that link nodes to components. It acts as an interface of the scene tree.</li>
 </ul>
 <p><svg-inline src="scene_model.svg"></svg-inline></p>
 <h1 id="scene-hierarchical-update">Scene hierarchical update</h1>
 <p>The node is composed of a local transform (position, rotation, scale) and a local to world matrix. <br/>
-When updating a node transform, what we change is the local transform. The local to world matrix is recalculated on the fly, only when needed. THe local to world matrix value is cached until the transform change again.</p>
+When updating a node transform, what we change is the local transform. The local to world matrix is recalculated on the fly, only when needed. The local to world matrix value is cached until the transform change again.</p>
 <p>Because nodes are organized in a tree, the parent movement affect the child position. When a node parent position is set, this change is propagated recursively into the tree. This propagation is done instantaneously.</p>
 <p>When a node transform has changed, the internal state of the node indicates that this frame, the node has changed. This state can be used by middleware to check if a node has moved or not.</p>
 <blockquote>
@@ -110,11 +110,11 @@ When updating a node transform, what we change is the local transform. The local
 </blockquote>
 <h1 id="component-allocation">Component allocation</h1>
 <p>The component is a structure that contains a type and an external object token.</p>
-<p>When we want to add a component to a node, it's external ressource has already been allocated by the scene middleware (or at least, a token has been generated). So, we provide this token to the node component allocation.</p>
+<p>When we want to add a component to a node, it's external resource has already been allocated by the scene middleware (or at least, a token has been generated). So, we provide this token to the node component allocation.</p>
 <p><svg-inline src="scene_component_allocation.svg"></svg-inline></p>
 <h1 id="component-deallocation-events">Component deallocation events</h1>
 <p>Because component deallocation can be triggered manually by the user logic on indirectly by removing a node, component deallocation events are stored to an event buffer.</p>
-<p>From the point of view of the scene, we have no idea of what is the external component object allocated or what is it's purpose. So we need to send notifications when the component is removed.
+<p>From the point of view of the scene, we have no idea of what is the external component object allocated or what is its purpose. So we need to send notifications when the component is removed.
 To do so, the component deallocation event buffer can be consumed to execute functions accordingly to the component type.</p>
 <blockquote>
 <p><strong>WARNING</strong>: The component deallocation event buffer is cleared at the end of every frame. If events are not consumed before that, then events will be lost.</p>

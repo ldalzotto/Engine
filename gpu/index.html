@@ -11,7 +11,7 @@
     
     <link rel="shortcut icon" href="../img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>GPU - EngineCPP</title>
+    <title>GPU - From Scratch</title>
     <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
     <link href="../css/base.css" rel="stylesheet">
@@ -84,9 +84,9 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 
     
 
-    <p>The GPU module is responsible of :</p>
+    <p>The GPU module is responsible for :</p>
 <ul>
-<li>Providing convenvient systems to allocate, free and write to GPU memory chunks.</li>
+<li>Providing convenient systems to allocate, free and write to GPU memory chunks.</li>
 <li>Deferring commands that needs synchronization with the gpu.</li>
 <li>Abstracting graphics objects such as Shader, Material ...</li>
 </ul>
@@ -94,7 +94,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <p><svg-inline src="./gpu_arch.svg"></svg-inline></p>
 <p>The GPU module is composed of :</p>
 <ul>
-<li>GPUHeap : allocates huge chunk of GPU memory and cut slice into it based on vulkan constraint.</li>
+<li>GPUHeap : allocates a huge chunk of GPU memory and cut a slice into it based on vulkan constraint.</li>
 <li>BufferAllocator : allocates and holds token of vulkan buffer objects.</li>
 <li>BufferEvents : stores all GPU operations that are deferred to be executed on a command buffer.</li>
 <li>BufferMemory : acts as an entry point for memory allocation and read/write event push.</li>
@@ -102,7 +102,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <li>GraphicsAllocator : allocates abstracted graphics objects.</li>
 <li>GraphicsBinder : uses graphics objects to execute draw commands.</li>
 </ul>
-<p>On initialisation, the GPU systems creates two command buffer objects that are responsible of oredring the GPU to
+<p>On initialization, the GPU systems creates two command buffer objects that are responsible for ordering the GPU to
 execute draw operations or buffer copy operations.</p>
 <p>Before the start of the frame, these command buffers are flushed from previous commands. At the end of the frame, these
 command buffers are submitted in the following order :</p>
@@ -113,8 +113,8 @@ command buffers are submitted in the following order :</p>
 <h1 id="gpu-memory-allocation">GPU memory allocation</h1>
 <p>The GPU memory allocation is done by allocating one or more huge chunks of memory on the GPU. Any GPU allocation or
 deallocation works with a slice of memory of the huge chunk.</p>
-<p>Memory requirements such as size and alignment is provided by the vulkan API. From these constraint, we manually
-identify and cut a slice of memory from the GPUHeap. Every heap has it's own memory type defined by the the types of
+<p>Memory requirements such as size and alignment is provided by the vulkan API. From these constraints, we manually
+identify and cut a slice of memory from the GPUHeap. Every heap has its own memory type defined by the types of
 memory requested.</p>
 <h2 id="buffer">Buffer</h2>
 <p>A Buffer is a general purpose memory (like if you allocate memory from CPU). A buffer can be of two type :</p>
@@ -152,10 +152,10 @@ operation must be registered to a command buffer.</p>
 </blockquote>
 <p>The vulkan api let the user manage an internal state of an image called ImageLayout. It acts as a flag to indicates what
 operations are allowed on the image.</p>
-<p>The imageUsage flag indicates where this image will be used (as a shader parameter, or as the target of a render pass)
+<p>The image usage flag indicates where this image will be used (as a shader parameter, or as the target of a render pass)
 . <br/>
 This flags is the only parameter used to set the underlying image layout.</p>
-<p>Because the vulkan API needs a specific ImageLayout value when the image is being read or written to, every operations
+<p>Because the vulkan API needs a specific image layout value when the image is being read or written to, every operation
 on image must be deferred to execute layout transition before and after.</p>
 <h2 id="bufferevents-step">BufferEvents step</h2>
 <p>The BufferEvents stores all deferred GPU buffer read/write and texture copy events. <br/>
@@ -170,54 +170,54 @@ Events are consumed in the following order :</p>
 <p><strong>WARNING</strong>: It is very important that image host and gpu allocation events are processed before image copy operations because further events assume that the image layout of the image is the targetted one.</p>
 </blockquote>
 <h3 id="image-allocation">Image allocation</h3>
-<p>When an image is allocated, it's image layout is undefined. This events execute image layout transition based on the
+<p>When an image is allocated, its image layout is undefined. These events execute image layout transition based on the
 image imageUsage.</p>
 <ol>
 <li>ImageLayout transition from unknown state to desired imageUsage.</li>
 </ol>
 <h3 id="readwrite-to-buffergpu">Read/Write to BufferGPU</h3>
 <ol>
-<li>Push copy commands to the temporary buffer (as decribed in the <a href="#buffer">buffer section</a>)</li>
+<li>Push copy commands to the temporary buffer (as described in the <a href="#buffer">buffer section</a>)</li>
 </ol>
 <h3 id="readwrite-to-imagegpu">Read/Write to ImageGPU</h3>
 <ol>
-<li>ImageLayout transition from desired imageUsage to transfert_src or transfert_dst depending on the operation.</li>
+<li>Image layout transition from desired image usage to transfert_src or transfert_dst depending on the operation.</li>
 <li>Copy command.</li>
-<li>ImageLayout transition from transfert_src or transfert_dst to desired imageUsage.</li>
+<li>Image layout transition from transfert_src or transfert_dst to desired image usage.</li>
 </ol>
 <h1 id="graphics-abstraction">Graphics abstraction</h1>
 <p>All graphics abstraction objects describe how a draw command is performed. Allocation of any graphics object is done by
-having a reference to the BufferMemory object because they can cause buffer or image allocation. <br/>
+having a reference to the buffer memory object because they can cause buffer or image allocation. <br/>
 Graphics abstraction is a layer on top of the GPU memory layer.</p>
-<p>There is no depedencies between all these objects. This choice has been made to not enforce any hierarchy. The
-dependency between objects is ensured by the GraphicsBinding.</p>
+<p>There is no dependencies between all these objects. This choice has been made to not enforce any hierarchy. The
+dependency between objects is ensured by the graphics binding.</p>
 <p><strong>TextureGPU:</strong></p>
-<p>A TextureGPU is an Image with a description of which mip map or arraylayer is selected.</p>
+<p>A TextureGPU is an Image with a description of which mip map or array layer is selected.</p>
 <p><strong>GraphicsPass:</strong></p>
 <p>The GraphicsPass is the render texture attachments that will be used for drawing. <br/>
-Texture attachment supported are color attachment and depth attachment.</p>
+Texture attachment supported are colour attachment and depth attachment.</p>
 <p><strong>Shader:</strong></p>
 <p>A Shader is a program that is executed against a GraphicsPass and a set of ShaderParameters. <br/>
-On allocation, a shader is configured to decide wether ztest and zwrite is perfored.</p>
+On allocation, a shader is configured to decide whether ztest and zwrite is perfored.</p>
 <p><strong>ShaderModule:</strong></p>
 <p>A ShaderModule is the compiled small unit of (vertex|fragment) shader pass executed by the Shader.</p>
 <p><strong>ShaderLayout:</strong></p>
 <p>The ShaderLayout indicate the format of all parameters of the Shader (including vertex format). It can be seen as the
 Reflection data of a Shader.</p>
 <p><strong>ShaderParameter:</strong></p>
-<p>A ShaderParameter is a buffer or image that is binded at a certain location of the shader to be used by the
+<p>A ShaderParameter is a buffer or image that is bound at a certain location of the shader to be used by the
 program. <br/>
 ShaderParameters can be UniformHost, UniformGPU or TextureGPU.</p>
 <p><strong>Material:</strong></p>
-<p>A Material is an array of ShaderParameters. </p>
+<p>A Material is an array of ShaderParameters.</p>
 <h1 id="graphics-binding">Graphics binding</h1>
-<p>The graphics binding object allows to notify to the GPU all data needed to perform a draw call. <br/>
-Binding draw commands are sended to the graphics command buffer. A specific bindind order must be respected as
+<p>The graphics binding object allows notifying to the GPU all data needed to perform a draw call. <br/>
+Binding draw commands are sent to the graphics command buffer. A specific binding order must be respected as
 validation is performed for every binding. <br/></p>
 <p><svg-inline src="./gpu_bind_order.svg"></svg-inline></p>
-<p>Once an object has been binded, it will still be binded until another one takes it's place. This means that we don't
-have to re-bind the GraphicsPass or the Shader when we bind another set of ShaderParameters. <br/>
-ShaderParameters can be binded at any position, they also stay binded at the desired index until another one takes
+<p>Once an object has been bound, it will still be bound until another one takes its place. This means that we don't
+have to re-bind the graphics pass or the Shader when we bind another set of ShaderParameters. <br/>
+ShaderParameters can be bound at any position, they also stay bound at the desired index until another one takes
 place.</p>
 <h1 id="presentation">Presentation</h1>
 <p>The presentation is a direct usage of the GraphicsBinding. The presentation layer consists of a SwapChain render the
@@ -225,7 +225,7 @@ input render texture to a present texture. <br/>
 Present textures are allocated internally by the vulkan API by providing a native handle of the window. The SwapChain
 allocates all GraphicsObjects necessary for drawing the render texture to a present texture. <br/>
 The presentation module is optional, it is up to the consumer to decide whether or not to allocate one and include it
-the the GraphicsBinding loop.</p>
+the GraphicsBinding loop.</p>
 <p><strong>Input :</strong></p>
 <ul>
 <li>Compiled image quad blit shader module.</li>

@@ -11,7 +11,7 @@
     
     <link rel="shortcut icon" href="../img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>AssetDatabase - EngineCPP</title>
+    <title>AssetDatabase - From Scratch</title>
     <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
     <link href="../css/base.css" rel="stylesheet">
@@ -76,10 +76,10 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     </div>
     
     <div class="wm-article-nav">
-      <a href="../ressource/" class="btn btn-xs btn-default pull-left">
+      <a href="../render_ressource/" class="btn btn-xs btn-default pull-left">
         <i class="fa fa-chevron-left" aria-hidden="true"></i>
-        Previous</a><a href="../ressource/" class="btn btn-xs btn-link">
-        Ressource
+        Previous</a><a href="../render_ressource/" class="btn btn-xs btn-link">
+        Render ressource
       </a>
     </div>
     
@@ -90,18 +90,18 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     <h1 id="asset-database">Asset database</h1>
 <p>The asset database is a database that stores :</p>
 <ol>
-<li>Engine assets as blob from human readable format</li>
+<li>Engine assets as blob from human-readable format</li>
 <li>Engine assets dependencies</li>
 <li>Engine assets file metadata (compilation only, never requested by the engine)</li>
 </ol>
 <p><svg-inline src="asset_database_architecture.svg"></svg-inline></p>
-<p>All assets are identified by a unique id that is the hash code of the local path of the asset file. <br/></p>
+<p>All assets are identified by a unique ID that is the hash code of the local path of the asset file. <br/></p>
 <p>For example, if we specify at database compilation time that the asset root is "E:/document/project/assets/" then an asset file located at "E:/document/project/assets/model/test.obj" will be stored and requested by using "model/test.obj" as input for hash calculation.</p>
 <p>Hashes are calculated by using the djp2 function (<a href="http://www.cse.yorku.ca/~oz/hash.html">hash</a>).</p>
 <h2 id="engine-assets">Engine assets</h2>
 <p>Engine assets are stored as a blob chunk. The goal of the database is to provide an object format that needs the least amount of calculation for the engine to interpret it. <br/>
-So assets files are transformed from a human readable format (or commonly used file extensions like .png, .obj) to one that is close to the engine object.</p>
-<p>For exemple, if we want to store an array of integers, the json array :</p>
+So assets files are transformed from a human-readable format (or commonly used file extensions like .png, .obj) to one that is close to the engine object.</p>
+<p>For example, if we want to store an array of integers, the json array :</p>
 <pre><code class="language-json">{
     &quot;array&quot;:[0,1,2,3,4,5]
 }
@@ -115,26 +115,26 @@ So assets files are transformed from a human readable format (or commonly used f
 [4] (int 4 bytes)
 </code></pre>
 <p>All custom defined asset files are written in json. The first field of every json file must be the type of the asset file. <br/>
-For exemple, if we define a material, the json file will start with : </p>
+For example, if we define a material, the json file will start with :</p>
 <pre><code class="language-json">{
     &quot;type&quot;: &quot;MATERIAL&quot;,
     ...
 }
 </code></pre>
 <h2 id="engine-asset-dependencies">Engine asset dependencies</h2>
-<p>Asset dependencies are used to idicate all assets that are mentionned by the current asset. The system of compilation to blob is exactly the same as assets. The difference is that we are compiling the asset to provide a list of dependant asset ids.</p>
-<p>Asset dependencies can be recursively evaluated, it is up the asset compilation implementation to decide it. Again, the goal is to be the most efficient possible when dependencies are read by the engine.</p>
+<p>Asset dependencies are used to indicate all assets that are mentioned by the current asset. The system of compilation to blob is exactly the same as assets. The difference is that we are compiling the asset to provide a list of dependant asset ids.</p>
+<p>Asset dependencies can be recursively evaluated, it is up to the asset compilation implementation to decide it. Again, the goal is to be the most efficient possible when dependencies are read by the engine.</p>
 <p>The assets dependencies have their own table because :</p>
 <ol>
-<li>We don't always request them, because we have already requested an asset dependency that have been evaluated recursively.</li>
-<li>In the future, we can have a case where we want to request dependies in different format for the same asset.</li>
+<li>We don't always request them, because we have already requested an asset dependency that may have been evaluated recursively.</li>
+<li>In the future, we can have a case where we want to request dependencies in different format for the same asset.</li>
 </ol>
 <h2 id="engine-asset-metadata">Engine asset metadata</h2>
 <p>Asset metadata are all data that are irrelevant to the engine and only used or updated by tools.</p>
 <h1 id="asset-compilation">Asset compilation</h1>
-<p>The asset compilation is the program executed to transform human readable assets to engine assets. <br/></p>
+<p>The asset compilation is the program executed to transform human-readable assets to engine assets. <br/></p>
 <p>The program takes an asset configuration json file that lists all assets that are going to be compiled. <br/>
-All assets path mentionned are relative to the asset folder root.</p>
+All asset path are relative to the asset folder root.</p>
 <p>The asset compilation configuration can be used to compile multiple asset databases. This is useful when writing test cases for example.</p>
 <p>The configuration file has a "common" section that is used to compile asset that are required for the engine to startup. The required assets will be compiled for all database.</p>
 
@@ -159,10 +159,10 @@ All assets path mentionned are relative to the asset folder root.</p>
     </div>
     
     <div class="wm-article-nav">
-      <a href="../ressource/" class="btn btn-xs btn-default pull-left">
+      <a href="../render_ressource/" class="btn btn-xs btn-default pull-left">
         <i class="fa fa-chevron-left" aria-hidden="true"></i>
-        Previous</a><a href="../ressource/" class="btn btn-xs btn-link">
-        Ressource
+        Previous</a><a href="../render_ressource/" class="btn btn-xs btn-link">
+        Render ressource
       </a>
     </div>
     
