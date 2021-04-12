@@ -10,9 +10,9 @@ It allocates scene components and update their render state when associated node
 
 ## MeshRendererComponent
 
-The meshrenderer component uses a material ressource and a mesh ressource to allocate and link a renderable object.
+The meshrenderer component uses a material resource and a mesh resource to allocate and link a renderable object.
 
 # 3D position update
 
-Every frame frame, the system checks if any of the meshrenderer components and camera component associated node has
-moved. If that's the case, then a model matrix update event is sended to the render system.
+Every frame, the system checks if any of the meshrenderer components and camera component associated node has
+moved. If that's the case, then a model matrix update event is sent to the render system.

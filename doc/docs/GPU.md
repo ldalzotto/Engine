@@ -1,6 +1,6 @@
-The GPU module is responsible of :
+The GPU module is responsible for :
 
-* Providing convenvient systems to allocate, free and write to GPU memory chunks.
+* Providing convenient systems to allocate, free and write to GPU memory chunks.
 * Deferring commands that needs synchronization with the gpu.
 * Abstracting graphics objects such as Shader, Material ...
 
@@ -10,7 +10,7 @@ The GPU module is responsible of :
 
 The GPU module is composed of :
 
-* GPUHeap : allocates huge chunk of GPU memory and cut slice into it based on vulkan constraint.
+* GPUHeap : allocates a huge chunk of GPU memory and cut a slice into it based on vulkan constraint.
 * BufferAllocator : allocates and holds token of vulkan buffer objects.
 * BufferEvents : stores all GPU operations that are deferred to be executed on a command buffer.
 * BufferMemory : acts as an entry point for memory allocation and read/write event push.
@@ -18,7 +18,7 @@ The GPU module is composed of :
 * GraphicsAllocator : allocates abstracted graphics objects.
 * GraphicsBinder : uses graphics objects to execute draw commands.
 
-On initialisation, the GPU systems creates two command buffer objects that are responsible of oredring the GPU to
+On initialization, the GPU systems creates two command buffer objects that are responsible for ordering the GPU to
 execute draw operations or buffer copy operations.
 
 Before the start of the frame, these command buffers are flushed from previous commands. At the end of the frame, these
@@ -32,8 +32,8 @@ command buffers are submitted in the following order :
 The GPU memory allocation is done by allocating one or more huge chunks of memory on the GPU. Any GPU allocation or
 deallocation works with a slice of memory of the huge chunk.
 
-Memory requirements such as size and alignment is provided by the vulkan API. From these constraint, we manually
-identify and cut a slice of memory from the GPUHeap. Every heap has it's own memory type defined by the the types of
+Memory requirements such as size and alignment is provided by the vulkan API. From these constraints, we manually
+identify and cut a slice of memory from the GPUHeap. Every heap has its own memory type defined by the types of
 memory requested.
 
 ## Buffer
@@ -79,11 +79,11 @@ struct ImageFormat
 The vulkan api let the user manage an internal state of an image called ImageLayout. It acts as a flag to indicates what
 operations are allowed on the image.
 
-The imageUsage flag indicates where this image will be used (as a shader parameter, or as the target of a render pass)
+The image usage flag indicates where this image will be used (as a shader parameter, or as the target of a render pass)
 . <br/>
 This flags is the only parameter used to set the underlying image layout.
 
-Because the vulkan API needs a specific ImageLayout value when the image is being read or written to, every operations
+Because the vulkan API needs a specific image layout value when the image is being read or written to, every operation
 on image must be deferred to execute layout transition before and after.
 
 ## BufferEvents step
@@ -100,43 +100,43 @@ Events are consumed in the following order :
 
 ### Image allocation
 
-When an image is allocated, it's image layout is undefined. This events execute image layout transition based on the
+When an image is allocated, its image layout is undefined. These events execute image layout transition based on the
 image imageUsage.
 
 1. ImageLayout transition from unknown state to desired imageUsage.
 
 ### Read/Write to BufferGPU
 
-1. Push copy commands to the temporary buffer (as decribed in the [buffer section](#buffer))
+1. Push copy commands to the temporary buffer (as described in the [buffer section](#buffer))
 
 ### Read/Write to ImageGPU
 
-1. ImageLayout transition from desired imageUsage to transfert_src or transfert_dst depending on the operation.
+1. Image layout transition from desired image usage to transfert_src or transfert_dst depending on the operation.
 2. Copy command.
-3. ImageLayout transition from transfert_src or transfert_dst to desired imageUsage.
+3. Image layout transition from transfert_src or transfert_dst to desired image usage.
 
 # Graphics abstraction
 
 All graphics abstraction objects describe how a draw command is performed. Allocation of any graphics object is done by
-having a reference to the BufferMemory object because they can cause buffer or image allocation. <br/>
+having a reference to the buffer memory object because they can cause buffer or image allocation. <br/>
 Graphics abstraction is a layer on top of the GPU memory layer.
 
-There is no depedencies between all these objects. This choice has been made to not enforce any hierarchy. The
-dependency between objects is ensured by the GraphicsBinding.
+There is no dependencies between all these objects. This choice has been made to not enforce any hierarchy. The
+dependency between objects is ensured by the graphics binding.
 
 **TextureGPU:**
 
-A TextureGPU is an Image with a description of which mip map or arraylayer is selected.
+A TextureGPU is an Image with a description of which mip map or array layer is selected.
 
 **GraphicsPass:**
 
 The GraphicsPass is the render texture attachments that will be used for drawing. <br/>
-Texture attachment supported are color attachment and depth attachment.
+Texture attachment supported are colour attachment and depth attachment.
 
 **Shader:**
 
 A Shader is a program that is executed against a GraphicsPass and a set of ShaderParameters. <br/>
-On allocation, a shader is configured to decide wether ztest and zwrite is perfored.
+On allocation, a shader is configured to decide whether ztest and zwrite is perfored.
 
 **ShaderModule:**
 
@@ -149,25 +149,25 @@ Reflection data of a Shader.
 
 **ShaderParameter:**
 
-A ShaderParameter is a buffer or image that is binded at a certain location of the shader to be used by the
+A ShaderParameter is a buffer or image that is bound at a certain location of the shader to be used by the
 program. <br/>
 ShaderParameters can be UniformHost, UniformGPU or TextureGPU.
 
 **Material:**
 
-A Material is an array of ShaderParameters. 
+A Material is an array of ShaderParameters.
 
 # Graphics binding
 
-The graphics binding object allows to notify to the GPU all data needed to perform a draw call. <br/>
-Binding draw commands are sended to the graphics command buffer. A specific bindind order must be respected as
+The graphics binding object allows notifying to the GPU all data needed to perform a draw call. <br/>
+Binding draw commands are sent to the graphics command buffer. A specific binding order must be respected as
 validation is performed for every binding. <br/>
 
 <svg-inline src="./gpu_bind_order.svg"></svg-inline>
 
-Once an object has been binded, it will still be binded until another one takes it's place. This means that we don't
-have to re-bind the GraphicsPass or the Shader when we bind another set of ShaderParameters. <br/>
-ShaderParameters can be binded at any position, they also stay binded at the desired index until another one takes
+Once an object has been bound, it will still be bound until another one takes its place. This means that we don't
+have to re-bind the graphics pass or the Shader when we bind another set of ShaderParameters. <br/>
+ShaderParameters can be bound at any position, they also stay bound at the desired index until another one takes
 place.
 
 # Presentation
@@ -177,7 +177,7 @@ input render texture to a present texture. <br/>
 Present textures are allocated internally by the vulkan API by providing a native handle of the window. The SwapChain
 allocates all GraphicsObjects necessary for drawing the render texture to a present texture. <br/>
 The presentation module is optional, it is up to the consumer to decide whether or not to allocate one and include it
-the the GraphicsBinding loop.
+the GraphicsBinding loop.
 
 **Input :**
 

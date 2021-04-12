@@ -1,6 +1,6 @@
 The Render module is the 3D renderer of the engine. It registers all graphics objects and organize them in a hierarchy
 to call GPU graphics bindings against them. <br/>
-The render module creates an internal 2D render target texture and draw the hierachy to it every frame.
+The render module creates an internal 2D render target texture and draw the hierarchy to it every frame.
 
 # Architecture
 
@@ -8,7 +8,7 @@ The render module creates an internal 2D render target texture and draw the hier
 
 The render module is composed of :
 
-* ColorStep : responsible of the graphics passes supported by the module.
+* ColorStep : responsible for the graphics passes supported by the module.
 * D3RendererHeap : holds values of the render hierarchy.
 * D3RendererAllocator : ensure the coherence of the render hierarchy (links between graphics objects).
 * D3RendererEvents : acts as a buffer that store references of all renderable objects that will update it's model
@@ -40,12 +40,12 @@ The render module is composed of :
 Holds reference to a vertex and index GPU buffer. <br/>
 It is up to the render module consumer to define the vertex buffer format. It must match with the shader vertex
 input. <br/>
-By default, mesh buffers are GPU allocated because we suppose that their vamue won't be modified often.
+By default, mesh buffers are GPU allocated because we suppose that their value won't be modified often.
 
 **RenderableObject:**
 
-The renderable object is the representation of an object in 3D space with it's shape. <br/>
-It holds a reference to a Mesh and a model matrix. The model matrix is alaways host shader parameter because it's value
+The renderable object is the representation of an object in 3D space with its shape. <br/>
+It holds a reference to a Mesh and a model matrix. The model matrix is always host shader parameter because it's value
 is subject to change often.
 
 **Camera:**
@@ -60,13 +60,13 @@ A shader index is a Shader with a layout and an execution order.
 
 # Render hierarchy
 
-Every frame, the render hierarchy is binded to a GraphicsBinder by following an order :
+Every frame, the render hierarchy is bound to a GraphicsBinder by following an order :
 
 <svg-inline src="./render_hierarchy.svg"></svg-inline>
 
-This hierarchy impose that global buffer are binded before everything else and that the model buffer is binded at the
+This hierarchy imposes that global buffer are bound before everything else and that the model buffer is bound at the
 very end. <br/>
-This contraint is translated in the shader source code :
+This constraint is translated in the shader source code :
 
 ```
 
@@ -85,7 +85,7 @@ layout(set = END, binding = 0) uniform model { mat4 mod; };
 ## Shader ordering
 
 ShaderIndex inside the hierarchy are ordered by their execution order. This will come useful when we want to add
-transparency pass for exemple.
+transparency pass for example.
 
 # Model matrix update
 

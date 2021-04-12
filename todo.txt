@@ -1,6 +1,6 @@
-
 1/ We can improve the shader compiler so that we only need to write shader program parts that are not common.
    On compilation, the shader compiler can append the common parts.
+   -> This will invole to define types to shader assets in order to know if it's a color step shader (or another one in the future).
 
 2/ Deciding about how scene tree node movements are handled by the middlewares.
     * Internal state checked by the middleware by iterating over registered entities ?
