@@ -82,6 +82,8 @@ inline void shader_linkto_material_allocation_test()
     l_ctx.free();
 };
 
+#define draw_test_global_timeelapsed 2.0
+
 inline void draw_test()
 {
     GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -93,17 +95,17 @@ inline void draw_test()
 #endif
 
     const int8* p_vertex_litteral =
-				MULTILINE(\
+				MULTILINE_(\
                 #version 450 \n
 
 						layout(location = 0) in vec3 pos; \n
 						layout(location = 1) in vec2 uv; \n
 
 						struct Camera \n
-				{ \n
-						mat4 view; \n
-						mat4 projection; \n
-				}; \n
+                        { \n
+                                mat4 view; \n
+                                mat4 projection; \n
+                        }; \n
 
                         struct Time \n
                         { \n
@@ -115,13 +117,13 @@ inline void draw_test()
 						layout(set = 3, binding = 0) uniform model { mat4 mod; }; \n
 
 						void main()\n
-				{ \n
-						gl_Position = cam.projection * (cam.view * (mod * vec4(pos.xyz, 1.0f)));\n
-				}\n
+				        { \n
+						    gl_Position = cam.projection * (cam.view * (mod * vec4(pos.xyz, 1.0f))) * (time.totaltime / draw_test_global_timeelapsed);\n
+				        }\n
 				);
 
     const int8* p_fragment_litteral =
-				MULTILINE(\
+				MULTILINE_(\
                 #version 450\n
 
 						layout(location = 0) out vec4 outColor;\n
@@ -135,9 +137,9 @@ inline void draw_test()
 						layout(set = 2, binding = 0) uniform color { vec3 col; }; \n
 
 						void main()\n
-				{ \n
-						outColor = vec4(col.xyz, 1.0f);\n
-				}\n
+                        { \n
+                                outColor = vec4(col.xyz, 1.0f) * (time.totaltime / draw_test_global_timeelapsed);\n
+                        } \n
 				);
 
     ShaderCompiled l_vertex_shader_compiled = l_shader_compiler.compile_shader(ShaderModuleStage::VERTEX, slice_int8_build_rawstr(p_vertex_litteral));
@@ -217,7 +219,7 @@ inline void draw_test()
         l_renderer.color_step.set_camera(l_ctx, Camera{l_view, l_projection});
     }
 
-    l_renderer.buffer_step(l_ctx, 0.0f);
+    l_renderer.buffer_step(l_ctx, draw_test_global_timeelapsed);
 
     l_ctx.buffer_step_and_submit();
 
@@ -360,8 +362,6 @@ inline void draw_test()
     l_ctx.free();
     l_shader_compiler.free();
 };
-
-// TDOO -> adding a test that make use of all global buffers. because if we don't use them, errors may be missed
 
 int main()
 {

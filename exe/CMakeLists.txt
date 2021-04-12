@@ -1,0 +1,2 @@
+add_executable(AssetCompilerExe ./AssetCompilerExe/asset_compiler_exe.cpp)
+target_link_libraries(AssetCompilerExe PUBLIC AssetCompiler)

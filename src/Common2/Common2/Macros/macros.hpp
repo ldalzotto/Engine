@@ -8,6 +8,7 @@
 
 #define LINE_RETURN \n
 #define MULTILINE(...) #__VA_ARGS__
+#define MULTILINE_(...) MULTILINE(__VA_ARGS__)
 
 #define cast(Type, Value) ((Type)(Value))
 #define castv(Type, Value) *(Type*)(&Value)

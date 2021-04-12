@@ -285,7 +285,8 @@ struct D3RendererEvents
 
 namespace ColorStep_const
 {
-SliceN<ShaderLayoutParameterType, 2> shaderlayout_before = SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT};
+SliceN<ShaderLayoutParameterType, 2> shaderlayout_before =
+    SliceN<ShaderLayoutParameterType, 2>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT};
 SliceN<ShaderLayoutParameterType, 1> shaderlayout_after = SliceN<ShaderLayoutParameterType, 1>{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX};
 SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN<ShaderLayout::VertexInputParameter, 2>{
     ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_3, 0}, ShaderLayout::VertexInputParameter{PrimitiveSerializedTypes::Type::FLOAT32_2, offsetof(Vertex, uv)}};
