@@ -77,20 +77,49 @@ struct JSONDeserializer
             if (l_next_field_whole_value.compare(l_field_name_json.to_slice()))
             {
                 Slice<int8> l_next_field_value_with_quotes = l_next_field_whole_value.slide_rv(l_field_name_json.get_length());
+                // To remove quotes
+                l_next_field_value_with_quotes.slide(1);
+                l_next_field_value_with_quotes.Size -= 1;
 
                 FieldNode l_field_node;
-                uimax l_field_value_delta;
-                if (Slice_find(l_next_field_value_with_quotes.slide_rv(1), slice_int8_build_rawstr("\""), &l_field_value_delta))
-                {
-                    l_field_node.value = l_next_field_value_with_quotes.slide_rv(1);
-                    l_field_node.value.Size = l_field_value_delta;
-                    l_field_node.whole_field = l_next_field_whole_value;
 
-                    this->stack_fields.push_back_element(l_field_node);
-                    this->current_field = this->stack_fields.Size - 1;
+                l_field_node.value = l_next_field_value_with_quotes;
+                l_field_node.whole_field = l_next_field_whole_value;
 
-                    l_field_found = 1;
-                }
+                this->stack_fields.push_back_element(l_field_node);
+                this->current_field = this->stack_fields.Size - 1;
+                l_field_found = 1;
+            }
+
+            l_field_name_json.free();
+        };
+
+        return l_field_found;
+    };
+
+    inline int8 next_number(const int8* p_field_name)
+    {
+        int8 l_field_found = 0;
+        Slice<int8> l_next_field_whole_value;
+        if (this->find_next_field_whole_value(&l_next_field_whole_value))
+        {
+            String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
+            l_field_name_json.append(slice_int8_build_rawstr("\""));
+            l_field_name_json.append(slice_int8_build_rawstr(p_field_name));
+            l_field_name_json.append(slice_int8_build_rawstr("\":"));
+
+            if (l_next_field_whole_value.compare(l_field_name_json.to_slice()))
+            {
+                Slice<int8> l_next_field_value = l_next_field_whole_value.slide_rv(l_field_name_json.get_length());
+
+                FieldNode l_field_node;
+
+                l_field_node.value = l_next_field_value;
+                l_field_node.whole_field = l_next_field_whole_value;
+
+                this->stack_fields.push_back_element(l_field_node);
+                this->current_field = this->stack_fields.Size - 1;
+                l_field_found = 1;
             }
 
             l_field_name_json.free();
@@ -183,6 +212,7 @@ struct JSONDeserializer
         return l_field_found;
     };
 
+    // TODO -> remove the out, we must query the current field instead
     inline int8 next_array_plain_value(Slice<int8>* out_plain_value)
     {
         int8 l_plain_value_found = 0;
@@ -190,7 +220,7 @@ struct JSONDeserializer
         Slice<int8> l_compared_slice = this->get_current_slice_cursor();
 
         FieldNode l_field_node;
-        if (find_next_json_plain_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
+        if (find_next_json_array_plain_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
         {
             // We still push the plain value to the field stack so that the cursor is moving forward
             this->stack_fields.push_back_element(l_field_node);
@@ -200,6 +230,19 @@ struct JSONDeserializer
         }
 
         return l_plain_value_found;
+    };
+
+    // TODO -> remove the out, we must query the current field instead
+    inline int8 next_array_number_value(Slice<int8>* out_plain_value)
+    {
+        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        FieldNode l_field_node;
+        if (find_next_json_array_number_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
+        {
+            this->stack_fields.push_back_element(l_field_node);
+            this->current_field = this->stack_fields.Size - 1;
+        }
+        return 1;
     };
 
     inline FieldNode& get_currentfield()
@@ -251,6 +294,7 @@ struct JSONDeserializer
         return 0;
     };
 
+    // TODO -> this is a total waste to recompute the cursor for every field, we must increment an internal counter for every add to the stack instead
     inline Slice<int8> get_current_slice_cursor()
     {
         Slice<int8> l_compared_slice = this->parent_cursor;
@@ -301,7 +345,7 @@ struct JSONDeserializer
         return 0;
     };
 
-    inline static int8 find_next_json_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
+    inline static int8 find_next_json_array_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
     {
         if (p_source.compare(slice_int8_build_rawstr("\"")))
         {
@@ -317,7 +361,24 @@ struct JSONDeserializer
         }
         return 0;
     };
+
+    inline static int8 find_next_json_array_number_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
+    {
+        *out_plain_value_whole = p_source;
+        for (loop(i, 0, p_source.Size))
+        {
+            if (p_source.get(i) == ',' || p_source.get(i) == ']')
+            {
+                *out_plain_value_only = Slice<int8>::build_begin_end(p_source.Begin, 0, i);
+                out_plain_value_whole->Size = out_plain_value_only->Size;
+                return 1;
+            }
+        }
+        return 0;
+    };
 };
+
+// TODO -> we want to have clean templated functions here instead of macros
 
 #define json_deser_iterate_array_start(JsonFieldName, DeserializerVariable)                                                                                                                            \
     {                                                                                                                                                                                                  \
@@ -352,6 +413,7 @@ struct JSONDeserializer
 
 #endif
 
+// TODO -> we don't want to use a string here because we may have preallocated a slice, instead, what we want is a generic algorithm that takes a ShadowString struct that expose the "append" method.
 struct JSONSerializer
 {
     String output;

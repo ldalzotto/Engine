@@ -1298,8 +1298,8 @@ inline void fromstring_test()
 inline void deserialize_json_test(){{
 
     const int8* l_json = MULTILINE({
-        "local_position" : {"x" : "16.550000", "y" : "16.650000", "z" : "16.750000"},
-        "local_position2" : {"x" : "  17.550000", "y" : "17.650000", "z" : "17.750000"},
+        "local_position" : {"x" : 16.550000, "y" : "16.650000", "z" : "16.750000"},
+        "local_position2" : {"x" : "  17.550000", "y" : 17.650000, "z" : "17.750000"},
         "nodes" : [
             {"local_position" : {"x" : "  10.550000", "y" : "10.650000", "z" : "10.750000"}}, {"local_position" : {"x" : "  11.550000", "y" : "11.650000", "z" : "11.750000"}},
             {"local_position" : {"x" : "  12.550000", "y" : "12.650000", "z" : "12.750000"}}
@@ -1312,7 +1312,7 @@ JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
 JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 l_deserialized.next_object("local_position", &l_v3);
 
-l_v3.next_field("x");
+l_v3.next_number("x");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.550000f);
 l_v3.next_field("y");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.650000f);
@@ -1323,7 +1323,7 @@ l_deserialized.next_object("local_position2", &l_v3);
 
 l_v3.next_field("x");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.550000f);
-l_v3.next_field("y");
+l_v3.next_number("y");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.650000f);
 l_v3.next_field("z");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.750000f);
@@ -1461,6 +1461,26 @@ l_json_str.free();
     assert_true(l_array.next_array_plain_value(&l_array_plain_value));
     assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
     assert_true(l_array.next_array_plain_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
+
+    l_deserialized.free();
+    l_array.free();
+    l_json_str.free();
+}
+// array with numbers
+{
+    const int8* l_json = MULTILINE({"value_array" : [ 17.001, 18.001, 19.001 ]});
+    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+    JSONDeserializer l_deserialized = JSONDeserializer::start(l_json_str.Memory);
+
+    JSONDeserializer l_array = JSONDeserializer::allocate_default();
+    Slice<int8> l_array_plain_value;
+    assert_true(l_deserialized.next_array("value_array", &l_array));
+    assert_true(l_array.next_array_number_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
+    assert_true(l_array.next_array_number_value(&l_array_plain_value));
+    assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
+    assert_true(l_array.next_array_number_value(&l_array_plain_value));
     assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
 
     l_deserialized.free();
