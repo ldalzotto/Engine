@@ -208,7 +208,7 @@ struct EngineRunnerThread
     inline void free_engine_execution_unit(const Token<EngineExecutionUnit> p_engine_execution_unit)
     {
         sync_start_of_step([&]() {
-            this->engines.get(p_engine_execution_unit).close();
+          this->engines.get(p_engine_execution_unit).close();
         });
     };
 
@@ -270,23 +270,23 @@ struct EngineRunnerThread
         this->synchronization.allocation_events_size = this->allocation_events.Size;
 
         this->engines.foreach_reverse([&](Token<EngineExecutionUnit> p_engine_token, EngineExecutionUnit& p_engine) {
-            if (p_engine.engine.abort_condition)
-            {
-                p_engine.free();
-                this->engines.release_element(p_engine_token);
-                this->engine_synchronisation.release_element(token_build_from<EngineSyncrhonisation>(p_engine_token));
-            }
-            else
-            {
-                if (p_engine.single_frame_no_block())
-                {
-                    EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from<EngineSyncrhonisation>(p_engine_token));
-                    if (!l_engine_sync.end_of_frame.is_opened())
-                    {
-                        l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
-                    }
-                }
-            }
+          if (p_engine.engine.abort_condition)
+          {
+              p_engine.free();
+              this->engines.release_element(p_engine_token);
+              this->engine_synchronisation.release_element(token_build_from<EngineSyncrhonisation>(p_engine_token));
+          }
+          else
+          {
+              if (p_engine.single_frame_no_block())
+              {
+                  EngineSyncrhonisation& l_engine_sync = this->engine_synchronisation.get(token_build_from<EngineSyncrhonisation>(p_engine_token));
+                  if (!l_engine_sync.end_of_frame.is_opened())
+                  {
+                      l_engine_sync.end_of_frame.notify_sync_1_and_wait_for_sync_2();
+                  }
+              }
+          }
         });
 
         if (this->engines.Indices.Size > 0)
@@ -328,7 +328,7 @@ struct EngineRunnerThread
         this->engine_synchronisation.free();
 
         this->engines.foreach ([](Token<EngineExecutionUnit> p_engine_token, EngineExecutionUnit& p_engine) {
-            p_engine.free();
+          p_engine.free();
         });
         this->engines.free();
     };

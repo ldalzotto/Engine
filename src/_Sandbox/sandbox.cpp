@@ -450,6 +450,5 @@ int main()
     engine_thread_test();
     boxcollision();
     d3renderer_cube();
-
     memleak_ckeck();
 };

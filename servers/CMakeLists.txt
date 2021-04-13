@@ -1,0 +1,3 @@
+add_executable(MaterialViewerServer ./MaterialViewer/material_viewer_server.cpp)
+target_link_libraries(MaterialViewerServer PUBLIC Engine)
+target_link_libraries(MaterialViewerServer PUBLIC AssetCompiler)

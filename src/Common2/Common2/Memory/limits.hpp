@@ -12,3 +12,5 @@ const float64 tol_f = ((float64)1 / pow(10, tol_digit_number));
 
 #define uimax_string_format %lld
 #define uimax_string_format_str "%lld"
+
+#define int32_string_format_str "%d"
