@@ -386,16 +386,24 @@ struct MaterialViewerServer
             DatabaseConnection& l_database_connection = this->engine_thread.engines.get(this->material_viewer_unit.engine_execution_unit).engine.database_connection;
             AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_database_connection);
             AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_database_connection, AssetType_Const::MATERIAL_NAME);
-            VaryingVector l_material_paths_vvector = VaryingVector::allocate(0, 0);
+
+            JSONSerializer l_json_deser = JSONSerializer::allocate_default();
+            l_json_deser.start();
+            l_json_deser.start_array(slice_int8_build_rawstr("materials"));
             for (loop(i, 0, l_material_paths.data.Size))
             {
-                l_material_paths_vvector.push_back(l_material_paths.data.get(i).slice);
+                l_json_deser.push_array_field(l_material_paths.data.get(i).slice);
             }
+            l_json_deser.end_array();
+            l_json_deser.end();
+
             l_material_paths.free();
 
             Slice<int8> l_response = p_response;
             BinarySerializer::type<int32>(&l_response, (int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN);
-            BinarySerializer::varying_slice(&l_response, l_material_paths_vvector.to_varying_slice());
+            BinarySerializer::slice(&l_response, l_json_deser.output.to_slice());
+
+            l_json_deser.free();
         }
         break;
         default:

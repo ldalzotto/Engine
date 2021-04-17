@@ -417,100 +417,89 @@ struct JSONDeserializer
 struct JSONSerializer
 {
     String output;
-    uimax current_indentation;
 
     inline static JSONSerializer allocate_default()
     {
-        return JSONSerializer{String::allocate(0), 0};
+        return JSONSerializer{String::allocate(0)};
     }
 
     inline void free()
     {
         this->output.free();
-        this->current_indentation = 0;
     }
 
     inline void start()
     {
         this->output.append(slice_int8_build_rawstr("{\n"));
-        this->current_indentation += 1;
     };
 
     inline void end()
     {
         this->remove_last_coma();
         this->output.append(slice_int8_build_rawstr("}"));
-        this->current_indentation -= 1;
     };
 
     inline void push_field(const Slice<int8>& p_name, const Slice<int8>& p_value)
     {
-        this->push_indentation();
         this->output.append(slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": \""));
+        this->output.append(slice_int8_build_rawstr("\":\""));
         this->output.append(p_value);
-        this->output.append(slice_int8_build_rawstr("\",\n"));
+        this->output.append(slice_int8_build_rawstr("\","));
     };
 
     inline void start_object(const Slice<int8>& p_name)
     {
-        this->push_indentation();
         this->output.append(slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": {\n"));
-        this->current_indentation += 1;
+        this->output.append(slice_int8_build_rawstr("\":{"));
     };
 
     inline void start_object()
     {
-        this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("{\n"));
-        this->current_indentation += 1;
+        this->output.append(slice_int8_build_rawstr("{"));
     };
 
     inline void end_object()
     {
         this->remove_last_coma();
-        this->current_indentation -= 1;
-        this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("},\n"));
+        this->output.append(slice_int8_build_rawstr("},"));
     };
 
     inline void start_array(const Slice<int8>& p_name)
     {
-        this->push_indentation();
         this->output.append(slice_int8_build_rawstr("\""));
         this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\": [\n"));
-        this->current_indentation += 1;
+        this->output.append(slice_int8_build_rawstr("\":["));
     };
+
+    inline void push_array_number(const Slice<int8>& p_number)
+    {
+        this->output.append(p_number);
+        this->output.append(slice_int8_build_rawstr(","));
+    };
+
+    inline void push_array_field(const Slice<int8>& p_number)
+    {
+        this->output.append(slice_int8_build_rawstr("\""));
+        this->output.append(p_number);
+        this->output.append(slice_int8_build_rawstr("\","));
+    };
+
 
     inline void end_array()
     {
         this->remove_last_coma();
-        this->current_indentation -= 1;
-        this->push_indentation();
-        this->output.append(slice_int8_build_rawstr("],\n"));
+        this->output.append(slice_int8_build_rawstr("],"));
     };
 
   private:
-    void push_indentation()
-    {
-        String l_indentation = String::allocate(this->current_indentation);
-        for (size_t i = 0; i < this->current_indentation; i++)
-        {
-            l_indentation.append(slice_int8_build_rawstr(" "));
-        }
-        this->output.append(l_indentation.to_slice());
-        l_indentation.free();
-    };
 
     void remove_last_coma()
     {
-        if (this->output.get(this->output.Memory.Size - 1 - 2) == ',')
+        if (this->output.get(this->output.get_length() - 1) == ',')
         {
-            this->output.erase_array_at(this->output.Memory.Size - 1 - 2, 1);
+            this->output.erase_array_at(this->output.get_length() - 1, 1);
         }
     };
 };
