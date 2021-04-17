@@ -19,16 +19,21 @@ It allows the user to spawn and move 3D nodes in a hierarchical scene. <br/>
 Every node can display a mesh with a material fetched from the asset database or by manually providing asset data. <br/>
 The engine works with an asset database that stores precompiled asset files.
 
-# How it does it ?
+![](https://i.imgur.com/L1YIDMH.gif)
 
-This project is the foundation of a 3D engine. This means that every implemented systems tend to be abstracted well
-enough to yield to a very simple API that can be consumed to build the 3D scene.
+An asset database can be fetched by a tool to view it's content.
+
+![](https://s4.gifyu.com/images/ezgif-3-997f1678fb0e.gif)
+
+# How it's coded ?
 
 This project is a learning journey, so as much as possible, it will use handmade solutions (memory containers, maths
 library, 3D scene management, 3D graphics abstraction, OS interactions).
 
-I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations, every
-layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.<br/>
+I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations during the development process, every
+layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.
+
+Compared to my other projects, I am focusing more on implementation details and having clean interfaces for every modules before implementing something new.
 
 # Coding rules
 
