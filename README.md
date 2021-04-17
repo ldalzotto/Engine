@@ -9,8 +9,6 @@ The engine features :
 * Handmade 3D mathematics.
 * Manual manipulation of CPU and GPU memory.
 
-This documentation is the big picture of the engine and how systems interact each other, no implementation details will
-be detailed here. <br/>
 For an overview of the engine architecture see [architecture overview](https://ldalzotto.github.io/EngineCPPRewrite/#architecture_overview/).
 
 # What this project can do ?
@@ -19,16 +17,21 @@ It allows the user to spawn and move 3D nodes in a hierarchical scene. <br/>
 Every node can display a mesh with a material fetched from the asset database or by manually providing asset data. <br/>
 The engine works with an asset database that stores precompiled asset files.
 
-# How it does it ?
+![](https://i.imgur.com/L1YIDMH.gif)
 
-This project is the foundation of a 3D engine. This means that every implemented systems tend to be abstracted well
-enough to yield to a very simple API that can be consumed to build the 3D scene.
+An asset database can be fetched by a tool to view it's content.
+
+![](https://s4.gifyu.com/images/ezgif-3-997f1678fb0e.gif)
+
+# How it's coded ?
 
 This project is a learning journey, so as much as possible, it will use handmade solutions (memory containers, maths
 library, 3D scene management, 3D graphics abstraction, OS interactions).
 
-I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations, every
-layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.<br/>
+I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations during the development process, every
+layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.
+
+Compared to my other projects, I am focusing more on implementation details and having clean interfaces for every modules before implementing something new.   
 
 # Coding rules
 
@@ -62,3 +65,7 @@ Usage of third party libraries is limited to :
 > ***(a)*** There is a work in progress to roll a custom png loader with zlib. Thus removing stbimage for zlib.
 
 > ***(b)*** If one day the engine supports GUI programming, then the Qt dependency can be replaced by it.
+
+# Try it
+
+Both previous engine build used to record gifs are available at the [release page](). Extract archives and run executables. 

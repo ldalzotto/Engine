@@ -1,0 +1,3 @@
+add_executable(MaterialSceneShowcase ./MaterialSceneShowcase/material_scene_showcase.cpp)
+target_link_libraries(MaterialSceneShowcase PUBLIC Engine)
+target_compile_definitions(MaterialSceneShowcase PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/MaterialSceneShowcase/")

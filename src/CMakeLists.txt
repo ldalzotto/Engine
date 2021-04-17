@@ -109,4 +109,3 @@ target_link_libraries(Sandbox PUBLIC Engine)
 target_compile_definitions(Sandbox PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/sandbox/")
 target_link_libraries(Sandbox PUBLIC AssetCompiler)
 
-
