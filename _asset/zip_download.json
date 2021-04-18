@@ -1,6 +1,6 @@
 [
   {
-    "file_id": "1iwmZ1NfvpaNoWW7cjGiC8Q2j_bHdwBAP",
+    "file_id": "asset_git",
     "relative_extract_path": "./asset",
     "git": {
       "commit_hash": "249255e920f6d38b2095dbb8f16f51ee05c63ba1"
