@@ -49,7 +49,7 @@ add_custom_target(
         COMMAND Math2Test
         COMMAND CollisionTest
         COMMAND RenderTest
-        COMMAND AssetRessourceTest
+        COMMAND AssetResourceTest
         COMMAND Scene2Test
         COMMAND GPUTest
         COMMAND Scene2MiddlewareTest

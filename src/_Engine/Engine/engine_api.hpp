@@ -51,7 +51,7 @@ inline CameraComponent& NodeAddCamera(Engine& p_engine, const Token<Node> p_node
 inline Token<MeshRendererComponent> NodeAddMeshRenderer(Engine& p_engine, const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id)
 {
     Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_database_and_load_dependecies(
-        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit, p_engine.renderer_ressource_allocator, p_engine.database_connection, p_engine.asset_database,
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit, p_engine.renderer_resource_allocator, p_engine.database_connection, p_engine.asset_database,
         MeshRendererComponent::DatabaseAllocationLoadDependenciesInput{p_material_id, p_mesh_id}, p_node);
     p_engine.scene.add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
     return l_mesh_renderer;
@@ -64,7 +64,7 @@ inline void NodeRemoveMeshRenderer(Engine& p_engine, const Token<Node> p_node)
 
 inline Token<Material> MeshRenderer_GetMaterial(Engine& p_engine, const Token<MeshRendererComponent> p_mesh_renderer)
 {
-    p_engine.renderer_ressource_allocator.material_unit.materials.pool.get(
+    p_engine.renderer_resource_allocator.material_unit.materials.pool.get(
         p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.mesh_renderers.get(p_mesh_renderer).dependencies.material);
 };
 

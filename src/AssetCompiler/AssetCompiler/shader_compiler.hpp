@@ -193,7 +193,7 @@ struct ShaderCompiled
 
 struct ShaderCompiler
 {
-    TBuiltInResource ressources;
+    TBuiltInResource resources;
 
     inline static ShaderCompiler allocate()
     {
@@ -209,17 +209,17 @@ struct ShaderCompiler
     inline ShaderCompiled compile_shader(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
     {
         ShaderCompiled l_shader_compiled;
-        ShaderCompile_compile(this->ressources, p_stage, p_shader_string, &l_shader_compiled);
+        ShaderCompile_compile(this->resources, p_stage, p_shader_string, &l_shader_compiled);
         return l_shader_compiled;
     };
 
     inline int8 compile_shader_silent(const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
     {
-        return ShaderCompile_compile_silent(this->ressources, p_stage, p_shader_string, out_shader_compiled);
+        return ShaderCompile_compile_silent(this->resources, p_stage, p_shader_string, out_shader_compiled);
     };
 
   private:
-    inline glslang_input_t generate_compiler_input(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
+    inline glslang_input_t generate_compiler_input(const TBuiltInResource& p_resources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string)
     {
         glslang_input_t input = {GLSLANG_SOURCE_GLSL,
                                  GLSLANG_STAGE_VERTEX,
@@ -233,7 +233,7 @@ struct ShaderCompiler
                                  0,
                                  0,
                                  GLSLANG_MSG_DEFAULT_BIT,
-                                 (const glslang_resource_t*)&p_ressources};
+                                 (const glslang_resource_t*)&p_resources};
 
         if (p_stage == ShaderModuleStage::VERTEX)
         {
@@ -247,11 +247,11 @@ struct ShaderCompiler
         return input;
     };
 
-    inline void ShaderCompile_compile(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+    inline void ShaderCompile_compile(const TBuiltInResource& p_resources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
     {
         out_shader_compiled->program = NULL;
 
-        glslang_input_t input = generate_compiler_input(p_ressources, p_stage, p_shader_string);
+        glslang_input_t input = generate_compiler_input(p_resources, p_stage, p_shader_string);
 
         glslang_shader_s* l_shader = glslang_shader_create(&input);
         sc_handle_error(out_shader_compiled->program, NULL, glslang_shader_preprocess(l_shader, &input));
@@ -271,11 +271,11 @@ struct ShaderCompiler
         out_shader_compiled->program = l_program;
     };
 
-    inline int8 ShaderCompile_compile_silent(const TBuiltInResource& p_ressources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
+    inline int8 ShaderCompile_compile_silent(const TBuiltInResource& p_resources, const ShaderModuleStage p_stage, const Slice<int8>& p_shader_string, ShaderCompiled* out_shader_compiled)
     {
         out_shader_compiled->program = NULL;
 
-        glslang_input_t input = generate_compiler_input(p_ressources, p_stage, p_shader_string);
+        glslang_input_t input = generate_compiler_input(p_resources, p_stage, p_shader_string);
 
         glslang_shader_s* l_shader = glslang_shader_create(&input);
         sc_handle_error_silent(out_shader_compiled->program, NULL, glslang_shader_preprocess(l_shader, &input));

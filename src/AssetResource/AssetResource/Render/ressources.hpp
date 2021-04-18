@@ -1,42 +1,42 @@
 #pragma once
 
-enum class RessourceAllocationType
+enum class ResourceAllocationType
 {
     UNKNOWN = 0,
     INLINE = 1,
     ASSET_DATABASE = 2
 };
 
-struct RessourceIdentifiedHeader
+struct ResourceIdentifiedHeader
 {
-    RessourceAllocationType allocation_type;
+    ResourceAllocationType allocation_type;
     int8 allocated;
     hash_t id;
 
-    inline static RessourceIdentifiedHeader build_inline_with_id(const hash_t p_id)
+    inline static ResourceIdentifiedHeader build_inline_with_id(const hash_t p_id)
     {
-        return RessourceIdentifiedHeader{RessourceAllocationType::INLINE, 0, p_id};
+        return ResourceIdentifiedHeader{ResourceAllocationType::INLINE, 0, p_id};
     };
 
-    inline static RessourceIdentifiedHeader build_database_with_id(const hash_t p_id)
+    inline static ResourceIdentifiedHeader build_database_with_id(const hash_t p_id)
     {
-        return RessourceIdentifiedHeader{RessourceAllocationType::ASSET_DATABASE, 0, p_id};
+        return ResourceIdentifiedHeader{ResourceAllocationType::ASSET_DATABASE, 0, p_id};
     };
 };
 
-struct ShaderModuleRessource
+struct ShaderModuleResource
 {
-    RessourceIdentifiedHeader header;
+    ResourceIdentifiedHeader header;
     Token<ShaderModule> shader_module;
 
-    inline static ShaderModuleRessource build_inline_from_id(const hash_t p_id)
+    inline static ShaderModuleResource build_inline_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderModule>()};
+        return ShaderModuleResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderModule>()};
     };
 
-    inline static ShaderModuleRessource build_database_from_id(const hash_t p_id)
+    inline static ShaderModuleResource build_database_from_id(const hash_t p_id)
     {
-        return ShaderModuleRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderModule>()};
+        return ShaderModuleResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderModule>()};
     };
 
     struct Asset
@@ -77,7 +77,7 @@ struct ShaderModuleRessource
     struct DatabaseAllocationEvent
     {
         hash_t id;
-        Token<ShaderModuleRessource> allocated_ressource;
+        Token<ShaderModuleResource> allocated_resource;
     };
 
     struct InlineAllocationInput
@@ -89,33 +89,33 @@ struct ShaderModuleRessource
     struct InlineAllocationEvent
     {
         Asset asset;
-        Token<ShaderModuleRessource> allocated_ressource;
+        Token<ShaderModuleResource> allocated_resource;
     };
 
     struct FreeEvent
     {
-        Token<ShaderModuleRessource> allocated_ressource;
+        Token<ShaderModuleResource> allocated_resource;
 
-        inline static FreeEvent build_from_token(const Token<ShaderModuleRessource> p_token)
+        inline static FreeEvent build_from_token(const Token<ShaderModuleResource> p_token)
         {
             return FreeEvent{p_token};
         };
     };
 };
 
-struct MeshRessource
+struct MeshResource
 {
-    RessourceIdentifiedHeader header;
+    ResourceIdentifiedHeader header;
     Token<Mesh> mesh;
 
-    inline static MeshRessource build_inline_from_id(const hash_t p_id)
+    inline static MeshResource build_inline_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Mesh>()};
+        return MeshResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Mesh>()};
     };
 
-    inline static MeshRessource build_database_from_id(const hash_t p_id)
+    inline static MeshResource build_database_from_id(const hash_t p_id)
     {
-        return MeshRessource{RessourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Mesh>()};
+        return MeshResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Mesh>()};
     };
 
     struct Asset
@@ -164,7 +164,7 @@ struct MeshRessource
     struct DatabaseAllocationEvent
     {
         hash_t id;
-        Token<MeshRessource> allocated_ressource;
+        Token<MeshResource> allocated_resource;
     };
 
     struct InlineAllocationInput
@@ -175,37 +175,37 @@ struct MeshRessource
 
     struct InlineAllocationEvent
     {
-        MeshRessource::Asset asset;
-        Token<MeshRessource> allocated_ressource;
+        MeshResource::Asset asset;
+        Token<MeshResource> allocated_resource;
     };
 
     struct FreeEvent
     {
-        Token<MeshRessource> allocated_ressource;
+        Token<MeshResource> allocated_resource;
 
-        inline static FreeEvent build_from_token(const Token<MeshRessource> p_ressource)
+        inline static FreeEvent build_from_token(const Token<MeshResource> p_resource)
         {
-            return FreeEvent{p_ressource};
+            return FreeEvent{p_resource};
         };
     };
 };
 
-struct ShaderRessource
+struct ShaderResource
 {
     struct Dependencies
     {
-        Token<ShaderModuleRessource> vertex_shader;
-        Token<ShaderModuleRessource> fragment_shader;
+        Token<ShaderModuleResource> vertex_shader;
+        Token<ShaderModuleResource> fragment_shader;
     };
 
-    RessourceIdentifiedHeader header;
+    ResourceIdentifiedHeader header;
     Token<ShaderIndex> shader;
     Dependencies dependencies;
 
-    inline static ShaderRessource build_from_id(const hash_t p_id)
+    inline static ShaderResource build_from_id(const hash_t p_id)
     {
-        return ShaderRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(),
-                               Dependencies{token_build_default<ShaderModuleRessource>(), token_build_default<ShaderModuleRessource>()}};
+        return ShaderResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(),
+                               Dependencies{token_build_default<ShaderModuleResource>(), token_build_default<ShaderModuleResource>()}};
     };
 
     struct Asset
@@ -300,13 +300,13 @@ struct ShaderRessource
     struct DatabaseAllocationEvent
     {
         hash_t id;
-        Token<ShaderRessource> allocated_ressource;
+        Token<ShaderResource> allocated_resource;
     };
 
     struct InlineAllocationEvent
     {
-        ShaderRessource::Asset asset;
-        Token<ShaderRessource> allocated_ressource;
+        ShaderResource::Asset asset;
+        Token<ShaderResource> allocated_resource;
     };
 
     struct InlineAllocationInput
@@ -317,18 +317,18 @@ struct ShaderRessource
 
     struct FreeEvent
     {
-        Token<ShaderRessource> allocated_ressource;
+        Token<ShaderResource> allocated_resource;
 
-        inline static ShaderRessource::FreeEvent build_from_token(const Token<ShaderRessource> p_token)
+        inline static ShaderResource::FreeEvent build_from_token(const Token<ShaderResource> p_token)
         {
-            return ShaderRessource::FreeEvent{p_token};
+            return ShaderResource::FreeEvent{p_token};
         };
     };
 };
 
-struct TextureRessource
+struct TextureResource
 {
-    RessourceIdentifiedHeader header;
+    ResourceIdentifiedHeader header;
     Token<TextureGPU> texture;
 
     struct Asset
@@ -380,7 +380,7 @@ struct TextureRessource
     struct DatabaseAllocationEvent
     {
         hash_t id;
-        Token<TextureRessource> allocated_ressource;
+        Token<TextureResource> allocated_resource;
     };
 
     struct InlineAllocationInput
@@ -392,35 +392,35 @@ struct TextureRessource
     struct InlineAllocationEvent
     {
         Asset asset;
-        Token<TextureRessource> allocated_ressource;
+        Token<TextureResource> allocated_resource;
     };
 
     struct FreeEvent
     {
-        Token<TextureRessource> allocated_ressource;
+        Token<TextureResource> allocated_resource;
     };
 };
 
-struct MaterialRessource
+struct MaterialResource
 {
     struct DynamicDependency
     {
-        Token<TextureRessource> dependency;
+        Token<TextureResource> dependency;
     };
 
     struct Dependencies
     {
-        Token<ShaderRessource> shader;
-        Token<Slice<MaterialRessource::DynamicDependency>> dynamic_dependencies;
+        Token<ShaderResource> shader;
+        Token<Slice<MaterialResource::DynamicDependency>> dynamic_dependencies;
     };
 
-    RessourceIdentifiedHeader header;
+    ResourceIdentifiedHeader header;
     Token<Material> material;
     Dependencies dependencies;
 
-    static MaterialRessource build_from_id(const hash_t p_id)
+    static MaterialResource build_from_id(const hash_t p_id)
     {
-        return MaterialRessource{RessourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Material>()};
+        return MaterialResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Material>()};
     };
 
     struct Asset
@@ -513,14 +513,14 @@ struct MaterialRessource
         struct Value
         {
             hash_t shader;
-            ShaderRessource::AssetDependencies::Value shader_dependencies;
+            ShaderResource::AssetDependencies::Value shader_dependencies;
             Slice<hash_t> textures;
 
             inline static Value build_from_binarydeserializer(BinaryDeserializer& p_deserializer)
             {
                 Value l_value;
                 l_value.shader = *p_deserializer.type<hash_t>();
-                l_value.shader_dependencies = ShaderRessource::AssetDependencies::Value::build_from_binarydeserializer(p_deserializer);
+                l_value.shader_dependencies = ShaderResource::AssetDependencies::Value::build_from_binarydeserializer(p_deserializer);
                 l_value.textures = slice_cast<hash_t>(p_deserializer.slice());
                 return l_value;
             };
@@ -560,30 +560,30 @@ struct MaterialRessource
     struct DatabaseAllocationInput
     {
         hash_t id;
-        Slice<TextureRessource::DatabaseAllocationInput> texture_dependencies_input;
+        Slice<TextureResource::DatabaseAllocationInput> texture_dependencies_input;
     };
 
     struct DatabaseAllocationEvent
     {
         hash_t id;
-        Token<MaterialRessource> allocated_ressource;
+        Token<MaterialResource> allocated_resource;
     };
 
     struct InlineAllocationInput
     {
         hash_t id;
         Asset asset;
-        Slice<TextureRessource::InlineAllocationInput> texture_dependencies_input;
+        Slice<TextureResource::InlineAllocationInput> texture_dependencies_input;
     };
 
     struct InlineAllocationEvent
     {
         Asset asset;
-        Token<MaterialRessource> allocated_ressource;
+        Token<MaterialResource> allocated_resource;
     };
 
     struct FreeEvent
     {
-        Token<MaterialRessource> allocated_ressource;
+        Token<MaterialResource> allocated_resource;
     };
 };

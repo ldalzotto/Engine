@@ -7,12 +7,12 @@ struct ComponentReleaser2
     Collision2& collision;
     D3Renderer& renderer;
     GPUContext& gpu_ctx;
-    RenderRessourceAllocator2& render_ressource_allocator;
+    RenderResourceAllocator2& render_resource_allocator;
     SceneMiddleware* scene_middleware;
 
     inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
     {
-        g_on_node_component_removed(this->scene_middleware, this->collision, this->renderer, this->gpu_ctx, this->render_ressource_allocator, p_component);
+        g_on_node_component_removed(this->scene_middleware, this->collision, this->renderer, this->gpu_ctx, this->render_resource_allocator, p_component);
     };
 };
 
@@ -24,7 +24,7 @@ struct Scene2MiddlewareContext
     D3Renderer renderer;
     DatabaseConnection database_connection;
     AssetDatabase asset_database;
-    RenderRessourceAllocator2 render_ressource_allocator;
+    RenderResourceAllocator2 render_resource_allocator;
     SceneMiddleware scene_middleware;
 
     inline static Scene2MiddlewareContext allocate()
@@ -38,8 +38,8 @@ struct Scene2MiddlewareContext
         AssetDatabase l_asset_database = AssetDatabase::allocate(l_database_connection);
         l_asset_database_path.free();
         SceneMiddleware l_scene_middleware = SceneMiddleware::allocate_default();
-        RenderRessourceAllocator2 l_render_ressource_allocator = RenderRessourceAllocator2::allocate();
-        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_ressource_allocator, l_scene_middleware};
+        RenderResourceAllocator2 l_render_resource_allocator = RenderResourceAllocator2::allocate();
+        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_resource_allocator, l_scene_middleware};
     };
 
     inline static Scene2MiddlewareContext allocate_collision_only()
@@ -54,8 +54,8 @@ struct Scene2MiddlewareContext
         l_asset_database_path.free();
         SceneMiddleware l_scene_middleware;
         l_scene_middleware.collision_middleware = CollisionMiddleware::allocate_default();
-        RenderRessourceAllocator2 l_render_ressource_allocator = {};
-        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_ressource_allocator, l_scene_middleware};
+        RenderResourceAllocator2 l_render_resource_allocator = {};
+        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_resource_allocator, l_scene_middleware};
     };
 
     inline static Scene2MiddlewareContext allocate_render_only()
@@ -70,8 +70,8 @@ struct Scene2MiddlewareContext
         l_asset_database_path.free();
         SceneMiddleware l_scene_middleware;
         l_scene_middleware.render_middleware = RenderMiddleWare::allocate();
-        RenderRessourceAllocator2 l_render_ressource_allocator = RenderRessourceAllocator2::allocate();
-        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_ressource_allocator, l_scene_middleware};
+        RenderResourceAllocator2 l_render_resource_allocator = RenderResourceAllocator2::allocate();
+        return Scene2MiddlewareContext{l_scene, l_collision, l_gpu_ctx, l_renderer, l_database_connection, l_asset_database, l_render_resource_allocator, l_scene_middleware};
     };
 
     inline void free(ComponentReleaser2& p_component_releaser)
@@ -80,8 +80,8 @@ struct Scene2MiddlewareContext
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
-        this->render_ressource_allocator.free(this->renderer, this->gpu_ctx);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_ctx, this->render_ressource_allocator, this->asset_database);
+        this->render_resource_allocator.free(this->renderer, this->gpu_ctx);
+        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_ctx, this->render_resource_allocator, this->asset_database);
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
         this->scene.free();
@@ -102,8 +102,8 @@ struct Scene2MiddlewareContext
         this->scene.consume_component_events_stateful(p_component_releaser);
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
-        this->render_ressource_allocator.free(this->renderer, this->gpu_ctx);
-        this->scene_middleware.render_middleware.free(this->renderer, this->gpu_ctx, this->asset_database, this->render_ressource_allocator, &this->scene);
+        this->render_resource_allocator.free(this->renderer, this->gpu_ctx);
+        this->scene_middleware.render_middleware.free(this->renderer, this->gpu_ctx, this->asset_database, this->render_resource_allocator, &this->scene);
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
         this->scene.free();
@@ -112,10 +112,10 @@ struct Scene2MiddlewareContext
     inline void step(ComponentReleaser2& p_component_releaser)
     {
         this->scene.consume_component_events_stateful<ComponentReleaser2>(p_component_releaser);
-        this->scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator);
-        this->render_ressource_allocator.deallocation_step(this->renderer, this->gpu_ctx);
-        this->render_ressource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->database_connection, this->asset_database);
-        this->scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator, this->asset_database);
+        this->scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(this->renderer, this->gpu_ctx, this->render_resource_allocator);
+        this->render_resource_allocator.deallocation_step(this->renderer, this->gpu_ctx);
+        this->render_resource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->database_connection, this->asset_database);
+        this->scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(this->renderer, this->gpu_ctx, this->render_resource_allocator, this->asset_database);
         this->scene_middleware.collision_middleware.step(this->collision, &this->scene);
         this->scene_middleware.render_middleware.step(this->renderer, this->gpu_ctx, &this->scene);
     };
@@ -129,10 +129,10 @@ struct Scene2MiddlewareContext
     inline void step_render_only(ComponentReleaser2& p_component_releaser)
     {
         this->scene.consume_component_events_stateful<ComponentReleaser2>(p_component_releaser);
-        this->scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator);
-        this->render_ressource_allocator.deallocation_step(this->renderer, this->gpu_ctx);
-        this->render_ressource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->database_connection, this->asset_database);
-        this->scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(this->renderer, this->gpu_ctx, this->render_ressource_allocator, this->asset_database);
+        this->scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(this->renderer, this->gpu_ctx, this->render_resource_allocator);
+        this->render_resource_allocator.deallocation_step(this->renderer, this->gpu_ctx);
+        this->render_resource_allocator.allocation_step(this->renderer, this->gpu_ctx, this->database_connection, this->asset_database);
+        this->scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(this->renderer, this->gpu_ctx, this->render_resource_allocator, this->asset_database);
         this->scene_middleware.render_middleware.step(this->renderer, this->gpu_ctx, &this->scene);
     };
 };
@@ -181,19 +181,19 @@ inline static Token<MeshRendererComponent> allocate_mesh_renderer(Scene2Middlewa
     Slice<Vertex> l_vertices_span = Slice<Vertex>::build_memory_elementnb(l_vertices, 14);
     Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
 
-    ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_vertex);
-    ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_fragment);
+    ShaderModuleResource::Asset l_vertex_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_vertex);
+    ShaderModuleResource::Asset l_fragment_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_fragment);
 
-    ShaderRessource::Asset l_shader_asset =
-        ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
+    ShaderResource::Asset l_shader_asset =
+        ShaderResource::Asset::allocate_from_values(ShaderResource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
-    MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
+    MeshResource::Asset l_mesh_asset = MeshResource::Asset::allocate_from_values(MeshResource::Asset::Value{l_vertices_span, l_indices_span});
 
     Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-    TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
+    TextureResource::Asset l_material_texture_asset = TextureResource::Asset::allocate_from_values(TextureResource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
     l_material_texture_span.free();
 
-    MaterialRessource::Asset l_material_asset_1;
+    MaterialResource::Asset l_material_asset_1;
     {
         Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
         auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
@@ -202,16 +202,16 @@ inline static Token<MeshRendererComponent> allocate_mesh_renderer(Scene2Middlewa
         VaryingVector l_varying_vector = VaryingVector::allocate_default();
         l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
         l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&p_material_texture_id));
-        l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
+        l_material_asset_1 = MaterialResource::Asset::allocate_from_values(MaterialResource::Asset::Value{l_varying_vector.to_varying_slice()});
         l_varying_vector.free();
         l_material_parameter_temp.free();
     }
 
-    SliceN<TextureRessource::InlineAllocationInput, 1> tmp_material_texture_input{TextureRessource::InlineAllocationInput{p_material_texture_id, l_material_texture_asset}};
+    SliceN<TextureResource::InlineAllocationInput, 1> tmp_material_texture_input{TextureResource::InlineAllocationInput{p_material_texture_id, l_material_texture_asset}};
     return MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
-        p_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, p_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{p_vertex_shader_id, l_vertex_shader},
-        ShaderModuleRessource::InlineAllocationInput{p_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{p_shader_asset_id, l_shader_asset},
-        MaterialRessource::InlineAllocationInput{p_material_id, l_material_asset_1, slice_from_slicen(&tmp_material_texture_input)}, MeshRessource::InlineAllocationInput{p_mesh_id, l_mesh_asset},
+        p_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, p_ctx.render_resource_allocator, ShaderModuleResource::InlineAllocationInput{p_vertex_shader_id, l_vertex_shader},
+        ShaderModuleResource::InlineAllocationInput{p_fragment_shader_id, l_fragment_shader}, ShaderResource::InlineAllocationInput{p_shader_asset_id, l_shader_asset},
+        MaterialResource::InlineAllocationInput{p_material_id, l_material_asset_1, slice_from_slicen(&tmp_material_texture_input)}, MeshResource::InlineAllocationInput{p_mesh_id, l_mesh_asset},
         p_scene_node);
 };
 
@@ -220,14 +220,14 @@ inline static Token<MeshRendererComponent> allocate_mesh_renderer(Scene2Middlewa
 inline void collision_middleware_component_allocation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_collision_only();
-    ComponentReleaser2 l_component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ComponentReleaser2 l_component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.scene_middleware};
     ;
     /*
         We allocate the BoxCollider component with the "deferred" path.
           - The BoxColliderComponentAsset is descontructible even if the CollisionMiddleware step is not called.
         We step the scene_middleware.
           - The BoxColliderComponentAsset is still descontructible.
-          - But there is no more pending BoxCollider ressource allocation in the collision_middleware.
+          - But there is no more pending BoxCollider resource allocation in the collision_middleware.
         The component associated to the BoxCollider component is removed.
         We consume the scene deletion exent.
     */
@@ -288,7 +288,7 @@ inline void collision_middleware_component_allocation()
 inline void collision_middleware_queuing_for_calculation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_collision_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.scene_middleware};
 
     {
         v3f l_half_extend = {1.0f, 2.0f, 3.0f};
@@ -313,7 +313,7 @@ inline void collision_middleware_queuing_for_calculation()
 inline void render_middleware_inline_allocation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_render_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.scene_middleware};
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
         Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
@@ -358,24 +358,24 @@ inline void render_middleware_inline_allocation()
         Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 14 * 3);
 
         hash_t l_vertex_shader_id = 12;
-        ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_vertex);
+        ShaderModuleResource::Asset l_vertex_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_vertex);
 
         hash_t l_fragment_shader_id = 14;
-        ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_fragment);
+        ShaderModuleResource::Asset l_fragment_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_fragment);
 
         hash_t l_shader_asset_id = 1482658;
-        ShaderRessource::Asset l_shader_asset =
-            ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
+        ShaderResource::Asset l_shader_asset =
+            ShaderResource::Asset::allocate_from_values(ShaderResource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         hash_t l_mesh_id = 1486;
-        MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
+        MeshResource::Asset l_mesh_asset = MeshResource::Asset::allocate_from_values(MeshResource::Asset::Value{l_vertices_span, l_indices_span});
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
+        TextureResource::Asset l_material_texture_asset = TextureResource::Asset::allocate_from_values(TextureResource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
-        MaterialRessource::Asset l_material_asset_1;
+        MaterialResource::Asset l_material_asset_1;
         {
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
@@ -384,16 +384,16 @@ inline void render_middleware_inline_allocation()
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
             l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
             l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
-            l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
+            l_material_asset_1 = MaterialResource::Asset::allocate_from_values(MaterialResource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
         }
 
-        SliceN<TextureRessource::InlineAllocationInput, 1> l_material_texture_input{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
+        SliceN<TextureResource::InlineAllocationInput, 1> l_material_texture_input{TextureResource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
         Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
-            l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
-            ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
-            MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_texture_input)}, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
+            l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, l_ctx.render_resource_allocator, ShaderModuleResource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
+            ShaderModuleResource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderResource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
+            MaterialResource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_texture_input)}, MeshResource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
 
         Token<Node> l_camera_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
@@ -404,13 +404,13 @@ inline void render_middleware_inline_allocation()
 
         /*
             We create a node and attach a MeshRenderer component.
-            Render ressources are allocated
+            Render resources are allocated
         */
         {
-            MeshRendererComponent& l_mesh_renderer_ressource = l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit.mesh_renderers.get(l_mesh_renderer);
-            assert_true(l_mesh_renderer_ressource.allocated);
-            assert_true(!token_equals(l_mesh_renderer_ressource.renderable_object, token_build_default<RenderableObject>()));
-            assert_true(token_equals(l_mesh_renderer_ressource.scene_node, l_node_1));
+            MeshRendererComponent& l_mesh_renderer_resource = l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit.mesh_renderers.get(l_mesh_renderer);
+            assert_true(l_mesh_renderer_resource.allocated);
+            assert_true(!token_equals(l_mesh_renderer_resource.renderable_object, token_build_default<RenderableObject>()));
+            assert_true(token_equals(l_mesh_renderer_resource.scene_node, l_node_1));
         }
 
         l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
@@ -434,7 +434,7 @@ inline void render_middleware_inline_allocation()
 inline void render_middleware_inline_alloc_dealloc_same_frame()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_render_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.scene_middleware};
     {
 
         Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
@@ -463,24 +463,24 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
         Slice<uint32> l_indices_span = Slice<uint32>::build_memory_elementnb(l_indices, 3);
 
         hash_t l_vertex_shader_id = 12;
-        ShaderModuleRessource::Asset l_vertex_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_vertex);
+        ShaderModuleResource::Asset l_vertex_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_vertex);
 
         hash_t l_fragment_shader_id = 14;
-        ShaderModuleRessource::Asset l_fragment_shader = ShaderModuleRessource::Asset::build_from_binary(l_compiled_fragment);
+        ShaderModuleResource::Asset l_fragment_shader = ShaderModuleResource::Asset::build_from_binary(l_compiled_fragment);
 
         hash_t l_shader_asset_id = 1482658;
-        ShaderRessource::Asset l_shader_asset =
-            ShaderRessource::Asset::allocate_from_values(ShaderRessource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
+        ShaderResource::Asset l_shader_asset =
+            ShaderResource::Asset::allocate_from_values(ShaderResource::Asset::Value{l_shader_parameter_layout, 0, ShaderConfiguration{1, ShaderConfiguration::CompareOp::LessOrEqual}});
 
         hash_t l_mesh_id = 1486;
-        MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices_span, l_indices_span});
+        MeshResource::Asset l_mesh_asset = MeshResource::Asset::allocate_from_values(MeshResource::Asset::Value{l_vertices_span, l_indices_span});
 
         hash_t l_material_texture_id = 14874879;
         Span<int8> l_material_texture_span = Span<int8>::allocate(8 * 8 * 4);
-        TextureRessource::Asset l_material_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
+        TextureResource::Asset l_material_texture_asset = TextureResource::Asset::allocate_from_values(TextureResource::Asset::Value{v3ui{8, 8, 1}, 4, l_material_texture_span.slice});
         l_material_texture_span.free();
 
-        MaterialRessource::Asset l_material_asset_1;
+        MaterialResource::Asset l_material_asset_1;
         {
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
@@ -488,16 +488,16 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
             VaryingVector l_varying_vector = VaryingVector::allocate_default();
             l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_obj), l_material_parameter_temp.slice);
             l_varying_vector.push_back_2(Slice<ShaderParameter::Type>::build_asint8_memory_singleelement(&l_tex), Slice<hash_t>::build_asint8_memory_singleelement(&l_material_texture_id));
-            l_material_asset_1 = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_varying_vector.to_varying_slice()});
+            l_material_asset_1 = MaterialResource::Asset::allocate_from_values(MaterialResource::Asset::Value{l_varying_vector.to_varying_slice()});
             l_varying_vector.free();
             l_material_parameter_temp.free();
         }
 
-        SliceN<TextureRessource::InlineAllocationInput, 1> tmp_material_input{TextureRessource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
+        SliceN<TextureResource::InlineAllocationInput, 1> tmp_material_input{TextureResource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
         Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
-            l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, l_ctx.render_ressource_allocator, ShaderModuleRessource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
-            ShaderModuleRessource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderRessource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
-            MaterialRessource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&tmp_material_input)}, MeshRessource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
+            l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit, l_ctx.render_resource_allocator, ShaderModuleResource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
+            ShaderModuleResource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderResource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
+            MaterialResource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&tmp_material_input)}, MeshResource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
         l_ctx.scene.remove_node_component(l_node_1, MeshRendererComponent::Type);
 
@@ -505,8 +505,8 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 
         {
             assert_true(!l_ctx.scene_middleware.render_middleware.meshrenderer_component_unit.mesh_renderers.has_allocated_elements());
-            assert_true(l_ctx.render_ressource_allocator.material_unit.materials.empty());
-            assert_true(!l_ctx.render_ressource_allocator.material_unit.material_dynamic_dependencies.has_allocated_elements());
+            assert_true(l_ctx.render_resource_allocator.material_unit.materials.empty());
+            assert_true(!l_ctx.render_resource_allocator.material_unit.material_dynamic_dependencies.has_allocated_elements());
         }
 
         l_ctx.scene.remove_node(l_ctx.scene.get_node(l_node_1));
@@ -517,7 +517,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 inline void scene_object_movement()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_ressource_allocator, &l_ctx.scene_middleware};
+    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.scene_middleware};
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
         Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);

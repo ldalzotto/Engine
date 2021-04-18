@@ -1125,7 +1125,7 @@ struct GraphicsAllocator2
 };
 
 /*
-    Any allocation that allocate ressources with the BufferAllocator and GraphicsAllocator2
+    Any allocation that allocate resources with the BufferAllocator and GraphicsAllocator2
 */
 struct GraphicsAllocatorComposition
 {

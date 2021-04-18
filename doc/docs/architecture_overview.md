@@ -14,7 +14,7 @@ Here is the engine chain of execution represented as a graph:
 ## Main loop
 
 The main loop is composed of execution units. Execution units are step that trigger all dependant execution block in the order defined by the dependencies. <br/>
-For example, we can see that the Render system is updated when the following execution units are completed : Render allocation, Render middleware and the GPU buffer step.
+For example, we can see that the Render system is updated when the following execution units are completed : Render resource, Render middleware and the GPU buffer step.
 
 Some execution unit within the main loop are called "user logic". These execution units are hooks that the engine user can use to execute custom logic at this specific point.
 
@@ -39,14 +39,6 @@ Scene middlewares are where node component resources are stored. They act as the
 Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
 The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. <br/>
 See ([scene middleware](scene_middleware.md)).
-
-# Interaction with user
-
-If we want to make a node display a 3D mesh, the user must :
-
-1. Allocate a Node and set its 3D coordinates.
-2. Allocate a mesh renderer component resource from the render middleware.
-3. Add a component to the Node and link it with the mesh renderer token.
 
 # Asset management
 

@@ -45,14 +45,14 @@ inline static NodeComponent build_nodecomponent(const Token<MeshRendererComponen
     return NodeComponent{MeshRendererComponent::Type, token_value(p_component)};
 };
 
-inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
+inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
 {
-    MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_ressource_allocator, token_build<MeshRendererComponent>(p_node_component.resource));
+    MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_resource_allocator, token_build<MeshRendererComponent>(p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
 inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context,
-                                        RenderRessourceAllocator2& p_render_ressource_allocator, const NodeComponent& p_node_component)
+                                        RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
 {
     switch (p_node_component.type)
     {
@@ -63,7 +63,7 @@ inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Col
     break;
     case MeshRendererComponent::Type:
     {
-        MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_render_ressource_allocator, p_node_component);
+        MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->render_middleware, p_render_resource_allocator, p_node_component);
     }
     break;
     case CameraComponent::Type:

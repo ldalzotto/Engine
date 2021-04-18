@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetRessource/asset_ressource.hpp"
+#include "AssetResource/asset_ressource.hpp"
 #include "./asset_metadata.hpp"
 #include "./asset_types_json.hpp"
 #include "./obj_compiler.hpp"
@@ -77,7 +77,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             Vector<uint32> l_indices = Vector<uint32>::allocate(0);
             ObjCompiler::ReadObj(l_buffer.slice, l_vertices, l_indices);
 
-            MeshRessource::Asset l_mesh_asset = MeshRessource::Asset::allocate_from_values(MeshRessource::Asset::Value{l_vertices.to_slice(), l_indices.to_slice()});
+            MeshResource::Asset l_mesh_asset = MeshResource::Asset::allocate_from_values(MeshResource::Asset::Value{l_vertices.to_slice(), l_indices.to_slice()});
 
             l_vertices.free();
             l_indices.free();
@@ -94,7 +94,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             Span<int8> l_pixels;
             ImgCompiler::compile(l_buffer.slice, &l_size, &l_channel_nb, &l_pixels);
 
-            TextureRessource::Asset l_texture_asset = TextureRessource::Asset::allocate_from_values(TextureRessource::Asset::Value{l_size, l_channel_nb, l_pixels.slice});
+            TextureResource::Asset l_texture_asset = TextureResource::Asset::allocate_from_values(TextureResource::Asset::Value{l_size, l_channel_nb, l_pixels.slice});
 
             l_pixels.free();
             l_buffer.free();
