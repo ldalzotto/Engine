@@ -11,7 +11,7 @@
     
     <link rel="shortcut icon" href="./img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>From Scratch</title>
+    <title>Engine</title>
     <link href="./css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link href="./css/font-awesome-4.7.0.css" rel="stylesheet">
     <link href="./css/base.css" rel="stylesheet">
@@ -39,11 +39,13 @@
           ]},
           {title: "What this project can do ?", url: "#what-this-project-can-do", children: [
           ]},
-          {title: "How it does it ?", url: "#how-it-does-it", children: [
+          {title: "How it's coded ?", url: "#how-its-coded", children: [
           ]},
           {title: "Coding rules", url: "#coding-rules", children: [
           ]},
           {title: "Third party", url: "#third-party", children: [
+          ]},
+          {title: "Try it", url: "#try-it", children: [
           ]},
         ];
 
@@ -90,7 +92,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     <a href="" class="wm-top-brand wm-top-link wm-vcenter">
       
       <div class="wm-top-title">
-        From Scratch<br>
+        Engine<br>
         
       </div>
     </a>
@@ -104,13 +106,13 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
   <ul class="wm-toctree">
         <li class="wm-toc-li wm-toc-lev1 "><a href="architecture_overview/" class="wm-article-link wm-toc-text">Architecture Overview</a>
 </li>
-        <li class="wm-toc-li wm-toc-lev1 "><a href="ressource/" class="wm-article-link wm-toc-text">Ressource</a>
+        <li class="wm-toc-li wm-toc-lev1 "><a href="resource/" class="wm-article-link wm-toc-text">Resource</a>
 </li>
-        <li class="wm-toc-li wm-toc-lev1 wm-toc-opener"><span class="wm-toc-text">Ressources</span>
+        <li class="wm-toc-li wm-toc-lev1 wm-toc-opener"><span class="wm-toc-text">Resources</span>
 </li>
 <li class="wm-toc-li-nested collapse">
   <ul class="wm-toctree">
-      <li class="wm-toc-li wm-toc-lev2 "><a href="render_ressource/" class="wm-article-link wm-toc-text">Render ressource</a>
+      <li class="wm-toc-li wm-toc-lev2 "><a href="render_resource/" class="wm-article-link wm-toc-text">Render resource</a>
 </li>
   </ul>
 </li>
@@ -149,7 +151,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     
 
     <h1 id="welcome">Welcome</h1>
-<p>From Scratch is a 3D engine created as a personal project and coded in C++. <br/>
+<p>This project is a 3D engine created as a personal project and coded in C++. <br/>
 The engine features :</p>
 <ul>
 <li>3D scene hierarchy manipulation.</li>
@@ -158,20 +160,20 @@ The engine features :</p>
 <li>Handmade 3D mathematics.</li>
 <li>Manual manipulation of CPU and GPU memory.</li>
 </ul>
-<p>This documentation is the big picture of the engine and how systems interact each other, no implementation details will
-be detailed here. <br/>
-For an overview of the engine architecture see <a href="architecture_overview/">architecture overview</a>.</p>
+<p>For an overview of the engine architecture see <a href="https://ldalzotto.github.io/EngineCPPRewrite/#architecture_overview/">architecture overview</a>.</p>
 <h1 id="what-this-project-can-do">What this project can do ?</h1>
 <p>It allows the user to spawn and move 3D nodes in a hierarchical scene. <br/>
 Every node can display a mesh with a material fetched from the asset database or by manually providing asset data. <br/>
 The engine works with an asset database that stores precompiled asset files.</p>
-<h1 id="how-it-does-it">How it does it ?</h1>
-<p>This project is the foundation of a 3D engine. This means that every implemented systems tend to be abstracted well
-enough to yield to a very simple API that can be consumed to build the 3D scene.</p>
+<p><img alt="" src="https://i.imgur.com/L1YIDMH.gif" /></p>
+<p>An asset database can be fetched by a tool to view it's content.</p>
+<p><img alt="" src="https://s4.gifyu.com/images/ezgif-3-997f1678fb0e.gif" /></p>
+<h1 id="how-its-coded">How it's coded ?</h1>
 <p>This project is a learning journey, so as much as possible, it will use handmade solutions (memory containers, maths
 library, 3D scene management, 3D graphics abstraction, OS interactions).</p>
-<p>I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations, every
-layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.<br/></p>
+<p>I would like to carry this project as far as possible and take pleasure to build it. So to avoid any frustrations during the development process, every
+layer of the engine has automated test. This greatly improve the quality of development and debugging sessions.</p>
+<p>Compared to my other projects, I am focusing more on implementation details and having clean interfaces for every modules before implementing something new.</p>
 <h1 id="coding-rules">Coding rules</h1>
 <p>These are a set of rules that I have imposed myself for this journey :</p>
 <ul>
@@ -202,6 +204,8 @@ With this code style, isolation of every layer is trivial and testing every laye
 <p><strong><em>(a)</em></strong> There is a work in progress to roll a custom png loader with zlib. Thus removing stbimage for zlib.</p>
 <p><strong><em>(b)</em></strong> If one day the engine supports GUI programming, then the Qt dependency can be replaced by it.</p>
 </blockquote>
+<h1 id="try-it">Try it</h1>
+<p>Both previous engine build used to record gifs are available at the <a href="https://github.com/ldalzotto/EngineCPPRewrite/releases/tag/0.0.1">release page</a>. Extract archives and run executables. </p>
 
   <br>
     
@@ -217,5 +221,5 @@ With this code style, isolation of every layer is trivial and testing every laye
 </html>
 <!--
 MkDocs version : 1.1.2
-Build Date UTC : 2021-04-12 16:42:58.640660+00:00
+Build Date UTC : 2021-04-19 06:02:18.435885+00:00
 -->

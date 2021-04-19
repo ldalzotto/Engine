@@ -11,7 +11,7 @@
     
     <link rel="shortcut icon" href="../img/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-    <title>Architecture Overview - From Scratch</title>
+    <title>Architecture Overview - Engine</title>
     <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
     <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
     <link href="../css/base.css" rel="stylesheet">
@@ -41,8 +41,6 @@
               {title: "Resources", url: "#resources" },
               {title: "Scene middleware", url: "#scene-middleware" },
           ]},
-          {title: "Interaction with user", url: "#interaction-with-user", children: [
-          ]},
           {title: "Asset management", url: "#asset-management", children: [
           ]},
         ];
@@ -71,12 +69,12 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
   <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
     
     <div class="wm-article-nav pull-right">
-      <a href="../ressource/" class="btn btn-xs btn-default pull-right">
+      <a href="../resource/" class="btn btn-xs btn-default pull-right">
         Next
         <i class="fa fa-chevron-right" aria-hidden="true"></i>
       </a>
-      <a href="../ressource/" class="btn btn-xs btn-link">
-        Ressource
+      <a href="../resource/" class="btn btn-xs btn-link">
+        Resource
       </a>
     </div>
     
@@ -93,7 +91,7 @@ The whole engine comes together by chaining multiple execution passes in the rig
 <p><svg-inline src="architecture_overview_execution.svg"></svg-inline></p>
 <h2 id="main-loop">Main loop</h2>
 <p>The main loop is composed of execution units. Execution units are step that trigger all dependant execution block in the order defined by the dependencies. <br/>
-For example, we can see that the Render system is updated when the following execution units are completed : Render allocation, Render middleware and the GPU buffer step.</p>
+For example, we can see that the Render system is updated when the following execution units are completed : Render resource, Render middleware and the GPU buffer step.</p>
 <p>Some execution unit within the main loop are called "user logic". These execution units are hooks that the engine user can use to execute custom logic at this specific point.</p>
 <blockquote>
 <p>Custom logic execution units are likely to create node, add component or move node. Thus, we must be sure that all scene middleware steps are called before the scene tree events are cleaned.</p>
@@ -104,19 +102,12 @@ See (<a href="../scene/">scene</a>).</p>
 <p><svg-inline src="architecture_overview_scene_tree.svg"></svg-inline></p>
 <h2 id="resources">Resources</h2>
 <p>Resources are objects loaded from the asset database. They act as an interface for allocating system objects by taking the asset data as input. Allocations input can either be provided directly by the user or by requesting the asset database. <br/>
-See (<a href="../ressource/">resource</a>).</p>
+See (<a href="ressource.md">resource</a>).</p>
 <h2 id="scene-middleware">Scene middleware</h2>
 <p>Scene middlewares are where node component resources are stored. They act as the communication layer between the scene and the internal systems.</p>
 <p>Because nodes can move in 3D space. The state of the Node is updated when it's position, rotation or scale has changed. <br/>
 The Scene Middlewares are the consumers of this state. When a Node has moved, they send events to internal systems to take this change into account. <br/>
 See (<a href="../scene_middleware/">scene middleware</a>).</p>
-<h1 id="interaction-with-user">Interaction with user</h1>
-<p>If we want to make a node display a 3D mesh, the user must :</p>
-<ol>
-<li>Allocate a Node and set its 3D coordinates.</li>
-<li>Allocate a mesh renderer component resource from the render middleware.</li>
-<li>Add a component to the Node and link it with the mesh renderer token.</li>
-</ol>
 <h1 id="asset-management">Asset management</h1>
 <p>All assets (3DModels, textures, user defined assets...) are stored in a unique local database. Asset files are written either in a human-readable format (.json, .obj, ...) or compressed (.png). However, when stored in the database, they are compiled into a blob that allows the engine to map it to internal objects with little efforts.</p>
 <p>This compilation is done during the build process, so we eliminate the runtime overhead of loading and decoding file formats. <br/>
@@ -133,12 +124,12 @@ See (<a href="../asset_database/">asset database</a>)</p>
   <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
     
     <div class="wm-article-nav pull-right">
-      <a href="../ressource/" class="btn btn-xs btn-default pull-right">
+      <a href="../resource/" class="btn btn-xs btn-default pull-right">
         Next
         <i class="fa fa-chevron-right" aria-hidden="true"></i>
       </a>
-      <a href="../ressource/" class="btn btn-xs btn-link">
-        Ressource
+      <a href="../resource/" class="btn btn-xs btn-link">
+        Resource
       </a>
     </div>
     
