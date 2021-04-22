@@ -8,6 +8,11 @@
 // #include <bcrypt.h>
 #pragma comment(lib, "Ws2_32.lib")
 
+// TODO
+// Move socket to common (with a preprocess condition ?)
+// Create the win32 socket client
+// Test it
+
 template <class ReturnType> inline ReturnType winsock_error_handler(const ReturnType p_return)
 {
 #if __DEBUG
@@ -74,12 +79,70 @@ inline Span<int8> sha1_hash(const Slice<int8>& p_input){
 
 using socket_t = SOCKET;
 
+struct SocketContext
+{
+    Vector<socket_t> sockets;
+
+    inline static SocketContext allocate()
+    {
+        WSADATA l_winsock_data;
+        winsock_error_handler(WSAStartup(MAKEWORD(2, 2), &l_winsock_data));
+        return SocketContext{Vector<socket_t>::allocate(0)};
+    };
+
+    inline void free()
+    {
+#if __DEBUG
+        assert_true(this->sockets.empty());
+#endif
+        this->sockets.free();
+        WSACleanup();
+    };
+
+    inline void remove_socket(const socket_t p_socket)
+    {
+        for (loop(i, 0, this->sockets.Size))
+        {
+            if (this->sockets.get(i) == p_socket)
+            {
+                this->sockets.erase_element_at_always(i);
+                break;
+            }
+        }
+    };
+};
+
+inline socket_t socket_allocate(SocketContext& p_ctx, const socket_t p_socket)
+{
+#if __MEMLEAK
+    push_ptr_to_tracked((int8*)p_socket);
+#endif
+#if __DEBUG
+    assert_true(p_socket != INVALID_SOCKET);
+#endif
+    p_ctx.sockets.push_back_element(p_socket);
+    return p_socket;
+};
+
+inline void socket_free(SocketContext& p_ctx, socket_t* p_socket)
+{
+#if __MEMLEAK
+    remove_ptr_to_tracked((int8*)*p_socket);
+#endif
+#if __DEBUG
+    assert_true(*p_socket != INVALID_SOCKET);
+#endif
+    closesocket(*p_socket);
+    p_ctx.remove_socket(*p_socket);
+    *p_socket = INVALID_SOCKET;
+};
+
 struct SocketServer
 {
     socket_t client_listening_socket;
     socket_t client_socket;
 
-    inline static SocketServer allocate(const int32 p_port)
+    inline static SocketServer allocate(SocketContext& p_ctx, const int32 p_port)
     {
         SocketServer l_return;
         int8 p_port_str_raw[ToString::int32str_size];
@@ -95,9 +158,7 @@ struct SocketServer
 
         winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &l_addr_info, &l_result));
 
-        l_return.client_listening_socket = INVALID_SOCKET;
-        l_return.client_listening_socket = socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol);
-        assert_true(l_return.client_listening_socket != INVALID_SOCKET);
+        l_return.client_listening_socket = socket_allocate(p_ctx, socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol));
 
         winsock_error_handler(bind(l_return.client_listening_socket, l_result->ai_addr, (int)l_result->ai_addrlen));
 
@@ -106,16 +167,22 @@ struct SocketServer
         return l_return;
     };
 
-    inline void wait_for_client()
+    inline void close(SocketContext& p_ctx)
     {
-        winsock_error_handler(listen(this->client_listening_socket, SOMAXCONN));
-
-        this->client_socket = INVALID_SOCKET;
-        this->client_socket = accept(this->client_listening_socket, NULL, NULL);
-        assert_true(this->client_socket != INVALID_SOCKET);
+#if __DEBUG
+        assert_true(this->client_socket == INVALID_SOCKET);
+#endif
+        socket_free(p_ctx, &this->client_listening_socket);
     };
 
-    template <class RequestCallbackFunc> inline void listen_for_requests(const RequestCallbackFunc& p_request_callback_func)
+    inline void wait_for_client(SocketContext& p_ctx)
+    {
+        winsock_error_handler(listen(this->client_listening_socket, SOMAXCONN));
+        socket_t cc = accept(this->client_listening_socket, NULL, NULL);
+        this->client_socket = socket_allocate(p_ctx, cc);
+    };
+
+    template <class RequestCallbackFunc> inline void listen_for_requests(SocketContext& p_ctx, const RequestCallbackFunc& p_request_callback_func)
     {
         SliceN<int8, 512> l_buffer = {};
         Slice<int8> l_buffer_slice = slice_from_slicen(&l_buffer);
@@ -162,9 +229,9 @@ struct SocketServer
                 }
 #endif
             }
-            else if (l_result <= 0)
+            else
             {
-                closesocket(this->client_socket);
+                socket_free(p_ctx, &this->client_socket);
             }
         }
     };
@@ -190,9 +257,10 @@ enum class MaterialViewerRequestCode : int32
     ENGINE_THREAD_START = 0,
     ENGINE_THREAD_STOP = 1,
     SET_MATERIAL_AND_MESH = 2,
-    GET_ALL_MESHES = 3,
     GET_ALL_MATERIALS = 4,
-    GET_ALL_MATERIALS_RETURN = 5
+    GET_ALL_MATERIALS_RETURN = 5,
+    GET_ALL_MESH = 6,
+    GET_ALL_MESH_RETURN = 7,
 };
 
 struct MaterialViewerEngineUnit
@@ -233,6 +301,11 @@ struct MaterialViewerEngineUnit
     {
         this->stop(p_engine_runner);
         this->shared.free();
+    };
+
+    inline int8 is_freed()
+    {
+        return token_equals(this->engine_execution_unit, token_build_default<EngineExecutionUnit>());
     };
 
     inline void start(EngineRunnerThread& p_engine_runner, const Slice<int8> p_asset_database, const uint32 p_width, const uint32 p_height)
@@ -318,51 +391,64 @@ struct MaterialViewerServer
     EngineRunnerThread engine_thread;
     MaterialViewerEngineUnit material_viewer_unit;
 
-    inline static void listen(const int32 p_port)
+    inline static MaterialViewerServer allocate(SocketContext& p_ctx, const int32 p_port)
     {
-        MaterialViewerServer thiz{};
-        thiz._listen(p_port);
+        MaterialViewerServer l_return;
+        l_return.socket_server = SocketServer::allocate(p_ctx, p_port);
+        l_return.engine_thread = EngineRunnerThread::allocate();
+        return l_return;
+    };
+
+    inline void start_engine_thread()
+    {
+        this->engine_thread.start();
+    };
+
+    inline void wait_for_client(SocketContext& p_ctx)
+    {
+        this->socket_server.wait_for_client(p_ctx);
+    };
+
+    inline void listen_for_requests(SocketContext& p_ctx)
+    {
+        this->socket_server.listen_for_requests(p_ctx, [&](const Slice<int8>& p_request, Slice<int8>& p_response) {
+            SocketRequest l_request = SocketRequest::build(p_request);
+            MaterialViewerRequestCode l_request_code = (MaterialViewerRequestCode)l_request.code;
+            this->handle_request(l_request_code, l_request.payload, p_response);
+        });
+
+        if (!this->material_viewer_unit.is_freed())
+        {
+            this->material_viewer_unit.free(this->engine_thread);
+            // this->engine_thread.free();
+        };
     };
 
   private:
-    inline void _listen(const int32 p_port)
-    {
-        WSADATA l_winsock_data;
-        winsock_error_handler(WSAStartup(MAKEWORD(2, 2), &l_winsock_data));
-
-        this->socket_server = SocketServer::allocate(8000);
-        this->socket_server.wait_for_client();
-        this->socket_server.listen_for_requests([&](const Slice<int8>& p_request, Slice<int8>& p_response) {
-            SocketRequest l_request = SocketRequest::build(p_request);
-            MaterialViewerRequestCode l_request_code = (MaterialViewerRequestCode)l_request.code;
-            p_response.zero();
-            this->handle_request(l_request_code, l_request.payload, p_response);
-        });
-    };
-
-    // TODO -> we want to return JSON format so that it can be easily undertable by client.
     inline void handle_request(const MaterialViewerRequestCode p_code, const Slice<int8>& p_payload, const Slice<int8>& p_response)
     {
         switch (p_code)
         {
         case MaterialViewerRequestCode::ENGINE_THREAD_START:
         {
-            this->engine_thread.start();
+            // this->engine_thread.start();
             this->material_viewer_unit = MaterialViewerEngineUnit::allocate();
 
             BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(p_payload);
-            Slice<int8> l_database_path = l_payload_deserializer.slice();
+            Slice<int8> l_input = l_payload_deserializer.slice();
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_input);
+            l_input_des.next_field("database");
+            Slice<int8> l_database_path = l_input_des.get_currentfield().value;
             this->material_viewer_unit.start(this->engine_thread, l_database_path, 400, 400);
             this->engine_thread.sync_wait_for_engine_execution_unit_to_be_allocated(this->material_viewer_unit.engine_execution_unit);
 
-            Slice<int8> l_response = p_response;
-            BinarySerializer::type<int32>(&l_response, 1);
+            l_input_des.free();
         }
         break;
         case MaterialViewerRequestCode::ENGINE_THREAD_STOP:
         {
             this->material_viewer_unit.stop(this->engine_thread);
-            this->engine_thread.free();
+           // this->engine_thread.free();
 
             Slice<int8> l_response = p_response;
             BinarySerializer::type<int32>(&l_response, 1);
@@ -371,14 +457,18 @@ struct MaterialViewerServer
         case MaterialViewerRequestCode::SET_MATERIAL_AND_MESH:
         {
             BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(p_payload);
-            Slice<int8> l_material = l_payload_deserializer.slice();
-            Slice<int8> l_mesh = l_payload_deserializer.slice();
+            Slice<int8> l_input = l_payload_deserializer.slice();
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_input);
+
+            l_input_des.next_field("material");
+            Slice<int8> l_material = l_input_des.get_currentfield().value;
+            l_input_des.next_field("mesh");
+            Slice<int8> l_mesh = l_input_des.get_currentfield().value;
 
             this->material_viewer_unit.set_new_material(HashSlice(l_material));
             this->material_viewer_unit.set_new_mesh(HashSlice(l_mesh));
 
-            Slice<int8> l_response = p_response;
-            BinarySerializer::type<int32>(&l_response, 1);
+            l_input_des.free();
         }
         break;
         case MaterialViewerRequestCode::GET_ALL_MATERIALS:
@@ -404,16 +494,56 @@ struct MaterialViewerServer
             BinarySerializer::slice(&l_response, l_json_deser.output.to_slice());
 
             l_json_deser.free();
+            l_asset_metadata_database.free(l_database_connection);
+        }
+        break;
+        case MaterialViewerRequestCode::GET_ALL_MESH:
+        {
+            DatabaseConnection& l_database_connection = this->engine_thread.engines.get(this->material_viewer_unit.engine_execution_unit).engine.database_connection;
+            AssetMetadataDatabase l_asset_metadata_database = AssetMetadataDatabase::allocate(l_database_connection);
+            AssetMetadataDatabase::Paths l_mesh_paths = l_asset_metadata_database.get_all_path_from_type(l_database_connection, AssetType_Const::MESH_NAME);
+
+            JSONSerializer l_json_deser = JSONSerializer::allocate_default();
+            l_json_deser.start();
+            l_json_deser.start_array(slice_int8_build_rawstr("meshes"));
+            for (loop(i, 0, l_mesh_paths.data.Size))
+            {
+                l_json_deser.push_array_field(l_mesh_paths.data.get(i).slice);
+            }
+            l_json_deser.end_array();
+            l_json_deser.end();
+
+            l_mesh_paths.free();
+
+            Slice<int8> l_response = p_response;
+            BinarySerializer::type<int32>(&l_response, (int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN);
+            BinarySerializer::slice(&l_response, l_json_deser.output.to_slice());
+
+            l_json_deser.free();
+            l_asset_metadata_database.free(l_database_connection);
         }
         break;
         default:
             break;
         }
     };
+
 };
 
 int main()
 {
-    MaterialViewerServer::listen(8000);
+    SocketContext l_socket_context = SocketContext::allocate();
+    MaterialViewerServer l_server = MaterialViewerServer::allocate(l_socket_context, 8000);
+    l_server.start_engine_thread();
+
+    while (true)
+    {
+        l_server.wait_for_client(l_socket_context);
+        l_server.listen_for_requests(l_socket_context);
+    }
+
+    l_socket_context.free();
+    memleak_ckeck();
+
     return 0;
 };

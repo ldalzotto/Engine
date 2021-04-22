@@ -43,13 +43,20 @@ struct JSONDeserializer
         return JSONDeserializer{p_source, p_parent_cursor, Vector<FieldNode>::allocate(0), (uimax)-1};
     };
 
+
+    inline static JSONDeserializer start(const Slice<int8>& p_source)
+    {
+        uimax l_start_index;
+        Slice_find(p_source, slice_int8_build_rawstr("{"), &l_start_index);
+        l_start_index += 1;
+        return allocate(p_source, p_source.slide_rv(l_start_index));
+    };
+
+    // TODO -> we must remove this function, the sanitizing of input json is optional
     inline static JSONDeserializer start(Vector<int8>& p_source)
     {
         JSONUtil::remove_spaces(p_source);
-        uimax l_start_index;
-        Slice_find(p_source.to_slice(), slice_int8_build_rawstr("{"), &l_start_index);
-        l_start_index += 1;
-        return allocate(p_source.to_slice(), p_source.to_slice().slide_rv(l_start_index));
+        return start(p_source.to_slice());
     };
 
     inline JSONDeserializer clone()
@@ -430,7 +437,7 @@ struct JSONSerializer
 
     inline void start()
     {
-        this->output.append(slice_int8_build_rawstr("{\n"));
+        this->output.append(slice_int8_build_rawstr("{"));
     };
 
     inline void end()
@@ -495,6 +502,7 @@ struct JSONSerializer
 
   private:
 
+    // TODO -> this function must be removed. Instead, it is up to the consumer to decide what is the last field to serialize
     void remove_last_coma()
     {
         if (this->output.get(this->output.get_length() - 1) == ',')

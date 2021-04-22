@@ -1609,7 +1609,7 @@ inline void serialize_json_test()
 
     l_serializer.end();
 
-    JSONUtil::remove_spaces(l_serializer.output.Memory);
+    // JSONUtil::remove_spaces(l_serializer.output.Memory);
     String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
     JSONUtil::remove_spaces(l_compared_json.Memory);
 

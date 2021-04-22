@@ -54,10 +54,7 @@ struct String
     inline void erase_array_at(const uimax p_index, const uimax p_size)
     {
 #if __DEBUG
-        if ((p_index + p_size) == this->get_length())
-        {
-            abort();
-        }
+        assert_true((p_index + p_size) <= this->get_length());
 #endif
         this->Memory.erase_array_at(p_index, p_size);
     };
