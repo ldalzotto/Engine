@@ -10,11 +10,6 @@
 
 #define SOCKET_DEFAULT_PORT 8000
 
-// TODO
-// Move socket to common (with a preprocess condition ?)
-// Create the win32 socket client
-// Test it
-
 template <class ReturnType> inline ReturnType winsock_error_handler(const ReturnType p_return)
 {
 #if __DEBUG
@@ -174,88 +169,85 @@ inline SocketReturnCode socket_send(socket_t p_socket, const int8* p_begin, cons
     return SocketReturnCode::IDLING;
 };
 
-struct SocketServer
+struct Socket
 {
-    socket_t client_listening_socket;
-    socket_t client_socket;
+    socket_t native_socket;
+    addrinfo* native_addr_info;
 
-    inline static SocketServer allocate(SocketContext& p_ctx, const int32 p_port)
+    inline static Socket allocate_as_server(SocketContext& p_ctx, const int32 p_port)
     {
-        SocketServer l_return;
-        int8 p_port_str_raw[ToString::int32str_size];
-        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
-
         addrinfo l_addr_info{};
         l_addr_info.ai_family = AF_INET;
         l_addr_info.ai_socktype = SOCK_STREAM;
         l_addr_info.ai_protocol = IPPROTO_TCP;
         l_addr_info.ai_flags = AI_PASSIVE;
 
-        addrinfo* l_result = NULL;
-        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &l_addr_info, &l_result));
-
-#if 0
-        sockaddr_in addr {};
-        addr.sin_family = AF_INET;
-        addr.sin_port = p_port;
-        addr.sin_addr.s_addr = INADDR_ANY;
-#endif
-        l_return.client_listening_socket = socket_allocate(p_ctx, socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol));
-
-        winsock_error_handler(bind(l_return.client_listening_socket, l_result->ai_addr, (int)l_result->ai_addrlen));
-
-        freeaddrinfo(l_result);
-
-        return l_return;
+        Socket l_socket;
+        _allocate_socket_and_bind(l_socket, p_ctx, l_addr_info, p_port);
+        return l_socket;
     };
 
-    inline void free(SocketContext& p_ctx)
+    inline static Socket allocate_as_client(SocketContext& p_ctx, const int32 p_port)
     {
-        socket_free(p_ctx, &this->client_socket);
-        socket_free(p_ctx, &this->client_listening_socket);
-    };
-
-    inline void wait_for_client(SocketContext& p_ctx)
-    {
-        winsock_error_handler(listen(this->client_listening_socket, SOMAXCONN));
-        socket_t cc = accept(this->client_listening_socket, NULL, NULL);
-        this->client_socket = socket_allocate(p_ctx, cc);
-    };
-};
-
-struct SocketClient
-{
-    socket_t client_socket;
-
-    inline static SocketClient allocate(SocketContext& p_ctx, const int32 p_port)
-    {
-        SocketClient l_return;
-
-        int8 p_port_str_raw[ToString::int32str_size];
-        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
-
         addrinfo l_addr_info{};
         l_addr_info.ai_family = AF_INET;
         l_addr_info.ai_socktype = SOCK_STREAM;
         l_addr_info.ai_protocol = IPPROTO_TCP;
-        // l_addr_info.ai_flags = AI_PASSIVE;
 
-        addrinfo* l_result = NULL;
+        Socket l_socket;
+        _allocate_socket_and_connect(l_socket, p_ctx, l_addr_info, p_port);
+        return l_socket;
+    };
 
-        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &l_addr_info, &l_result));
+    inline static Socket allocate_as_request_listener(SocketContext& p_ctx, const Socket p_listened_socket)
+    {
+        Socket l_socket;
+        l_socket.native_socket = socket_allocate(p_ctx, accept(p_listened_socket.native_socket, NULL, NULL));
+        l_socket.native_addr_info = NULL;
+        return l_socket;
+    };
 
-#if 0
-        l_return.client_socket = socket_allocate(p_ctx, socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol));
-        winsock_error_handler(connect(l_return.client_socket, l_result->ai_addr, (int)l_result->ai_addrlen));
-#endif
-#if 1
+    inline void free(SocketContext& p_ctx)
+    {
+        freeaddrinfo(this->native_addr_info);
+        this->native_addr_info = NULL;
+        socket_free(p_ctx, &this->native_socket);
+    };
+
+    inline SocketReturnCode send(const Slice<int8>& p_buffer)
+    {
+        return socket_send(this->native_socket, p_buffer.Begin, p_buffer.Size);
+    };
+
+  private:
+    inline static void _allocate_socket_and_bind(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
+    {
+        int8 p_port_str_raw[ToString::int32str_size];
+        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
+
+        p_socket.native_addr_info = NULL;
+        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &p_addr_info, &p_socket.native_addr_info));
+
+        p_socket.native_socket = socket_allocate(p_ctx, socket(p_socket.native_addr_info->ai_family, p_socket.native_addr_info->ai_socktype, p_socket.native_addr_info->ai_protocol));
+        winsock_error_handler(bind(p_socket.native_socket, p_socket.native_addr_info->ai_addr, (int)p_socket.native_addr_info->ai_addrlen));
+    };
+
+    inline static void _allocate_socket_and_connect(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
+    {
+        int8 p_port_str_raw[ToString::int32str_size];
+        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
+
+        p_socket.native_addr_info = NULL;
+        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &p_addr_info, &p_socket.native_addr_info));
+
         addrinfo* l_ptr;
+        addrinfo* l_result = p_socket.native_addr_info;
         for (l_ptr = l_result; l_ptr != NULL; l_ptr = l_ptr->ai_next)
         {
-            l_return.client_socket = socket_allocate(p_ctx, socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol));
-            if (connect(l_return.client_socket, l_result->ai_addr, (int)l_result->ai_addrlen) != 0)
+            p_socket.native_socket = socket_allocate(p_ctx, socket(l_result->ai_family, l_result->ai_socktype, l_result->ai_protocol));
+            if (connect(p_socket.native_socket, l_result->ai_addr, (int)l_result->ai_addrlen) != 0)
             {
-                socket_free(p_ctx, &l_return.client_socket);
+                socket_free(p_ctx, &p_socket.native_socket);
                 continue;
             }
             else
@@ -267,35 +259,176 @@ struct SocketClient
         {
             abort();
         }
-#endif
-        freeaddrinfo(l_result);
-        return l_return;
+    };
+};
+
+struct SocketServerSingleClient
+{
+    Socket server_socket_v2;
+    Socket registerd_client_socket;
+
+    inline static SocketServerSingleClient allocate(SocketContext& p_ctx, const int32 p_port)
+    {
+        return SocketServerSingleClient{Socket::allocate_as_server(p_ctx, p_port)};
     };
 
     inline void free(SocketContext& p_ctx)
     {
-        socket_free(p_ctx, &this->client_socket);
+        this->registerd_client_socket.free(p_ctx);
+        this->server_socket_v2.free(p_ctx);
     };
-};
 
-struct SocketRequest
-{
-    int32 code;
-    Slice<int8> payload;
-
-    inline static SocketRequest build(const Slice<int8>& p_request)
+    inline void wait_for_client(SocketContext& p_ctx)
     {
-        SocketRequest l_return;
-        BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
-        l_return.code = *l_binary_desezrialiazer.type<int32>();
-        l_return.payload = l_binary_desezrialiazer.memory;
-        return l_return;
+        winsock_error_handler(listen(this->server_socket_v2.native_socket, SOMAXCONN));
+        this->registerd_client_socket = Socket::allocate_as_request_listener(p_ctx, this->server_socket_v2);
     };
 };
 
-struct SocketCommunication
+template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSingleClientThread
 {
-    enum class RequestListenerReturnCode : int8
+
+    struct Input
+    {
+        SocketContext* ctx;
+        int32 port;
+    } input;
+    Thread::MainInput thread_input;
+    int8* thread_input_args;
+    thread_t thread;
+
+    struct Sync
+    {
+        volatile int8 allocated;
+    } sync;
+
+    SocketServerSingleClient server;
+    const SocketConncetionEstablishmentFunc* socket_connection_establishment_func;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConncetionEstablishmentFunc* p_socket_connection_establishment_func)
+    {
+        this->input = {p_ctx, p_port};
+        this->sync.allocated = 0;
+        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
+        this->thread_input_args = (int8*)this;
+        this->thread_input.args = Slice<int8*>{1, (int8**)&this->thread_input_args};
+        this->thread_input.function = SocketSocketServerSingleClientThread::main;
+        this->thread = Thread::spawn_thread(this->thread_input);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        Thread::wait_for_end_and_terminate(this->thread, -1);
+        this->server.free(p_ctx);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        while (!this->sync.allocated)
+        {
+        }
+    };
+
+  private:
+    inline static int8 main(const Slice<int8*>& p_args)
+    {
+        SocketSocketServerSingleClientThread* thiz = (SocketSocketServerSingleClientThread*)p_args.get(0);
+        thiz->server = SocketServerSingleClient::allocate(*thiz->input.ctx, thiz->input.port);
+        thiz->sync.allocated = 1;
+        thiz->socket_connection_establishment_func->operator()(thiz);
+        return 0;
+    };
+};
+
+struct SocketClient
+{
+    Socket client_socket;
+
+    inline static SocketClient allocate(SocketContext& p_ctx, const int32 p_port)
+    {
+        return SocketClient{Socket::allocate_as_client(p_ctx, p_port)};
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->client_socket.free(p_ctx);
+    };
+};
+
+template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
+{
+    struct Input
+    {
+        SocketContext* ctx;
+        int32 port;
+    } input;
+    Thread::MainInput thread_input;
+    int8* thread_input_args;
+    thread_t thread;
+
+    struct Sync
+    {
+        volatile int8 allocated;
+    } sync;
+
+    SocketClient client;
+    const SocketConnectionEstablishmentFunc* socket_connection_establishment_func;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConnectionEstablishmentFunc* p_socket_connection_establishment_func)
+    {
+        this->input = {p_ctx, p_port};
+        this->sync.allocated = 0;
+        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
+        this->thread_input_args = (int8*)this;
+        this->thread_input.args = Slice<int8*>{1, (int8**)&this->thread_input_args};
+        this->thread_input.function = SocketClientThread::main;
+        this->thread = Thread::spawn_thread(this->thread_input);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        Thread::wait_for_end_and_terminate(this->thread, -1);
+        this->client.free(p_ctx);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        while (!this->sync.allocated)
+        {
+        }
+    };
+
+  private:
+    inline static int8 main(const Slice<int8*>& p_args)
+    {
+        SocketClientThread* thiz = (SocketClientThread*)p_args.get(0);
+        thiz->client = SocketClient::allocate(*thiz->input.ctx, thiz->input.port);
+        thiz->sync.allocated = 1;
+        thiz->socket_connection_establishment_func->operator()(thiz);
+        return 0;
+    };
+};
+
+/*
+    The SocketRequestResponseConnection establish a request linstening connection to a socket and can send it back data if desired.
+ */
+struct SocketRequestResponseConnection
+{
+    Span<int8> request_buffer;
+    Span<int8> response_buffer;
+
+    inline static SocketRequestResponseConnection allocate_default()
+    {
+        return SocketRequestResponseConnection{Span<int8>::allocate(512), Span<int8>::allocate(512)};
+    };
+
+    inline void free()
+    {
+        this->request_buffer.free();
+        this->response_buffer.free();
+    };
+
+    enum class ListenSendResponseReturnCode : int8
     {
         NOTHING = 0,
         SEND_RESPONSE = 1,
@@ -303,31 +436,69 @@ struct SocketCommunication
         SEND_RESPONSE_AND_ABORT_LISTENER = SEND_RESPONSE | ABORT_LISTENER
     };
 
-    // TODO -> add variants that simulates the RequestListenerReturnCode and simplify the API
-    template <class RequestCallbackFunc> inline static void listen_for_requests(SocketContext& p_ctx, socket_t p_socket, socket_t p_response_socket, const RequestCallbackFunc& p_request_callback_func)
+    template <class RequestCallbackFunc> inline void listen(SocketContext& p_ctx, Socket& p_listened_socket, const RequestCallbackFunc& p_request_callback_func)
     {
-        SliceN<int8, 512> l_buffer = {};
-        Slice<int8> l_buffer_slice = slice_from_slicen(&l_buffer);
-        SliceN<int8, 512> l_response_buffer = {};
-        Slice<int8> l_response_slice = slice_from_slicen(&l_response_buffer);
-
         int8 l_result = 1;
 
         while (l_result)
         {
-            SocketReturnCode l_receive_return = socket_receive(p_socket, l_buffer.Memory, l_buffer.Size());
+            SocketReturnCode l_receive_return = socket_receive(p_listened_socket.native_socket, this->request_buffer.Memory, this->request_buffer.Capacity);
 
-            RequestListenerReturnCode l_return_code = p_request_callback_func(l_buffer_slice, l_response_slice);
-            if ((int8)l_return_code & (int8)(RequestListenerReturnCode::SEND_RESPONSE))
+            uimax l_response_size = 0;
+            ListenSendResponseReturnCode l_return_code = p_request_callback_func(this->request_buffer.slice, this->response_buffer.slice, &l_response_size);
+            if ((int8)l_return_code & (int8)(ListenSendResponseReturnCode::SEND_RESPONSE))
             {
-                socket_send(p_response_socket, l_response_slice.Begin, l_response_slice.Size);
+                socket_send(p_listened_socket.native_socket, this->response_buffer.Memory, l_response_size);
             }
-            if (((int8)l_return_code & (int8)(RequestListenerReturnCode::ABORT_LISTENER)) || (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED))
+            if (((int8)l_return_code & (int8)(ListenSendResponseReturnCode::ABORT_LISTENER)) || (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED))
             {
                 l_result = 0;
             }
+        }
+    };
+};
+
+/*
+    The SocketRequestConnection establish a request linstening connection to a socket.
+ */
+struct SocketRequestConnection
+{
+    Span<int8> request_buffer;
+
+    inline static SocketRequestConnection allocate_default()
+    {
+        return SocketRequestConnection{Span<int8>::allocate(512)};
+    };
+
+    inline void free()
+    {
+        this->request_buffer.free();
+    };
+
+    enum class ListenSendResponseReturnCode : int8
+    {
+        NOTHING = 0,
+        ABORT_LISTENER = 1
+    };
+
+    template <class RequestCallbackFunc> inline void listen(SocketContext& p_ctx, Socket& p_listened_socket, const RequestCallbackFunc& p_request_callback_func)
+    {
+        int8 l_result = 1;
+        while (l_result)
+        {
+            SocketReturnCode l_receive_return = socket_receive(p_listened_socket.native_socket, this->request_buffer.Memory, this->request_buffer.Capacity);
+
+            ListenSendResponseReturnCode l_return_code = p_request_callback_func(this->request_buffer.slice);
+            if (((int8)l_return_code & (int8)(ListenSendResponseReturnCode::ABORT_LISTENER)) || (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED))
+            {
+                l_result = 0;
+            }
+        }
+    };
+};
+
 #if 0
-                if (l_buffer_slice.compare(slice_int8_build_rawstr("GET /")))
+if (l_buffer_slice.compare(slice_int8_build_rawstr("GET /")))
                 {
                     uimax l_index;
                     if (Slice_find(l_buffer_slice, slice_int8_build_rawstr("Upgrade: websocket"), &l_index) && Slice_find(l_buffer_slice, slice_int8_build_rawstr("Connection: Upgrade"), &l_index))
@@ -357,15 +528,66 @@ struct SocketCommunication
                     }
                 }
 #endif
-        }
+
+/*
+    This is a functional object that helps to manipulate socket typed requests.
+    Socket types request are a request code with a body.
+ */
+struct SocketTypedRequest
+{
+    int32* code;
+    Slice<int8> payload;
+
+    inline static SocketTypedRequest build(const Slice<int8>& p_request)
+    {
+        SocketTypedRequest l_return;
+        BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
+        l_return.code = l_binary_desezrialiazer.type<int32>();
+        l_return.payload = l_binary_desezrialiazer.memory;
+        return l_return;
     };
 
-    inline static SocketReturnCode send(socket_t p_socket, const Slice<int8>& p_socket_buffer, const SocketRequest& p_request)
+    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
     {
-        Slice<int8> l_socket_buffer = p_socket_buffer;
-        BinarySerializer::type<int32>(&l_socket_buffer, p_request.code);
-        BinarySerializer::slice(&l_socket_buffer, p_request.payload);
+        *this->code = p_code;
+        BinarySerializer::slice(&this->payload, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
+    };
 
-        return socket_send(p_socket, p_socket_buffer.Begin, p_socket_buffer.Size - l_socket_buffer.Size);
+    template <class ElementType> inline void get_typed(ElementType** out_element)
+    {
+        Slice<int8> l_element = BinaryDeserializer::build(this->payload).slice();
+        *out_element = slice_cast<ElementType>(l_element).Begin;
+    };
+};
+
+/*
+    This is a functional object that helps to manipulate socket typed responses.
+    Socket types response are a request code with a body.
+ */
+struct SoketTypedResponse
+{
+    int32* code;
+    Slice<int8> payload;
+    uimax payload_size;
+
+    inline static SoketTypedResponse build(const Slice<int8>& p_request)
+    {
+        SoketTypedResponse l_return;
+        BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
+        l_return.code = l_binary_desezrialiazer.type<int32>();
+        l_return.payload = l_binary_desezrialiazer.memory;
+        l_return.payload_size = 0;
+        return l_return;
+    };
+
+    inline uimax get_buffer_size()
+    {
+        return sizeof(*this->code) + this->payload_size;
+    };
+
+    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
+    {
+        *this->code = p_code;
+        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
     };
 };

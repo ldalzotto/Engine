@@ -30,6 +30,12 @@ inline static void slice(Slice<int8>* in_out_serialization_target, const Slice<i
     in_out_serialization_target->slide(p_slice.Size);
 };
 
+inline static uimax slice_ret_bytesnb(Slice<int8>* in_out_serialization_target, const Slice<int8>& p_slice)
+{
+    slice(in_out_serialization_target, p_slice);
+    return sizeof(p_slice.Size) + p_slice.Size;
+};
+
 inline static void varying_slice(Vector<int8>* in_out_serialization_target, const VaryingSlice& p_varying_slice)
 {
     slice(in_out_serialization_target, p_varying_slice.memory);

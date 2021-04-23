@@ -141,14 +141,14 @@ struct MaterialViewerEngineUnit
 
 struct MaterialViewerServer
 {
-    SocketServer socket_server;
+    SocketServerSingleClient socket_server;
     EngineRunnerThread engine_thread;
     MaterialViewerEngineUnit material_viewer_unit;
 
     inline static MaterialViewerServer allocate(SocketContext& p_ctx, const int32 p_port)
     {
         MaterialViewerServer l_return;
-        l_return.socket_server = SocketServer::allocate(p_ctx, p_port);
+        l_return.socket_server = SocketServerSingleClient::allocate(p_ctx, p_port);
         l_return.engine_thread = EngineRunnerThread::allocate();
         return l_return;
     };
@@ -165,11 +165,11 @@ struct MaterialViewerServer
 
     inline void listen_for_requests(SocketContext& p_ctx)
     {
-        SocketCommunication::listen_for_requests(p_ctx, this->socket_server.client_socket, this->socket_server.client_socket, [&](const Slice<int8>& p_request, Slice<int8>& p_response) {
-            SocketRequest l_request = SocketRequest::build(p_request);
-            MaterialViewerRequestCode l_request_code = (MaterialViewerRequestCode)l_request.code;
-            this->handle_request(l_request_code, l_request.payload, p_response);
-            return SocketCommunication::RequestListenerReturnCode::SEND_RESPONSE;
+        SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
+        l_request_response_connection.listen(p_ctx, this->socket_server.registerd_client_socket, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
+            SocketTypedRequest l_request = SocketTypedRequest::build(p_request);
+            MaterialViewerRequestCode l_request_code = (MaterialViewerRequestCode)*l_request.code;
+            return this->handle_request(l_request_code, l_request.payload, p_response, out_response_size);
         });
 
         if (!this->material_viewer_unit.is_freed())
@@ -180,7 +180,7 @@ struct MaterialViewerServer
     };
 
   private:
-    inline void handle_request(const MaterialViewerRequestCode p_code, const Slice<int8>& p_payload, const Slice<int8>& p_response)
+    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request(const MaterialViewerRequestCode p_code, const Slice<int8>& p_payload, const Slice<int8>& p_response, uimax* out_response_size)
     {
         switch (p_code)
         {
@@ -203,9 +203,6 @@ struct MaterialViewerServer
         case MaterialViewerRequestCode::ENGINE_THREAD_STOP:
         {
             this->material_viewer_unit.stop(this->engine_thread);
-            // this->engine_thread.free();
-
-            Slice<int8> l_response = p_response;
         }
         break;
         case MaterialViewerRequestCode::SET_MATERIAL_AND_MESH:
@@ -243,12 +240,13 @@ struct MaterialViewerServer
 
             l_material_paths.free();
 
-            Slice<int8> l_response = p_response;
-            BinarySerializer::type<int32>(&l_response, (int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN);
-            BinarySerializer::slice(&l_response, l_json_deser.output.to_slice());
+            BinarySerializer::type<int32>(&p_response, (int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN);
+            BinarySerializer::slice(&p_response, l_json_deser.output.to_slice());
 
             l_json_deser.free();
             l_asset_metadata_database.free(l_database_connection);
+
+            return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
         break;
         case MaterialViewerRequestCode::GET_ALL_MESH:
@@ -269,9 +267,8 @@ struct MaterialViewerServer
 
             l_mesh_paths.free();
 
-            Slice<int8> l_response = p_response;
-            BinarySerializer::type<int32>(&l_response, (int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN);
-            BinarySerializer::slice(&l_response, l_json_deser.output.to_slice());
+            BinarySerializer::type<int32>(&p_response, (int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN);
+            BinarySerializer::slice(&p_response, l_json_deser.output.to_slice());
 
             l_json_deser.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -280,6 +277,8 @@ struct MaterialViewerServer
         default:
             break;
         }
+
+        return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
     };
 };
 
