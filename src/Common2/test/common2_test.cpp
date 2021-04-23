@@ -1951,7 +1951,7 @@ inline void socket_test()
                                                 assert_true(*l_count == 10);
                                                 *l_count += 10;
 
-                                                SoketTypedResponse l_res = SoketTypedResponse::build(p_response);
+                                                SocketTypedResponse l_res = SocketTypedResponse::build(p_response);
                                                 l_res.set_typed(2, *l_count);
                                                 *out_sended_size = l_res.get_buffer_size();
                                                 thiz->request_processed = 1;

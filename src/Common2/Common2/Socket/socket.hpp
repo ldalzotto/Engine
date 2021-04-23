@@ -141,6 +141,7 @@ enum class SocketReturnCode
     GRACEFULLY_CLOSED = 1
 };
 
+// TODO -> handling disconnect
 inline SocketReturnCode socket_receive(socket_t p_socket, int8* p_begin, const uimax p_size)
 {
     int l_result = ::recv(p_socket, p_begin, (int)p_size, 0);
@@ -456,7 +457,14 @@ struct SocketRequestResponseConnection
             ListenSendResponseReturnCode l_return_code = p_request_callback_func(this->request_buffer.slice, this->response_buffer.slice, &l_response_size);
             if ((int8)l_return_code & (int8)(ListenSendResponseReturnCode::SEND_RESPONSE))
             {
-                socket_send(p_listened_socket.native_socket, this->response_buffer.Memory, l_response_size);
+#if __DEBUG
+                assert_true(l_response_size != 0);
+#endif
+                SocketReturnCode l_send_return_code = socket_send(p_listened_socket.native_socket, this->response_buffer.Memory, l_response_size);
+                if (l_send_return_code == SocketReturnCode::GRACEFULLY_CLOSED)
+                {
+                    l_result = 0;
+                }
             }
             if (((int8)l_return_code & (int8)(ListenSendResponseReturnCode::ABORT_LISTENER)) || (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED))
             {
@@ -572,15 +580,15 @@ struct SocketTypedRequest
     This is a functional object that helps to manipulate socket typed responses.
     Socket types response are a request code with a body.
  */
-struct SoketTypedResponse
+struct SocketTypedResponse
 {
     int32* code;
     Slice<int8> payload;
     uimax payload_size;
 
-    inline static SoketTypedResponse build(const Slice<int8>& p_request)
+    inline static SocketTypedResponse build(const Slice<int8>& p_request)
     {
-        SoketTypedResponse l_return;
+        SocketTypedResponse l_return;
         BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
         l_return.code = l_binary_desezrialiazer.type<int32>();
         l_return.payload = l_binary_desezrialiazer.memory;
@@ -593,9 +601,14 @@ struct SoketTypedResponse
         return sizeof(*this->code) + this->payload_size;
     };
 
-    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
+    inline void set(const int32 p_code, const Slice<int8>& p_element)
     {
         *this->code = p_code;
-        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
+        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, p_element);
+    };
+
+    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
+    {
+        this->set(p_code, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
     };
 };

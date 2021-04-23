@@ -6,17 +6,6 @@
 // #include <iphlpapi.h>
 // #include <bcrypt.h>
 
-enum class MaterialViewerRequestCode : int32
-{
-    ENGINE_THREAD_START = 0,
-    ENGINE_THREAD_STOP = 1,
-    SET_MATERIAL_AND_MESH = 2,
-    GET_ALL_MATERIALS = 4,
-    GET_ALL_MATERIALS_RETURN = 5,
-    GET_ALL_MESH = 6,
-    GET_ALL_MESH_RETURN = 7,
-};
-
 struct MaterialViewerEngineUnit
 {
     int8 is_running;
@@ -139,6 +128,17 @@ struct MaterialViewerEngineUnit
     };
 };
 
+enum class MaterialViewerRequestCode : int32
+{
+    ENGINE_THREAD_START = 0,
+    ENGINE_THREAD_STOP = 1,
+    SET_MATERIAL_AND_MESH = 2,
+    GET_ALL_MATERIALS = 4,
+    GET_ALL_MATERIALS_RETURN = 5,
+    GET_ALL_MESH = 6,
+    GET_ALL_MESH_RETURN = 7,
+};
+
 struct MaterialViewerServer
 {
     SocketServerSingleClient socket_server;
@@ -167,31 +167,27 @@ struct MaterialViewerServer
     {
         SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
         l_request_response_connection.listen(p_ctx, this->socket_server.registerd_client_socket, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
-            SocketTypedRequest l_request = SocketTypedRequest::build(p_request);
-            MaterialViewerRequestCode l_request_code = (MaterialViewerRequestCode)*l_request.code;
-            return this->handle_request(l_request_code, l_request.payload, p_response, out_response_size);
+            return this->handle_request(p_request, p_response, out_response_size);
         });
 
         if (!this->material_viewer_unit.is_freed())
         {
             this->material_viewer_unit.free(this->engine_thread);
-            // this->engine_thread.free();
         };
     };
 
   private:
-    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request(const MaterialViewerRequestCode p_code, const Slice<int8>& p_payload, const Slice<int8>& p_response, uimax* out_response_size)
+    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size)
     {
-        switch (p_code)
+        SocketTypedRequest l_request = SocketTypedRequest::build(p_request);
+        MaterialViewerRequestCode l_code = *(MaterialViewerRequestCode*)l_request.code;
+        switch (l_code)
         {
         case MaterialViewerRequestCode::ENGINE_THREAD_START:
         {
             // this->engine_thread.start();
             this->material_viewer_unit = MaterialViewerEngineUnit::allocate();
-
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(p_payload);
-            Slice<int8> l_input = l_payload_deserializer.slice();
-            JSONDeserializer l_input_des = JSONDeserializer::start(l_input);
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.payload);
             l_input_des.next_field("database");
             Slice<int8> l_database_path = l_input_des.get_currentfield().value;
             this->material_viewer_unit.start(this->engine_thread, l_database_path, 400, 400);
@@ -207,9 +203,7 @@ struct MaterialViewerServer
         break;
         case MaterialViewerRequestCode::SET_MATERIAL_AND_MESH:
         {
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(p_payload);
-            Slice<int8> l_input = l_payload_deserializer.slice();
-            JSONDeserializer l_input_des = JSONDeserializer::start(l_input);
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.payload);
 
             l_input_des.next_field("material");
             Slice<int8> l_material = l_input_des.get_currentfield().value;
@@ -240,8 +234,9 @@ struct MaterialViewerServer
 
             l_material_paths.free();
 
-            BinarySerializer::type<int32>(&p_response, (int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN);
-            BinarySerializer::slice(&p_response, l_json_deser.output.to_slice());
+            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
+            l_response.set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN, l_json_deser.output.to_slice());
+            *out_response_size = l_response.get_buffer_size();
 
             l_json_deser.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -267,11 +262,14 @@ struct MaterialViewerServer
 
             l_mesh_paths.free();
 
-            BinarySerializer::type<int32>(&p_response, (int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN);
-            BinarySerializer::slice(&p_response, l_json_deser.output.to_slice());
+            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
+            l_response.set((int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN, l_json_deser.output.to_slice());
+            *out_response_size = l_response.get_buffer_size();
 
             l_json_deser.free();
             l_asset_metadata_database.free(l_database_connection);
+
+            return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
         break;
         default:
