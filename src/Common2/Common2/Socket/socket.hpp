@@ -293,8 +293,6 @@ template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSing
         SocketContext* ctx;
         int32 port;
     } input;
-    Thread::MainInput thread_input;
-    int8* thread_input_args;
     thread_t thread;
 
     struct Sync
@@ -302,18 +300,25 @@ template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSing
         volatile int8 allocated;
     } sync;
 
+    struct Exec
+    {
+        SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>* thiz;
+        inline int8 operator()() const
+        {
+            return SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>::main(thiz);
+        };
+    } exec;
+
     SocketServerSingleClient server;
     const SocketConncetionEstablishmentFunc* socket_connection_establishment_func;
 
     inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConncetionEstablishmentFunc* p_socket_connection_establishment_func)
     {
+        this->exec = Exec{this};
         this->input = {p_ctx, p_port};
         this->sync.allocated = 0;
         this->socket_connection_establishment_func = p_socket_connection_establishment_func;
-        this->thread_input_args = (int8*)this;
-        this->thread_input.args = Slice<int8*>{1, (int8**)&this->thread_input_args};
-        this->thread_input.function = SocketSocketServerSingleClientThread::main;
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->thread = Thread::spawn_thread(this->exec);
     };
 
     inline void free(SocketContext& p_ctx)
@@ -330,9 +335,8 @@ template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSing
     };
 
   private:
-    inline static int8 main(const Slice<int8*>& p_args)
+    inline static int8 main(SocketSocketServerSingleClientThread* thiz)
     {
-        SocketSocketServerSingleClientThread* thiz = (SocketSocketServerSingleClientThread*)p_args.get(0);
         thiz->server = SocketServerSingleClient::allocate(*thiz->input.ctx, thiz->input.port);
         thiz->sync.allocated = 1;
         thiz->socket_connection_establishment_func->operator()(thiz);
@@ -362,8 +366,6 @@ template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
         SocketContext* ctx;
         int32 port;
     } input;
-    Thread::MainInput thread_input;
-    int8* thread_input_args;
     thread_t thread;
 
     struct Sync
@@ -371,18 +373,25 @@ template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
         volatile int8 allocated;
     } sync;
 
+    struct Exec
+    {
+        SocketClientThread<SocketConnectionEstablishmentFunc>* thiz;
+        inline int8 operator()() const
+        {
+            return SocketClientThread<SocketConnectionEstablishmentFunc>::main(thiz);
+        };
+    } exec;
+
     SocketClient client;
     const SocketConnectionEstablishmentFunc* socket_connection_establishment_func;
 
     inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConnectionEstablishmentFunc* p_socket_connection_establishment_func)
     {
+        this->exec = Exec{this};
         this->input = {p_ctx, p_port};
         this->sync.allocated = 0;
         this->socket_connection_establishment_func = p_socket_connection_establishment_func;
-        this->thread_input_args = (int8*)this;
-        this->thread_input.args = Slice<int8*>{1, (int8**)&this->thread_input_args};
-        this->thread_input.function = SocketClientThread::main;
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->thread = Thread::spawn_thread(this->exec);
     };
 
     inline void free(SocketContext& p_ctx)
@@ -399,9 +408,8 @@ template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
     };
 
   private:
-    inline static int8 main(const Slice<int8*>& p_args)
+    inline static int8 main(SocketClientThread* thiz)
     {
-        SocketClientThread* thiz = (SocketClientThread*)p_args.get(0);
         thiz->client = SocketClient::allocate(*thiz->input.ctx, thiz->input.port);
         thiz->sync.allocated = 1;
         thiz->socket_connection_establishment_func->operator()(thiz);

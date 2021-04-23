@@ -17,8 +17,15 @@ struct AssetSingleCompilationToken
 struct AssetCompilationThread
 {
     thread_t thread;
-    int8* thread_input_args;
-    Thread::MainInput thread_input;
+
+    struct Exec
+    {
+        AssetCompilationThread* thiz;
+        inline int8 operator()() const
+        {
+            return AssetCompilationThread::main(thiz);
+        };
+    } exec;
 
     ShaderCompiler shader_compiler;
 
@@ -162,9 +169,8 @@ struct AssetCompilationThread
         });
     };
 
-    inline static int8 main(const Slice<int8*>& p_args)
+    inline static int8 main(AssetCompilationThread* thiz)
     {
-        AssetCompilationThread* thiz = (AssetCompilationThread*)p_args.get(0);
         return thiz->_main();
     };
 
@@ -200,9 +206,8 @@ struct AssetCompilationThread
 
     inline void _start()
     {
-        this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{AssetCompilationThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->exec = Exec{this};
+        this->thread = Thread::spawn_thread(this->exec);
     };
 
     inline void _stop_and_wait()

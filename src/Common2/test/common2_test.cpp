@@ -1786,30 +1786,28 @@ inline void database_test()
 
 inline void thread_test()
 {
-    struct my_thread
+    struct s_my_thread
     {
-        inline static int8 main(const Slice<int8*>& p_args)
+        struct Input
         {
-            assert_true(p_args.Size == 2);
-            assert_true(*(int8*)p_args.get(0) == 0);
-            assert_true(*(int32*)p_args.get(1) == 5);
+            int8 arg_1;
+            int32 arg_2;
+        } input;
 
-            *(int8*)p_args.get(0) = 1;
+        inline int8 operator()()
+        {
+            assert_true(this->input.arg_1 == 0);
+            assert_true(this->input.arg_2 == 5);
+
+            this->input.arg_1 = 1;
 
             return 0;
         };
-    };
-
-    int8 l_arg_1 = 0;
-    int32 l_arg_2 = 5;
-
-    int8* l_args[2] = {(int8*)&l_arg_1, (int8*)&l_arg_2};
-
-    SliceN<int8*, 2> l_arg_arr = {(int8*)&l_arg_1, (int8*)&l_arg_2};
-    Thread::MainInput l_input = Thread::MainInput{&my_thread::main, slice_from_slicen(&l_arg_arr)};
-    thread_t l_thread = Thread::spawn_thread(l_input);
-    Thread::wait_for_end_and_terminate(l_thread, -1);
-    assert_true(l_arg_1 == 1);
+    } my_thread;
+    my_thread.input = s_my_thread::Input{0, 5};
+    thread_t l_t = Thread::spawn_thread(my_thread);
+    Thread::wait_for_end_and_terminate(l_t, -1);
+    assert_true(my_thread.input.arg_1 == 1);
 };
 
 inline void barrier_test()
@@ -1821,19 +1819,23 @@ inline void barrier_test()
         Vector<int8>* order_result;
         BarrierTwoStep* barrier;
 
-        inline static int8 main(const Slice<int8*>& p_args)
+        struct Exec
         {
-            thread_1* l_thread = (thread_1*)p_args.get(0);
-            l_thread->barrier->ask_and_wait_for_sync_1();
-            l_thread->order_result->push_back_element(1);
-            l_thread->barrier->notify_sync_2();
+            thread_1* thiz;
+            inline int8 operator()() const
+            {
+                thiz->barrier->ask_and_wait_for_sync_1();
+                thiz->order_result->push_back_element(1);
+                thiz->barrier->notify_sync_2();
 
-            l_thread->barrier->ask_and_wait_for_sync_1();
-            l_thread->order_result->push_back_element(3);
-            l_thread->barrier->notify_sync_2();
+                thiz->barrier->ask_and_wait_for_sync_1();
+                thiz->order_result->push_back_element(3);
+                thiz->barrier->notify_sync_2();
 
-            return 0;
-        };
+                return 0;
+            };
+        } exec;
+
     };
 
     struct thread_2
@@ -1841,36 +1843,34 @@ inline void barrier_test()
         Vector<int8>* order_result;
         BarrierTwoStep* barrier;
 
-        inline static int8 main(const Slice<int8*>& p_args)
-        {
-            thread_2* l_thread = (thread_2*)p_args.get(0);
+        struct Exec {
+            thread_2* thiz;
+            inline int8 operator()()const{
+                while (thiz->barrier->is_opened())
+                {
+                };
 
-            while (l_thread->barrier->is_opened())
-            {
-            };
+                thiz->order_result->push_back_element(0);
+                thiz->barrier->notify_sync_1_and_wait_for_sync_2();
+                thiz->order_result->push_back_element(2);
+                while (thiz->barrier->is_opened())
+                {
+                };
+                thiz->barrier->notify_sync_1_and_wait_for_sync_2();
+                thiz->order_result->push_back_element(4);
 
-            l_thread->order_result->push_back_element(0);
-            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
-            l_thread->order_result->push_back_element(2);
-            while (l_thread->barrier->is_opened())
-            {
-            };
-            l_thread->barrier->notify_sync_1_and_wait_for_sync_2();
-            l_thread->order_result->push_back_element(4);
-
-            return 0;
-        };
+                return 0;
+            }
+        }exec;
     };
 
     thread_1 l_t1 = thread_1{&l_order_result, &l_barrier_two_step};
-    SliceN<int8*, 1> l_t1_args = {(int8*)&l_t1};
-    Thread::MainInput l_thread_1_input = Thread::MainInput{thread_1::main, slice_from_slicen(&l_t1_args)};
-    thread_t l_tt1 = Thread::spawn_thread(l_thread_1_input);
+    l_t1.exec = thread_1::Exec{&l_t1};
+    thread_t l_tt1 = Thread::spawn_thread(l_t1.exec);
 
     thread_2 l_t2 = thread_2{&l_order_result, &l_barrier_two_step};
-    SliceN<int8*, 1> l_t2_args = {(int8*)&l_t2};
-    Thread::MainInput l_thread_2_input = Thread::MainInput{thread_2::main, slice_from_slicen(&l_t2_args)};
-    thread_t l_tt2 = Thread::spawn_thread(l_thread_2_input);
+    l_t2.exec = thread_2::Exec{&l_t2};
+    thread_t l_tt2 = Thread::spawn_thread(l_t2.exec);
 
     Thread::wait_for_end_and_terminate(l_tt1, -1);
     Thread::wait_for_end_and_terminate(l_tt2, -1);
@@ -1942,21 +1942,22 @@ inline void socket_test()
             {
                 p_socket_thread->server.wait_for_client(*p_socket_thread->input.ctx);
                 SocketRequestResponseConnection l_req_res_connection = SocketRequestResponseConnection::allocate_default();
-                l_req_res_connection.listen(*p_socket_thread->input.ctx, p_socket_thread->server.registerd_client_socket, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
-                    SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
-                    assert_true(*l_req.code == -1);
-                    uimax* l_count;
-                    l_req.get_typed(&l_count);
-                    assert_true(*l_count == 10);
-                    *l_count += 10;
+                l_req_res_connection.listen(*p_socket_thread->input.ctx, p_socket_thread->server.registerd_client_socket,
+                                            [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                                                SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
+                                                assert_true(*l_req.code == -1);
+                                                uimax* l_count;
+                                                l_req.get_typed(&l_count);
+                                                assert_true(*l_count == 10);
+                                                *l_count += 10;
 
-                    SoketTypedResponse l_res = SoketTypedResponse::build(p_response);
-                    l_res.set_typed(2, *l_count);
-                    *out_sended_size = l_res.get_buffer_size();
-                    thiz->request_processed = 1;
+                                                SoketTypedResponse l_res = SoketTypedResponse::build(p_response);
+                                                l_res.set_typed(2, *l_count);
+                                                *out_sended_size = l_res.get_buffer_size();
+                                                thiz->request_processed = 1;
 
-                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE_AND_ABORT_LISTENER;
-                });
+                                                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE_AND_ABORT_LISTENER;
+                                            });
                 l_req_res_connection.free();
             };
 

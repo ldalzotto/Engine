@@ -85,8 +85,15 @@ struct EngineRunnerThread
         volatile BarrierTwoStep end_of_step_barrier;
     } synchronization;
 
-    int8* thread_input_args;
-    Thread::MainInput thread_input;
+    struct Exec
+    {
+        EngineRunnerThread* thiz;
+        inline int8 operator()() const
+        {
+            return EngineRunnerThread::main(thiz);
+        };
+    } exec;
+
     thread_t thread;
 
     inline static EngineRunnerThread allocate()
@@ -97,17 +104,14 @@ struct EngineRunnerThread
         l_runner.engine_synchronisation = Pool<EngineSyncrhonisation>::allocate(0);
         l_runner.ask_exit = 0;
         l_runner.synchronization = Synchronization{};
-        l_runner.thread_input_args = NULL;
         l_runner.thread = NULL;
-        l_runner.thread_input = Thread::MainInput{};
         return l_runner;
     };
 
     inline void start()
     {
-        this->thread_input_args = (int8*)this;
-        this->thread_input = Thread::MainInput{EngineRunnerThread::main, Slice<int8*>::build_begin_end(&this->thread_input_args, 0, 1)};
-        this->thread = Thread::spawn_thread(this->thread_input);
+        this->exec = Exec{this};
+        this->thread = Thread::spawn_thread(this->exec);
     };
 
     inline void free()
@@ -227,10 +231,8 @@ struct EngineRunnerThread
     };
 
   private:
-    inline static int8 main(const Slice<int8*>& p_args)
+    inline static int8 main(EngineRunnerThread* thiz)
     {
-        EngineRunnerThread* thiz = (EngineRunnerThread*)p_args.get(0);
-
         while (true)
         {
             if (!thiz->ask_exit)
