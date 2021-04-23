@@ -26,6 +26,10 @@
 #define __NATIVE_WINDOW_ENABLED 1
 #endif
 
+#ifndef __SOCKET_ENABLED
+#define __SOCKET_ENABLED 0
+#endif
+
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
@@ -86,6 +90,9 @@
 #include "./Window/window.hpp"
 #endif
 
+#if __SOCKET_ENABLED
+#include "./Socket/socket.hpp"
+#endif
 
 #undef __SQLITE_ENABLED
 #undef __NATIVE_WINDOW_ENABLED
