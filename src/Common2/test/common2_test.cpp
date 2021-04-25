@@ -1934,16 +1934,16 @@ inline void socket_server_client_allocation_destruction()
 
     struct server
     {
-
         struct Exec
         {
             server* thiz;
-            inline void operator()(SocketSocketServerSingleClientThread<Exec>* p_thread) const {
-
+            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
+            {
+                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
             };
         } exec;
 
-        SocketSocketServerSingleClientThread<Exec> thread;
+        SocketSocketServerSingleClient_RequestResponse_Thread<Exec> thread;
 
         inline void start(SocketContext* p_ctx)
         {
@@ -1957,10 +1957,54 @@ inline void socket_server_client_allocation_destruction()
         };
     };
 
-    server l_server;
-    l_server.start(&l_ctx);
-    l_server.thread.sync_wait_for_allocation();
-    l_server.free(&l_ctx);
+    struct client
+    {
+        struct Exec
+        {
+            client* thiz;
+            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
+            {
+                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+            };
+        } exec;
+
+        SocketClient_RequestResponse_Thread<Exec> thread;
+
+        inline void start(SocketContext* p_ctx)
+        {
+            this->exec = Exec{this};
+            this->thread.start(p_ctx, SOCKET_DEFAULT_PORT, &this->exec);
+        };
+
+        inline void free(SocketContext* p_ctx)
+        {
+            this->thread.free(*p_ctx);
+        };
+    };
+
+    // single server, without client
+    {
+        server l_server;
+        l_server.start(&l_ctx);
+        l_server.thread.sync_wait_for_allocation();
+        l_server.free(&l_ctx);
+    }
+
+    // single server, with client
+    {
+        server l_server;
+        l_server.start(&l_ctx);
+        l_server.thread.sync_wait_for_allocation();
+
+        client l_client;
+        l_client.start(&l_ctx);
+        l_client.thread.sync_wait_for_allocation();
+
+        l_server.thread.sync_wait_for_client_detection();
+
+        l_client.free(&l_ctx);
+        l_server.free(&l_ctx);
+    }
 
     l_ctx.free();
 };
@@ -1976,31 +2020,26 @@ inline void socket_test()
         {
             TestSocketServerThread* thiz;
 
-            inline void operator()(SocketSocketServerSingleClientThread<SocketConnectionEstablishment>* p_socket_thread) const
+            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
             {
-                SocketRequestResponseConnection l_req_res_connection = SocketRequestResponseConnection::allocate_default();
-                l_req_res_connection.listen(*p_socket_thread->input.ctx, p_socket_thread->server.registerd_client_socket,
-                                            [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
-                                                SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
-                                                assert_true(*l_req.code == -1);
-                                                uimax* l_count;
-                                                l_req.get_typed(&l_count);
-                                                assert_true(*l_count == 10);
-                                                *l_count += 10;
+                SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
+                assert_true(*l_req.code == -1);
+                uimax* l_count;
+                l_req.get_typed(&l_count);
+                assert_true(*l_count == 10);
+                *l_count += 10;
 
-                                                SocketTypedResponse l_res = SocketTypedResponse::build(p_response);
-                                                l_res.set_typed(2, *l_count);
-                                                *out_sended_size = l_res.get_buffer_size();
-                                                thiz->request_processed = 1;
+                SocketTypedResponse l_res = SocketTypedResponse::build(p_response);
+                l_res.set_typed(2, *l_count);
+                *out_sended_size = l_res.get_buffer_size();
+                thiz->request_processed = 1;
 
-                                                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
-                                            });
-                l_req_res_connection.free();
+                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
             };
 
         } socket_connection_establishment;
 
-        SocketSocketServerSingleClientThread<SocketConnectionEstablishment> server_thread;
+        SocketSocketServerSingleClient_RequestResponse_Thread<SocketConnectionEstablishment> server_thread;
         volatile int8 request_processed;
 
         inline void start(SocketContext* p_ctx)
@@ -2022,10 +2061,10 @@ inline void socket_test()
         {
             TestSocketClientThread* thiz;
 
-            inline void operator()(SocketClientThread<SocketConnectionEstablishment>* p_socket_thread) const
+            inline void operator()() const
             {
                 SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
-                l_request_connection.listen(*p_socket_thread->input.ctx, p_socket_thread->client.client_socket, [&](const Slice<int8>& p_request) {
+                l_request_connection.listen(*thiz->client_thread.input.ctx, thiz->client_thread.client.client_socket, [&](const Slice<int8>& p_request) {
                     SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
                     assert_true(*l_req.code == 2);
                     uimax* l_count;
@@ -2079,6 +2118,7 @@ inline void socket_test()
 
     l_client_send_connection.free();
     l_cc_trhead.free(l_ctx);
+
     l_ss_thread.free(l_ctx);
 
     l_ctx.free();
@@ -2110,6 +2150,20 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
+#if 0
+    for (loop(i, 0, 1000))
+    {
+        socket_server_client_allocation_destruction();
+    }
+#endif
     socket_server_client_allocation_destruction();
     socket_test();
+#if 0
+    for(loop(i, 0, 1000))
+    {
+        socket_test();
+    }
+#endif
+
+    memleak_ckeck();
 }

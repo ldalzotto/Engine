@@ -152,7 +152,6 @@ inline void socket_shutdown(SocketContext& p_ctx, socket_t* p_socket)
 #if __DEBUG
     assert_true(*p_socket != INVALID_SOCKET);
 #endif
-    // TODO -> gracefully shutdown
     HANDLE l_wsa_event = WSACreateEvent();
     WSAEventSelect(*p_socket, l_wsa_event, FD_CLOSE);
     shutdown(*p_socket, SD_BOTH);
@@ -163,20 +162,21 @@ inline void socket_shutdown(SocketContext& p_ctx, socket_t* p_socket)
 enum class SocketReturnCode
 {
     IDLING = 0,
-    GRACEFULLY_CLOSED = 1
+    GRACEFULLY_CLOSED = 1,
+    CLOSED = 2
 };
 
-// TODO -> handling disconnect
 inline SocketReturnCode socket_receive(socket_t p_socket, int8* p_begin, const uimax p_size)
 {
     int l_result = ::recv(p_socket, p_begin, (int)p_size, 0);
-#if __DEBUG
-    assert_true(l_result != SOCKET_ERROR);
-#endif
 
     if (l_result == 0)
     {
         return SocketReturnCode::GRACEFULLY_CLOSED;
+    }
+    else if (l_result == SOCKET_ERROR)
+    {
+        return SocketReturnCode::CLOSED;
     }
     return SocketReturnCode::IDLING;
 };
@@ -195,10 +195,36 @@ inline SocketReturnCode socket_send(socket_t p_socket, const int8* p_begin, cons
     return SocketReturnCode::IDLING;
 };
 
+inline int8 socket_accept_silent(socket_t p_socket, socket_t* out_socket)
+{
+    *out_socket = ::accept(p_socket, NULL, NULL);
+#if __MEMLEAK
+    if (*out_socket != INVALID_SOCKET)
+    {
+        push_ptr_to_tracked((int8*)*out_socket);
+    }
+#endif
+    return *out_socket != INVALID_SOCKET;
+};
+
 struct Socket
 {
+    enum class State : int8
+    {
+        UNDEFINED = 0,
+        ALLOCATED = 1,
+        FREE_GRACEFULLY = 2,
+        FREE = 3
+    };
+    volatile State state;
+
     socket_t native_socket;
     addrinfo* native_addr_info;
+
+    inline static Socket build_default()
+    {
+        return Socket{State::UNDEFINED, INVALID_SOCKET, NULL};
+    };
 
     inline static Socket allocate_as_server(SocketContext& p_ctx, const int32 p_port)
     {
@@ -209,7 +235,8 @@ struct Socket
         l_addr_info.ai_flags = AI_PASSIVE;
 
         Socket l_socket;
-        _allocate_socket_and_bind(l_socket, p_ctx, l_addr_info, p_port);
+        _allocate_socket_and_bind_and_listen(l_socket, p_ctx, l_addr_info, p_port);
+        l_socket.state = State::ALLOCATED;
         return l_socket;
     };
 
@@ -222,34 +249,41 @@ struct Socket
 
         Socket l_socket;
         _allocate_socket_and_connect(l_socket, p_ctx, l_addr_info, p_port);
-        return l_socket;
-    };
-
-    inline static Socket allocate_as_request_listener(SocketContext& p_ctx, const Socket p_listened_socket)
-    {
-        Socket l_socket;
-        l_socket.native_socket = socket_allocate(p_ctx, accept(p_listened_socket.native_socket, NULL, NULL));
-        l_socket.native_addr_info = NULL;
+        l_socket.state = State::ALLOCATED;
         return l_socket;
     };
 
     inline void free_gracefully(SocketContext& p_ctx)
     {
+        // /!\ it is very important to set the socket state before calling native functions because the effective deallocation of the socket is deferred until all requests are completed
+        this->state = State::FREE_GRACEFULLY;
         freeaddrinfo(this->native_addr_info);
         this->native_addr_info = NULL;
         socket_shutdown(p_ctx, &this->native_socket);
     };
 
-    inline void abort(SocketContext& p_ctx)
+    inline void close(SocketContext& p_ctx)
     {
+        // /!\ it is very important to set the socket state before calling native functions because the effective deallocation of the socket is deferred until all requests are completed
+        this->state = State::FREE;
         freeaddrinfo(this->native_addr_info);
         this->native_addr_info = NULL;
         socket_close(p_ctx, &this->native_socket);
     };
 
-    inline int8 is_freed()
+    inline int8 state_is_allocated()
     {
-        return this->native_socket == INVALID_SOCKET;
+        return this->state == State::ALLOCATED;
+    };
+
+    inline int8 state_if_free_gracefully()
+    {
+        return this->state == State::FREE_GRACEFULLY;
+    };
+
+    inline int8 state_is_free()
+    {
+        return this->state == State::FREE || this->state == State::UNDEFINED;
     };
 
     inline SocketReturnCode send(const Slice<int8>& p_buffer)
@@ -257,8 +291,22 @@ struct Socket
         return socket_send(this->native_socket, p_buffer.Begin, p_buffer.Size);
     };
 
+    inline int8 accept_silent(Socket* out_socket)
+    {
+        int8 l_return = socket_accept_silent(this->native_socket, &out_socket->native_socket);
+        if (l_return)
+        {
+            out_socket->state = State::ALLOCATED;
+        }
+        else
+        {
+            out_socket->state = State::UNDEFINED;
+        }
+        return l_return;
+    };
+
   private:
-    inline static void _allocate_socket_and_bind(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
+    inline static void _allocate_socket_and_bind_and_listen(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
     {
         int8 p_port_str_raw[ToString::int32str_size];
         ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
@@ -268,6 +316,8 @@ struct Socket
 
         p_socket.native_socket = socket_allocate(p_ctx, socket(p_socket.native_addr_info->ai_family, p_socket.native_addr_info->ai_socktype, p_socket.native_addr_info->ai_protocol));
         winsock_error_handler(bind(p_socket.native_socket, p_socket.native_addr_info->ai_addr, (int)p_socket.native_addr_info->ai_addrlen));
+
+        winsock_error_handler(listen(p_socket.native_socket, SOMAXCONN));
     };
 
     inline static void _allocate_socket_and_connect(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
@@ -303,115 +353,37 @@ struct Socket
 
 struct SocketServerSingleClient
 {
-    int32 port;
     Socket server_socket;
     Socket registerd_client_socket;
 
     inline static SocketServerSingleClient allocate(SocketContext& p_ctx, const int32 p_port)
     {
-        return SocketServerSingleClient{p_port};
+        return SocketServerSingleClient{Socket::allocate_as_server(p_ctx, p_port), Socket::build_default()};
     };
 
     inline void free(SocketContext& p_ctx)
     {
-        if (!this->server_socket.is_freed())
+        // some client may already be allocated or not. We wave no way to know it at compile time because the registerd_client_socket may be deallocated when the client disconnect.
+        if (this->registerd_client_socket.state_is_allocated())
         {
-            this->server_socket.abort(p_ctx);
+            this->registerd_client_socket.free_gracefully(p_ctx);
+            this->registerd_client_socket.close(p_ctx);
         }
+        else if (this->registerd_client_socket.state_if_free_gracefully())
+        {
+            this->registerd_client_socket.close(p_ctx);
+        }
+        this->server_socket.close(p_ctx);
 
 #if __DEBUG
-        assert_true(this->server_socket.is_freed());
-        assert_true(this->registerd_client_socket.is_freed());
+        assert_true(this->server_socket.state_is_free());
+        assert_true(this->registerd_client_socket.state_is_free());
 #endif
     };
 
-    inline void wait_for_client(SocketContext& p_ctx)
+    inline int8 wait_for_client(SocketContext& p_ctx)
     {
-        this->server_socket = Socket::allocate_as_server(p_ctx, this->port);
-        if (listen(this->server_socket.native_socket, SOMAXCONN) == 0)
-        {
-            // TODO -> bug, the listen return 0 when we close the listening socket ?
-            this->registerd_client_socket = Socket::allocate_as_request_listener(p_ctx, this->server_socket);
-            this->server_socket.abort(p_ctx);
-        }
-        else
-        {
-#if __DEBUG
-            assert_true(this->server_socket.is_freed());
-#endif
-        }
-    };
-};
-
-template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSingleClientThread
-{
-
-    struct Input
-    {
-        SocketContext* ctx;
-        int32 port;
-    } input;
-    thread_t thread;
-
-    struct Sync
-    {
-        volatile int8 allocated;
-    } sync;
-
-    struct Exec
-    {
-        SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>* thiz;
-        inline int8 operator()() const
-        {
-            return SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>::main(thiz);
-        };
-    } exec;
-
-    SocketServerSingleClient server;
-    int8 ask_end_thread;
-    const SocketConncetionEstablishmentFunc* socket_connection_establishment_func;
-
-    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConncetionEstablishmentFunc* p_socket_connection_establishment_func)
-    {
-        this->exec = Exec{this};
-        this->input = {p_ctx, p_port};
-        this->sync.allocated = 0;
-        this->ask_end_thread = 0;
-        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
-        this->thread = Thread::spawn_thread(this->exec);
-    };
-
-    inline void free(SocketContext& p_ctx)
-    {
-        this->ask_end_thread = 1;
-        this->server.free(p_ctx);
-        Thread::wait_for_end_and_terminate(this->thread, -1);
-    };
-
-    inline void sync_wait_for_allocation()
-    {
-        while (!this->sync.allocated)
-        {
-        }
-    };
-
-  private:
-    inline static int8 main(SocketSocketServerSingleClientThread* thiz)
-    {
-        thiz->server = SocketServerSingleClient::allocate(*thiz->input.ctx, thiz->input.port);
-        thiz->sync.allocated = 1;
-        while (1)
-        {
-            thiz->server.wait_for_client(*thiz->input.ctx);
-            thiz->socket_connection_establishment_func->operator()(thiz);
-
-            if (thiz->ask_end_thread)
-            {
-                break;
-            }
-        }
-
-        return 0;
+        return this->server_socket.accept_silent(&this->registerd_client_socket);
     };
 };
 
@@ -427,64 +399,10 @@ struct SocketClient
     inline void free(SocketContext& p_ctx)
     {
         this->client_socket.free_gracefully(p_ctx);
-    };
-};
-
-template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
-{
-    struct Input
-    {
-        SocketContext* ctx;
-        int32 port;
-    } input;
-    thread_t thread;
-
-    struct Sync
-    {
-        volatile int8 allocated;
-    } sync;
-
-    struct Exec
-    {
-        SocketClientThread<SocketConnectionEstablishmentFunc>* thiz;
-        inline int8 operator()() const
-        {
-            return SocketClientThread<SocketConnectionEstablishmentFunc>::main(thiz);
-        };
-    } exec;
-
-    SocketClient client;
-    const SocketConnectionEstablishmentFunc* socket_connection_establishment_func;
-
-    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConnectionEstablishmentFunc* p_socket_connection_establishment_func)
-    {
-        this->exec = Exec{this};
-        this->input = {p_ctx, p_port};
-        this->sync.allocated = 0;
-        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
-        this->thread = Thread::spawn_thread(this->exec);
-    };
-
-    inline void free(SocketContext& p_ctx)
-    {
-        this->client.free(p_ctx);
-        Thread::wait_for_end_and_terminate(this->thread, -1);
-    };
-
-    inline void sync_wait_for_allocation()
-    {
-        while (!this->sync.allocated)
-        {
-        }
-    };
-
-  private:
-    inline static int8 main(SocketClientThread* thiz)
-    {
-        thiz->client = SocketClient::allocate(*thiz->input.ctx, thiz->input.port);
-        thiz->sync.allocated = 1;
-        thiz->socket_connection_establishment_func->operator()(thiz);
-        return 0;
+        this->client_socket.close(p_ctx);
+#if __DEBUG
+        assert_true(this->client_socket.state_is_free());
+#endif
     };
 };
 
@@ -524,7 +442,18 @@ struct SocketRequestResponseConnection
 
             if (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED)
             {
-                socket_close(p_ctx, &p_listened_socket.native_socket);
+                if (p_listened_socket.state_is_allocated())
+                {
+                    p_listened_socket.free_gracefully(p_ctx);
+                }
+                break;
+            }
+            else if (l_receive_return == SocketReturnCode::CLOSED)
+            {
+                if (p_listened_socket.state_is_allocated())
+                {
+                    p_listened_socket.state = Socket::State::FREE_GRACEFULLY;
+                }
                 break;
             }
 
@@ -535,10 +464,22 @@ struct SocketRequestResponseConnection
 #if __DEBUG
                 assert_true(l_response_size != 0);
 #endif
-                SocketReturnCode l_send_return_code = socket_send(p_listened_socket.native_socket, this->response_buffer.Memory, l_response_size);
+
+                SocketReturnCode l_send_return_code = p_listened_socket.send(Slice<int8>::build_memory_elementnb(this->response_buffer.Memory, l_response_size));
                 if (l_send_return_code == SocketReturnCode::GRACEFULLY_CLOSED)
                 {
-                    socket_close(p_ctx, &p_listened_socket.native_socket);
+                    if (p_listened_socket.state_is_allocated())
+                    {
+                        p_listened_socket.free_gracefully(p_ctx);
+                    }
+                    break;
+                }
+                else if (l_receive_return == SocketReturnCode::CLOSED)
+                {
+                    if (p_listened_socket.state_is_allocated())
+                    {
+                        p_listened_socket.state = Socket::State::FREE_GRACEFULLY;
+                    }
                     break;
                 }
             }
@@ -580,7 +521,18 @@ struct SocketRequestConnection
             SocketReturnCode l_receive_return = socket_receive(p_listened_socket.native_socket, this->request_buffer.Memory, this->request_buffer.Capacity);
             if (l_receive_return == SocketReturnCode::GRACEFULLY_CLOSED)
             {
-                socket_close(p_ctx, &p_listened_socket.native_socket);
+                if (p_listened_socket.state_is_allocated())
+                {
+                    p_listened_socket.free_gracefully(p_ctx);
+                }
+                break;
+            }
+            else if (l_receive_return == SocketReturnCode::CLOSED)
+            {
+                if (p_listened_socket.state_is_allocated())
+                {
+                    p_listened_socket.state = Socket::State::FREE_GRACEFULLY;
+                }
                 break;
             }
 
@@ -610,6 +562,219 @@ struct SocketSendConnection
     inline SocketReturnCode send(Socket& p_listened_socket)
     {
         return p_listened_socket.send(this->send_buffer.slice);
+    };
+};
+
+template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSingleClientThread
+{
+
+    struct Input
+    {
+        SocketContext* ctx;
+        int32 port;
+    } input;
+    thread_t thread;
+
+    struct Sync
+    {
+        volatile int8 allocated;
+    } sync;
+
+    struct Exec
+    {
+        SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>* thiz;
+        inline int8 operator()() const
+        {
+            return SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>::main(thiz);
+        };
+    } exec;
+
+    SocketServerSingleClient server;
+    int8 ask_end_thread;
+    const SocketConncetionEstablishmentFunc* socket_connection_establishment_func;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConncetionEstablishmentFunc* p_socket_connection_establishment_func)
+    {
+        this->server = SocketServerSingleClient::allocate(*p_ctx, p_port);
+        this->exec = Exec{this};
+        this->input = {p_ctx, p_port};
+        this->sync.allocated = 0;
+        this->ask_end_thread = 0;
+        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
+        this->thread = Thread::spawn_thread(this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->ask_end_thread = 1;
+        this->server.free(p_ctx);
+        Thread::wait_for_end_and_terminate(this->thread, -1);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        while (!this->server.server_socket.state_is_allocated())
+        {
+        }
+    };
+
+    inline void sync_wait_for_client_detection()
+    {
+        while (!this->server.registerd_client_socket.state_is_allocated())
+        {
+        }
+    };
+
+  private:
+    inline static int8 main(SocketSocketServerSingleClientThread<SocketConncetionEstablishmentFunc>* thiz)
+    {
+        while (1)
+        {
+            if (thiz->server.wait_for_client(*thiz->input.ctx))
+            {
+                thiz->socket_connection_establishment_func->operator()();
+            }
+            else
+            {
+                break;
+            }
+
+            if (thiz->ask_end_thread)
+            {
+                break;
+            }
+        }
+
+        return 0;
+    };
+};
+
+template <class RequesthandlerFunc> struct SocketSocketServerSingleClient_RequestResponse_Thread
+{
+    struct Exec
+    {
+        SocketSocketServerSingleClient_RequestResponse_Thread<RequesthandlerFunc>* thiz;
+        inline void operator()() const
+        {
+            SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
+            l_request_response_connection.listen(*thiz->thread.input.ctx, thiz->thread.server.registerd_client_socket,
+                                                 [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                                                     return thiz->request_handler_func->operator()(p_request, p_response, out_sended_size);
+                                                 });
+            l_request_response_connection.free();
+        };
+    } exec;
+
+    const RequesthandlerFunc* request_handler_func;
+    SocketSocketServerSingleClientThread<Exec> thread;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const RequesthandlerFunc* p_request_handler_func)
+    {
+        this->exec = Exec{this};
+        this->request_handler_func = p_request_handler_func;
+        this->thread.start(p_ctx, p_port, &this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->thread.free(p_ctx);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        this->thread.sync_wait_for_allocation();
+    };
+
+    inline void sync_wait_for_client_detection()
+    {
+        this->thread.sync_wait_for_client_detection();
+    };
+};
+
+template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
+{
+    struct Input
+    {
+        SocketContext* ctx;
+        int32 port;
+    } input;
+    thread_t thread;
+
+    struct Exec
+    {
+        SocketClientThread<SocketConnectionEstablishmentFunc>* thiz;
+        inline int8 operator()() const
+        {
+            return SocketClientThread<SocketConnectionEstablishmentFunc>::main(thiz);
+        };
+    } exec;
+
+    SocketClient client;
+    const SocketConnectionEstablishmentFunc* socket_connection_establishment_func;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const SocketConnectionEstablishmentFunc* p_socket_connection_establishment_func)
+    {
+        this->exec = Exec{this};
+        this->input = {p_ctx, p_port};
+        this->socket_connection_establishment_func = p_socket_connection_establishment_func;
+        this->thread = Thread::spawn_thread(this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->client.free(p_ctx);
+        Thread::wait_for_end_and_terminate(this->thread, -1);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        while (!this->client.client_socket.state_is_allocated())
+        {
+        }
+    };
+
+  private:
+    inline static int8 main(SocketClientThread* thiz)
+    {
+        thiz->client = SocketClient::allocate(*thiz->input.ctx, thiz->input.port);
+        thiz->socket_connection_establishment_func->operator()();
+        return 0;
+    };
+};
+
+template <class RequesthandlerFunc> struct SocketClient_RequestResponse_Thread
+{
+    struct Exec
+    {
+        SocketClient_RequestResponse_Thread<RequesthandlerFunc>* thiz;
+        inline void operator()() const
+        {
+            SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
+            l_request_response_connection.listen(*thiz->thread.input.ctx, thiz->thread.client.client_socket, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                return thiz->request_handler_func->operator()(p_request, p_response, out_sended_size);
+            });
+            l_request_response_connection.free();
+        };
+    } exec;
+
+    const RequesthandlerFunc* request_handler_func;
+    SocketClientThread<Exec> thread;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port, const RequesthandlerFunc* p_request_handler_func)
+    {
+        this->exec = Exec{this};
+        this->request_handler_func = p_request_handler_func;
+        this->thread.start(p_ctx, p_port, &this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->thread.free(p_ctx);
+    };
+
+    inline void sync_wait_for_allocation()
+    {
+        this->thread.sync_wait_for_allocation();
     };
 };
 
