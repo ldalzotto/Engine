@@ -1835,7 +1835,6 @@ inline void barrier_test()
                 return 0;
             };
         } exec;
-
     };
 
     struct thread_2
@@ -1843,9 +1842,11 @@ inline void barrier_test()
         Vector<int8>* order_result;
         BarrierTwoStep* barrier;
 
-        struct Exec {
+        struct Exec
+        {
             thread_2* thiz;
-            inline int8 operator()()const{
+            inline int8 operator()() const
+            {
                 while (thiz->barrier->is_opened())
                 {
                 };
@@ -1861,7 +1862,7 @@ inline void barrier_test()
 
                 return 0;
             }
-        }exec;
+        } exec;
     };
 
     thread_1 l_t1 = thread_1{&l_order_result, &l_barrier_two_step};
@@ -1927,6 +1928,43 @@ inline void native_window()
     WindowAllocator::free(l_window);
 };
 
+inline void socket_server_client_allocation_destruction()
+{
+    SocketContext l_ctx = SocketContext::allocate();
+
+    struct server
+    {
+
+        struct Exec
+        {
+            server* thiz;
+            inline void operator()(SocketSocketServerSingleClientThread<Exec>* p_thread) const {
+
+            };
+        } exec;
+
+        SocketSocketServerSingleClientThread<Exec> thread;
+
+        inline void start(SocketContext* p_ctx)
+        {
+            this->exec = Exec{this};
+            this->thread.start(p_ctx, SOCKET_DEFAULT_PORT, &this->exec);
+        };
+
+        inline void free(SocketContext* p_ctx)
+        {
+            this->thread.free(*p_ctx);
+        };
+    };
+
+    server l_server;
+    l_server.start(&l_ctx);
+    l_server.thread.sync_wait_for_allocation();
+    l_server.free(&l_ctx);
+
+    l_ctx.free();
+};
+
 /* Creates a SocketSocketServerSingleClient and a SocketClient. Send data in both direction. */
 inline void socket_test()
 {
@@ -1940,7 +1978,6 @@ inline void socket_test()
 
             inline void operator()(SocketSocketServerSingleClientThread<SocketConnectionEstablishment>* p_socket_thread) const
             {
-                p_socket_thread->server.wait_for_client(*p_socket_thread->input.ctx);
                 SocketRequestResponseConnection l_req_res_connection = SocketRequestResponseConnection::allocate_default();
                 l_req_res_connection.listen(*p_socket_thread->input.ctx, p_socket_thread->server.registerd_client_socket,
                                             [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
@@ -1956,7 +1993,7 @@ inline void socket_test()
                                                 *out_sended_size = l_res.get_buffer_size();
                                                 thiz->request_processed = 1;
 
-                                                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE_AND_ABORT_LISTENER;
+                                                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
                                             });
                 l_req_res_connection.free();
             };
@@ -1996,7 +2033,7 @@ inline void socket_test()
                     assert_true(*l_count == 20);
                     thiz->request_processed = 1;
 
-                    return SocketRequestConnection::ListenSendResponseReturnCode::ABORT_LISTENER;
+                    return SocketRequestConnection::ListenSendResponseReturnCode::NOTHING;
                 });
                 l_request_connection.free();
             };
@@ -2028,9 +2065,9 @@ inline void socket_test()
 
     uimax l_input = 10;
 
-    SliceN<int8, 512> l_client_buf{};
-    SocketTypedRequest::build(slice_from_slicen(&l_client_buf)).set_typed(-1, l_input);
-    assert_true(l_cc_trhead.client_thread.client.client_socket.send(slice_from_slicen(&l_client_buf)) == SocketReturnCode::IDLING);
+    SocketSendConnection l_client_send_connection = SocketSendConnection::allocate_default();
+    SocketTypedRequest::build(l_client_send_connection.send_buffer.slice).set_typed(-1, l_input);
+    assert_true(l_client_send_connection.send(l_cc_trhead.client_thread.client.client_socket) == SocketReturnCode::IDLING);
 
     while (!l_ss_thread.request_processed)
     {
@@ -2040,6 +2077,7 @@ inline void socket_test()
     {
     }
 
+    l_client_send_connection.free();
     l_cc_trhead.free(l_ctx);
     l_ss_thread.free(l_ctx);
 
@@ -2072,5 +2110,6 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
+    socket_server_client_allocation_destruction();
     socket_test();
 }
