@@ -133,7 +133,9 @@ enum class MaterialViewerRequestCode : int32
     ENGINE_THREAD_START = 0,
     ENGINE_THREAD_START_RETURN = 8,
     ENGINE_THREAD_STOP = 1,
+    ENGINE_THREAD_STOP_RETURN = 9,
     SET_MATERIAL_AND_MESH = 2,
+    SET_MATERIAL_AND_MESH_RETURN = 10,
     GET_ALL_MATERIALS = 4,
     GET_ALL_MATERIALS_RETURN = 5,
     GET_ALL_MESH = 6,
@@ -167,32 +169,108 @@ struct MaterialViewerServerV2
         this->engine_thread.start();
     };
 
-    // TODO -> adding a variation that doesn't consume and return json ?
-    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size)
+    struct EngineThreadStartInputJSON
     {
-        SocketTypedRequest l_request = SocketTypedRequest::build(p_request);
-        MaterialViewerRequestCode l_code = *(MaterialViewerRequestCode*)l_request.code;
-        switch (l_code)
+        Slice<int8> database;
+
+        inline static void serialize(JSONSerializer& p_json, const Slice<int8>& p_database)
+        {
+            p_json.push_field(slice_int8_build_rawstr("database"), p_database);
+        };
+
+        inline static EngineThreadStartInputJSON deserialize(JSONDeserializer& p_json)
+        {
+            EngineThreadStartInputJSON l_return;
+            p_json.next_field("database");
+            l_return.database = p_json.get_currentfield().value;
+            return l_return;
+        };
+    };
+
+    struct GetAllMaterialsOutputJSON
+    {
+        Vector<Span<int8>> materials;
+
+        inline void free()
+        {
+            for (loop(i, 0, this->materials.Size))
+            {
+                this->materials.get(i).free();
+            }
+            this->materials.free();
+        };
+
+        inline static GetAllMaterialsOutputJSON deserialize(JSONDeserializer& p_json)
+        {
+            GetAllMaterialsOutputJSON l_return;
+            JSONDeserializer l_materials_array_deserializer = JSONDeserializer::allocate_default();
+            p_json.next_array("materials", &l_materials_array_deserializer);
+
+            // TODO -> having a way to get the number of elements in a json array ?
+            l_return.materials = Vector<Span<int8>>::allocate(0);
+            Slice<int8> l_material_str;
+            while (l_materials_array_deserializer.next_array_plain_value(&l_material_str))
+            {
+                l_return.materials.push_back_element(Span<int8>::allocate_slice(l_material_str));
+            }
+            l_materials_array_deserializer.free();
+
+            return l_return;
+        };
+
+        inline static void serialize_from_path(JSONSerializer& p_json, const AssetMetadataDatabase::Paths& p_paths)
+        {
+            p_json.start_array(slice_int8_build_rawstr("materials"));
+            for (loop(i, 0, p_paths.data.Size))
+            {
+                p_json.push_array_field(p_paths.data.get(i).slice);
+            }
+            p_json.end_array();
+        };
+    };
+
+    struct SetMaterialAndMeshInputJSON
+    {
+        Slice<int8> material;
+        Slice<int8> mesh;
+
+        inline static SetMaterialAndMeshInputJSON deserialize(JSONDeserializer& p_json)
+        {
+            SetMaterialAndMeshInputJSON l_return;
+            p_json.next_field("material");
+            l_return.material = p_json.get_currentfield().value;
+            p_json.next_field("mesh");
+            l_return.mesh = p_json.get_currentfield().value;
+            return l_return;
+        };
+
+        inline void serialize(JSONSerializer& p_json) const
+        {
+            p_json.push_field(slice_int8_build_rawstr("material"), this->material);
+            p_json.push_field(slice_int8_build_rawstr("mesh"), this->mesh);
+        };
+    };
+
+    // TODO -> adding a variation that doesn't consume and return json ?
+    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request_json(const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_response_slice)
+    {
+        SocketTypedHeaderRequestReader l_request = SocketTypedHeaderRequestReader::build(p_request);
+        switch (*(MaterialViewerRequestCode*)l_request.code)
         {
         case MaterialViewerRequestCode::ENGINE_THREAD_START:
         {
             // this->engine_thread.start();
             this->material_viewer_unit = MaterialViewerEngineUnit::allocate();
 
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_request.payload);
-            Slice<int8> l_heder = l_payload_deserializer.slice();
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.body);
+            EngineThreadStartInputJSON l_input = EngineThreadStartInputJSON::deserialize(l_input_des);
 
-            JSONDeserializer l_input_des = JSONDeserializer::start(l_payload_deserializer.slice());
-            l_input_des.next_field("database");
-            Slice<int8> l_database_path = l_input_des.get_currentfield().value;
-            this->material_viewer_unit.start(this->engine_thread, l_database_path, 400, 400);
+            this->material_viewer_unit.start(this->engine_thread, l_input.database, 400, 400);
             this->engine_thread.sync_wait_for_engine_execution_unit_to_be_allocated(this->material_viewer_unit.engine_execution_unit);
 
             l_input_des.free();
 
-            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
-            l_response.set_2((int32)MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN, l_heder, Slice<int8>::build_default());
-            *out_response_size = l_response.get_buffer_size();
+            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
 
             return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
@@ -200,21 +278,26 @@ struct MaterialViewerServerV2
         case MaterialViewerRequestCode::ENGINE_THREAD_STOP:
         {
             this->material_viewer_unit.stop(this->engine_thread);
+
+            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_STOP_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
+
+            return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
         break;
         case MaterialViewerRequestCode::SET_MATERIAL_AND_MESH:
         {
-            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.payload);
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.body);
 
-            l_input_des.next_field("material");
-            Slice<int8> l_material = l_input_des.get_currentfield().value;
-            l_input_des.next_field("mesh");
-            Slice<int8> l_mesh = l_input_des.get_currentfield().value;
+            SetMaterialAndMeshInputJSON l_input = SetMaterialAndMeshInputJSON::deserialize(l_input_des);
 
-            this->material_viewer_unit.set_new_material(HashSlice(l_material));
-            this->material_viewer_unit.set_new_mesh(HashSlice(l_mesh));
+            this->material_viewer_unit.set_new_material(HashSlice(l_input.material));
+            this->material_viewer_unit.set_new_mesh(HashSlice(l_input.mesh));
 
             l_input_des.free();
+
+            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::SET_MATERIAL_AND_MESH_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
+
+            return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
         break;
         case MaterialViewerRequestCode::GET_ALL_MATERIALS:
@@ -225,22 +308,12 @@ struct MaterialViewerServerV2
 
             JSONSerializer l_json_serializer = JSONSerializer::allocate_default();
             l_json_serializer.start();
-            l_json_serializer.start_array(slice_int8_build_rawstr("materials"));
-            for (loop(i, 0, l_material_paths.data.Size))
-            {
-                l_json_serializer.push_array_field(l_material_paths.data.get(i).slice);
-            }
-            l_json_serializer.end_array();
+            GetAllMaterialsOutputJSON::serialize_from_path(l_json_serializer, l_material_paths);
             l_json_serializer.end();
 
             l_material_paths.free();
 
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_request.payload);
-            Slice<int8> l_heder = l_payload_deserializer.slice();
-
-            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
-            l_response.set_2((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN, l_heder, l_json_serializer.output.to_slice());
-            *out_response_size = l_response.get_buffer_size();
+            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN, l_request.header, l_json_serializer.output.to_slice(), p_response);
 
             l_json_serializer.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -266,9 +339,7 @@ struct MaterialViewerServerV2
 
             l_mesh_paths.free();
 
-            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
-            l_response.set((int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN, l_json_deser.output.to_slice());
-            *out_response_size = l_response.get_buffer_size();
+            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN, l_request.header, l_json_deser.output.to_slice(), p_response);
 
             l_json_deser.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -287,148 +358,132 @@ struct MaterialViewerServerV2
 struct MaterialViewerClient
 {
     SocketSendConnection client_sender;
-
-    struct ResponseListenerClosure
-    {
-        int8 is_processed;
-        int8* client_return_buffer;
-
-        inline static ResponseListenerClosure build(int8* p_client_return_buffer)
-        {
-            return ResponseListenerClosure{0, p_client_return_buffer};
-        };
-    };
-
-    Pool<ResponseListenerClosure> response_closures;
+    SocketRequestResponseTracker response_tracker;
 
     inline static MaterialViewerClient allocate()
     {
-        return MaterialViewerClient{SocketSendConnection::allocate_default(), Pool<ResponseListenerClosure>::allocate(0)};
+        return MaterialViewerClient{SocketSendConnection::allocate_default(), SocketRequestResponseTracker::allocate()};
     };
 
     inline void free()
     {
-#if __DEBUG
-        assert_true(!this->response_closures.has_allocated_elements());
-#endif
-
         this->client_sender.free();
-        this->response_closures.free();
+        this->response_tracker.free();
     };
 
     inline void ENGINE_THREAD_START(SocketContext& p_ctx, SocketClient& p_client, const Slice<int8>& p_database)
     {
-        Token<ResponseListenerClosure> l_request_id = this->response_closures.alloc_element(ResponseListenerClosure::build(NULL));
+        Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id =
+            this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::ResponseListenerClosure::build(NULL));
 
         JSONSerializer l_serializer = JSONSerializer::allocate_default();
         l_serializer.start();
-        l_serializer.push_field(slice_int8_build_rawstr("database"), p_database);
+        MaterialViewerServerV2::EngineThreadStartInputJSON::serialize(l_serializer, p_database);
         l_serializer.end();
 
-        SocketTypedResponse l_request = SocketTypedResponse::build(this->client_sender.send_buffer.slice);
-        l_request.set_2((int32)MaterialViewerRequestCode::ENGINE_THREAD_START, Slice<Token<ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id), l_serializer.output.to_slice());
+        Slice<int8> l_written_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_START,
+                                                                          Slice<Token<SocketRequestResponseTracker::ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id),
+                                                                          l_serializer.output.to_slice(), this->client_sender.send_buffer.slice);
 
-        this->client_sender.send(p_ctx, p_client.client_socket);
+        this->client_sender.send_v2(p_ctx, p_client.client_socket, l_written_slice);
 
-        int8 l_is_processed = 0;
-        while (!l_is_processed)
-        {
-            // TODO -> having a timer ?
-            l_is_processed = this->response_closures.get(l_request_id).is_processed;
-        }
-        this->response_closures.release_element(l_request_id);
+        this->response_tracker.wait_for_request_completion(l_request_id);
 
         l_serializer.free();
     };
 
-    struct GetAllMaterialsReturn
+    inline void ENGINE_THREAD_STOP(SocketContext& p_ctx, SocketClient& p_client)
     {
-        Vector<Span<int8>> materials;
+        Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id =
+            this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::ResponseListenerClosure::build(NULL));
 
-        inline static GetAllMaterialsReturn allocate_default()
-        {
-            return GetAllMaterialsReturn{Vector<Span<int8>>::allocate(0)};
-        };
+        Slice<int8> l_written_slice = SocketTypedHeaderRequestWriter::set_code_header(
+            (int32)MaterialViewerRequestCode::ENGINE_THREAD_STOP, Slice<Token<SocketRequestResponseTracker::ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id),
+            this->client_sender.send_buffer.slice);
 
-        inline void free()
-        {
-            for (loop(i, 0, this->materials.Size))
-            {
-                this->materials.get(i).free();
-            }
-            this->materials.free();
-        };
+        this->client_sender.send_v2(p_ctx, p_client.client_socket, l_written_slice);
+
+        this->response_tracker.wait_for_request_completion(l_request_id);
     };
 
-    inline GetAllMaterialsReturn GET_ALL_MATERIALS(SocketContext& p_ctx, SocketClient& p_client)
+    inline void SET_MATERIAL_AND_MESH(SocketContext& p_ctx, SocketClient& p_client, const MaterialViewerServerV2::SetMaterialAndMeshInputJSON& p_input)
     {
-        GetAllMaterialsReturn l_return;
-        Token<ResponseListenerClosure> l_request_id = this->response_closures.alloc_element(ResponseListenerClosure::build((int8*)&l_return));
+        Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id =
+            this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::ResponseListenerClosure::build(NULL));
 
-        SocketTypedResponse l_request = SocketTypedResponse::build(this->client_sender.send_buffer.slice);
-        Span<uimax> l_payload = Span<uimax>::allocate(1);
-        l_payload.get(0) = token_value(l_request_id);
-        l_request.set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS, l_payload.slice.build_asint8());
+        JSONSerializer l_serializer = JSONSerializer::allocate_default();
+        l_serializer.start();
+        p_input.serialize(l_serializer);
+        l_serializer.end();
 
-        this->client_sender.send(p_ctx, p_client.client_socket);
+        Slice<int8> l_written_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::SET_MATERIAL_AND_MESH,
+                                                                          Slice<Token<SocketRequestResponseTracker::ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id),
+                                                                          l_serializer.output.to_slice(), this->client_sender.send_buffer.slice);
 
-        int8 l_is_processed = 0;
-        while (!l_is_processed)
-        {
-            // TODO -> having a timer ?
-            l_is_processed = this->response_closures.get(l_request_id).is_processed;
-        }
+        this->client_sender.send_v2(p_ctx, p_client.client_socket, l_written_slice);
 
-        this->response_closures.release_element(l_request_id);
-        l_payload.free();
+        this->response_tracker.wait_for_request_completion(l_request_id);
+
+        l_serializer.free();
+    };
+
+    inline MaterialViewerServerV2::GetAllMaterialsOutputJSON GET_ALL_MATERIALS(SocketContext& p_ctx, SocketClient& p_client)
+    {
+        MaterialViewerServerV2::GetAllMaterialsOutputJSON l_return;
+        Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id =
+            this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::ResponseListenerClosure::build((int8*)&l_return));
+
+        Slice<int8> l_written_slice = SocketTypedHeaderRequestWriter::set_code_header(
+            (int32)MaterialViewerRequestCode::GET_ALL_MATERIALS, Slice<Token<SocketRequestResponseTracker::ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id),
+            this->client_sender.send_buffer.slice);
+
+        this->client_sender.send_v2(p_ctx, p_client.client_socket, l_written_slice);
+
+        this->response_tracker.wait_for_request_completion(l_request_id);
 
         return l_return;
     };
 
-    inline void server_response_handler(const Slice<int8>& p_request_from_server)
+    inline void server_response_handler_json(const Slice<int8>& p_request_from_server)
     {
-        SocketTypedResponse l_typed_response = SocketTypedResponse::build(p_request_from_server);
-        switch ((MaterialViewerRequestCode)*l_typed_response.code)
+        SocketTypedHeaderRequestReader l_request = SocketTypedHeaderRequestReader::build(p_request_from_server);
+        switch ((MaterialViewerRequestCode)*l_request.code)
         {
         case MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN:
         {
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_typed_response.payload);
-            Slice<int8> l_header = l_payload_deserializer.slice();
+            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_request.header);
+            Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<SocketRequestResponseTracker::ResponseListenerClosure>>();
 
-            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_header);
-            Token<ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<ResponseListenerClosure>>();
+            this->response_tracker.set_request_is_completed(l_request_id);
+        }
+        break;
+        case MaterialViewerRequestCode::ENGINE_THREAD_STOP_RETURN:
+        {
+            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_request.header);
+            Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<SocketRequestResponseTracker::ResponseListenerClosure>>();
 
-            ResponseListenerClosure& l_closure = this->response_closures.get(l_request_id);
-            l_closure.is_processed = 1;
+            this->response_tracker.set_request_is_completed(l_request_id);
+        }
+        break;
+        case MaterialViewerRequestCode::SET_MATERIAL_AND_MESH_RETURN:
+        {
+            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_request.header);
+            Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<SocketRequestResponseTracker::ResponseListenerClosure>>();
+
+            this->response_tracker.set_request_is_completed(l_request_id);
         }
         break;
         case MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN:
         {
-            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_typed_response.payload);
-            Slice<int8> l_header = l_payload_deserializer.slice();
-            Slice<int8> l_body = l_payload_deserializer.slice();
+            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_request.header);
+            Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<SocketRequestResponseTracker::ResponseListenerClosure>>();
 
-            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_header);
-            Token<ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<ResponseListenerClosure>>();
+            SocketRequestResponseTracker::ResponseListenerClosure& l_closure = this->response_tracker.response_closures.get(l_request_id);
+            MaterialViewerServerV2::GetAllMaterialsOutputJSON* l_get_all_materials_return = (MaterialViewerServerV2::GetAllMaterialsOutputJSON*)l_closure.client_return_buffer;
 
-            ResponseListenerClosure& l_closure = this->response_closures.get(l_request_id);
-            GetAllMaterialsReturn* l_get_all_materials_return = (GetAllMaterialsReturn*)l_closure.client_return_buffer;
-
-            JSONDeserializer l_body_deserializer = JSONDeserializer::start(l_body);
-            JSONDeserializer l_materials_array_deserializer = JSONDeserializer::allocate_default();
-            l_body_deserializer.next_array("materials", &l_materials_array_deserializer);
-
-            // TODO -> having a way to get the number of elements in a json array ?
-            Vector<Span<int8>> l_materials = Vector<Span<int8>>::allocate(0);
-            Slice<int8> l_material_str;
-            while (l_materials_array_deserializer.next_array_plain_value(&l_material_str))
-            {
-                l_materials.push_back_element(Span<int8>::allocate_slice(l_material_str));
-            }
-            l_materials_array_deserializer.free();
+            JSONDeserializer l_body_deserializer = JSONDeserializer::start(l_request.body);
+            *l_get_all_materials_return = MaterialViewerServerV2::GetAllMaterialsOutputJSON::deserialize(l_body_deserializer);
             l_body_deserializer.free();
-
-            l_get_all_materials_return->materials = l_materials;
 
             l_closure.is_processed = 1;
         }
@@ -439,15 +494,15 @@ struct MaterialViewerClient
     };
 };
 
-struct MaterialViewerServerThread
+struct MaterialViewerServerJSONThread
 {
     struct Exec
     {
-        MaterialViewerServerThread* thiz;
+        MaterialViewerServerJSONThread* thiz;
         inline void operator()() const
         {
-            thiz->thread.server.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
-                return thiz->material_viewer_server_v2.handle_request(p_request, p_response, out_response_size);
+            thiz->thread.server.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_response_slice) {
+                return thiz->material_viewer_server_v2.handle_request_json(p_request, p_response, in_out_response_slice);
             });
         };
     } exec;
@@ -470,16 +525,15 @@ struct MaterialViewerServerThread
     };
 };
 
-struct MaterialViewerClientThread
+struct MaterialViewerClientJSONThread
 {
     struct Exec
     {
-        MaterialViewerClientThread* thiz;
+        MaterialViewerClientJSONThread* thiz;
         inline void operator()() const
         {
-            thiz->thread.client.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
-                thiz->material_viewer_client.server_response_handler(p_request);
-                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+            thiz->thread.client.listen_request(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request) {
+                thiz->material_viewer_client.server_response_handler_json(p_request);
             });
         };
     } exec;

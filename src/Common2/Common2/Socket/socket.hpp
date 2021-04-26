@@ -440,14 +440,15 @@ struct SocketRequestResponseConnection
                 break;
             }
 
-            uimax l_response_size = 0;
-            ListenSendResponseReturnCode l_return_code = p_request_callback_func(this->request_buffer.slice, this->response_buffer.slice, &l_response_size);
+            Slice<int8> l_response_slice = Slice<int8>{0, this->response_buffer.slice.Begin};
+            ListenSendResponseReturnCode l_return_code = p_request_callback_func(this->request_buffer.slice, this->response_buffer.slice, &l_response_slice);
             if ((int8)l_return_code & (int8)(ListenSendResponseReturnCode::SEND_RESPONSE))
             {
 #if __DEBUG
-                assert_true(l_response_size != 0);
+                assert_true(l_response_slice.Begin == this->response_buffer.slice.Begin);
+                assert_true(this->response_buffer.slice.compare(l_response_slice));
 #endif
-                if (!p_listened_socket.send(p_ctx, Slice<int8>::build_memory_elementnb(this->response_buffer.Memory, l_response_size)))
+                if (!p_listened_socket.send(p_ctx, l_response_slice))
                 {
                     break;
                 };
@@ -501,9 +502,14 @@ struct SocketSendConnection
         this->send_buffer.free();
     };
 
-    inline int8 send(SocketContext& p_ctx, Socket& p_listened_socket)
+    inline int8 send_v2(SocketContext& p_ctx, Socket& p_listened_socket, const Slice<int8> p_send_buffer_slice)
     {
-        return p_listened_socket.send(p_ctx, this->send_buffer.slice);
+#if __DEBUG
+        assert_true(this->send_buffer.Memory == p_send_buffer_slice.Begin);
+        assert_true(this->send_buffer.slice.compare(p_send_buffer_slice));
+#endif
+
+        return p_listened_socket.send(p_ctx, p_send_buffer_slice);
     };
 };
 
@@ -550,6 +556,7 @@ struct SocketServerSingleClient
     };
 };
 
+// TODO -> adding the send connection that will always be used to communicate to the server
 struct SocketClient
 {
     Socket client_socket;
@@ -573,6 +580,13 @@ struct SocketClient
         SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
         l_request_response_connection.listen(p_ctx, this->client_socket, p_request_handle_func);
         l_request_response_connection.free();
+    };
+
+    template <class RequestHandleFunc> inline void listen_request(SocketContext& p_ctx, const RequestHandleFunc& p_request_handle_func)
+    {
+        SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
+        l_request_connection.listen(p_ctx, this->client_socket, p_request_handle_func);
+        l_request_connection.free();
     };
 };
 
@@ -745,24 +759,18 @@ if (l_buffer_slice.compare(slice_int8_build_rawstr("GET /")))
     This is a functional object that helps to manipulate socket typed requests.
     Socket types request are a request code with a body.
  */
-struct SocketTypedRequest
+struct SocketTypedRequestReader
 {
     int32* code;
     Slice<int8> payload;
 
-    inline static SocketTypedRequest build(const Slice<int8>& p_request)
+    inline static SocketTypedRequestReader build(const Slice<int8>& p_request)
     {
-        SocketTypedRequest l_return;
+        SocketTypedRequestReader l_return;
         BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
         l_return.code = l_binary_desezrialiazer.type<int32>();
         l_return.payload = l_binary_desezrialiazer.memory;
         return l_return;
-    };
-
-    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
-    {
-        *this->code = p_code;
-        BinarySerializer::slice(&this->payload, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
     };
 
     template <class ElementType> inline void get_typed(ElementType** out_element)
@@ -776,42 +784,110 @@ struct SocketTypedRequest
     This is a functional object that helps to manipulate socket typed responses.
     Socket types response are a request code with a body.
  */
-struct SocketTypedResponse
+struct SocketTypedRequestWriter
 {
-    int32* code;
-    Slice<int8> payload;
-    uimax payload_size;
 
-    inline static SocketTypedResponse build(const Slice<int8>& p_request)
+    inline static Slice<int8> set(const int32 p_code, const Slice<int8>& p_element, const Slice<int8>& p_write_to_buffer)
     {
-        SocketTypedResponse l_return;
-        BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
-        l_return.code = l_binary_desezrialiazer.type<int32>();
-        l_return.payload = l_binary_desezrialiazer.memory;
-        l_return.payload_size = 0;
+        Slice<int8> l_target = p_write_to_buffer;
+        Slice<int8> l_return = p_write_to_buffer;
+        l_return.Size = 0;
+        BinarySerializer::type(&l_target, p_code);
+        l_return.Size += sizeof(p_code);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_element);
         return l_return;
     };
+};
 
-    inline uimax get_buffer_size()
+struct SocketTypedHeaderRequestReader
+{
+    int32* code;
+    Slice<int8> header;
+    Slice<int8> body;
+
+    inline static SocketTypedHeaderRequestReader build(const Slice<int8>& p_request)
     {
-        return sizeof(*this->code) + this->payload_size;
+        SocketTypedHeaderRequestReader l_return;
+        BinaryDeserializer l_binary_desezrialiazer = BinaryDeserializer::build(p_request);
+        l_return.code = l_binary_desezrialiazer.type<int32>();
+        l_return.header = l_binary_desezrialiazer.slice();
+        l_return.body = l_binary_desezrialiazer.slice();
+        return l_return;
+    };
+};
+
+struct SocketTypedHeaderRequestWriter
+{
+    inline static Slice<int8> set(const int32 p_code, const Slice<int8>& p_header, const Slice<int8>& p_body, const Slice<int8>& p_writeto_buffer)
+    {
+        Slice<int8> l_target = p_writeto_buffer;
+        Slice<int8> l_return = p_writeto_buffer;
+        l_return.Size = 0;
+        BinarySerializer::type(&l_target, p_code);
+        l_return.Size += sizeof(p_code);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_header);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_body);
+        return l_return;
+    }
+
+    inline static Slice<int8> set_code_header(const int32 p_code, const Slice<int8>& p_header, const Slice<int8>& p_writeto_buffer)
+    {
+        Slice<int8> l_target = p_writeto_buffer;
+        Slice<int8> l_return = p_writeto_buffer;
+        l_return.Size = 0;
+        BinarySerializer::type(&l_target, p_code);
+        l_return.Size += sizeof(p_code);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_header);
+        return l_return;
+    }
+};
+
+struct SocketRequestResponseTracker
+{
+
+    // TODO -> cleaning name
+    struct ResponseListenerClosure
+    {
+        // This boolean is updatedby the client thread to notify consumer that the server request response has been received. It must be volatile because it accessed by the client trhead and the main thread.
+        volatile int8 is_processed;
+        // TODO -> use slice
+        int8* client_return_buffer;
+
+        inline static ResponseListenerClosure build(int8* p_client_return_buffer)
+        {
+            return ResponseListenerClosure{0, p_client_return_buffer};
+        };
     };
 
-    inline void set(const int32 p_code, const Slice<int8>& p_element)
+    Pool<ResponseListenerClosure> response_closures;
+
+    inline static SocketRequestResponseTracker allocate()
     {
-        *this->code = p_code;
-        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, p_element);
+        return SocketRequestResponseTracker{Pool<ResponseListenerClosure>::allocate(0)};
     };
 
-    inline void set_2(const int32 p_code, const Slice<int8>& p_element_0, const Slice<int8>& p_element_1)
+    inline void free()
     {
-        *this->code = p_code;
-        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, p_element_0);
-        this->payload_size += BinarySerializer::slice_ret_bytesnb(&this->payload, p_element_1);
+#if __DEBUG
+        assert_true(!this->response_closures.has_allocated_elements());
+#endif
+        this->response_closures.free();
     };
 
-    template <class ElementType> inline void set_typed(const int32 p_code, const ElementType& p_element)
+    inline void wait_for_request_completion(const Token<ResponseListenerClosure> p_request)
     {
-        this->set(p_code, Slice<ElementType>::build_asint8_memory_singleelement(&p_element));
+        int8 l_is_processed = 0;
+        ResponseListenerClosure& l_closure = this->response_closures.get(p_request);
+        while (!l_is_processed)
+        {
+            // TODO -> having a timer ?
+            l_is_processed = l_closure.is_processed;
+        }
+        this->response_closures.release_element(p_request);
+    };
+
+    inline void set_request_is_completed(const Token<ResponseListenerClosure> p_request)
+    {
+        this->response_closures.get(p_request).is_processed = 1;
     };
 };
