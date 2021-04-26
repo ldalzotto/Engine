@@ -1286,6 +1286,8 @@ inline void path_test()
     assert_true(Path::move_up(&l_path_str));
     assert_true(slice_int8_build_rawstr("E:/").compare(l_path_str.to_slice()));
     assert_true(!Path::move_up(&l_path_str));
+
+    l_path_str.free();
 };
 
 inline void fromstring_test()
@@ -1937,13 +1939,15 @@ inline void socket_server_client_allocation_destruction()
         struct Exec
         {
             server* thiz;
-            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
+            inline void operator()() const
             {
-                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+                thiz->thread.server.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+                });
             };
         } exec;
 
-        SocketSocketServerSingleClient_RequestResponse_Thread<Exec> thread;
+        SocketSocketServerSingleClientThread<Exec> thread;
 
         inline void start(SocketContext* p_ctx)
         {
@@ -1962,13 +1966,15 @@ inline void socket_server_client_allocation_destruction()
         struct Exec
         {
             client* thiz;
-            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
+            inline void operator()() const
             {
-                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+                thiz->thread.client.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+                });
             };
         } exec;
 
-        SocketClient_RequestResponse_Thread<Exec> thread;
+        SocketClientThread<Exec> thread;
 
         inline void start(SocketContext* p_ctx)
         {
@@ -2020,26 +2026,28 @@ inline void socket_test()
         {
             TestSocketServerThread* thiz;
 
-            inline SocketRequestResponseConnection::ListenSendResponseReturnCode operator()(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) const
+            inline void operator()() const
             {
-                SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
-                assert_true(*l_req.code == -1);
-                uimax* l_count;
-                l_req.get_typed(&l_count);
-                assert_true(*l_count == 10);
-                *l_count += 10;
+                thiz->server_thread.server.listen_request_response(*thiz->server_thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_sended_size) {
+                    SocketTypedRequest l_req = SocketTypedRequest::build(p_request);
+                    assert_true(*l_req.code == -1);
+                    uimax* l_count;
+                    l_req.get_typed(&l_count);
+                    assert_true(*l_count == 10);
+                    *l_count += 10;
 
-                SocketTypedResponse l_res = SocketTypedResponse::build(p_response);
-                l_res.set_typed(2, *l_count);
-                *out_sended_size = l_res.get_buffer_size();
-                thiz->request_processed = 1;
+                    SocketTypedResponse l_res = SocketTypedResponse::build(p_response);
+                    l_res.set_typed(2, *l_count);
+                    *out_sended_size = l_res.get_buffer_size();
+                    thiz->request_processed = 1;
 
-                return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
+                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
+                });
             };
 
         } socket_connection_establishment;
 
-        SocketSocketServerSingleClient_RequestResponse_Thread<SocketConnectionEstablishment> server_thread;
+        SocketSocketServerSingleClientThread<SocketConnectionEstablishment> server_thread;
         volatile int8 request_processed;
 
         inline void start(SocketContext* p_ctx)
@@ -2071,8 +2079,6 @@ inline void socket_test()
                     l_req.get_typed<uimax>(&l_count);
                     assert_true(*l_count == 20);
                     thiz->request_processed = 1;
-
-                    return SocketRequestConnection::ListenSendResponseReturnCode::NOTHING;
                 });
                 l_request_connection.free();
             };
@@ -2106,7 +2112,7 @@ inline void socket_test()
 
     SocketSendConnection l_client_send_connection = SocketSendConnection::allocate_default();
     SocketTypedRequest::build(l_client_send_connection.send_buffer.slice).set_typed(-1, l_input);
-    assert_true(l_client_send_connection.send(l_cc_trhead.client_thread.client.client_socket) == SocketReturnCode::IDLING);
+    assert_true(l_client_send_connection.send(l_ctx, l_cc_trhead.client_thread.client.client_socket));
 
     while (!l_ss_thread.request_processed)
     {
@@ -2118,6 +2124,9 @@ inline void socket_test()
 
     l_client_send_connection.free();
     l_cc_trhead.free(l_ctx);
+
+    // Trying to send on a closed client
+    assert_true(!l_client_send_connection.send(l_ctx, l_cc_trhead.client_thread.client.client_socket));
 
     l_ss_thread.free(l_ctx);
 
@@ -2150,16 +2159,16 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
+#if 1
+    socket_server_client_allocation_destruction();
+    socket_test();
+#endif
 #if 0
-    for (loop(i, 0, 1000))
+    for (loop(i, 0, 200))
     {
         socket_server_client_allocation_destruction();
     }
-#endif
-    socket_server_client_allocation_destruction();
-    socket_test();
-#if 0
-    for(loop(i, 0, 1000))
+    for (loop(i, 0, 200))
     {
         socket_test();
     }
