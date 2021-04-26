@@ -548,28 +548,34 @@ struct SocketServerSingleClient
         return this->server_socket.accept_silent(&this->registerd_client_socket);
     };
 
+    // called when the registerd_client_socket has been registered
     template <class RequestHandleFunc> inline void listen_request_response(SocketContext& p_ctx, const RequestHandleFunc& p_request_handle_func)
     {
         SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
         l_request_response_connection.listen(p_ctx, this->registerd_client_socket, p_request_handle_func);
         l_request_response_connection.free();
+
+        // The registerd_client_socket may have been gracefully shut at this stage.
+        // Because the server can register another client without restarting, we close the server_socket that no longer communicats with the client
+        // this->server_socket.close(p_ctx);
     };
 };
 
-// TODO -> adding the send connection that will always be used to communicate to the server
 struct SocketClient
 {
     Socket client_socket;
+    SocketSendConnection client_send_connection;
 
     inline static SocketClient allocate(SocketContext& p_ctx, const int32 p_port)
     {
-        return SocketClient{Socket::allocate_as_client(p_ctx, p_port)};
+        return SocketClient{Socket::allocate_as_client(p_ctx, p_port), SocketSendConnection::allocate_default()};
     };
 
     inline void free(SocketContext& p_ctx)
     {
         this->client_socket.free_gracefully(p_ctx);
         this->client_socket.close(p_ctx);
+        this->client_send_connection.free();
 #if __DEBUG
         assert_true(this->client_socket.state_is_free());
 #endif
@@ -587,6 +593,16 @@ struct SocketClient
         SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
         l_request_connection.listen(p_ctx, this->client_socket, p_request_handle_func);
         l_request_connection.free();
+    };
+
+    inline const Slice<int8>& get_client_to_server_buffer()
+    {
+        return this->client_send_connection.send_buffer.slice;
+    };
+
+    inline void send_client_to_server(SocketContext& p_ctx, const Slice<int8>& p_sended_slice)
+    {
+        this->client_send_connection.send_v2(p_ctx, this->client_socket, p_sended_slice);
     };
 };
 
@@ -845,25 +861,25 @@ struct SocketTypedHeaderRequestWriter
 struct SocketRequestResponseTracker
 {
 
-    // TODO -> cleaning name
-    struct ResponseListenerClosure
+    struct Response
     {
-        // This boolean is updatedby the client thread to notify consumer that the server request response has been received. It must be volatile because it accessed by the client trhead and the main thread.
+        // This boolean is updatedby the client thread to notify consumer that the server request response has been received. It must be volatile because it accessed by the client trhead and the main
+        // thread.
         volatile int8 is_processed;
-        // TODO -> use slice
-        int8* client_return_buffer;
+        // The buffer that will be updated by the client one server response has been received
+        Slice<int8> client_response_slice;
 
-        inline static ResponseListenerClosure build(int8* p_client_return_buffer)
+        inline static Response build(const Slice<int8>& p_client_return_slice)
         {
-            return ResponseListenerClosure{0, p_client_return_buffer};
+            return Response{0, p_client_return_slice};
         };
     };
 
-    Pool<ResponseListenerClosure> response_closures;
+    Pool<Response> response_closures;
 
     inline static SocketRequestResponseTracker allocate()
     {
-        return SocketRequestResponseTracker{Pool<ResponseListenerClosure>::allocate(0)};
+        return SocketRequestResponseTracker{Pool<Response>::allocate(0)};
     };
 
     inline void free()
@@ -874,10 +890,10 @@ struct SocketRequestResponseTracker
         this->response_closures.free();
     };
 
-    inline void wait_for_request_completion(const Token<ResponseListenerClosure> p_request)
+    inline void wait_for_request_completion(const Token<Response> p_request)
     {
         int8 l_is_processed = 0;
-        ResponseListenerClosure& l_closure = this->response_closures.get(p_request);
+        Response& l_closure = this->response_closures.get(p_request);
         while (!l_is_processed)
         {
             // TODO -> having a timer ?
@@ -886,7 +902,13 @@ struct SocketRequestResponseTracker
         this->response_closures.release_element(p_request);
     };
 
-    inline void set_request_is_completed(const Token<ResponseListenerClosure> p_request)
+    inline void set_response_slice(const Token<Response> p_request, const Slice<int8>& p_response_slice)
+    {
+        SocketRequestResponseTracker::Response& l_closure = this->response_closures.get(p_request);
+        l_closure.client_response_slice.copy_memory(p_response_slice);
+    };
+
+    inline void set_request_is_completed(const Token<Response> p_request)
     {
         this->response_closures.get(p_request).is_processed = 1;
     };

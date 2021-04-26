@@ -1,4 +1,4 @@
-#include "MaterialViewer/material_viewer_server.hpp"
+#include "MaterialViewer/Include/server.hpp"
 
 int main()
 {

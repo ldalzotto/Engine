@@ -2029,17 +2029,17 @@ inline void socket_server_client_send_receive_test()
             inline void operator()() const
             {
                 thiz->server_thread.server.listen_request_response(*thiz->server_thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_sended_slice) {
-                    SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
-                    assert_true(*l_req.code == -1);
-                    uimax* l_count;
-                    l_req.get_typed(&l_count);
-                    assert_true(*l_count == 10);
-                    *l_count += 10;
+                  SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
+                  assert_true(*l_req.code == -1);
+                  uimax* l_count;
+                  l_req.get_typed(&l_count);
+                  assert_true(*l_count == 10);
+                  *l_count += 10;
 
-                    *in_out_sended_slice = SocketTypedRequestWriter::set(2, Slice<uimax>::build_asint8_memory_singleelement(l_count), p_response);
-                    thiz->request_processed = 1;
+                  *in_out_sended_slice = SocketTypedRequestWriter::set(2, Slice<uimax>::build_asint8_memory_singleelement(l_count), p_response);
+                  thiz->request_processed = 1;
 
-                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
+                  return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
                 });
             };
 
@@ -2071,12 +2071,12 @@ inline void socket_server_client_send_receive_test()
             {
                 SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
                 l_request_connection.listen(*thiz->client_thread.input.ctx, thiz->client_thread.client.client_socket, [&](const Slice<int8>& p_request) {
-                    SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
-                    assert_true(*l_req.code == 2);
-                    uimax* l_count;
-                    l_req.get_typed<uimax>(&l_count);
-                    assert_true(*l_count == 20);
-                    thiz->request_processed = 1;
+                  SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
+                  assert_true(*l_req.code == 2);
+                  uimax* l_count;
+                  l_req.get_typed<uimax>(&l_count);
+                  assert_true(*l_count == 20);
+                  thiz->request_processed = 1;
                 });
                 l_request_connection.free();
             };
@@ -2131,14 +2131,17 @@ inline void socket_server_client_send_receive_test()
     l_ctx.free();
 };
 
+namespace test_constants
+{
+static const uimax CLIENT_REQUEST_CODE = 1;
+static const uimax SERVER_RESPONSE_CODE = 2;
+static const uimax TEST_VALUE_BEFORE = 0;
+static const uimax TEST_VALUE_AFTER = 1;
+} // namespace __constants
+
 /* Sending a request to client, that send it to server and send the response back to the client. */
 inline void socket_client_to_server_to_client_request()
 {
-
-#define CLIENT_REQUEST_CODE 1
-#define SERVER_RESPONSE_CODE 2
-#define TEST_VALUE_BEFORE 0
-#define TEST_VALUE_AFTER 1
 
     SocketContext l_ctx = SocketContext::allocate();
 
@@ -2152,9 +2155,9 @@ inline void socket_client_to_server_to_client_request()
             {
                 thiz->server_thread.server.listen_request_response(*thiz->server_thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_sended_slice) {
                     SocketTypedHeaderRequestReader l_req = SocketTypedHeaderRequestReader::build(p_request);
-                    if (*l_req.code == CLIENT_REQUEST_CODE)
+                    if (*l_req.code == test_constants::CLIENT_REQUEST_CODE)
                     {
-                        *in_out_sended_slice = SocketTypedHeaderRequestWriter::set(SERVER_RESPONSE_CODE, l_req.header, l_req.body, p_response);
+                        *in_out_sended_slice = SocketTypedHeaderRequestWriter::set(test_constants::SERVER_RESPONSE_CODE, l_req.header, l_req.body, p_response);
                         return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
                     }
                     return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
@@ -2188,14 +2191,15 @@ inline void socket_client_to_server_to_client_request()
                 SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
                 l_request_connection.listen(*thiz->client_thread.input.ctx, thiz->client_thread.client.client_socket, [&](const Slice<int8>& p_server_response) {
                     SocketTypedHeaderRequestReader l_server_response = SocketTypedHeaderRequestReader::build(p_server_response);
-                    if (*l_server_response.code == SERVER_RESPONSE_CODE)
+                    if (*l_server_response.code == test_constants::SERVER_RESPONSE_CODE)
                     {
                         BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_server_response.header);
-                        Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_token = *l_header_deserializer.type<Token<SocketRequestResponseTracker::ResponseListenerClosure>>();
+                        Token<SocketRequestResponseTracker::Response> l_request_token = *l_header_deserializer.type<Token<SocketRequestResponseTracker::Response>>();
 
-                        uimax* l_return = (uimax*)thiz->response_tracker.response_closures.get(l_request_token).client_return_buffer;
-                        assert_true(*l_return == TEST_VALUE_BEFORE);
-                        *l_return = TEST_VALUE_AFTER;
+                        Slice<int8> l_return = thiz->response_tracker.response_closures.get(l_request_token).client_response_slice;
+                        uimax* l_return_value = BinaryDeserializer::build(l_return).type<uimax>();
+                        assert_true(*l_return_value == test_constants::TEST_VALUE_BEFORE);
+                        *l_return_value = test_constants::TEST_VALUE_AFTER;
 
                         thiz->response_tracker.set_request_is_completed(l_request_token);
                     }
@@ -2206,13 +2210,11 @@ inline void socket_client_to_server_to_client_request()
 
         SocketRequestResponseTracker response_tracker;
         SocketClientThread<SocketConnectionEstablishment> client_thread;
-        SocketSendConnection client_send_connection;
 
         inline void start(SocketContext* p_ctx)
         {
             this->socket_connection_establishment = SocketConnectionEstablishment{this};
             this->response_tracker = SocketRequestResponseTracker::allocate();
-            this->client_send_connection = SocketSendConnection::allocate_default();
             this->client_thread.start(p_ctx, SOCKET_DEFAULT_PORT, &this->socket_connection_establishment);
         };
 
@@ -2220,24 +2222,23 @@ inline void socket_client_to_server_to_client_request()
         {
             this->client_thread.free(p_ctx);
             this->response_tracker.free();
-            this->client_send_connection.free();
         };
 
         inline void request_test()
         {
             uimax l_request_test_code = 1;
-            uimax l_return = TEST_VALUE_BEFORE;
-            Token<SocketRequestResponseTracker::ResponseListenerClosure> l_request_token =
-                this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::ResponseListenerClosure::build((int8*)&l_return));
+            uimax l_return = test_constants::TEST_VALUE_BEFORE;
+            Token<SocketRequestResponseTracker::Response> l_request_token =
+                this->response_tracker.response_closures.alloc_element(SocketRequestResponseTracker::Response::build(Slice<uimax>::build_asint8_memory_singleelement(&l_return)));
 
             Slice<int8> l_request_slice =
-                SocketTypedHeaderRequestWriter::set(CLIENT_REQUEST_CODE, Slice<Token<SocketRequestResponseTracker::ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_token),
-                                                    Slice<int8>::build_default(), this->client_send_connection.send_buffer.slice);
-            this->client_send_connection.send_v2(*this->client_thread.input.ctx, this->client_thread.client.client_socket, l_request_slice);
+                SocketTypedHeaderRequestWriter::set(test_constants::CLIENT_REQUEST_CODE, Slice<Token<SocketRequestResponseTracker::Response>>::build_asint8_memory_singleelement(&l_request_token),
+                                                    Slice<int8>::build_default(), this->client_thread.client.get_client_to_server_buffer());
+            this->client_thread.client.send_client_to_server(*this->client_thread.input.ctx, l_request_slice);
 
             this->response_tracker.wait_for_request_completion(l_request_token);
 
-            assert_true(l_return == TEST_VALUE_AFTER);
+            assert_true(l_return == test_constants::TEST_VALUE_AFTER);
         };
     };
 
@@ -2256,11 +2257,6 @@ inline void socket_client_to_server_to_client_request()
     l_ss_thread.free(l_ctx);
 
     l_ctx.free();
-
-#undef CLIENT_REQUEST_CODE
-#undef SERVER_RESPONSE_CODE
-#undef TEST_VALUE_BEFORE
-#undef TEST_VALUE_AFTER
 };
 
 int main(int argc, int8** argv)
@@ -2286,6 +2282,7 @@ int main(int argc, int8** argv)
     deserialize_json_test();
     serialize_json_test();
     serialize_deserialize_binary_test();
+    native_window();
     file_test();
     database_test();
     thread_test();
