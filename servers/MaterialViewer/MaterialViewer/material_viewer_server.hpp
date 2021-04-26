@@ -131,6 +131,7 @@ struct MaterialViewerEngineUnit
 enum class MaterialViewerRequestCode : int32
 {
     ENGINE_THREAD_START = 0,
+    ENGINE_THREAD_START_RETURN = 8,
     ENGINE_THREAD_STOP = 1,
     SET_MATERIAL_AND_MESH = 2,
     GET_ALL_MATERIALS = 4,
@@ -139,25 +140,21 @@ enum class MaterialViewerRequestCode : int32
     GET_ALL_MESH_RETURN = 7,
 };
 
-struct MaterialViewerServer
+struct MaterialViewerServerV2
 {
-    SocketServerSingleClient socket_server;
     EngineRunnerThread engine_thread;
     MaterialViewerEngineUnit material_viewer_unit;
 
-    inline static MaterialViewerServer allocate(SocketContext& p_ctx, const int32 p_port)
+    inline static MaterialViewerServerV2 allocate()
     {
-        MaterialViewerServer l_return;
-        l_return.socket_server = SocketServerSingleClient::allocate(p_ctx, p_port);
+        MaterialViewerServerV2 l_return;
         l_return.engine_thread = EngineRunnerThread::allocate();
         return l_return;
     };
 
-    inline void free(SocketContext& p_ctx)
+    inline void free()
     {
-        this->socket_server.free(p_ctx);
-
-        // TODO -> not needed because gracefully closed ?
+        // We don't know at compile time if the material_viewer_unit is freed or not.
         if (!this->material_viewer_unit.is_freed())
         {
             this->material_viewer_unit.free(this->engine_thread);
@@ -170,35 +167,6 @@ struct MaterialViewerServer
         this->engine_thread.start();
     };
 
-    inline void wait_for_client(SocketContext& p_ctx)
-    {
-        this->socket_server.wait_for_client(p_ctx);
-    };
-
-    inline void listen_for_requests(SocketContext& p_ctx)
-    {
-        SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
-        l_request_response_connection.listen(p_ctx, this->socket_server.registerd_client_socket, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
-            return this->handle_request(p_request, p_response, out_response_size);
-        });
-
-        if (!this->material_viewer_unit.is_freed())
-        {
-            this->material_viewer_unit.free(this->engine_thread);
-        };
-    };
-
-    inline void mloop(SocketContext& p_ctx)
-    {
-        this->start_engine_thread();
-        while (true)
-        {
-            this->wait_for_client(p_ctx);
-            this->listen_for_requests(p_ctx);
-        }
-    };
-
-  private:
     // TODO -> adding a variation that doesn't consume and return json ?
     inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request(const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size)
     {
@@ -210,13 +178,23 @@ struct MaterialViewerServer
         {
             // this->engine_thread.start();
             this->material_viewer_unit = MaterialViewerEngineUnit::allocate();
-            JSONDeserializer l_input_des = JSONDeserializer::start(l_request.payload);
+
+            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_request.payload);
+            Slice<int8> l_heder = l_payload_deserializer.slice();
+
+            JSONDeserializer l_input_des = JSONDeserializer::start(l_payload_deserializer.slice());
             l_input_des.next_field("database");
             Slice<int8> l_database_path = l_input_des.get_currentfield().value;
             this->material_viewer_unit.start(this->engine_thread, l_database_path, 400, 400);
             this->engine_thread.sync_wait_for_engine_execution_unit_to_be_allocated(this->material_viewer_unit.engine_execution_unit);
 
             l_input_des.free();
+
+            SocketTypedResponse l_response = SocketTypedResponse::build(p_response);
+            l_response.set_2((int32)MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN, l_heder, Slice<int8>::build_default());
+            *out_response_size = l_response.get_buffer_size();
+
+            return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
         break;
         case MaterialViewerRequestCode::ENGINE_THREAD_STOP:
@@ -306,12 +284,9 @@ struct MaterialViewerServer
     };
 };
 
-// TODO -> adding an ID to the request so that it can be retrieved to properly handle the response ?
 struct MaterialViewerClient
 {
-    SocketClient client;
     SocketSendConnection client_sender;
-    SocketRequestConnection response_listener;
 
     struct ResponseListenerClosure
     {
@@ -326,42 +301,42 @@ struct MaterialViewerClient
 
     Pool<ResponseListenerClosure> response_closures;
 
-    inline static MaterialViewerClient allocate(SocketContext& p_ctx, const int32 p_port)
+    inline static MaterialViewerClient allocate()
     {
-        return MaterialViewerClient{SocketClient::allocate(p_ctx, p_port), SocketSendConnection::allocate_default(), SocketRequestConnection::allocate_default(),
-                                    Pool<ResponseListenerClosure>::allocate(0)};
+        return MaterialViewerClient{SocketSendConnection::allocate_default(), Pool<ResponseListenerClosure>::allocate(0)};
     };
 
-    inline void free(SocketContext& p_ctx)
+    inline void free()
     {
 #if __DEBUG
         assert_true(!this->response_closures.has_allocated_elements());
 #endif
 
         this->client_sender.free();
-        this->client.free(p_ctx);
-        this->response_listener.free();
         this->response_closures.free();
     };
 
-    inline void listen_for_responses(SocketContext& p_ctx)
+    inline void ENGINE_THREAD_START(SocketContext& p_ctx, SocketClient& p_client, const Slice<int8>& p_database)
     {
-        this->response_listener.listen(p_ctx, this->client.client_socket, [this](const Slice<int8>& p_request_from_server) {
-            return this->server_response_handler(p_request_from_server);
-        });
-    };
+        Token<ResponseListenerClosure> l_request_id = this->response_closures.alloc_element(ResponseListenerClosure::build(NULL));
 
-    inline void ENGINE_THREAD_START(const Slice<int8>& p_database)
-    {
         JSONSerializer l_serializer = JSONSerializer::allocate_default();
         l_serializer.start();
         l_serializer.push_field(slice_int8_build_rawstr("database"), p_database);
         l_serializer.end();
 
         SocketTypedResponse l_request = SocketTypedResponse::build(this->client_sender.send_buffer.slice);
-        l_request.set((int32)MaterialViewerRequestCode::ENGINE_THREAD_START, l_serializer.output.to_slice());
+        l_request.set_2((int32)MaterialViewerRequestCode::ENGINE_THREAD_START, Slice<Token<ResponseListenerClosure>>::build_asint8_memory_singleelement(&l_request_id), l_serializer.output.to_slice());
 
-        this->client_sender.send(this->client.client_socket);
+        this->client_sender.send(p_ctx, p_client.client_socket);
+
+        int8 l_is_processed = 0;
+        while (!l_is_processed)
+        {
+            // TODO -> having a timer ?
+            l_is_processed = this->response_closures.get(l_request_id).is_processed;
+        }
+        this->response_closures.release_element(l_request_id);
 
         l_serializer.free();
     };
@@ -385,7 +360,7 @@ struct MaterialViewerClient
         };
     };
 
-    inline GetAllMaterialsReturn GET_ALL_MATERIALS()
+    inline GetAllMaterialsReturn GET_ALL_MATERIALS(SocketContext& p_ctx, SocketClient& p_client)
     {
         GetAllMaterialsReturn l_return;
         Token<ResponseListenerClosure> l_request_id = this->response_closures.alloc_element(ResponseListenerClosure::build((int8*)&l_return));
@@ -395,7 +370,7 @@ struct MaterialViewerClient
         l_payload.get(0) = token_value(l_request_id);
         l_request.set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS, l_payload.slice.build_asint8());
 
-        this->client_sender.send(this->client.client_socket);
+        this->client_sender.send(p_ctx, p_client.client_socket);
 
         int8 l_is_processed = 0;
         while (!l_is_processed)
@@ -410,12 +385,23 @@ struct MaterialViewerClient
         return l_return;
     };
 
-  private:
-    inline SocketRequestConnection::ListenSendResponseReturnCode server_response_handler(const Slice<int8>& p_request_from_server)
+    inline void server_response_handler(const Slice<int8>& p_request_from_server)
     {
         SocketTypedResponse l_typed_response = SocketTypedResponse::build(p_request_from_server);
         switch ((MaterialViewerRequestCode)*l_typed_response.code)
         {
+        case MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN:
+        {
+            BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_typed_response.payload);
+            Slice<int8> l_header = l_payload_deserializer.slice();
+
+            BinaryDeserializer l_header_deserializer = BinaryDeserializer::build(l_header);
+            Token<ResponseListenerClosure> l_request_id = *l_header_deserializer.type<Token<ResponseListenerClosure>>();
+
+            ResponseListenerClosure& l_closure = this->response_closures.get(l_request_id);
+            l_closure.is_processed = 1;
+        }
+        break;
         case MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN:
         {
             BinaryDeserializer l_payload_deserializer = BinaryDeserializer::build(l_typed_response.payload);
@@ -445,14 +431,72 @@ struct MaterialViewerClient
             l_get_all_materials_return->materials = l_materials;
 
             l_closure.is_processed = 1;
-
-            break;
         }
         break;
         default:
             break;
         };
+    };
+};
 
-        return SocketRequestConnection::ListenSendResponseReturnCode::NOTHING;
+struct MaterialViewerServerThread
+{
+    struct Exec
+    {
+        MaterialViewerServerThread* thiz;
+        inline void operator()() const
+        {
+            thiz->thread.server.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
+                return thiz->material_viewer_server_v2.handle_request(p_request, p_response, out_response_size);
+            });
+        };
+    } exec;
+
+    SocketSocketServerSingleClientThread<Exec> thread;
+    MaterialViewerServerV2 material_viewer_server_v2;
+
+    inline void start(SocketContext& p_ctx, const int32 p_port)
+    {
+        this->exec = Exec{this};
+        this->material_viewer_server_v2 = MaterialViewerServerV2::allocate();
+        this->material_viewer_server_v2.start_engine_thread();
+        this->thread.start(&p_ctx, p_port, &this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->thread.free(p_ctx);
+        this->material_viewer_server_v2.free();
+    };
+};
+
+struct MaterialViewerClientThread
+{
+    struct Exec
+    {
+        MaterialViewerClientThread* thiz;
+        inline void operator()() const
+        {
+            thiz->thread.client.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, uimax* out_response_size) {
+                thiz->material_viewer_client.server_response_handler(p_request);
+                return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+            });
+        };
+    } exec;
+
+    SocketClientThread<Exec> thread;
+    MaterialViewerClient material_viewer_client;
+
+    inline void start(SocketContext* p_ctx, const int32 p_port)
+    {
+        this->exec = Exec{this};
+        this->material_viewer_client = MaterialViewerClient::allocate();
+        this->thread.start(p_ctx, p_port, &this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->thread.free(p_ctx);
+        this->material_viewer_client.free();
     };
 };
