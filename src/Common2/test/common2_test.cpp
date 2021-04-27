@@ -2106,19 +2106,25 @@ inline void socket_server_client_send_receive_test()
     l_cc_trhead.start(&l_ctx);
     l_cc_trhead.client_thread.sync_wait_for_allocation();
 
-    uimax l_input = 10;
+    l_ss_thread.server_thread.sync_wait_for_client_detection();
 
     SocketSendConnection l_client_send_connection = SocketSendConnection::allocate_default();
-    Slice<int8> l_written_slice = SocketTypedRequestWriter::set(-1, Slice<uimax>::build_asint8_memory_singleelement(&l_input), l_client_send_connection.send_buffer.slice);
-    assert_true(l_client_send_connection.send_v2(l_ctx, l_cc_trhead.client_thread.client.client_socket, l_written_slice));
 
-    while (!l_ss_thread.request_processed)
     {
+        uimax l_input = 10;
+
+        Slice<int8> l_written_slice = SocketTypedRequestWriter::set(-1, Slice<uimax>::build_asint8_memory_singleelement(&l_input), l_cc_trhead.client_thread.client.get_client_to_server_buffer());
+        l_cc_trhead.client_thread.client.send_client_to_server(l_ctx, l_written_slice);
+
+        while (!l_ss_thread.request_processed)
+        {
+        }
+
+        while (!l_cc_trhead.request_processed)
+        {
+        }
     }
 
-    while (!l_cc_trhead.request_processed)
-    {
-    }
 
     l_cc_trhead.free(l_ctx);
 
@@ -2126,6 +2132,27 @@ inline void socket_server_client_send_receive_test()
     assert_true(!l_client_send_connection.send_v2(l_ctx, l_cc_trhead.client_thread.client.client_socket, Slice<int8>::build_memory_elementnb(l_client_send_connection.send_buffer.Memory, 8)));
     l_client_send_connection.free();
 
+
+
+    l_cc_trhead.start(&l_ctx);
+    l_cc_trhead.client_thread.sync_wait_for_allocation();
+    l_ss_thread.server_thread.sync_wait_for_client_detection();
+
+    {
+        uimax l_input = 10;
+
+        Slice<int8> l_written_slice = SocketTypedRequestWriter::set(-1, Slice<uimax>::build_asint8_memory_singleelement(&l_input), l_cc_trhead.client_thread.client.get_client_to_server_buffer());
+        l_cc_trhead.client_thread.client.send_client_to_server(l_ctx, l_written_slice);
+
+        while (!l_ss_thread.request_processed)
+        {
+        }
+
+        while (!l_cc_trhead.request_processed)
+        {
+        }
+    }
+    l_cc_trhead.free(l_ctx);
     l_ss_thread.free(l_ctx);
 
     l_ctx.free();

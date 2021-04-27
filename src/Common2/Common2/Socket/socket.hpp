@@ -186,15 +186,22 @@ inline SocketReturnCode socket_receive(socket_t p_socket, int8* p_begin, const u
 
 inline SocketReturnCode socket_send(socket_t p_socket, const int8* p_begin, const uimax p_size)
 {
-    int l_result = ::send(p_socket, p_begin, (int)(p_size), 0);
+    // The os ::send can send less bytes tha the requested, so we iterate until all bytes have been sent
+    int32 l_total_bytes_already_sent = 0;
+    while (l_total_bytes_already_sent < p_size)
+    {
+        int32 l_bytes_sent = ::send(p_socket, p_begin + l_total_bytes_already_sent, (int)(p_size - l_total_bytes_already_sent), 0);
 
-    if (l_result == 0)
-    {
-        return SocketReturnCode::GRACEFULLY_SHUT;
-    }
-    else if (l_result == SOCKET_ERROR)
-    {
-        return SocketReturnCode::ERR;
+        if (l_bytes_sent == 0)
+        {
+            return SocketReturnCode::GRACEFULLY_SHUT;
+        }
+        else if (l_bytes_sent == SOCKET_ERROR)
+        {
+            return SocketReturnCode::ERR;
+        }
+
+        l_total_bytes_already_sent += l_bytes_sent;
     }
     return SocketReturnCode::IDLING;
 };
@@ -348,6 +355,10 @@ struct Socket
 
     inline int8 accept_silent(Socket* out_socket)
     {
+#if __DEBUG
+        assert_true(out_socket->state_is_free());
+#endif
+
         int8 l_return = socket_accept_silent(this->native_socket, &out_socket->native_socket);
         if (l_return)
         {
@@ -525,6 +536,19 @@ struct SocketServerSingleClient
 
     inline void free(SocketContext& p_ctx)
     {
+        // The registered client must already be closed. Either gracefully when the listener has exited. Or by the server thread.
+        // /!\ It is very important to not close the registerd_client_socket here because we can free the server without even calling the listen_request_response.
+
+        this->server_socket.close(p_ctx);
+
+#if __DEBUG
+        assert_true(this->server_socket.state_is_free());
+        assert_true(this->registerd_client_socket.state_is_free());
+#endif
+    };
+
+    inline void free_registered_client_socket(SocketContext& p_ctx)
+    {
         // some client may already be allocated or not. We wave no way to know it at compile time because the registerd_client_socket may be deallocated when the client disconnect.
         if (this->registerd_client_socket.state_is_allocated())
         {
@@ -535,12 +559,6 @@ struct SocketServerSingleClient
         {
             this->registerd_client_socket.close(p_ctx);
         }
-        this->server_socket.close(p_ctx);
-
-#if __DEBUG
-        assert_true(this->server_socket.state_is_free());
-        assert_true(this->registerd_client_socket.state_is_free());
-#endif
     };
 
     inline int8 wait_for_client(SocketContext& p_ctx)
@@ -554,10 +572,6 @@ struct SocketServerSingleClient
         SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
         l_request_response_connection.listen(p_ctx, this->registerd_client_socket, p_request_handle_func);
         l_request_response_connection.free();
-
-        // The registerd_client_socket may have been gracefully shut at this stage.
-        // Because the server can register another client without restarting, we close the server_socket that no longer communicats with the client
-        // this->server_socket.close(p_ctx);
     };
 };
 
@@ -647,8 +661,8 @@ template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSing
 
     inline void free(SocketContext& p_ctx)
     {
-        this->ask_end_thread = 1;
         this->server.free(p_ctx);
+        this->ask_end_thread = 1;
         Thread::wait_for_end_and_terminate(this->thread, -1);
     };
 
@@ -677,6 +691,7 @@ template <class SocketConncetionEstablishmentFunc> struct SocketSocketServerSing
             }
 
             thiz->socket_connection_establishment_func->operator()();
+            thiz->server.free_registered_client_socket(*thiz->input.ctx);
 
             if (thiz->ask_end_thread)
             {
