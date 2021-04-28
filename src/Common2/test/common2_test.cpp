@@ -108,6 +108,23 @@ assert_true(Slice_find(l_char_slice, slice_int8_build_rawstr("eforc"), &l_index)
 }
 ;
 
+inline void base64_test()
+{
+
+    Span<int8> l_encoded = encode_base64(slice_int8_build_rawstr("abcdef"));
+    assert_true(l_encoded.Capacity == 8);
+    assert_true(slice_int8_build_rawstr("YWJjZGVm").compare(l_encoded.slice));
+    l_encoded.free();
+};
+
+inline void sha1_test()
+{
+    SliceN<int8, 20> l_hash = Hash_SHA1(slice_int8_build_rawstr("dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11"));
+    Span<int8> l_encoded = encode_base64(slice_from_slicen(&l_hash));
+    assert_true(slice_int8_build_rawstr("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=").compare(l_encoded.slice));
+    l_encoded.free();
+};
+
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
@@ -2029,17 +2046,17 @@ inline void socket_server_client_send_receive_test()
             inline void operator()() const
             {
                 thiz->server_thread.server.listen_request_response(*thiz->server_thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_sended_slice) {
-                  SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
-                  assert_true(*l_req.code == -1);
-                  uimax* l_count;
-                  l_req.get_typed(&l_count);
-                  assert_true(*l_count == 10);
-                  *l_count += 10;
+                    SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
+                    assert_true(*l_req.code == -1);
+                    uimax* l_count;
+                    l_req.get_typed(&l_count);
+                    assert_true(*l_count == 10);
+                    *l_count += 10;
 
-                  *in_out_sended_slice = SocketTypedRequestWriter::set(2, Slice<uimax>::build_asint8_memory_singleelement(l_count), p_response);
-                  thiz->request_processed = 1;
+                    *in_out_sended_slice = SocketTypedRequestWriter::set(2, Slice<uimax>::build_asint8_memory_singleelement(l_count), p_response);
+                    thiz->request_processed = 1;
 
-                  return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
+                    return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
                 });
             };
 
@@ -2071,12 +2088,12 @@ inline void socket_server_client_send_receive_test()
             {
                 SocketRequestConnection l_request_connection = SocketRequestConnection::allocate_default();
                 l_request_connection.listen(*thiz->client_thread.input.ctx, thiz->client_thread.client.client_socket, [&](const Slice<int8>& p_request) {
-                  SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
-                  assert_true(*l_req.code == 2);
-                  uimax* l_count;
-                  l_req.get_typed<uimax>(&l_count);
-                  assert_true(*l_count == 20);
-                  thiz->request_processed = 1;
+                    SocketTypedRequestReader l_req = SocketTypedRequestReader::build(p_request);
+                    assert_true(*l_req.code == 2);
+                    uimax* l_count;
+                    l_req.get_typed<uimax>(&l_count);
+                    assert_true(*l_count == 20);
+                    thiz->request_processed = 1;
                 });
                 l_request_connection.free();
             };
@@ -2125,14 +2142,11 @@ inline void socket_server_client_send_receive_test()
         }
     }
 
-
     l_cc_trhead.free(l_ctx);
 
     // Trying to send on a closed client
     assert_true(!l_client_send_connection.send_v2(l_ctx, l_cc_trhead.client_thread.client.client_socket, Slice<int8>::build_memory_elementnb(l_client_send_connection.send_buffer.Memory, 8)));
     l_client_send_connection.free();
-
-
 
     l_cc_trhead.start(&l_ctx);
     l_cc_trhead.client_thread.sync_wait_for_allocation();
@@ -2164,7 +2178,7 @@ static const uimax CLIENT_REQUEST_CODE = 1;
 static const uimax SERVER_RESPONSE_CODE = 2;
 static const uimax TEST_VALUE_BEFORE = 0;
 static const uimax TEST_VALUE_AFTER = 1;
-} // namespace __constants
+} // namespace test_constants
 
 /* Sending a request to client, that send it to server and send the response back to the client. */
 inline void socket_client_to_server_to_client_request()
@@ -2286,10 +2300,56 @@ inline void socket_client_to_server_to_client_request()
     l_ctx.free();
 };
 
+inline void websocket_test()
+{
+    WebSocketHandshake l_handshake = WebSocketHandshake::build_default();
+    Span<int8> l_response_buffer = Span<int8>::allocate(512);
+
+    Slice<int8> l_response_slice;
+    const int8* l_request_arr = "GET /chat HTTP/1.1\r\n"
+                                "Host: exemple.com:8000\r\n"
+                                "Upgrade: websocket\r\n"
+                                "Connection: Upgrade\r\n"
+                                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
+                                "Sec-WebSocket-Version: 13";
+
+    const int8* l_expected_response = "HTTP/1.1 101 Switching Protocols\r\n"
+                                      "Compression: None\r\n"
+                                      "Upgrade: websocket\r\n"
+                                      "Connection: Upgrade\r\n"
+                                      "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
+                                      "\r\n";
+    assert_true(l_handshake.handle_handshake(slice_int8_build_rawstr(l_request_arr), l_response_buffer.slice, &l_response_slice) ==
+                SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE);
+    assert_true(l_handshake.handshake_successful);
+
+    assert_true(slice_int8_build_rawstr(l_expected_response).compare(l_response_slice));
+
+    l_response_buffer.free();
+
+    // request reader
+    const SliceN<int8, 285> l_buffer = {
+        -126, -8,   -5,   +13,  -82,  +88,  -5,   +13,  -82,  +88,  -14,  +13,  -82,  +88,  -5,   +13,  -82,  +88,  -128, +47,  -38, +55,  -112, +47,  -108, +104, -122, +86,  -82,  +88,  -5,   +13,
+        -82,  +88,  -5,   +118, -116, +60,  -102, +121, -49,  +58,  -102, +126, -53,  +122, -63,  +47,  -21,  +98,  -44,  +74,  -49, +53,  -98,  +93,  -36,  +55,  -111, +104, -51,  +44,  -120, +34,
+        -23,  +57,  -106, +104, -21,  +54,  -100, +100, -64,  +61,  -73,  +100, -64,  +45,  -125, +34,  -15,  +57,  -120, +126, -53, +44,  -44,  +108, -35,  +43,  -98,  +121, -127, +21,  -102, +121,
+        -53,  +42,  -110, +108, -62,  +14,  -110, +104, -39,  +61,  -119, +82,  -2,   +57,  -104, +102, -49,  +63,  -98,  +34,  -49, +43,  -120, +104, -38,  +118, -97,  +111, -116, +37,  +40,  +87,
+        +105, +110, +100, +111, +119, +115, +32,  +78,  +84,  +32,  +49,  +48,  +46,  +48,  +59,  +32,  +87,  +105, +110, +54,  +52, +59,  +32,  +120, +54,  +52,  +41,  +32,  +65,  +112, +112, +108,
+        +101, +87,  +101, +98,  +75,  +105, +116, +47,  +53,  +51,  +55,  +46,  +51,  +54,  +32,  +40,  +75,  +72,  +84,  +77,  +76, +44,  +32,  +108, +105, +107, +101, +32,  +71,  +101, +99,  +107,
+        +111, +41,  +32,  +67,  +104, +114, +111, +109, +101, +47,  +57,  +48,  +46,  +48,  +46,  +52,  +52,  +51,  +48,  +46,  +57, +51,  +32,  +83,  +97,  +102, +97,  +114, +105, +47,  +53,  +51,
+        +55,  +46,  +51,  +54,  +13,  +10,  +85,  +112, +103, +114, +97,  +100, +101, +58,  +32,  +119, +101, +98,  +115, +111, +99, +107, +101, +116, +13,  +10,  +79,  +114, +105, +103, +105, +110,
+        +58,  +32,  +102, +105, +108, +101, +58,  +47,  +47,  +13,  +10,  +83,  +101, +99,  +45,  +87,  +101, +98,  +83,  +111, +99, +107, +101, +116, +45,  +86,  +101, +114, +115};
+
+    Slice<int8> l_body = WebSocketRequestReader::read_body_not_compressed(slice_from_slicen(&l_buffer));
+
+    assert_true(l_body.Size == 120);
+};
+
 int main(int argc, int8** argv)
 {
     slice_span_test();
     slice_functional_algorithm_test();
+    base64_test();
+    sha1_test();
     vector_test();
     hashmap_test();
     pool_test();
@@ -2317,17 +2377,18 @@ int main(int argc, int8** argv)
     socket_server_client_allocation_destruction();
     socket_server_client_send_receive_test();
     socket_client_to_server_to_client_request();
+    websocket_test();
 #endif
 #if 0
-    for (loop(i, 0, 200))
+    for (loop(i, 0, 1000))
     {
         socket_server_client_allocation_destruction();
     }
-    for (loop(i, 0, 200))
+    for (loop(i, 0, 1000))
     {
         socket_server_client_send_receive_test();
     }
-   for (loop(i, 0, 200))
+    for (loop(i, 0, 1000))
     {
         socket_client_to_server_to_client_request();
     }

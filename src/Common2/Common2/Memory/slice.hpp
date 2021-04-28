@@ -112,13 +112,25 @@ template <class ElementType> struct Slice
         l_target.move_memory(l_source);
     };
 
-    inline int8* copy_memory(const Slice<ElementType>& p_elements)
+    inline void copy_memory(const Slice<ElementType>& p_elements)
     {
 #if __DEBUG
-        return memory_cpy_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_elements.Begin), p_elements.Size * sizeof(ElementType));
+        memory_cpy_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_elements.Begin), p_elements.Size * sizeof(ElementType));
 #else
-        return memory_cpy((int8*)this->Begin, (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
+        memory_cpy((int8*)this->Begin, (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
 #endif
+    };
+
+    inline void copy_memory_2(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
+    {
+        this->copy_memory(p_elements_1);
+        this->slide_rv(p_elements_1.Size).copy_memory(p_elements_2);
+    };
+
+    inline void copy_memory_3(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2, const Slice<ElementType>& p_elements_3)
+    {
+        this->copy_memory_2(p_elements_1, p_elements_2);
+        this->slide_rv(p_elements_1.Size + p_elements_2.Size).copy_memory(p_elements_3);
     };
 
     inline void copy_memory_at_index(const uimax p_copy_index, const Slice<ElementType>& p_elements)

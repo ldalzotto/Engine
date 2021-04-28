@@ -151,7 +151,7 @@ struct MaterialViewerServerV2
         this->engine_thread.start();
     };
 
-    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request_json(const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_response_slice)
+    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request_json(const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* out_response_slice)
     {
         SocketTypedHeaderRequestReader l_request = SocketTypedHeaderRequestReader::build(p_request);
         switch (*(MaterialViewerRequestCode*)l_request.code)
@@ -169,7 +169,7 @@ struct MaterialViewerServerV2
 
             l_input_des.free();
 
-            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
+            *out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_START_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
 
             return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
@@ -178,7 +178,7 @@ struct MaterialViewerServerV2
         {
             this->material_viewer_unit.stop(this->engine_thread);
 
-            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_STOP_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
+            *out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::ENGINE_THREAD_STOP_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
 
             return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
@@ -194,7 +194,7 @@ struct MaterialViewerServerV2
 
             l_input_des.free();
 
-            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::SET_MATERIAL_AND_MESH_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
+            *out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::SET_MATERIAL_AND_MESH_RETURN, l_request.header, Slice<int8>::build_default(), p_response);
 
             return SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE;
         }
@@ -212,7 +212,7 @@ struct MaterialViewerServerV2
 
             l_material_paths.free();
 
-            *in_out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN, l_request.header, l_json_serializer.output.to_slice(), p_response);
+            *out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MATERIALS_RETURN, l_request.header, l_json_serializer.output.to_slice(), p_response);
 
             l_json_serializer.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -233,8 +233,7 @@ struct MaterialViewerServerV2
 
             l_mesh_paths.free();
 
-            *in_out_response_slice =
-                SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN, l_request.header, l_json_input_serializer.output.to_slice(), p_response);
+            *out_response_slice = SocketTypedHeaderRequestWriter::set((int32)MaterialViewerRequestCode::GET_ALL_MESH_RETURN, l_request.header, l_json_input_serializer.output.to_slice(), p_response);
 
             l_json_input_serializer.free();
             l_asset_metadata_database.free(l_database_connection);
@@ -247,6 +246,29 @@ struct MaterialViewerServerV2
         }
 
         return SocketRequestResponseConnection::ListenSendResponseReturnCode::NOTHING;
+    };
+
+    // TODO -> because we are using websocket, we must decode the request bits by bits (see https://tools.ietf.org/html/rfc6455#section-5.2)
+    // TODO -> move this to common
+    inline SocketRequestResponseConnection::ListenSendResponseReturnCode handle_request_json_websocket(WebSocketHandshake& p_ws_hadnshake, const Slice<int8>& p_request, const Slice<int8>& p_response,
+                                                                                                       Slice<int8>* out_response_slice)
+    {
+        if (!p_ws_hadnshake.handshake_successful)
+        {
+            return p_ws_hadnshake.handle_handshake(p_request, p_response, out_response_slice);
+        }
+        else
+        {
+            Slice<int8> l_request_json = WebSocketRequestReader::read_body_not_compressed(p_request);
+            SocketRequestResponseConnection::ListenSendResponseReturnCode l_code = handle_request_json(l_request_json, p_response, out_response_slice);
+            if (l_code == SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE)
+            {
+                *out_response_slice = WebSocketRequestReader::add_websocket_data_to_buffer(p_response, *out_response_slice);
+            };
+
+            return l_code;
+            // TODO -> the reponse must be converted back to websocket
+        }
     };
 };
 
@@ -269,6 +291,41 @@ struct MaterialViewerServerJSONThread
     inline void start(SocketContext& p_ctx, const int32 p_port)
     {
         this->exec = Exec{this};
+        this->material_viewer_server_v2 = MaterialViewerServerV2::allocate();
+        this->material_viewer_server_v2.start_engine_thread();
+        this->thread.start(&p_ctx, p_port, &this->exec);
+    };
+
+    inline void free(SocketContext& p_ctx)
+    {
+        this->thread.free(p_ctx);
+        this->material_viewer_server_v2.free();
+    };
+};
+
+struct MaterialViewerServerJSONWebsocketThread
+{
+    struct Exec
+    {
+        MaterialViewerServerJSONWebsocketThread* thiz;
+        inline void operator()() const
+        {
+            thiz->thread.server.listen_request_response(*thiz->thread.input.ctx, [&](const Slice<int8>& p_request, const Slice<int8>& p_response, Slice<int8>* in_out_response_slice) {
+                return thiz->material_viewer_server_v2.handle_request_json_websocket(thiz->websocket_handshake, p_request, p_response, in_out_response_slice);
+            });
+            // TODO -> move to common
+            thiz->websocket_handshake = WebSocketHandshake::build_default();
+        };
+    } exec;
+
+    SocketSocketServerSingleClientThread<Exec> thread;
+    MaterialViewerServerV2 material_viewer_server_v2;
+    WebSocketHandshake websocket_handshake;
+
+    inline void start(SocketContext& p_ctx, const int32 p_port)
+    {
+        this->exec = Exec{this};
+        this->websocket_handshake = WebSocketHandshake::build_default();
         this->material_viewer_server_v2 = MaterialViewerServerV2::allocate();
         this->material_viewer_server_v2.start_engine_thread();
         this->thread.start(&p_ctx, p_port, &this->exec);

@@ -3,7 +3,8 @@
 int main()
 {
     SocketContext l_socket_context = SocketContext::allocate();
-    MaterialViewerServerJSONThread l_server;
+    MaterialViewerServerJSONWebsocketThread l_server;
+    // MaterialViewerServerJSONThread l_server;
     l_server.start(l_socket_context, 8000);
 
     while (1)

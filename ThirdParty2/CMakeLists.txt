@@ -35,3 +35,6 @@ target_link_libraries(SQLite INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/s
 
 add_library(STB_IMAGE INTERFACE)
 target_include_directories(STB_IMAGE INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stb_image/public/")
+
+add_library(SHA1 INTERFACE)
+target_include_directories(SHA1 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/sha1/public/")

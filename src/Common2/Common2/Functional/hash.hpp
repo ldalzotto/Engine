@@ -67,3 +67,10 @@ inline constexpr hash_t HashRaw_constexpr(const int8* p_str)
 {
     return HashFunctionRaw((int8*)p_str, strlen_constexpr(p_str));
 };
+
+inline SliceN<int8, 20> Hash_SHA1(const Slice<int8>& p_value)
+{
+    SliceN<int8, 20> l_hash;
+    SHA1(l_hash.Memory, p_value.Begin, (int32)p_value.Size);
+    return l_hash;
+};

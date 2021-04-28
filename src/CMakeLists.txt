@@ -2,6 +2,7 @@
 add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
 target_link_libraries(Common2 INTERFACE SQLite)
+target_link_libraries(Common2 INTERFACE SHA1)
 
 add_library(AssetDatabase INTERFACE)
 target_include_directories(AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase)

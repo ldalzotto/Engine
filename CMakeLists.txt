@@ -58,4 +58,5 @@ add_custom_target(
         COMMAND AssetCompilerTest
         COMMAND MaterialViewerTest
         COMMAND AssetCompilerEditorTest
+        COMMAND MaterialViewerServerTest
 )

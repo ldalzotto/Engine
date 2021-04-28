@@ -2,8 +2,7 @@
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
-// #include <iphlpapi.h>
-// #include <bcrypt.h>
+
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
@@ -21,59 +20,6 @@ template <class ReturnType> inline ReturnType winsock_error_handler(const Return
 #endif
     return p_return;
 };
-
-#if 0
-inline Span<int8> sha1_hash(const Slice<int8>& p_input){
-    BCRYPT_ALG_HANDLE hAlg = NULL;
-    BCRYPT_HASH_HANDLE hHash = NULL;
-    DWORD cbData = 0, cbHash = 0;
-    PBYTE pbHashObject = NULL;
-    PBYTE pbHash = NULL;
-
-    Span<int8> l_hash_object;
-    Span<int8> l_hash;
-
-    // open an algorithm handle
-    winsock_error_handler(BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, NULL, 0));
-
-    // calculate the size of the buffer to hold the hash object
-    winsock_error_handler(BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PBYTE)&l_hash_object.Capacity, sizeof(DWORD), &cbData, 0));
-
-    // allocate the hash object on the heap
-    l_hash_object = Span<int8>::allocate(l_hash_object.Capacity);
-
-    // calculate the length of the hash
-    winsock_error_handler(BCryptGetProperty(hAlg, BCRYPT_HASH_LENGTH, (PBYTE)&l_hash.Capacity, sizeof(DWORD), &cbData, 0));
-
-    // allocate the hash buffer on the heap
-    l_hash = Span<int8>::allocate(l_hash.Capacity);
-
-    // create a hash
-    winsock_error_handler(BCryptCreateHash(hAlg, &hHash, pbHashObject, (ULONG)l_hash_object.Memory, NULL, 0, 0));
-
-#if 0
-    // hash some data
-    if (!NT_SUCCESS(status = BCryptHashData(hHash, (PBYTE)rgbMsg, sizeof(rgbMsg), 0)))
-    {
-        wprintf(L"**** Error 0x%x returned by BCryptHashData\n", status);
-        goto Cleanup;
-    }
-
-    // close the hash
-    if (!NT_SUCCESS(status = BCryptFinishHash(hHash, pbHash, cbHash, 0)))
-    {
-        wprintf(L"**** Error 0x%x returned by BCryptFinishHash\n", status);
-        goto Cleanup;
-    }
-#endif
-
-    l_hash_object.free();
-    BCryptCloseAlgorithmProvider(hAlg, 0);
-    BCryptDestroyHash(hHash);
-
-    return l_hash;
-};
-#endif
 
 using socket_t = SOCKET;
 
@@ -421,7 +367,9 @@ struct Socket
  */
 struct SocketRequestResponseConnection
 {
+    // TODO resizable by default.
     Span<int8> request_buffer;
+    // TODO resizable by default.
     Span<int8> response_buffer;
 
     inline static SocketRequestResponseConnection allocate_default()
@@ -466,6 +414,7 @@ struct SocketRequestResponseConnection
             }
         }
     };
+
 };
 
 /*
@@ -473,6 +422,7 @@ struct SocketRequestResponseConnection
  */
 struct SocketRequestConnection
 {
+    // TODO resizable by default.
     Span<int8> request_buffer;
 
     inline static SocketRequestConnection allocate_default()
@@ -501,6 +451,7 @@ struct SocketRequestConnection
 
 struct SocketSendConnection
 {
+    // TODO resizable by default.
     Span<int8> send_buffer;
 
     inline static SocketSendConnection allocate_default()
@@ -572,6 +523,16 @@ struct SocketServerSingleClient
         SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
         l_request_response_connection.listen(p_ctx, this->registerd_client_socket, p_request_handle_func);
         l_request_response_connection.free();
+    };
+
+    template <class RequestHandleFunc> inline void listen_request_response_v2(SocketContext& p_ctx, const RequestHandleFunc& p_request_handle_func)
+    {
+        while (1)
+        {
+            SocketRequestResponseConnection l_request_response_connection = SocketRequestResponseConnection::allocate_default();
+            l_request_response_connection.listen(p_ctx, this->registerd_client_socket, p_request_handle_func);
+            l_request_response_connection.free();
+        }
     };
 };
 
@@ -754,37 +715,33 @@ template <class SocketConnectionEstablishmentFunc> struct SocketClientThread
     };
 };
 
-#if 0
-if (l_buffer_slice.compare(slice_int8_build_rawstr("GET /")))
-                {
-                    uimax l_index;
-                    if (Slice_find(l_buffer_slice, slice_int8_build_rawstr("Upgrade: websocket"), &l_index) && Slice_find(l_buffer_slice, slice_int8_build_rawstr("Connection: Upgrade"), &l_index))
-                    {
-                        const int8* l_sec_key_header_prefix_raw = "Sec-WebSocket-Key: ";
-                        Slice<int8> l_sec_key_header_prefix = slice_int8_build_rawstr("Sec-WebSocket-Key: ");
-                        if (Slice_find(l_buffer_slice, l_sec_key_header_prefix, &l_index))
-                        {
-                            Slice<int8> l_key = l_buffer_slice.slide_rv(l_index + l_sec_key_header_prefix.Size);
-                            if (Slice_find(l_key, slice_int8_build_rawstr("\r\n"), &l_index))
-                            {
-                                l_key.Size = l_index;
-                            }
+// TODO update to allow resize of socket connection buffer
+struct SocketRequestWriter
+{
+    inline static Slice<int8> set(const Slice<int8>& p_element, const Slice<int8>& p_write_to_buffer)
+    {
+        Slice<int8> l_target = p_write_to_buffer;
+        l_target.Size = p_element.Size;
+        l_target.copy_memory(p_element);
+        return l_target;
+    };
 
-                            // Span<int8> l_hashed_key = sha1_hash(l_key);
+    inline static Slice<int8> set_2(const Slice<int8>& p_element_1, const Slice<int8>& p_element_2, const Slice<int8>& p_write_to_buffer)
+    {
+        Slice<int8> l_target = p_write_to_buffer;
+        l_target.Size = p_element_1.Size + p_element_2.Size;
+        l_target.copy_memory_2(p_element_1, p_element_2);
+        return l_target;
+    };
 
-                            String l_http_request = String::allocate_elements_3(slice_int8_build_rawstr("HTTP/1.1 101 Switching Protocols\r\nUpgrade : websocket\r\nConnection : Upgrade\r\nSec-WebSocket-Accept : "),
-                                                                                l_key, slice_int8_build_rawstr("\r\n"));
-                            l_buffer_slice.Begin = l_http_request.to_slice().Begin;
-                            l_send_result = send(this->client_socket, l_buffer.Memory, l_buffer.Size(), 0);
-
-                            l_http_request.free();
-                            // l_hashed_key.free();
-                        }
-
-
-                    }
-                }
-#endif
+    inline static Slice<int8> set_3(const Slice<int8>& p_element_1, const Slice<int8>& p_element_2, const Slice<int8>& p_element_3, const Slice<int8>& p_write_to_buffer)
+    {
+        Slice<int8> l_target = p_write_to_buffer;
+        l_target.Size = p_element_1.Size + p_element_2.Size + p_element_3.Size;
+        l_target.copy_memory_3(p_element_1, p_element_2, p_element_3);
+        return l_target;
+    };
+};
 
 /*
     This is a functional object that helps to manipulate socket typed requests.
@@ -815,6 +772,7 @@ struct SocketTypedRequestReader
     This is a functional object that helps to manipulate socket typed responses.
     Socket types response are a request code with a body.
  */
+// TODO update to allow resize of socket connection buffer
 struct SocketTypedRequestWriter
 {
 
@@ -847,6 +805,7 @@ struct SocketTypedHeaderRequestReader
     };
 };
 
+// TODO update to allow resize of socket connection buffer
 struct SocketTypedHeaderRequestWriter
 {
     inline static Slice<int8> set(const int32 p_code, const Slice<int8>& p_header, const Slice<int8>& p_body, const Slice<int8>& p_writeto_buffer)
@@ -873,9 +832,9 @@ struct SocketTypedHeaderRequestWriter
     }
 };
 
+/* Structure that allows syncrhonous execution of client->server->client request and response. */
 struct SocketRequestResponseTracker
 {
-
     struct Response
     {
         // This boolean is updatedby the client thread to notify consumer that the server request response has been received. It must be volatile because it accessed by the client trhead and the main
@@ -928,3 +887,4 @@ struct SocketRequestResponseTracker
         this->response_closures.get(p_request).is_processed = 1;
     };
 };
+
