@@ -1,11 +1,24 @@
 #pragma once
 
+// TDOO -> pointer callback is not necessary here. (see thread)
+struct EngineExternalStepCallback
+{
+    void* closure;
+    typedef void (*cb_t)(EngineExternalStep, Engine&, void*);
+    cb_t cb;
+    inline void step(EngineExternalStep p_step, Engine& p_engine)
+    {
+        this->cb(p_step, p_engine, this->closure);
+    };
+};
+
 /*
     A general purpose Engine execution functional object that runs an Engine instance.
     This structure allows synchronisation hooks.
 */
 struct EngineExecutionUnit
 {
+    // TDOO -> pointer callback is not necessary here. (see thread)
     struct CleanupCallback
     {
         void* closure;

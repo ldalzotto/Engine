@@ -48,7 +48,6 @@
 #include "./Clock/clock.hpp"
 #include "./Thread/thread.hpp"
 
-#include "sha1.h"
 #include "./Functional/encode.hpp"
 #include "./Functional/hash.hpp"
 
@@ -94,7 +93,6 @@
 
 #if __SOCKET_ENABLED
 #include "./Socket/socket.hpp"
-#include "./Socket/websocket.hpp"
 #endif
 
 #undef __SQLITE_ENABLED

@@ -117,14 +117,6 @@ inline void base64_test()
     l_encoded.free();
 };
 
-inline void sha1_test()
-{
-    SliceN<int8, 20> l_hash = Hash_SHA1(slice_int8_build_rawstr("dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11"));
-    Span<int8> l_encoded = encode_base64(slice_from_slicen(&l_hash));
-    assert_true(slice_int8_build_rawstr("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=").compare(l_encoded.slice));
-    l_encoded.free();
-};
-
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
@@ -2300,56 +2292,11 @@ inline void socket_client_to_server_to_client_request()
     l_ctx.free();
 };
 
-inline void websocket_test()
-{
-    WebSocketHandshake l_handshake = WebSocketHandshake::build_default();
-    Span<int8> l_response_buffer = Span<int8>::allocate(512);
-
-    Slice<int8> l_response_slice;
-    const int8* l_request_arr = "GET /chat HTTP/1.1\r\n"
-                                "Host: exemple.com:8000\r\n"
-                                "Upgrade: websocket\r\n"
-                                "Connection: Upgrade\r\n"
-                                "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"
-                                "Sec-WebSocket-Version: 13";
-
-    const int8* l_expected_response = "HTTP/1.1 101 Switching Protocols\r\n"
-                                      "Compression: None\r\n"
-                                      "Upgrade: websocket\r\n"
-                                      "Connection: Upgrade\r\n"
-                                      "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
-                                      "\r\n";
-    assert_true(l_handshake.handle_handshake(slice_int8_build_rawstr(l_request_arr), l_response_buffer.slice, &l_response_slice) ==
-                SocketRequestResponseConnection::ListenSendResponseReturnCode::SEND_RESPONSE);
-    assert_true(l_handshake.handshake_successful);
-
-    assert_true(slice_int8_build_rawstr(l_expected_response).compare(l_response_slice));
-
-    l_response_buffer.free();
-
-    // request reader
-    const SliceN<int8, 285> l_buffer = {
-        -126, -8,   -5,   +13,  -82,  +88,  -5,   +13,  -82,  +88,  -14,  +13,  -82,  +88,  -5,   +13,  -82,  +88,  -128, +47,  -38, +55,  -112, +47,  -108, +104, -122, +86,  -82,  +88,  -5,   +13,
-        -82,  +88,  -5,   +118, -116, +60,  -102, +121, -49,  +58,  -102, +126, -53,  +122, -63,  +47,  -21,  +98,  -44,  +74,  -49, +53,  -98,  +93,  -36,  +55,  -111, +104, -51,  +44,  -120, +34,
-        -23,  +57,  -106, +104, -21,  +54,  -100, +100, -64,  +61,  -73,  +100, -64,  +45,  -125, +34,  -15,  +57,  -120, +126, -53, +44,  -44,  +108, -35,  +43,  -98,  +121, -127, +21,  -102, +121,
-        -53,  +42,  -110, +108, -62,  +14,  -110, +104, -39,  +61,  -119, +82,  -2,   +57,  -104, +102, -49,  +63,  -98,  +34,  -49, +43,  -120, +104, -38,  +118, -97,  +111, -116, +37,  +40,  +87,
-        +105, +110, +100, +111, +119, +115, +32,  +78,  +84,  +32,  +49,  +48,  +46,  +48,  +59,  +32,  +87,  +105, +110, +54,  +52, +59,  +32,  +120, +54,  +52,  +41,  +32,  +65,  +112, +112, +108,
-        +101, +87,  +101, +98,  +75,  +105, +116, +47,  +53,  +51,  +55,  +46,  +51,  +54,  +32,  +40,  +75,  +72,  +84,  +77,  +76, +44,  +32,  +108, +105, +107, +101, +32,  +71,  +101, +99,  +107,
-        +111, +41,  +32,  +67,  +104, +114, +111, +109, +101, +47,  +57,  +48,  +46,  +48,  +46,  +52,  +52,  +51,  +48,  +46,  +57, +51,  +32,  +83,  +97,  +102, +97,  +114, +105, +47,  +53,  +51,
-        +55,  +46,  +51,  +54,  +13,  +10,  +85,  +112, +103, +114, +97,  +100, +101, +58,  +32,  +119, +101, +98,  +115, +111, +99, +107, +101, +116, +13,  +10,  +79,  +114, +105, +103, +105, +110,
-        +58,  +32,  +102, +105, +108, +101, +58,  +47,  +47,  +13,  +10,  +83,  +101, +99,  +45,  +87,  +101, +98,  +83,  +111, +99, +107, +101, +116, +45,  +86,  +101, +114, +115};
-
-    Slice<int8> l_body = WebSocketRequestReader::read_body_not_compressed(slice_from_slicen(&l_buffer));
-
-    assert_true(l_body.Size == 120);
-};
-
 int main(int argc, int8** argv)
 {
     slice_span_test();
     slice_functional_algorithm_test();
     base64_test();
-    sha1_test();
     vector_test();
     hashmap_test();
     pool_test();
@@ -2373,26 +2320,9 @@ int main(int argc, int8** argv)
     file_test();
     database_test();
     thread_test();
-#if 1
     socket_server_client_allocation_destruction();
     socket_server_client_send_receive_test();
     socket_client_to_server_to_client_request();
-    websocket_test();
-#endif
-#if 0
-    for (loop(i, 0, 1000))
-    {
-        socket_server_client_allocation_destruction();
-    }
-    for (loop(i, 0, 1000))
-    {
-        socket_server_client_send_receive_test();
-    }
-    for (loop(i, 0, 1000))
-    {
-        socket_client_to_server_to_client_request();
-    }
-#endif
 
     memleak_ckeck();
 }

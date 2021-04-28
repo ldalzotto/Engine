@@ -365,11 +365,10 @@ struct Socket
 /*
     The SocketRequestResponseConnection establish a request linstening connection to a socket and can send it back data if desired.
  */
+// TODO how to handle a buffer size that is lower than the messe received ?
 struct SocketRequestResponseConnection
 {
-    // TODO resizable by default.
     Span<int8> request_buffer;
-    // TODO resizable by default.
     Span<int8> response_buffer;
 
     inline static SocketRequestResponseConnection allocate_default()
@@ -414,15 +413,14 @@ struct SocketRequestResponseConnection
             }
         }
     };
-
 };
 
 /*
     The SocketRequestConnection establish a request linstening connection to a socket.
  */
+// TODO how to handle a buffer size that is lower than the messe received ?
 struct SocketRequestConnection
 {
-    // TODO resizable by default.
     Span<int8> request_buffer;
 
     inline static SocketRequestConnection allocate_default()
@@ -449,9 +447,9 @@ struct SocketRequestConnection
     };
 };
 
+// TODO -> size can be dynamic
 struct SocketSendConnection
 {
-    // TODO resizable by default.
     Span<int8> send_buffer;
 
     inline static SocketSendConnection allocate_default()
@@ -887,4 +885,3 @@ struct SocketRequestResponseTracker
         this->response_closures.get(p_request).is_processed = 1;
     };
 };
-

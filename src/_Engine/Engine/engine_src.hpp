@@ -137,17 +137,6 @@ struct Engine
     };
 };
 
-struct EngineExternalStepCallback
-{
-    void* closure;
-    typedef void (*cb_t)(EngineExternalStep, Engine&, void*);
-    cb_t cb;
-    inline void step(EngineExternalStep p_step, Engine& p_engine)
-    {
-        this->cb(p_step, p_engine, this->closure);
-    };
-};
-
 struct EngineLoopFunctions
 {
     template <class ExternalCallbackStep> inline static void new_frame(Engine& p_engine, ExternalCallbackStep& p_callback_step)
