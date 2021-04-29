@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO -> finding a better way to do this ? Can we have an abstract ShadowPool structure with multiple types ?
 struct PoolGenerics
 {
     template <class TokenOuterType, class PoolType, class Pool_PushBackElementEmpty_Func>
@@ -20,7 +21,7 @@ struct PoolGenerics
 
     template <class ElementType, class PoolType, class Pool_SetElement_Func, class Pool_PushBackelement_Func>
     inline static Token<ElementType> allocate_element(PoolType& p_pool, const ElementType& p_element, Vector<Token<ElementType>>& p_free_blocks, const Pool_SetElement_Func& p_pool_set_element_func,
-                                                  const Pool_PushBackelement_Func& p_pool_pushback_element_func)
+                                                      const Pool_PushBackelement_Func& p_pool_pushback_element_func)
     {
         if (!p_free_blocks.empty())
         {

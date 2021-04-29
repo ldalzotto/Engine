@@ -1,6 +1,6 @@
 #pragma once
 
-// TDOO -> pointer callback is not necessary here. (see thread)
+// TODO -> pointer callback is not necessary here. (see thread)
 struct EngineExternalStepCallback
 {
     void* closure;
@@ -18,7 +18,7 @@ struct EngineExternalStepCallback
 */
 struct EngineExecutionUnit
 {
-    // TDOO -> pointer callback is not necessary here. (see thread)
+    // TODO -> pointer callback is not necessary here. (see thread)
     struct CleanupCallback
     {
         void* closure;
@@ -32,7 +32,6 @@ struct EngineExecutionUnit
     };
 
     Engine engine;
-    EngineExternalStepCallback step_callback;
 
     EngineExternalStepCallback external_loop_callback;
     CleanupCallback cleanup_callback;
@@ -64,6 +63,7 @@ struct EngineExecutionUnit
 // TODO -> having a variant for a single engine ? This will prevent executing clock logic
 struct EngineRunnerThread
 {
+    // TODO -> remove. engine allocation can be done by the consumer.
     struct EngineAllocationEvent
     {
         Token<EngineExecutionUnit> token;

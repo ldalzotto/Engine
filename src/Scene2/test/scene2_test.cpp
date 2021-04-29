@@ -170,23 +170,27 @@ inline void component_consume()
 
     struct component_consume_callbacks
     {
-        int8 component_test_1_removed_called;
-        int8 component_test_2_removed_called;
-
-        inline static component_consume_callbacks build_default()
+        struct closure
         {
-            return component_consume_callbacks{0, 0};
+            int8 component_test_1_removed_called;
+            int8 component_test_2_removed_called;
+        };
+        closure* thiz;
+
+        inline static component_consume_callbacks build_default(closure& p_closure)
+        {
+            return component_consume_callbacks{&p_closure};
         };
 
-        inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
+        inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component) const
         {
             if (p_component.type == ComponentTest::Type)
             {
-                this->component_test_1_removed_called += 1;
+                thiz->component_test_1_removed_called += 1;
             }
             else if (p_component.type == ComponentTest2::Type)
             {
-                this->component_test_2_removed_called += 1;
+                thiz->component_test_2_removed_called += 1;
             }
         };
     };
@@ -203,7 +207,8 @@ inline void component_consume()
         l_scene.add_node_component_typed<ComponentTest2>(l_node_1, 1);
         l_scene.add_node_component_typed<ComponentTest2>(l_node_2, 1);
 
-        component_consume_callbacks l_callbacks = component_consume_callbacks::build_default();
+        component_consume_callbacks::closure l_callbacks_closure = component_consume_callbacks::closure{0};
+        component_consume_callbacks l_callbacks = component_consume_callbacks::build_default(l_callbacks_closure);
         assert_true(l_scene.scene_events.component_removed_events.Size == 0);
         // l_scene.consume_component_events_stateful(l_callbacks);
 
@@ -215,16 +220,16 @@ inline void component_consume()
 
         l_scene.consume_component_events_stateful(l_callbacks);
 
-        assert_true(l_callbacks.component_test_2_removed_called == 1);
-        assert_true(l_callbacks.component_test_1_removed_called == 0);
+        assert_true(l_callbacks_closure.component_test_2_removed_called == 1);
+        assert_true(l_callbacks_closure.component_test_1_removed_called == 0);
 
         l_scene.remove_node(l_scene.get_node(l_node_1));
 
         assert_true(l_scene.scene_events.component_removed_events.Size == 2); // 1 components from l_node_1 and 1 from l_node_2
 
         l_scene.consume_component_events_stateful(l_callbacks);
-        assert_true(l_callbacks.component_test_2_removed_called == 2);
-        assert_true(l_callbacks.component_test_1_removed_called == 1);
+        assert_true(l_callbacks_closure.component_test_2_removed_called == 2);
+        assert_true(l_callbacks_closure.component_test_1_removed_called == 1);
     }
 
     l_scene.free_and_consume_component_events<DefaulSceneComponentReleaser>();

@@ -3,6 +3,7 @@
 struct EngineConfiguration
 {
     Slice<int8> asset_database_path;
+    // TODO -> remove this
     int8 headless;
     v2ui render_size;
     int8 render_target_host_readable;
@@ -41,10 +42,9 @@ struct Engine
     {
         Engine& engine;
 
-        inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
+        inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component) const
         {
-            g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_resource_allocator,
-                                        p_component);
+            g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_resource_allocator, p_component);
         };
     };
 
@@ -55,6 +55,7 @@ struct Engine
         l_engine.clock = Clock::allocate_default();
         l_engine.engine_loop = EngineLoop::allocate_default(1000000 / 60);
         l_engine.collision = Collision2::allocate();
+        // TODO -> the present extension should not be setted if headless
         SliceN<GPUExtension, 1> tmp_gpu_extensions{GPUExtension::WINDOW_PRESENT};
         l_engine.gpu_context = GPUContext::allocate(slice_from_slicen(&tmp_gpu_extensions));
         l_engine.renderer_resource_allocator = RenderResourceAllocator2::allocate();
@@ -103,9 +104,10 @@ struct Engine
 
     inline void free()
     {
-        ComponentReleaser l_component_releaser = ComponentReleaser{*this};
-        this->scene.consume_component_events_stateful(l_component_releaser);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
+        this->scene.consume_component_events_stateful(ComponentReleaser{*this});
+        this->scene.free();
+
+        this->scene_middleware.free(this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
@@ -114,21 +116,20 @@ struct Engine
         this->present.free(this->gpu_context.instance, this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator);
         this->gpu_context.free();
         WindowAllocator::free(this->window);
-        this->scene.free();
     };
 
     inline void free_headless()
     {
-        ComponentReleaser l_component_releaser = ComponentReleaser{*this};
-        this->scene.consume_component_events_stateful(l_component_releaser);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
+        this->scene.consume_component_events_stateful(ComponentReleaser{*this});
+        this->scene.free();
+
+        this->scene_middleware.free(this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
         this->renderer_resource_allocator.free(this->renderer, this->gpu_context);
         this->renderer.free(this->gpu_context);
         this->gpu_context.free();
-        this->scene.free();
     };
 
     inline void close()
@@ -166,7 +167,6 @@ struct EngineLoopFunctions
     {
         p_engine.clock.newupdate(p_delta);
 
-
         p_callback_step.step(EngineExternalStep::BEFORE_UPDATE, p_engine);
 
         Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
@@ -182,7 +182,6 @@ struct EngineLoopFunctions
         p_engine.collision.step();
 
         p_callback_step.step(EngineExternalStep::AFTER_UPDATE, p_engine);
-
     };
 
     inline static void render(Engine& p_engine)
@@ -204,7 +203,9 @@ struct EngineLoopFunctions
         p_engine.renderer.buffer_step(p_engine.gpu_context, p_engine.clock.totaltime);
         p_engine.gpu_context.buffer_step_and_submit();
         GraphicsBinder l_graphics_binder = p_engine.gpu_context.creates_graphics_binder();
+        l_graphics_binder.start();
         p_engine.renderer.graphics_step(l_graphics_binder);
+        l_graphics_binder.end();
         p_engine.gpu_context.submit_graphics_binder(l_graphics_binder);
         p_engine.gpu_context.wait_for_completion();
     };

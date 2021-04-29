@@ -10,7 +10,7 @@ struct ComponentReleaser2
     RenderResourceAllocator2& render_resource_allocator;
     SceneMiddleware* scene_middleware;
 
-    inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
+    inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component) const
     {
         g_on_node_component_removed(this->scene_middleware, this->collision, this->renderer, this->gpu_ctx, this->render_resource_allocator, p_component);
     };
@@ -81,7 +81,7 @@ struct Scene2MiddlewareContext
         this->database_connection.free();
         this->collision.free();
         this->render_resource_allocator.free(this->renderer, this->gpu_ctx);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_ctx, this->render_resource_allocator, this->asset_database);
+        this->scene_middleware.free(this->collision, this->renderer, this->gpu_ctx, this->render_resource_allocator, this->asset_database);
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
         this->scene.free();
@@ -93,7 +93,7 @@ struct Scene2MiddlewareContext
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
-        this->scene_middleware.collision_middleware.free(this->collision, &this->scene);
+        this->scene_middleware.collision_middleware.free(this->collision);
         this->scene.free();
     };
 
@@ -103,7 +103,7 @@ struct Scene2MiddlewareContext
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->render_resource_allocator.free(this->renderer, this->gpu_ctx);
-        this->scene_middleware.render_middleware.free(this->renderer, this->gpu_ctx, this->asset_database, this->render_resource_allocator, &this->scene);
+        this->scene_middleware.render_middleware.free(this->renderer, this->gpu_ctx, this->asset_database, this->render_resource_allocator);
         this->renderer.free(this->gpu_ctx);
         this->gpu_ctx.free();
         this->scene.free();

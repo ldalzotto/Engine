@@ -234,7 +234,7 @@ struct RenderMiddleWare
         return RenderMiddleWare{MeshRendererComponentUnit::allocate(), CameraComponent::build_default()};
     };
 
-    inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database, RenderResourceAllocator2& p_render_resource_allocator, Scene* p_scene)
+    inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database, RenderResourceAllocator2& p_render_resource_allocator)
     {
 
         this->meshrenderer_component_unit.free(p_renderer, p_gpu_context, p_render_resource_allocator);

@@ -54,7 +54,7 @@ struct CollisionMiddleware
 
     static CollisionMiddleware allocate_default();
 
-    void free(Collision2& p_collision, Scene* p_scene);
+    void free(Collision2& p_collision);
 
     void step(Collision2& p_collision, Scene* p_scene);
 };
@@ -192,10 +192,8 @@ inline CollisionMiddleware CollisionMiddleware::allocate_default()
     return CollisionMiddleware{CollisionAllocator::allocate_default()};
 };
 
-inline void CollisionMiddleware::free(Collision2& p_collision, Scene* p_scene)
+inline void CollisionMiddleware::free(Collision2& p_collision)
 {
-    this->step(p_collision, p_scene);
-
     this->allocator.free();
 };
 

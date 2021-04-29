@@ -15,7 +15,7 @@ struct ShaderModuleResourceUnit
     inline static ShaderModuleResourceUnit allocate()
     {
         return ShaderModuleResourceUnit{PoolHashedCounted<hash_t, ShaderModuleResource>::allocate_default(), Vector<ShaderModuleResource::InlineAllocationEvent>::allocate(0),
-                                         Vector<ShaderModuleResource::DatabaseAllocationEvent>::allocate(0), Vector<ShaderModuleResource::FreeEvent>::allocate(0)};
+                                        Vector<ShaderModuleResource::DatabaseAllocationEvent>::allocate(0), Vector<ShaderModuleResource::FreeEvent>::allocate(0)};
     };
 
     inline void free()
@@ -50,9 +50,9 @@ struct ShaderModuleResourceUnit
     inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         ResourceAlgorithm::allocation_step(this->shader_modules, this->shader_module_database_allocation_events, this->shader_modules_allocation_events, p_database_connection, p_asset_database,
-                                            [&](ShaderModuleResource& p_resource, const ShaderModuleResource::Asset::Value& p_value) {
+                                           [&](ShaderModuleResource& p_resource, const ShaderModuleResource::Asset::Value& p_value) {
                                                p_resource.shader_module = p_gpu_context.graphics_allocator.allocate_shader_module(p_value.compiled_shader);
-                                            });
+                                           });
     };
 };
 
@@ -92,7 +92,7 @@ struct TextureResourceUnit
     inline static TextureResourceUnit allocate()
     {
         return TextureResourceUnit{PoolHashedCounted<hash_t, TextureResource>::allocate_default(), Vector<TextureResource::InlineAllocationEvent>::allocate(0),
-                                    Vector<TextureResource::DatabaseAllocationEvent>::allocate(0), Vector<TextureResource::FreeEvent>::allocate(0)};
+                                   Vector<TextureResource::DatabaseAllocationEvent>::allocate(0), Vector<TextureResource::FreeEvent>::allocate(0)};
     };
 
     inline void free()
@@ -127,7 +127,7 @@ struct TextureResourceUnit
     inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         ResourceAlgorithm::allocation_step(this->textures, this->texture_database_allocation_events, this->textures_allocation_events, p_database_connection, p_asset_database,
-                                            TextureResourceAllocation{p_gpu_context});
+                                           TextureResourceAllocation{p_gpu_context});
     };
 
     struct TextureResourceAllocation
@@ -137,7 +137,7 @@ struct TextureResourceUnit
         inline void operator()(TextureResource& p_resource, const TextureResource::Asset::Value& p_value) const
         {
             p_resource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(gpu_context.graphics_allocator, gpu_context.buffer_memory,
-                                                                                                                     ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
+                                                                                                                    ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
             TextureGPU& l_texture_gpu = gpu_context.graphics_allocator.heap.textures_gpu.get(p_resource.texture);
             BufferReadWrite::write_to_imagegpu(gpu_context.buffer_memory.allocator, gpu_context.buffer_memory.events, l_texture_gpu.Image,
                                                gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image), p_value.pixels);
@@ -181,7 +181,7 @@ struct MeshResourceUnit
     inline static MeshResourceUnit allocate()
     {
         return MeshResourceUnit{PoolHashedCounted<hash_t, MeshResource>::allocate_default(), Vector<MeshResource::InlineAllocationEvent>::allocate(0),
-                                 Vector<MeshResource::DatabaseAllocationEvent>::allocate(0), Vector<MeshResource::FreeEvent>::allocate(0)};
+                                Vector<MeshResource::DatabaseAllocationEvent>::allocate(0), Vector<MeshResource::FreeEvent>::allocate(0)};
     };
 
     inline void free()
@@ -216,10 +216,10 @@ struct MeshResourceUnit
     inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         ResourceAlgorithm::allocation_step(this->meshes, this->meshes_database_allocation_events, this->meshes_allocation_events, p_database_connection, p_asset_database,
-                                            [&](MeshResource& p_mesh_resource, const MeshResource::Asset::Value& p_value) {
+                                           [&](MeshResource& p_mesh_resource, const MeshResource::Asset::Value& p_value) {
                                                p_mesh_resource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator,
-                                                                                                                                   p_value.initial_vertices, p_value.initial_indices);
-                                            });
+                                                                                                                                 p_value.initial_vertices, p_value.initial_indices);
+                                           });
     };
 };
 
@@ -259,7 +259,7 @@ struct ShaderResourceUnit
     inline static ShaderResourceUnit allocate()
     {
         return ShaderResourceUnit{PoolHashedCounted<hash_t, ShaderResource>::allocate_default(), Vector<ShaderResource::InlineAllocationEvent>::allocate(0),
-                                   Vector<ShaderResource::DatabaseAllocationEvent>::allocate(0), Vector<ShaderResource::FreeEvent>::allocate(0)};
+                                  Vector<ShaderResource::DatabaseAllocationEvent>::allocate(0), Vector<ShaderResource::FreeEvent>::allocate(0)};
     };
 
     inline void free()
@@ -318,18 +318,18 @@ struct ShaderResourceUnit
 struct ShaderResourceComposition
 {
     inline static Token<ShaderResource> allocate_or_increment_inline(ShaderResourceUnit& p_unit, ShaderModuleResourceUnit& p_shader_module_unit,
-                                                                      const ShaderResource::InlineAllocationInput& p_inline_input,
-                                                                      const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
-                                                                      const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
+                                                                     const ShaderResource::InlineAllocationInput& p_inline_input,
+                                                                     const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
+                                                                     const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
     {
         return ResourceAlgorithm::allocate_or_increment_inline_v2(
             p_unit.shaders, p_inline_input.id, InlineEventAllocator{p_unit, p_inline_input, InlineEventDependencyAllocator{p_shader_module_unit, p_vertex_shader_input, p_fragment_shader_input}});
     };
 
     inline static Token<ShaderResource> allocate_or_increment_database(ShaderResourceUnit& p_unit, ShaderModuleResourceUnit& p_shader_module_unit,
-                                                                        const ShaderResource::DatabaseAllocationInput& p_inline_input,
-                                                                        const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
-                                                                        const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
+                                                                       const ShaderResource::DatabaseAllocationInput& p_inline_input,
+                                                                       const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                       const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         return ResourceAlgorithm::allocate_or_increment_database_v2(
             p_unit.shaders, p_inline_input.id, DatabaseEventAllocator{p_unit, DatabaseEventDependencyAllocator{p_shader_module_unit, p_vertex_shader_input, p_fragment_shader_input}});
@@ -425,8 +425,8 @@ struct MaterialResourceUnit
     inline static MaterialResourceUnit allocate()
     {
         return MaterialResourceUnit{PoolHashedCounted<hash_t, MaterialResource>::allocate_default(), PoolOfVector<MaterialResource::DynamicDependency>::allocate_default(),
-                                     Vector<MaterialResource::InlineAllocationEvent>::allocate(0), Vector<MaterialResource::DatabaseAllocationEvent>::allocate(0),
-                                     Vector<MaterialResource::FreeEvent>::allocate(0)};
+                                    Vector<MaterialResource::InlineAllocationEvent>::allocate(0), Vector<MaterialResource::DatabaseAllocationEvent>::allocate(0),
+                                    Vector<MaterialResource::FreeEvent>::allocate(0)};
     };
 
     inline void free()
@@ -508,9 +508,9 @@ struct MaterialResourceComposition
 
     inline static Token<MaterialResource> allocate_or_increment_inline(MaterialResourceUnit& p_unit, ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
                                                                        TextureResourceUnit& p_texture_unit, const MaterialResource::InlineAllocationInput& p_inline_input,
-                                                                        const ShaderResource::InlineAllocationInput& p_shader_input,
-                                                                        const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
-                                                                        const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
+                                                                       const ShaderResource::InlineAllocationInput& p_shader_input,
+                                                                       const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
+                                                                       const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
     {
         return ResourceAlgorithm::allocate_or_increment_inline_v2(
             p_unit.materials, p_inline_input.id,
@@ -521,19 +521,18 @@ struct MaterialResourceComposition
 
     inline static Token<MaterialResource> allocate_or_increment_database(MaterialResourceUnit& p_unit, ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
                                                                          TextureResourceUnit& p_texture_unit, const MaterialResource::DatabaseAllocationInput& p_inline_input,
-                                                                          const ShaderResource::DatabaseAllocationInput& p_shader_input,
-                                                                          const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
-                                                                          const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
+                                                                         const ShaderResource::DatabaseAllocationInput& p_shader_input,
+                                                                         const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                         const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_database_v2(
-            p_unit.materials, p_inline_input.id,
-            DatabaseEventAllocator{
-                p_unit, DatabaseEventDependencyAllocator{p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input}});
+        return ResourceAlgorithm::allocate_or_increment_database_v2(p_unit.materials, p_inline_input.id,
+                                                                    DatabaseEventAllocator{p_unit, DatabaseEventDependencyAllocator{p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input,
+                                                                                                                                    p_shader_input, p_vertex_shader_input, p_fragment_shader_input}});
     };
 
     inline static Token<MaterialResource> allocate_or_increment_database_and_load_dependecies(MaterialResourceUnit& p_unit, ShaderResourceUnit& p_shader_unit,
                                                                                               ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
-                                                                                               DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id)
+                                                                                              DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const hash_t p_id)
     {
         return ResourceAlgorithm::allocate_or_increment_database_v2(
             p_unit.materials, p_id, DatabaseEventAllocatorRetrieveDependencies{p_unit, p_shader_unit, p_shader_module_unit, p_texture_unit, p_database_connection, p_asset_database});
@@ -550,7 +549,7 @@ struct MaterialResourceComposition
 
   private:
     inline static void materialresource_release_recursively(const MaterialResource& p_resource, MaterialResourceUnit& p_unit, ShaderResourceUnit& p_shader_unit,
-                                                             ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit)
+                                                            ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit)
     {
         ShaderResourceComposition::decrement_or_release(p_shader_unit, p_shader_module_unit, p_resource.dependencies.shader);
         Slice<MaterialResource::DynamicDependency> l_material_dynamic_dependencies = p_unit.material_dynamic_dependencies.get_vector(p_resource.dependencies.dynamic_dependencies);
@@ -634,16 +633,15 @@ struct MaterialResourceComposition
             Span<int8> l_asset_dependencies_span = p_asset_database.get_asset_dependencies_blob(p_database_connection, p_header.id);
             MaterialResource::AssetDependencies l_asset_dependencies_asset = MaterialResource::AssetDependencies::build_from_binary(l_asset_dependencies_span);
             MaterialResource::AssetDependencies::Value l_asset_dependencies = MaterialResource::AssetDependencies::Value::build_from_asset(l_asset_dependencies_asset);
-            Token<MaterialResource> l_resource = DatabaseEventAllocator{
-                p_unit,
-                DatabaseEventDependencyAllocator{
-                    p_shader_unit, p_shader_module_unit, p_texture_unit,
+            Token<MaterialResource> l_resource =
+                DatabaseEventAllocator{
+                    p_unit, DatabaseEventDependencyAllocator{p_shader_unit, p_shader_module_unit, p_texture_unit,
                                                              MaterialResource::DatabaseAllocationInput{p_header.id, *(Slice<TextureResource::DatabaseAllocationInput>*)&l_asset_dependencies.textures},
-                    ShaderResource::DatabaseAllocationInput{l_asset_dependencies.shader},
+                                                             ShaderResource::DatabaseAllocationInput{l_asset_dependencies.shader},
                                                              ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.vertex_module},
-                                                             ShaderModuleResource::DatabaseAllocationInput{
-                        l_asset_dependencies.shader_dependencies
-                            .fragment_module}}}.operator()(p_header);
+                                                             ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.fragment_module}}}
+                    .
+                    operator()(p_header);
 
             l_asset_dependencies_span.free();
             return l_resource;

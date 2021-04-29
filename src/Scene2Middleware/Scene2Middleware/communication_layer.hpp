@@ -12,9 +12,9 @@ inline static BoxColliderComponentAsset desconstruct_nodecomponent(SceneMiddlewa
     return BoxColliderComponentAsset{p_scene_middleware.collision_middleware.allocator.box_collider_get_world_half_extend(p_collision, token_build<BoxColliderComponent>(p_node_component.resource))};
 };
 
-inline static void on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
+inline static void on_node_component_removed(CollisionMiddleware& p_collision_middleware, Collision2& p_collision, const NodeComponent& p_node_component)
 {
-    p_scene_middleware->collision_middleware.allocator.free_box_collider_component(p_collision, token_build<BoxColliderComponent>(p_node_component.resource));
+    p_collision_middleware.allocator.free_box_collider_component(p_collision, token_build<BoxColliderComponent>(p_node_component.resource));
 };
 }; // namespace BoxColliderComponentAsset_SceneCommunication
 
@@ -47,10 +47,12 @@ inline static NodeComponent build_nodecomponent(const Token<MeshRendererComponen
 
 inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
 {
-    MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_resource_allocator, token_build<MeshRendererComponent>(p_node_component.resource));
+    MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_resource_allocator,
+                                                                          token_build<MeshRendererComponent>(p_node_component.resource));
 };
 }; // namespace MeshRendererComponentAsset_SceneCommunication
 
+// TODO -> remove
 inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Collision2& p_collision, D3Renderer& p_renderer, GPUContext& p_gpu_context,
                                         RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
 {
@@ -58,7 +60,7 @@ inline void g_on_node_component_removed(SceneMiddleware* p_scene_middleware, Col
     {
     case BoxColliderComponent::Type:
     {
-        BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware, p_collision, p_node_component);
+        BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_scene_middleware->collision_middleware, p_collision, p_node_component);
     }
     break;
     case MeshRendererComponent::Type:

@@ -377,7 +377,7 @@ struct Scene
         };
         this->scene_events.component_removed_events.clear();
     };
-    template <class ComponentRemovedCallbackObj> inline void consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
+    template <class ComponentRemovedCallbackObj> inline void consume_component_events_stateful(const ComponentRemovedCallbackObj& p_closure)
     {
         for (vector_loop(&this->scene_events.component_removed_events, i))
         {
@@ -392,7 +392,7 @@ struct Scene
         this->consume_component_events<ComponentRemovedCallbackFunc>();
         this->free();
     };
-    template <class ComponentRemovedCallbackObj> inline void free_and_consume_component_events_stateful(ComponentRemovedCallbackObj& p_closure)
+    template <class ComponentRemovedCallbackObj> inline void free_and_consume_component_events_stateful(const ComponentRemovedCallbackObj& p_closure)
     {
         this->consume_component_events_stateful(p_closure);
         this->free();
