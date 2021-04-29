@@ -14,20 +14,20 @@ struct MaterialViewerEngineUnit
     Token<Node> material_node;
     Token<MeshRendererComponent> material_node_meshrenderer;
 
-    struct SharedRessources
+    struct SharedResources
     {
         uimax material_hash;
         uimax mesh_hash;
         int8 change_requested;
     };
 
-    MutexNative<SharedRessources> shared;
+    MutexNative<SharedResources> shared;
 
     inline static MaterialViewerEngineUnit allocate()
     {
         MaterialViewerEngineUnit l_return{};
         l_return.set_sefault_values();
-        l_return.shared = MutexNative<SharedRessources>::allocate();
+        l_return.shared = MutexNative<SharedResources>::allocate();
         return l_return;
     };
 
@@ -50,7 +50,7 @@ struct MaterialViewerEngineUnit
         this->is_running = 1;
         this->engine_execution_unit = p_engine_runner.allocate_engine_execution_unit(
             p_asset_database, p_width, p_height, EngineExternalStepCallback{(void*)this, (EngineExternalStepCallback::cb_t)MaterialViewerEngineUnit::step},
-            EngineExecutionUnit::CleanupCallback{(void*)this, (EngineExecutionUnit::CleanupCallback::cb_t)MaterialViewerEngineUnit::cleanup_ressources});
+            EngineExecutionUnit::CleanupCallback{(void*)this, (EngineExecutionUnit::CleanupCallback::cb_t)MaterialViewerEngineUnit::cleanup_resources});
     };
 
     inline void stop(EngineRunnerThread& p_engine_runner)
@@ -70,7 +70,7 @@ struct MaterialViewerEngineUnit
 
     inline void set_new_material(const hash_t p_new_material)
     {
-        this->shared.acquire([&](SharedRessources& p_shared) {
+        this->shared.acquire([&](SharedResources& p_shared) {
           p_shared.change_requested = 1;
           p_shared.material_hash = p_new_material;
         });
@@ -78,7 +78,7 @@ struct MaterialViewerEngineUnit
 
     inline void set_new_mesh(const hash_t p_new_mesh)
     {
-        this->shared.acquire([&](SharedRessources& p_shared) {
+        this->shared.acquire([&](SharedResources& p_shared) {
           p_shared.change_requested = 1;
           p_shared.mesh_hash = p_new_mesh;
         });
@@ -97,7 +97,7 @@ struct MaterialViewerEngineUnit
                 thiz->material_node = CreateNode(p_engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
                 NodeAddCamera(p_engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
             }
-            thiz->shared.acquire([&](SharedRessources& p_shared){
+            thiz->shared.acquire([&](SharedResources& p_shared){
               if (p_shared.change_requested)
               {
                   if (token_value(thiz->material_node_meshrenderer) != -1)
@@ -114,7 +114,7 @@ struct MaterialViewerEngineUnit
         }
     };
 
-    inline static void cleanup_ressources(Engine& p_engine, MaterialViewerEngineUnit* thiz)
+    inline static void cleanup_resources(Engine& p_engine, MaterialViewerEngineUnit* thiz)
     {
         RemoveNode(p_engine, thiz->camera_node);
         RemoveNode(p_engine, thiz->material_node);

@@ -1,6 +1,6 @@
 # Welcome
 
-From Scratch is a 3D engine created as a personal project and coded in C++. <br/>
+This project is a 3D engine created as a personal project and coded in C++. <br/>
 The engine features :
 
 * 3D scene hierarchy manipulation.
@@ -9,9 +9,7 @@ The engine features :
 * Handmade 3D mathematics.
 * Manual manipulation of CPU and GPU memory.
 
-This documentation is the big picture of the engine and how systems interact each other, no implementation details will
-be detailed here. <br/>
-For an overview of the engine architecture see [architecture overview](architecture_overview.md).
+For an overview of the engine architecture see [architecture overview](https://ldalzotto.github.io/EngineCPPRewrite/#architecture_overview/).
 
 # What this project can do ?
 
@@ -67,3 +65,7 @@ Usage of third party libraries is limited to :
 > ***(a)*** There is a work in progress to roll a custom png loader with zlib. Thus removing stbimage for zlib.
 
 > ***(b)*** If one day the engine supports GUI programming, then the Qt dependency can be replaced by it.
+
+# Try it
+
+Both previous engine build used to record gifs are available at the [release page](https://github.com/ldalzotto/EngineCPPRewrite/releases/tag/0.0.1). Extract archives and run executables. 

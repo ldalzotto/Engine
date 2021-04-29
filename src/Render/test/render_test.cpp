@@ -349,7 +349,7 @@ inline void draw_test()
 
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events, l_color_attachment_token);
 
-    D3RendererAllocatorComposition::free_shader_recursively_with_gpu_ressources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_shader);
+    D3RendererAllocatorComposition::free_shader_recursively_with_gpu_resources(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_shader);
 
     l_ctx.graphics_allocator.free_shader_module(l_vertex_shader_module);
     l_ctx.graphics_allocator.free_shader_module(l_fragment_shader_module);

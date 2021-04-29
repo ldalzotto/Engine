@@ -89,7 +89,7 @@ struct SceneAsset
 
     /*
         Insert the SceneAsset tree to the p_target_scene at the p_parent Node;
-        Component ressource allocation is ensured by calling the ComponentResourceAllocatorFunc.
+        Component resource allocation is ensured by calling the ComponentResourceAllocatorFunc.
 
         # token_t ComponentResourceAllocatorFunc(const SceneAssetComponent& p_asset_component);
     */

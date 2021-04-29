@@ -29,7 +29,7 @@ struct Engine
     Token<Window> window;
     GPUPresent present;
 
-    RenderRessourceAllocator2 renderer_ressource_allocator;
+    RenderResourceAllocator2 renderer_resource_allocator;
 
     Scene scene;
     SceneMiddleware scene_middleware;
@@ -43,7 +43,7 @@ struct Engine
 
         inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component)
         {
-            g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_ressource_allocator,
+            g_on_node_component_removed(&this->engine.scene_middleware, this->engine.collision, this->engine.renderer, this->engine.gpu_context, this->engine.renderer_resource_allocator,
                                         p_component);
         };
     };
@@ -57,7 +57,7 @@ struct Engine
         l_engine.collision = Collision2::allocate();
         SliceN<GPUExtension, 1> tmp_gpu_extensions{GPUExtension::WINDOW_PRESENT};
         l_engine.gpu_context = GPUContext::allocate(slice_from_slicen(&tmp_gpu_extensions));
-        l_engine.renderer_ressource_allocator = RenderRessourceAllocator2::allocate();
+        l_engine.renderer_resource_allocator = RenderResourceAllocator2::allocate();
         l_engine.scene = Scene::allocate_default();
         l_engine.scene_middleware = SceneMiddleware::allocate_default();
         l_engine.database_connection = DatabaseConnection::allocate(p_configuration.asset_database_path);
@@ -105,11 +105,11 @@ struct Engine
     {
         ComponentReleaser l_component_releaser = ComponentReleaser{*this};
         this->scene.consume_component_events_stateful(l_component_releaser);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
+        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
-        this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
+        this->renderer_resource_allocator.free(this->renderer, this->gpu_context);
         this->renderer.free(this->gpu_context);
         this->present.free(this->gpu_context.instance, this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator);
         this->gpu_context.free();
@@ -121,11 +121,11 @@ struct Engine
     {
         ComponentReleaser l_component_releaser = ComponentReleaser{*this};
         this->scene.consume_component_events_stateful(l_component_releaser);
-        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_ressource_allocator, this->asset_database);
+        this->scene_middleware.free(&this->scene, this->collision, this->renderer, this->gpu_context, this->renderer_resource_allocator, this->asset_database);
         this->asset_database.free(this->database_connection);
         this->database_connection.free();
         this->collision.free();
-        this->renderer_ressource_allocator.free(this->renderer, this->gpu_context);
+        this->renderer_resource_allocator.free(this->renderer, this->gpu_context);
         this->renderer.free(this->gpu_context);
         this->gpu_context.free();
         this->scene.free();
@@ -183,10 +183,10 @@ struct EngineLoopFunctions
         Engine::ComponentReleaser l_component_releaser = Engine::ComponentReleaser{p_engine};
         p_engine.scene.consume_component_events_stateful(l_component_releaser);
 
-        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator);
-        p_engine.renderer_ressource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
-        p_engine.renderer_ressource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.database_connection, p_engine.asset_database);
-        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_ressource_allocator, p_engine.asset_database);
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.deallocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_resource_allocator);
+        p_engine.renderer_resource_allocator.deallocation_step(p_engine.renderer, p_engine.gpu_context);
+        p_engine.renderer_resource_allocator.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.database_connection, p_engine.asset_database);
+        p_engine.scene_middleware.render_middleware.meshrenderer_component_unit.allocation_step(p_engine.renderer, p_engine.gpu_context, p_engine.renderer_resource_allocator, p_engine.asset_database);
         p_engine.scene_middleware.collision_middleware.step(p_engine.collision, &p_engine.scene);
         p_engine.scene_middleware.render_middleware.step(p_engine.renderer, p_engine.gpu_context, &p_engine.scene);
 

@@ -585,7 +585,7 @@ struct D3RendererAllocatorComposition
         free_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_events, p_renderable_object);
     };
 
-    inline static void free_renderable_object_external_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+    inline static void free_renderable_object_external_resources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
                                                                   RenderableObject& p_renderable_object)
     {
         GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, p_renderable_object.model);
@@ -618,7 +618,7 @@ struct D3RendererAllocatorComposition
         p_render_allocator.free_shader(p_shader);
     };
 
-    inline static void free_shader_recursively_with_gpu_ressources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+    inline static void free_shader_recursively_with_gpu_resources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
                                                                    D3RendererEvents& p_render_events, const Token<ShaderIndex> p_shader)
     {
         auto l_materials_to_remove = p_render_allocator.heap.get_materials_from_shader(p_shader);

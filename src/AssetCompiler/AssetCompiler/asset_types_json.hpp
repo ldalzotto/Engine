@@ -136,15 +136,15 @@ struct ShaderAssetJSON
 
     inline static Span<int8> allocate_asset_from_json(JSONDeserializer* p_json_deserializer)
     {
-        ShaderRessource::Asset::Value l_shader_ressource_value{};
+        ShaderResource::Asset::Value l_shader_resource_value{};
         Vector<ShaderLayoutParameterType> l_shader_layout_parameter_types_deserialized = Vector<ShaderLayoutParameterType>::allocate(0);
 
         p_json_deserializer->next_field("execution_order");
-        l_shader_ressource_value.execution_order = FromString::auimax(p_json_deserializer->get_currentfield().value);
+        l_shader_resource_value.execution_order = FromString::auimax(p_json_deserializer->get_currentfield().value);
         p_json_deserializer->next_field("vertex");
-        // l_shader_ressource_dependency_value.vertex_module = HashSlice(p_json_deserializer->get_currentfield().value);
+        // l_shader_resource_dependency_value.vertex_module = HashSlice(p_json_deserializer->get_currentfield().value);
         p_json_deserializer->next_field("fragment");
-        // l_shader_ressource_dependency_value.fragment_module = HashSlice(p_json_deserializer->get_currentfield().value);
+        // l_shader_resource_dependency_value.fragment_module = HashSlice(p_json_deserializer->get_currentfield().value);
 
         JSONDeserializer l_layout_deserializer = JSONDeserializer::allocate_default();
         if (p_json_deserializer->next_object("layout", &l_layout_deserializer))
@@ -164,17 +164,17 @@ struct ShaderAssetJSON
             }
             l_layout_parameters_deserializer.free();
         }
-        l_shader_ressource_value.specific_parameters = l_shader_layout_parameter_types_deserialized.to_slice();
+        l_shader_resource_value.specific_parameters = l_shader_layout_parameter_types_deserialized.to_slice();
 
         if (p_json_deserializer->next_field("ztest"))
         {
-            l_shader_ressource_value.shader_configuration.ztest = slice_to_compareop(p_json_deserializer->get_currentfield().value);
+            l_shader_resource_value.shader_configuration.ztest = slice_to_compareop(p_json_deserializer->get_currentfield().value);
         }
 
         p_json_deserializer->next_field("zwrite");
-        l_shader_ressource_value.shader_configuration.zwrite = FromString::auint8(p_json_deserializer->get_currentfield().value);
+        l_shader_resource_value.shader_configuration.zwrite = FromString::auint8(p_json_deserializer->get_currentfield().value);
 
-        ShaderRessource::Asset l_asset = ShaderRessource::Asset::allocate_from_values(l_shader_ressource_value);
+        ShaderResource::Asset l_asset = ShaderResource::Asset::allocate_from_values(l_shader_resource_value);
 
         l_layout_deserializer.free();
         l_shader_layout_parameter_types_deserialized.free();
@@ -184,7 +184,7 @@ struct ShaderAssetJSON
 
     inline static void push_dependencies_from_json_to_buffer(JSONDeserializer* p_json_deserializer, Vector<int8>* in_out_buffer)
     {
-        ShaderRessource::AssetDependencies::Value l_shader_dependencies_value{};
+        ShaderResource::AssetDependencies::Value l_shader_dependencies_value{};
 
         p_json_deserializer->next_field("execution_order");
         p_json_deserializer->next_field("vertex");
@@ -195,11 +195,11 @@ struct ShaderAssetJSON
         l_shader_dependencies_value.push_to_binary_buffer(in_out_buffer);
     };
 
-    inline static ShaderRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
+    inline static ShaderResource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
     {
         Vector<int8> l_binary = Vector<int8>::allocate(0);
         push_dependencies_from_json_to_buffer(p_json_deserializer, &l_binary);
-        return ShaderRessource::AssetDependencies{l_binary.Memory};
+        return ShaderResource::AssetDependencies{l_binary.Memory};
     };
 };
 
@@ -243,7 +243,7 @@ struct MaterialAssetJSON
                 case ShaderParameter::Type::TEXTURE_GPU:
                 {
                     l_parameter_deserializer.next_field("val");
-                    MaterialRessource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
+                    MaterialResource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
                 }
                 break;
                 case ShaderParameter::Type::UNIFORM_HOST:
@@ -260,7 +260,7 @@ struct MaterialAssetJSON
                             {
                                 l_uniform_host_obj_deserializer.next_field("val");
                                 float32 l_value = FromString::afloat32(l_uniform_host_obj_deserializer.get_currentfield().value);
-                                MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<float32>::build_asint8_memory_singleelement(&l_value));
+                                MaterialResource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<float32>::build_asint8_memory_singleelement(&l_value));
                             }
                             break;
                             case PrimitiveSerializedTypes::Type::FLOAT32_2:
@@ -268,7 +268,7 @@ struct MaterialAssetJSON
                                 JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
                                 l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
                                 v2f l_value = MathJSONDeserialization::_v2f(&l_value_deserializer);
-                                MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v2f>::build_asint8_memory_singleelement(&l_value));
+                                MaterialResource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v2f>::build_asint8_memory_singleelement(&l_value));
                                 l_value_deserializer.free();
                             }
                             break;
@@ -277,7 +277,7 @@ struct MaterialAssetJSON
                                 JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
                                 l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
                                 v3f l_value = MathJSONDeserialization::_v3f(&l_value_deserializer);
-                                MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v3f>::build_asint8_memory_singleelement(&l_value));
+                                MaterialResource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v3f>::build_asint8_memory_singleelement(&l_value));
                                 l_value_deserializer.free();
                             }
                             break;
@@ -286,7 +286,7 @@ struct MaterialAssetJSON
                                 JSONDeserializer l_value_deserializer = JSONDeserializer::allocate_default();
                                 l_uniform_host_obj_deserializer.next_object("val", &l_value_deserializer);
                                 v4f l_value = MathJSONDeserialization::_v4f(&l_value_deserializer);
-                                MaterialRessource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v4f>::build_asint8_memory_singleelement(&l_value));
+                                MaterialResource::Asset::Value::Parameters::add_parameter_hostbuffer(l_material_parameters, Slice<v4f>::build_asint8_memory_singleelement(&l_value));
                                 l_value_deserializer.free();
                             }
                             break;
@@ -305,7 +305,7 @@ struct MaterialAssetJSON
             l_parameter_deserializer.free();
         }
 
-        Span<int8> l_asset_allocated_binary = MaterialRessource::Asset::allocate_from_values(MaterialRessource::Asset::Value{l_material_parameters.to_varying_slice()}).allocated_binary;
+        Span<int8> l_asset_allocated_binary = MaterialResource::Asset::allocate_from_values(MaterialResource::Asset::Value{l_material_parameters.to_varying_slice()}).allocated_binary;
 
         l_parameter_array_deserializer.free();
         l_material_parameters.free();
@@ -313,7 +313,7 @@ struct MaterialAssetJSON
         return l_asset_allocated_binary;
     };
 
-    inline static MaterialRessource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer, const Slice<int8>& p_root_path)
+    inline static MaterialResource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer, const Slice<int8>& p_root_path)
     {
         Vector<int8> l_binary = Vector<int8>::allocate(0);
 
@@ -356,6 +356,6 @@ struct MaterialAssetJSON
 
         l_textures.free();
 
-        return MaterialRessource::AssetDependencies{l_binary.Memory};
+        return MaterialResource::AssetDependencies{l_binary.Memory};
     };
 };

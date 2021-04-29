@@ -98,7 +98,7 @@ inline void engine_thread_test()
             thiz->frame_count = FrameCount(p_engine);
         };
 
-        inline static void cleanup_ressources(Engine& p_engine, s_engine_cb* thiz)
+        inline static void cleanup_resources(Engine& p_engine, s_engine_cb* thiz)
         {
             thiz->cleanup_called = 1;
         };
@@ -110,7 +110,7 @@ inline void engine_thread_test()
 
         inline EngineExecutionUnit::CleanupCallback build_cleanup_callback()
         {
-            return EngineExecutionUnit::CleanupCallback{this, (EngineExecutionUnit::CleanupCallback::cb_t)s_engine_cb::cleanup_ressources};
+            return EngineExecutionUnit::CleanupCallback{this, (EngineExecutionUnit::CleanupCallback::cb_t)s_engine_cb::cleanup_resources};
         };
     };
 

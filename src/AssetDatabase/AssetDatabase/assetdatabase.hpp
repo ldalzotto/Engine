@@ -6,7 +6,7 @@ namespace AssetDatabase_Const
 {
 
 static const int8* DB_ASSET_TABLE_INITIALIZATION = MULTILINE(create table if not exists asset(id integer PRIMARY KEY, value blob););
-static const int8* DB_ASSET_RESSOURCE_TABLE_INITIALIZATION = MULTILINE(create table if not exists asset_dependencies(id integer PRIMARY KEY, dependencies blob););
+static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create table if not exists asset_dependencies(id integer PRIMARY KEY, dependencies blob););
 
     static const int8* ASSET_BLOB_SELECT_QUERY = MULTILINE(
 			select value from asset where asset.id = ?;
@@ -58,7 +58,7 @@ static const int8* DB_ASSET_RESSOURCE_TABLE_INITIALIZATION = MULTILINE(create ta
                 l_query.free(p_database_connection);
             }
             {
-                SQLiteQuery l_query = SQLiteQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::DB_ASSET_RESSOURCE_TABLE_INITIALIZATION));
+                SQLiteQuery l_query = SQLiteQuery::allocate(p_database_connection, slice_int8_build_rawstr(AssetDatabase_Const::DB_ASSET_RESOURCE_TABLE_INITIALIZATION));
                 SQliteQueryExecution::execute_sync(p_database_connection, l_query.statement, []() {});
                 l_query.free(p_database_connection);
             }

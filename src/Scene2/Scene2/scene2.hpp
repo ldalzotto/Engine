@@ -447,9 +447,9 @@ struct Scene
         this->node_to_components.element_push_back_element(token_build_from<Slice<NodeComponent>>(p_node), p_component);
     };
 
-    template <class ComponentType> inline void add_node_component_typed(const Token<Node> p_node, const token_t p_component_ressource)
+    template <class ComponentType> inline void add_node_component_typed(const Token<Node> p_node, const token_t p_component_resource)
     {
-        this->add_node_component_by_value(p_node, NodeComponent{ComponentType::Type, p_component_ressource});
+        this->add_node_component_by_value(p_node, NodeComponent{ComponentType::Type, p_component_resource});
     };
 
     inline NodeComponent* get_node_component_by_type(const Token<Node> p_node, const component_t p_type)
