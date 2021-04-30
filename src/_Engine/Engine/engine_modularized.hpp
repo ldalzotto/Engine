@@ -86,11 +86,11 @@ struct EngineAllocationFragments
         return D3Renderer::allocate(p_gpu_context, l_colorstep_allocate_info);
     };
 
-    inline static D3Renderer d3renderer_allocate_headless(GPUContext& p_gpu_context, const int8 p_render_target_host_readable)
+    inline static D3Renderer d3renderer_allocate_headless(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
     {
         ColorStep::AllocateInfo l_colorstep_allocate_info;
         l_colorstep_allocate_info.attachment_host_read = p_render_target_host_readable;
-        l_colorstep_allocate_info.render_target_dimensions = v3ui{8, 8, 1};
+        l_colorstep_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
         l_colorstep_allocate_info.color_attachment_sample = 0;
         return D3Renderer::allocate(p_gpu_context, l_colorstep_allocate_info);
     };
@@ -170,6 +170,18 @@ struct EngineStepFragments
         l_graphics_binder.end();
         p_gpu_context.submit_graphics_binder_and_notity_end(l_graphics_binder);
         p_present.present(p_gpu_context.graphics_end_semaphore);
+        p_gpu_context.wait_for_completion();
+    };
+
+    inline static void d3renderer_draw_headless(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer)
+    {
+        p_renderer.buffer_step(p_gpu_context, p_core.clock.totaltime);
+        p_gpu_context.buffer_step_and_submit();
+        GraphicsBinder l_graphics_binder = p_gpu_context.creates_graphics_binder();
+        l_graphics_binder.start();
+        p_renderer.graphics_step(l_graphics_binder);
+        l_graphics_binder.end();
+        p_gpu_context.submit_graphics_binder(l_graphics_binder);
         p_gpu_context.wait_for_completion();
     };
 };

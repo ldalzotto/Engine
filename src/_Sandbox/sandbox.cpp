@@ -49,13 +49,16 @@ inline void resize_test()
 
     Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present l_engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(l_configuration);
 
-    l_engine.single_frame_forced_delta(0.1f, [](auto){});
+    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    });
     WindowNative::simulate_resize_appevent(g_app_windows.get(l_engine.window).handle, 500, 500);
-    l_engine.single_frame_forced_delta(0.1f, [](auto){});
+    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    });
     assert_true(g_app_windows.get(l_engine.window).client_width == 500);
     assert_true(g_app_windows.get(l_engine.window).client_height == 500);
     l_engine.core.close();
-    l_engine.single_frame_forced_delta(0.1f, [](auto){});
+    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    });
 
     l_engine.free();
     l_database_path.free();
@@ -63,118 +66,78 @@ inline void resize_test()
 
 inline void engine_thread_test()
 {
-    EngineRunnerThread l_thread = EngineRunnerThread::allocate();
-    l_thread.start();
-
     String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/thread_test/asset.db"));
 
-    struct s_engine_cb
     {
-        uimax frame_count;
-        int8 cleanup_called;
-        inline static void step(EngineExternalStep p_step, Engine& p_engine, s_engine_cb* thiz)
+        struct engine_thread
         {
-            thiz->frame_count = FrameCount(p_engine);
+            struct Shared
+            {
+                volatile uimax frame_count;
+                volatile int8 cleanup_called;
+            } shared;
+
+            Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
+            EngineThreadSync engine_synchronization;
+
+            Slice<int8> database_slice;
+            thread_t thread;
+
+            struct Exec
+            {
+                engine_thread* thiz;
+                inline int8 operator()() const
+                {
+                    thiz->shared.frame_count = 0;
+                    thiz->shared.cleanup_called = 0;
+                    thiz->engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(
+                        Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration{EngineModuleCore::RuntimeConfiguration{1000000 / 60}, thiz->database_slice, v2ui{50, 50}, 0});
+
+                    thiz->engine.main_loop_forced_delta(0.01f, [&](auto) {
+                        thiz->engine_synchronization.on_end_of_frame();
+                        thiz->shared.frame_count = FrameCount_v2(thiz->engine);
+                        thiz->engine_synchronization.on_start_of_frame();
+                        if (thiz->engine_synchronization.ask_exit)
+                        {
+                            thiz->engine.core.close();
+                        }
+                    });
+
+                    thiz->engine.free();
+                    thiz->shared.cleanup_called = 1;
+
+                    return 0;
+                };
+            } exec;
+
+            inline void start()
+            {
+                this->exec = Exec{this};
+                this->thread = Thread::spawn_thread(this->exec);
+            };
+
+            inline void free()
+            {
+                this->engine_synchronization.exit();
+                Thread::wait_for_end_and_terminate(this->thread, -1);
+            };
         };
 
-        inline static void cleanup_resources(Engine& p_engine, s_engine_cb* thiz)
-        {
-            thiz->cleanup_called = 1;
-        };
-
-        inline EngineExternalStepCallback build_external_step_callback()
-        {
-            return EngineExternalStepCallback{this, (EngineExternalStepCallback::cb_t)s_engine_cb::step};
-        };
-
-        inline EngineExecutionUnit::CleanupCallback build_cleanup_callback()
-        {
-            return EngineExecutionUnit::CleanupCallback{this, (EngineExecutionUnit::CleanupCallback::cb_t)s_engine_cb::cleanup_resources};
-        };
-    };
-
-    // only one engine
-    {
-        s_engine_cb engine_cb{};
-        Token<EngineExecutionUnit> l_engine_eu_1 =
-            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb.build_external_step_callback(), engine_cb.build_cleanup_callback());
-        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
-        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
-            assert_true(engine_cb.frame_count == 2);
+        engine_thread l_engine_thread;
+        l_engine_thread.database_slice = l_database_path.to_slice();
+        l_engine_thread.start();
+        l_engine_thread.engine_synchronization.sync_end_of_frame([&]() {
+            assert_true(l_engine_thread.shared.frame_count == 0);
+            assert_true(l_engine_thread.shared.cleanup_called == 0);
         });
-        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
-            assert_true(engine_cb.frame_count == 3);
+        l_engine_thread.engine_synchronization.sync_end_of_frame([&]() {
+            assert_true(l_engine_thread.shared.frame_count == 1);
+            assert_true(l_engine_thread.shared.cleanup_called == 0);
         });
-        l_thread.sync_engine_at_end_of_frame(l_engine_eu_1, [&]() {
-            assert_true(engine_cb.frame_count == 4);
-            assert_true(engine_cb.cleanup_called == 0);
-        });
-        l_thread.free_engine_execution_unit_sync(l_engine_eu_1);
-        assert_true(engine_cb.cleanup_called == 1);
-    }
-    // two engine in //
-    {
-        s_engine_cb engine_cb_1{};
-        s_engine_cb engine_cb_2{};
-        Token<EngineExecutionUnit> l_engine_eu_1 =
-            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_1.build_external_step_callback(), engine_cb_1.build_cleanup_callback());
-        Token<EngineExecutionUnit> l_engine_eu_2 =
-            l_thread.allocate_engine_execution_unit(l_database_path.to_slice(), 50, 50, engine_cb_2.build_external_step_callback(), engine_cb_2.build_cleanup_callback());
-
-        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_1);
-        l_thread.sync_wait_for_engine_execution_unit_to_be_allocated(l_engine_eu_2);
-
-        uimax l_start_frame_1;
-        uimax l_start_frame_2;
-
-        int8 l_exit = 0;
-        int8 l_step_count = 0;
-        l_thread.sync_step_loop(
-            [&]() {
-                if (l_step_count == 0)
-                {
-                    l_start_frame_1 = engine_cb_1.frame_count;
-                    l_start_frame_2 = engine_cb_2.frame_count;
-                }
-                else if (l_step_count == 1)
-                {
-                    assert_true(engine_cb_1.frame_count > l_start_frame_1);
-                    assert_true(engine_cb_2.frame_count > l_start_frame_2);
-                    l_start_frame_1 = engine_cb_1.frame_count;
-                    l_start_frame_2 = engine_cb_2.frame_count;
-                }
-                else if (l_step_count == 2)
-                {
-                    assert_true(engine_cb_1.frame_count > l_start_frame_1);
-                    assert_true(engine_cb_2.frame_count > l_start_frame_2);
-                    l_start_frame_1 = engine_cb_1.frame_count;
-                    l_start_frame_2 = engine_cb_2.frame_count;
-                }
-            },
-            [&]() {
-                l_step_count += 1;
-                if (l_step_count == 2)
-                {
-                    l_exit = 1;
-                }
-            },
-            &l_exit);
-
-        l_thread.free_engine_execution_unit(l_engine_eu_1);
-        l_thread.sync_end_of_step([&]() {
-            assert_true(l_thread.engines.Memory.is_element_free(l_engine_eu_1));
-            assert_true(engine_cb_1.cleanup_called == 1);
-            l_start_frame_2 = engine_cb_2.frame_count;
-        });
-
-        l_thread.sync_engine_at_end_of_frame(l_engine_eu_2, [&]() {
-            assert_true(engine_cb_2.frame_count == (l_start_frame_2 + 1));
-        });
-
-        l_thread.free_engine_execution_unit_sync(l_engine_eu_2);
+        l_engine_thread.free();
+        assert_true(l_engine_thread.shared.cleanup_called == 1);
     }
 
-    l_thread.free();
     l_database_path.free();
 };
 
@@ -291,13 +254,13 @@ const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"))
 
 struct D3RendererCubeSandboxEnvironmentV2
 {
-    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
+    Engine_Scene_GPU_AssetDatabase_D3Renderer engine;
     Token<Node> camera_node;
     Token<Node> l_square_root_node;
 
-    inline static D3RendererCubeSandboxEnvironmentV2 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration& p_configuration)
+    inline static D3RendererCubeSandboxEnvironmentV2 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer::RuntimeConfiguration& p_configuration)
     {
-        return D3RendererCubeSandboxEnvironmentV2{Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(p_configuration)};
+        return D3RendererCubeSandboxEnvironmentV2{Engine_Scene_GPU_AssetDatabase_D3Renderer::allocate(p_configuration)};
     };
 
     inline void free()
@@ -380,7 +343,7 @@ inline void d3renderer_cube()
     {
     }
 
-    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration l_configuration{};
+    Engine_Scene_GPU_AssetDatabase_D3Renderer::RuntimeConfiguration l_configuration{};
     l_configuration.core = EngineModuleCore::RuntimeConfiguration{0};
     l_configuration.render_target_host_readable = 1;
     l_configuration.render_size = v2ui{800, 600};

@@ -8,8 +8,6 @@ using thread_t
 #endif // _WIN32
     ;
 
-typedef int8 (*Thread_MainFunction)(const Slice<int8*>& p_args);
-
 struct Thread
 {
 
