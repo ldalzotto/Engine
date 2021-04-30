@@ -185,22 +185,3 @@ struct EngineStepFragments
         p_gpu_context.wait_for_completion();
     };
 };
-
-#define EgineModule_RendererComponents_on_removed(p_render_middleware, p_render_resource_allocator, p_node_component)                                                                                  \
-    case MeshRendererComponent::Type:                                                                                                                                                                  \
-    {                                                                                                                                                                                                  \
-        MeshRendererComponentAsset_SceneCommunication::on_node_component_removed(p_render_middleware, p_render_resource_allocator, p_node_component);                                                  \
-    }                                                                                                                                                                                                  \
-    break;                                                                                                                                                                                             \
-    case CameraComponent::Type:                                                                                                                                                                        \
-    {                                                                                                                                                                                                  \
-        CameraComponentAsset_SceneCommunication::on_node_component_removed(p_render_middleware, p_node_component);                                                                                     \
-    }                                                                                                                                                                                                  \
-    break;
-
-#define EngineModuleCollision_BoxColliderComponent_on_removed(p_collision_middleware, p_collision, p_node_component)                                                                                   \
-    case BoxColliderComponent::Type:                                                                                                                                                                   \
-    {                                                                                                                                                                                                  \
-        BoxColliderComponentAsset_SceneCommunication::on_node_component_removed(p_collision_middleware, p_collision, p_node_component);                                                                \
-    }                                                                                                                                                                                                  \
-    break;

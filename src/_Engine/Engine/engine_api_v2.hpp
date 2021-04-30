@@ -50,47 +50,55 @@ struct EngineAPI_Internal
         p_scene.add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
         return l_mesh_renderer;
     };
+
+    inline static void NodeRemoveMeshRenderer(Scene& p_scene, const Token<Node> p_node)
+    {
+        p_scene.remove_node_component(p_node, MeshRendererComponent::Type);
+    };
 };
 
-// TODO -> remove v2 prefix
-
-template <class EngineType> inline uimax FrameCount_v2(EngineType& p_engine)
+template <class EngineType> inline uimax FrameCount(EngineType& p_engine)
 {
     return EngineAPI_Internal::FrameCount(p_engine.core);
 };
 
-template <class EngineType> inline float32 DeltaTime_v2(EngineType& p_engine)
+template <class EngineType> inline float32 DeltaTime(EngineType& p_engine)
 {
     return EngineAPI_Internal::DeltaTime(p_engine.core);
 };
 
-template <class EngineType> inline Token<Node> CreateNode_v2(EngineType& p_engine, const transform& p_transform, const Token<Node> p_parent)
+template <class EngineType> inline Token<Node> CreateNode(EngineType& p_engine, const transform& p_transform, const Token<Node> p_parent)
 {
     return EngineAPI_Internal::CreateNode(p_engine.scene, p_transform, p_parent);
 };
 
-template <class EngineType> inline Token<Node> CreateNode_v2(EngineType& p_engine, const transform& p_transform)
+template <class EngineType> inline Token<Node> CreateNode(EngineType& p_engine, const transform& p_transform)
 {
     return EngineAPI_Internal::CreateNode(p_engine.scene, p_transform);
 };
 
-template <class EngineType> inline void RemoveNode_v2(EngineType& p_engine, const Token<Node> p_node)
+template <class EngineType> inline void RemoveNode(EngineType& p_engine, const Token<Node> p_node)
 {
     EngineAPI_Internal::RemoveNode(p_engine.scene, p_node);
 };
 
-template <class EngineType> inline void NodeAddWorldRotation_v2(EngineType& p_engine, const Token<Node> p_node, const quat& p_delta_rotation)
+template <class EngineType> inline void NodeAddWorldRotation(EngineType& p_engine, const Token<Node> p_node, const quat& p_delta_rotation)
 {
     EngineAPI_Internal::NodeAddWorldRotation(p_engine.scene, p_node, p_delta_rotation);
 };
 
-template <class EngineType> inline CameraComponent& NodeAddCamera_v2(EngineType& p_engine, const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset)
+template <class EngineType> inline CameraComponent& NodeAddCamera(EngineType& p_engine, const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset)
 {
     return EngineAPI_Internal::NodeAddCamera(p_node, p_camera_asset, p_engine.render_middleware, p_engine.scene);
 };
 
-template <class EngineType> inline Token<MeshRendererComponent> NodeAddMeshRenderer_v2(EngineType& p_engine, const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id)
+template <class EngineType> inline Token<MeshRendererComponent> NodeAddMeshRenderer(EngineType& p_engine, const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id)
 {
     return EngineAPI_Internal::NodeAddMeshRenderer(p_node, p_material_id, p_mesh_id, p_engine.render_middleware, p_engine.renderer_resource_allocator, p_engine.database_connection,
                                                    p_engine.asset_database, p_engine.scene);
+};
+
+template <class EngineType> inline void NodeRemoveMeshRenderer(EngineType& p_engine, const Token<Node> p_node)
+{
+    EngineAPI_Internal::NodeRemoveMeshRenderer(p_engine.scene, p_node);
 };

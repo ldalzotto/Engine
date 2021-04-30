@@ -128,6 +128,11 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
         };
     };
 
+    template <class LoopFunc> inline void main_loop(const LoopFunc& p_loop_func)
+    {
+        this->core.main_loop(UpdateFunc<LoopFunc>{this, p_loop_func});
+    };
+
     template <class LoopFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
     {
         this->core.main_loop_forced_delta(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});

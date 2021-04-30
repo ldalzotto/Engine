@@ -104,7 +104,17 @@ struct DatabaseConnection
         DatabaseConnection l_connection;
         File l_database_file = File::create_or_open(p_databasepath);
         l_database_file.free();
-        DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_open(p_databasepath.Begin, &l_connection.connection)), &l_connection.connection);
+
+        if (!p_databasepath.is_null_terminated())
+        {
+            String l_database_path_null_terminated = String::allocate_elements(p_databasepath);
+            DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_open(l_database_path_null_terminated.Memory.Memory.Memory, &l_connection.connection)), &l_connection.connection);
+            l_database_path_null_terminated.free();
+        }
+        else
+        {
+            DatabaseConnection_Utils::handleSQLiteError(SQLiteReturnCode_build(sqlite3_open(p_databasepath.Begin, &l_connection.connection)), &l_connection.connection);
+        }
 
 #if __MEMLEAK
         push_ptr_to_tracked((int8*)l_connection.connection);

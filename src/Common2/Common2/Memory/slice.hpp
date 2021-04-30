@@ -192,6 +192,11 @@ template <class ElementType> struct Slice
         assert_true(this->get(this->Size - 1) == '\0');
 #endif
     };
+
+    inline int8 is_null_terminated() const
+    {
+        return this->get(this->Size - 1) == '\0' || this->Begin[this->Size] == '\0';
+    };
 };
 
 inline Slice<int8> slice_int8_build_rawstr(const int8* p_str)
