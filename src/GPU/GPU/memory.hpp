@@ -196,7 +196,6 @@ struct TransferDevice
     inline void free()
     {
         this->heap.free(this->device);
-        this->command_buffer.flush();
         this->command_pool.free_command_buffer(this->device, this->command_buffer);
         this->command_pool.free(this->device);
     };
@@ -1157,12 +1156,14 @@ struct BufferCommandUtils
 
 struct BufferStep
 {
-    // TODO -> the command buffer may be used for something else or by an external program. We want that the being and end of the command buffer is done externally.
+    // /!\ We make the assumption that the command buffer in the BufferAllocator has been already opened
     inline static void step(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events)
     {
-        clean_garbage_buffers(p_buffer_allocator, p_buffer_events);
+#if __DEBUG
+        assert_true(p_buffer_allocator.device.command_buffer.debug_state == CommandBuffer::DebugState::BEGIN);
+#endif
 
-        p_buffer_allocator.device.command_buffer.begin();
+        clean_garbage_buffers(p_buffer_allocator, p_buffer_events);
 
         /*
             /!\ It is very important that image host and gpu allocation events are processed before image copy operations because further events assume that the image layout of the image is the
@@ -1264,8 +1265,6 @@ struct BufferStep
 
             p_buffer_events.write_buffer_gpu_to_buffer_host_events.clear();
         }
-
-        p_buffer_allocator.device.command_buffer.end();
     };
 
     inline static void clean_garbage_buffers(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events)
@@ -1291,8 +1290,6 @@ struct BufferMemory
 
     inline void free()
     {
-        BufferStep::step(this->allocator, this->events);
-        this->allocator.device.command_buffer.force_sync_execution();
         BufferStep::clean_garbage_buffers(this->allocator, this->events);
 
         this->allocator.free();

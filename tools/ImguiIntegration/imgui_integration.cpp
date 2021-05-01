@@ -25,19 +25,21 @@ int main()
     ImguiRenderer l_imgui_renderer = ImguiRenderer::allocate(l_gpu_context);
     l_imgui_renderer.initialize_imgui(l_gpu_context);
 
-    l_gpu_context.buffer_step_and_submit();
-    GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
-    l_imgui_renderer.create_font_texture(l_graphics_binder);
+    BufferStepExecutionFlow::buffer_step_begin(l_gpu_context.buffer_memory);
+    l_imgui_renderer.buffer_step(l_gpu_context.buffer_memory);
+    BufferStep::step(l_gpu_context.buffer_memory.allocator, l_gpu_context.buffer_memory.events);
+    BufferStepExecutionFlow::buffer_step_submit(l_gpu_context);
+
+    GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
     l_imgui_renderer.render(l_graphics_binder);
     l_gpu_context.submit_graphics_binder(l_graphics_binder);
     l_gpu_context.wait_for_completion();
 
-    l_gpu_context.buffer_step_and_submit();
-    GraphicsBinder l_graphics_binder_2 = l_gpu_context.creates_graphics_binder();
+    l_gpu_context.buffer_step_submit();
+    GraphicsBinder l_graphics_binder_2 = l_gpu_context.build_graphics_binder();
     l_imgui_renderer.render(l_graphics_binder_2);
     l_gpu_context.submit_graphics_binder(l_graphics_binder_2);
     l_gpu_context.wait_for_completion();
-
 
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);

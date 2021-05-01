@@ -11,7 +11,7 @@ struct SandboxTestUtil
         Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass), 0, &l_rendertarget_texture_format);
 
-        p_gpu_context.buffer_step_and_wait_for_completion();
+        p_gpu_context.buffer_step_force_execution();
         Slice<int8> l_rendertarget_texture_value = p_gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
         Span<int8> l_image = ImgCompiler::read_image(p_compared_image_path);
@@ -27,7 +27,7 @@ struct SandboxTestUtil
         Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass), 0, &l_rendertarget_texture_format);
 
-        p_gpu_context.buffer_step_and_wait_for_completion();
+        p_gpu_context.buffer_step_force_execution();
         Slice<int8> l_rendertarget_texture_value = p_gpu_context.buffer_memory.allocator.host_buffers.get(l_rendertarget_texture).get_mapped_effective_memory();
 
         ImgCompiler::write_to_image(p_path, l_rendertarget_texture_format.extent.x, l_rendertarget_texture_format.extent.y, 4, l_rendertarget_texture_value);
@@ -254,13 +254,13 @@ const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"))
 
 struct D3RendererCubeSandboxEnvironmentV2
 {
-    Engine_Scene_GPU_AssetDatabase_D3Renderer engine;
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
     Token<Node> camera_node;
     Token<Node> l_square_root_node;
 
-    inline static D3RendererCubeSandboxEnvironmentV2 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer::RuntimeConfiguration& p_configuration)
+    inline static D3RendererCubeSandboxEnvironmentV2 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration& p_configuration)
     {
-        return D3RendererCubeSandboxEnvironmentV2{Engine_Scene_GPU_AssetDatabase_D3Renderer::allocate(p_configuration)};
+        return D3RendererCubeSandboxEnvironmentV2{Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(p_configuration)};
     };
 
     inline void free()
@@ -343,7 +343,7 @@ inline void d3renderer_cube()
     {
     }
 
-    Engine_Scene_GPU_AssetDatabase_D3Renderer::RuntimeConfiguration l_configuration{};
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration l_configuration{};
     l_configuration.core = EngineModuleCore::RuntimeConfiguration{0};
     l_configuration.render_target_host_readable = 1;
     l_configuration.render_size = v2ui{800, 600};

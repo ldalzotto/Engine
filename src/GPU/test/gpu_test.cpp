@@ -42,9 +42,8 @@ inline void gpu_buffer_allocation()
 
         BufferReadWrite::write_to_buffergpu(l_buffer_memory.allocator, l_buffer_memory.events, l_buffer_gpu, l_tested_uimax_slice.build_asint8());
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
+        l_gpu_context.buffer_step_force_execution();
         // We force command buffer submit just for the test
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
@@ -54,9 +53,8 @@ inline void gpu_buffer_allocation()
         // it creates an gpu read event that will be consumed the next step
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 1);
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
+        l_gpu_context.buffer_step_force_execution();
         // We force command buffer submit just for the test
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
 
         assert_true(l_buffer_memory.events.write_buffer_gpu_to_buffer_host_events.Size == 0);
 
@@ -81,8 +79,7 @@ inline void gpu_buffer_allocation()
 
         assert_true(l_buffer_memory.events.write_buffer_host_to_buffer_gpu_events.Size == 0);
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
+        l_gpu_context.buffer_step_force_execution();
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -137,9 +134,8 @@ inline void gpu_image_allocation()
 
         BufferReadWrite::write_to_imagegpu(l_buffer_memory.allocator, l_buffer_memory.events, l_image_gpu, l_buffer_memory.allocator.gpu_images.get(l_image_gpu), l_pixels_slize.build_asint8());
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
         // We force command buffer submit just for the test
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
+        l_gpu_context.buffer_step_force_execution();
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
 
@@ -149,9 +145,7 @@ inline void gpu_image_allocation()
         // it creates an gpu read event that will be consumed the next step
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 1);
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-        // We force command buffer submit just for the test
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
+        l_gpu_context.buffer_step_force_execution();
 
         assert_true(l_buffer_memory.events.write_image_gpu_to_buffer_host_events.Size == 0);
 
@@ -177,8 +171,7 @@ inline void gpu_image_allocation()
 
         assert_true(l_buffer_memory.events.write_buffer_host_to_image_gpu_events.Size == 0);
 
-        BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-        l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
+        l_gpu_context.buffer_step_force_execution();
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -211,13 +204,13 @@ inline void gpu_renderpass_clear()
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
 
     {
-        l_gpu_context.buffer_step_and_submit();
+        l_gpu_context.buffer_step_submit();
 
         v4f l_clear_values[2];
         l_clear_values[0] = v4f{0.0f, (float)l_clear_color.y / (float)uint8_max, (float)l_clear_color.z / (float)uint8_max, 1.0f};
         l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
-        GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+        GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
         l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
         l_graphics_binder.end_render_pass();
 
@@ -228,8 +221,7 @@ inline void gpu_renderpass_clear()
     Token<BufferHost> l_color_attachment_value =
         GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
 
-    BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-    l_buffer_memory.allocator.device.command_buffer.force_sync_execution();
+    l_gpu_context.buffer_step_force_execution();
 
     Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
 
@@ -405,9 +397,9 @@ inline void gpu_draw()
             l_clear_values[0] = v4f{0.0f, 1.0f, (float)l_clear_color.z / (float)uint8_max, 1.0f};
             l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
-            l_gpu_context.buffer_step_and_submit();
+            l_gpu_context.buffer_step_submit();
 
-            GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+            GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
 
             l_graphics_binder.bind_shader_layout(l_graphics_allocator.heap.shader_layouts.get(l_global_shader_layout));
 
@@ -443,9 +435,7 @@ inline void gpu_draw()
         Token<BufferHost> l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
-            BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-            l_buffer_memory.allocator.device.command_buffer.submit();
-            l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
+            l_gpu_context.buffer_step_force_execution();
         }
         Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
 
@@ -617,9 +607,9 @@ inline void gpu_depth_compare_test()
             l_clear_values[0] = v4f{0.0f, 1.0f, (float)l_clear_color.z / (float)uint8_max, 1.0f};
             l_clear_values[1] = v4f{1.0f, 0.0f, 0.0f, 0.0f};
 
-            l_gpu_context.buffer_step_and_submit();
+            l_gpu_context.buffer_step_submit();
 
-            GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+            GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
 
             l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 
@@ -649,9 +639,7 @@ inline void gpu_depth_compare_test()
         Token<BufferHost> l_depth_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 1);
         {
-            BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-            l_buffer_memory.allocator.device.command_buffer.submit();
-            l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
+            l_gpu_context.buffer_step_force_execution();
         }
 
         {
@@ -826,9 +814,9 @@ inline void gpu_draw_indexed()
             l_clear_values[0] = l_clear_color.to_color_f();
             l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
-            l_gpu_context.buffer_step_and_submit();
+            l_gpu_context.buffer_step_submit();
 
-            GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+            GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
 
             l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 
@@ -850,9 +838,7 @@ inline void gpu_draw_indexed()
         Token<BufferHost> l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
-            BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-            l_buffer_memory.allocator.device.command_buffer.submit();
-            l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
+            l_gpu_context.buffer_step_force_execution();
         }
         Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
 
@@ -1035,9 +1021,9 @@ inline void gpu_texture_mapping()
             l_clear_values[0] = l_clear_color.to_color_f();
             l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
 
-            l_gpu_context.buffer_step_and_submit();
+            l_gpu_context.buffer_step_submit();
 
-            GraphicsBinder l_graphics_binder = l_gpu_context.creates_graphics_binder();
+            GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
 
             l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
 
@@ -1062,9 +1048,7 @@ inline void gpu_texture_mapping()
         Token<BufferHost> l_color_attachment_value =
             GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
         {
-            BufferStep::step(l_buffer_memory.allocator, l_buffer_memory.events);
-            l_buffer_memory.allocator.device.command_buffer.submit();
-            l_buffer_memory.allocator.device.command_buffer.wait_for_completion();
+            l_gpu_context.buffer_step_force_execution();
         }
         Slice<color> l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
 
@@ -1162,11 +1146,9 @@ inline void gpu_present()
                                            l_gpu_context.buffer_memory.allocator.gpu_images.get(l_render_target_image), l_render_target_color.slice.build_asint8());
         l_render_target_color.free();
 
-        l_gpu_context.buffer_step_and_submit();
-        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
-        l_binder.start();
+        l_gpu_context.buffer_step_submit();
+        GraphicsBinder l_binder = l_gpu_context.build_graphics_binder();
         l_gpu_present.graphics_step(l_binder);
-        l_binder.end();
         l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
         l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
         l_gpu_context.wait_for_completion();
@@ -1184,11 +1166,9 @@ inline void gpu_present()
 
         l_render_target_color.free();
 
-        l_gpu_context.buffer_step_and_submit();
-        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
-        l_binder.start();
+        l_gpu_context.buffer_step_submit();
+        GraphicsBinder l_binder = l_gpu_context.build_graphics_binder();
         l_gpu_present.graphics_step(l_binder);
-        l_binder.end();
         l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
         l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
         l_gpu_context.wait_for_completion();
@@ -1207,11 +1187,9 @@ inline void gpu_present()
     assert_true(l_size_before != l_size_after);
 
     {
-        l_gpu_context.buffer_step_and_submit();
-        GraphicsBinder l_binder = l_gpu_context.creates_graphics_binder();
-        l_binder.start();
+        l_gpu_context.buffer_step_submit();
+        GraphicsBinder l_binder = l_gpu_context.build_graphics_binder();
         l_gpu_present.graphics_step(l_binder);
-        l_binder.end();
         l_gpu_context.submit_graphics_binder_and_notity_end(l_binder);
         l_gpu_present.present(l_gpu_context.graphics_end_semaphore);
         l_gpu_context.wait_for_completion();
@@ -1227,6 +1205,7 @@ inline void gpu_present()
 
     l_gpu_present.free(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
     GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_render_target_texture);
+
     l_gpu_context.free();
 
     WindowAllocator::free(l_window_token);
@@ -1280,7 +1259,7 @@ int main()
     int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_0, (void**)&rdoc_api);
     assert_true(ret == 1);
 #endif
-    
+
     gpu_buffer_allocation();
     gpu_image_allocation();
     gpu_renderpass_clear();

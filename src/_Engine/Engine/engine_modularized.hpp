@@ -119,7 +119,6 @@ struct EngineFreeFragments
         p_collision_middleware.free(p_collision);
         p_collision.free();
     };
-
 };
 
 struct EngineStepFragments
@@ -161,13 +160,13 @@ struct EngineStepFragments
 
     inline static void d3renderer_draw_present(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer, GPUPresent& p_present)
     {
+        BufferStepExecutionFlow::buffer_step_begin(p_gpu_context.buffer_memory);
         p_renderer.buffer_step(p_gpu_context, p_core.clock.totaltime);
-        p_gpu_context.buffer_step_and_submit();
-        GraphicsBinder l_graphics_binder = p_gpu_context.creates_graphics_binder();
-        l_graphics_binder.start();
+        BufferStep::step(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events);
+        BufferStepExecutionFlow::buffer_step_submit(p_gpu_context);
+        GraphicsBinder l_graphics_binder = p_gpu_context.build_graphics_binder();
         p_renderer.graphics_step(l_graphics_binder);
         p_present.graphics_step(l_graphics_binder);
-        l_graphics_binder.end();
         p_gpu_context.submit_graphics_binder_and_notity_end(l_graphics_binder);
         p_present.present(p_gpu_context.graphics_end_semaphore);
         p_gpu_context.wait_for_completion();
@@ -175,12 +174,12 @@ struct EngineStepFragments
 
     inline static void d3renderer_draw_headless(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer)
     {
+        BufferStepExecutionFlow::buffer_step_begin(p_gpu_context.buffer_memory);
         p_renderer.buffer_step(p_gpu_context, p_core.clock.totaltime);
-        p_gpu_context.buffer_step_and_submit();
-        GraphicsBinder l_graphics_binder = p_gpu_context.creates_graphics_binder();
-        l_graphics_binder.start();
+        BufferStep::step(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events);
+        BufferStepExecutionFlow::buffer_step_submit(p_gpu_context);
+        GraphicsBinder l_graphics_binder = p_gpu_context.build_graphics_binder();
         p_renderer.graphics_step(l_graphics_binder);
-        l_graphics_binder.end();
         p_gpu_context.submit_graphics_binder(l_graphics_binder);
         p_gpu_context.wait_for_completion();
     };

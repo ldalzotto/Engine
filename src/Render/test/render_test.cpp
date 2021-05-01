@@ -30,7 +30,11 @@ inline void bufferstep_test()
 
     assert_true(l_renderer.events.model_update_events.Size == 0);
 
-    l_ctx.buffer_step_and_submit();
+    l_ctx.buffer_step_submit();
+
+    GraphicsBinder l_graphics_binder = l_ctx.build_graphics_binder();
+    l_ctx.submit_graphics_binder(l_graphics_binder);
+
     l_ctx.wait_for_completion();
 
     assert_true(l_ctx.buffer_memory.allocator.host_buffers
@@ -51,6 +55,7 @@ inline void bufferstep_test()
     D3RendererAllocatorComposition::free_renderable_object_with_mesh_and_buffers(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_renderer.allocator, l_renderer.events, l_renderable_object);
 
     l_renderer.free(l_ctx);
+
     l_ctx.free();
 };
 
@@ -79,6 +84,7 @@ inline void shader_linkto_material_allocation_test()
     }
 
     l_renderer.free(l_ctx);
+
     l_ctx.free();
 };
 
@@ -221,22 +227,18 @@ inline void draw_test()
 
     l_renderer.buffer_step(l_ctx, draw_test_global_timeelapsed);
 
-    l_ctx.buffer_step_and_submit();
+    l_ctx.buffer_step_submit();
 
-    GraphicsBinder l_binder = GraphicsBinder::build(l_ctx.buffer_memory.allocator, l_ctx.graphics_allocator);
-    l_binder.start();
+    GraphicsBinder l_binder = l_ctx.build_graphics_binder();
     l_renderer.graphics_step(l_binder);
-    l_binder.end();
-
     l_ctx.submit_graphics_binder(l_binder);
+
     l_ctx.wait_for_completion();
 
     Token<BufferHost> l_color_attachment_token =
         GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_ctx.buffer_memory, l_ctx.graphics_allocator, l_ctx.graphics_allocator.heap.graphics_pass.get(l_renderer.color_step.pass), 0);
     {
-        BufferStep::step(l_ctx.buffer_memory.allocator, l_ctx.buffer_memory.events);
-        l_ctx.buffer_memory.allocator.device.command_buffer.submit();
-        l_ctx.buffer_memory.allocator.device.command_buffer.wait_for_completion();
+        l_ctx.buffer_step_force_execution();
     }
 
     Slice<color> l_color_attachment = slice_cast<color>(l_ctx.buffer_memory.allocator.host_buffers.get(l_color_attachment_token).get_mapped_memory());
@@ -359,7 +361,9 @@ inline void draw_test()
 #endif
 
     l_renderer.free(l_ctx);
+
     l_ctx.free();
+
     l_shader_compiler.free();
 };
 

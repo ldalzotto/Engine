@@ -54,11 +54,9 @@ struct ImguiRenderer
         imgui_assert_true(ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass));
     };
 
-    // TODO -> move this to the buffer step.
-    //         we need to create a functional object like the GraphicsBinder but for buffer allocation.
-    inline void create_font_texture(GraphicsBinder& p_graphics_binder)
+    inline void buffer_step(BufferMemory& p_buffer_memory)
     {
-        ImGui_ImplVulkan_CreateFontsTexture(p_graphics_binder.graphics_allocator.graphics_device.command_buffer.command_buffer);
+        ImGui_ImplVulkan_CreateFontsTexture(p_buffer_memory.allocator.device.command_buffer.command_buffer);
     };
 
     inline void free(GPUContext& p_gpu_context)

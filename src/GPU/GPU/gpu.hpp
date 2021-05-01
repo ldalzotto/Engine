@@ -13,7 +13,6 @@ using gcmemory_t = VkDeviceMemory;
 using gpuinstance_t = VkInstance;
 using gpuinstance_debugger_t = VkDebugUtilsMessengerEXT;
 
-
 inline void _vk_handle_result(const VkResult p_result)
 {
 #if __DEBUG
@@ -74,7 +73,6 @@ inline static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSe
     return VK_FALSE;
 };
 
-
 #include "./command_buffer.hpp"
 #include "./instance.hpp"
 #include "./memory.hpp"
@@ -103,10 +101,10 @@ struct GPUContext
         return l_context;
     };
 
-    // inline static GPUContext allocate_
-
     inline void free()
     {
+        this->buffer_step_force_execution();
+
         this->buffer_end_semaphore.free(this->instance.logical_device);
         this->graphics_end_semaphore.free(this->instance.logical_device);
         this->graphics_allocator.free();
@@ -114,20 +112,29 @@ struct GPUContext
         this->instance.free();
     };
 
-    inline void buffer_step_and_submit()
+    inline void buffer_step_submit()
     {
+        this->buffer_memory.allocator.device.command_buffer.begin();
         BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
+        this->buffer_memory.allocator.device.command_buffer.end();
         this->buffer_memory.allocator.device.command_buffer.submit_and_notity(this->buffer_end_semaphore);
     };
 
-    inline void buffer_step_and_wait_for_completion()
+    inline void buffer_step_submit_no_graphics_notification()
     {
+        this->buffer_memory.allocator.device.command_buffer.begin();
         BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
+        this->buffer_memory.allocator.device.command_buffer.end();
         this->buffer_memory.allocator.device.command_buffer.submit();
+    };
+
+    inline void buffer_step_force_execution()
+    {
+        this->buffer_step_submit_no_graphics_notification();
         this->buffer_memory.allocator.device.command_buffer.wait_for_completion();
     };
 
-    inline GraphicsBinder creates_graphics_binder()
+    inline GraphicsBinder build_graphics_binder()
     {
         GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_memory.allocator, this->graphics_allocator);
         l_binder.start();
@@ -149,6 +156,36 @@ struct GPUContext
     inline void wait_for_completion()
     {
         this->graphics_allocator.graphics_device.command_buffer.wait_for_completion();
+    };
+};
+
+// The buffer step can be broken down into multiple parts if for some reason, we want to execute an additional operation on the transfer command buffer.
+// If the buffer step only use BufferStep::step then it's cleaner to use the GPUContext functions
+// /!\ It is important to note that any additional operations that involve buffer or image allocation must take place before the call to BufferStep because it is him that handle all read/write logic.
+struct BufferStepExecutionFlow
+{
+    inline static void buffer_step_begin(BufferMemory& p_buffer_memory)
+    {
+        p_buffer_memory.allocator.device.command_buffer.begin();
+    };
+
+    inline static void buffer_step_submit(GPUContext& p_gpu_context)
+    {
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.end();
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.submit_and_notity(p_gpu_context.buffer_end_semaphore);
+    };
+
+    inline static void buffer_step_submit_no_graphics_notification(GPUContext& p_gpu_context)
+    {
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.end();
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.submit();
+    };
+
+    inline static void buffer_step_force_execution(GPUContext& p_gpu_context)
+    {
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.end();
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.submit();
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.wait_for_completion();
     };
 };
 
