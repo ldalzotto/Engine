@@ -17,7 +17,7 @@ if (IS_DEBUG)
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRVd.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Toolsd.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/deb/SPIRV-Tools-optd.lib")
-else()
+else ()
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/GenericCodeGen.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/glslang.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/HLSL.lib")
@@ -27,7 +27,7 @@ else()
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV-Tools.lib")
     target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/win32/rel/SPIRV-Tools-opt.lib")
-endif()
+endif ()
 
 add_library(SQLite INTERFACE)
 target_include_directories(SQLite INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/sqlite/public/")
@@ -35,3 +35,8 @@ target_link_libraries(SQLite INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/s
 
 add_library(STB_IMAGE INTERFACE)
 target_include_directories(STB_IMAGE INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stb_image/public/")
+
+add_library(IMGUI STATIC ./ThirdParty/imgui/imgui.cpp ./ThirdParty/imgui/imgui_draw.cpp ./ThirdParty/imgui/imgui_demo.cpp ./ThirdParty/imgui/imgui_tables.cpp ./ThirdParty/imgui/imgui_widgets.cpp ./ThirdParty/imgui/backends/imgui_impl_vulkan.cpp)
+target_include_directories(IMGUI PUBLIC ./ThirdParty/imgui)
+target_link_libraries(IMGUI PUBLIC VULKAN)
+

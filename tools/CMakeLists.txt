@@ -30,6 +30,11 @@ target_link_libraries(AssetCompilerEditor INTERFACE Engine)
 target_link_libraries(AssetCompilerEditor INTERFACE AssetCompiler)
 target_link_libraries(AssetCompilerEditor INTERFACE QtCommon)
 
+add_library(ImguiIntegration INTERFACE)
+target_include_directories(ImguiIntegration INTERFACE ./ImguiIntegration)
+target_link_libraries(ImguiIntegration INTERFACE Engine)
+target_link_libraries(ImguiIntegration INTERFACE IMGUI)
+
 
 add_executable(MaterialViewerExec MaterialViewer/materialviewer_standalone.cpp)
 target_link_libraries(MaterialViewerExec PUBLIC MaterialViewer)
@@ -45,3 +50,6 @@ target_compile_definitions(AssetCompilerEditorExec PUBLIC ASSET_FOLDER_ROOT="${A
 add_executable(AssetCompilerEditorTest ./AssetCompiler/test/assetcompiler_tool_test.cpp)
 target_link_libraries(AssetCompilerEditorTest PUBLIC AssetCompilerEditor)
 target_compile_definitions(AssetCompilerEditorTest PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/AssetCompilerTool")
+
+add_executable(ImguiIntegrationExec ./ImguiIntegration/imgui_integration.cpp)
+target_link_libraries(ImguiIntegrationExec PUBLIC ImguiIntegration)

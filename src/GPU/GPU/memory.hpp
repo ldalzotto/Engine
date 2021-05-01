@@ -1157,6 +1157,7 @@ struct BufferCommandUtils
 
 struct BufferStep
 {
+    // TODO -> the command buffer may be used for something else or by an external program. We want that the being and end of the command buffer is done externally.
     inline static void step(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events)
     {
         clean_garbage_buffers(p_buffer_allocator, p_buffer_events);
@@ -1313,8 +1314,8 @@ struct BufferAllocatorComposition
         p_buffer_allocator.free_buffergpu(p_buffer_gpu);
     };
 
-    inline static Token<ImageHost>
-        allocate_imagehost_and_push_creation_event(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Slice<int8>& p_value, const ImageFormat& p_image_format)
+    inline static Token<ImageHost> allocate_imagehost_and_push_creation_event(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Slice<int8>& p_value,
+                                                                              const ImageFormat& p_image_format)
     {
         Token<ImageHost> l_image_host = p_buffer_allocator.allocate_imagehost(p_value, p_image_format);
         p_buffer_events.image_host_allocate_events.push_back_element(BufferEvents::AllocatedImageHost{l_image_host});
@@ -1370,8 +1371,8 @@ struct BufferReadWrite
         p_buffer_events.write_buffer_host_to_image_gpu_events.push_back_element(BufferEvents::WriteBufferHostToImageGPU{l_stagin_buffer, 1, p_image_gpu_token});
     };
 
-    inline static Token<BufferHost>
-        read_from_imagegpu_to_buffer(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<ImageGPU> p_image_gpu_token, const ImageGPU& p_image_gpu)
+    inline static Token<BufferHost> read_from_imagegpu_to_buffer(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<ImageGPU> p_image_gpu_token,
+                                                                 const ImageGPU& p_image_gpu)
     {
         Token<BufferHost> l_stagin_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_image_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
         p_buffer_events.write_image_gpu_to_buffer_host_events.push_back_element(BufferEvents::WriteImageGPUToBufferHost{p_image_gpu_token, l_stagin_buffer});
