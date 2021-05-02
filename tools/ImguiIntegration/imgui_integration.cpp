@@ -1,6 +1,6 @@
 #include "./ImguiIntegration/imgui_integration.hpp"
 
-#define RENDER_DOC_DEBUG 1
+// #define RENDER_DOC_DEBUG 1
 #ifdef RENDER_DOC_DEBUG
 #include "../../src/Test/Renderdoc/renderdoc_app.h"
 RENDERDOC_API_1_1_0* rdoc_api = NULL;
@@ -22,7 +22,10 @@ int main()
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
-    ImguiRenderer l_imgui_renderer = ImguiRenderer::allocate(l_gpu_context);
+    RenderTargetInternal_Color_Depth::AllocateInfo l_render_target_allocate_info{};
+    l_render_target_allocate_info.render_target_dimensions = v3ui{200, 200, 1};
+    RenderTargetInternal_Color_Depth l_render_target = RenderTargetInternal_Color_Depth::allocate(l_gpu_context, l_render_target_allocate_info);
+    ImguiRenderer l_imgui_renderer = ImguiRenderer::allocate(l_gpu_context, l_render_target);
     l_imgui_renderer.initialize_imgui(l_gpu_context);
 
     BufferStepExecutionFlow::buffer_step_begin(l_gpu_context.buffer_memory);
@@ -31,13 +34,13 @@ int main()
     BufferStepExecutionFlow::buffer_step_submit(l_gpu_context);
 
     GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
-    l_imgui_renderer.render(l_graphics_binder);
+    l_imgui_renderer.graphics_step(l_graphics_binder, l_render_target);
     l_gpu_context.submit_graphics_binder(l_graphics_binder);
     l_gpu_context.wait_for_completion();
 
     l_gpu_context.buffer_step_submit();
     GraphicsBinder l_graphics_binder_2 = l_gpu_context.build_graphics_binder();
-    l_imgui_renderer.render(l_graphics_binder_2);
+    l_imgui_renderer.graphics_step(l_graphics_binder_2, l_render_target);
     l_gpu_context.submit_graphics_binder(l_graphics_binder_2);
     l_gpu_context.wait_for_completion();
 
@@ -46,6 +49,7 @@ int main()
 #endif
 
     l_imgui_renderer.free(l_gpu_context);
+    l_render_target.free(l_gpu_context);
     l_gpu_context.free();
 
     // l_imgui_renderer.render();

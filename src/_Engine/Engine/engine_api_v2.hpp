@@ -33,14 +33,14 @@ struct EngineAPI_Internal
         p_scene.tree.add_worldrotation(l_node, p_delta_rotation);
     };
 
-    inline static CameraComponent& NodeAddCamera(const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset, RenderMiddleWare& p_render_middleware, Scene& p_scene)
+    inline static CameraComponent& NodeAddCamera(const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset, D3RenderMiddleWare& p_render_middleware, Scene& p_scene)
     {
         p_render_middleware.allocate_camera_inline(p_camera_asset, p_node);
         p_scene.add_node_component_by_value(p_node, CameraComponentAsset_SceneCommunication::build_nodecomponent());
         return p_render_middleware.camera_component;
     };
 
-    inline Token<MeshRendererComponent> static NodeAddMeshRenderer(const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id, RenderMiddleWare& p_render_middleware,
+    inline Token<MeshRendererComponent> static NodeAddMeshRenderer(const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id, D3RenderMiddleWare& p_render_middleware,
                                                                    RenderResourceAllocator2& p_render_resource_allocator, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
                                                                    Scene& p_scene)
     {

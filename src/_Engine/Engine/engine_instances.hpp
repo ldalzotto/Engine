@@ -63,8 +63,8 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
     AssetDatabase asset_database;
 
     RenderResourceAllocator2 renderer_resource_allocator;
-    RenderMiddleWare render_middleware;
-    D3Renderer renderer;
+    D3RenderMiddleWare render_middleware;
+    Renderer_3D renderer;
 
     Token<Window> window;
 
@@ -103,11 +103,11 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
         l_return.database_connection = DatabaseConnection::allocate(p_runtime_configuration.database_path);
         l_return.asset_database = AssetDatabase::allocate(l_return.database_connection);
         l_return.renderer_resource_allocator = RenderResourceAllocator2::allocate();
-        l_return.render_middleware = RenderMiddleWare::allocate();
+        l_return.render_middleware = D3RenderMiddleWare::allocate();
         l_return.renderer = EngineAllocationFragments::d3renderer_allocate(l_return.gpu_context, p_runtime_configuration.render_size, p_runtime_configuration.render_target_host_readable);
         l_return.window = WindowAllocator::allocate(p_runtime_configuration.render_size.x, p_runtime_configuration.render_size.y, slice_int8_build_rawstr(""));
-        l_return.present = EngineAllocationFragments::present_allocate(l_return.gpu_context, l_return.renderer, l_return.window, p_runtime_configuration.render_size, l_return.database_connection,
-                                                                       l_return.asset_database);
+        l_return.present = EngineAllocationFragments::present_allocate(l_return.gpu_context, l_return.renderer.render_targets, l_return.window, p_runtime_configuration.render_size,
+                                                                       l_return.database_connection, l_return.asset_database);
 
         return l_return;
     };
@@ -121,9 +121,9 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
             thiz->core.abort_condition = EngineStepFragments::window_step(thiz->window, thiz->gpu_context, thiz->present);
             loop_func(p_delta);
             thiz->scene.consume_component_events_stateful(OnComponentRemoved{thiz});
-            EngineStepFragments::render_resource_step(thiz->renderer, thiz->gpu_context, thiz->database_connection, thiz->asset_database, thiz->renderer_resource_allocator, thiz->render_middleware,
-                                                      thiz->scene);
-            EngineStepFragments::d3renderer_draw_present(thiz->core, thiz->gpu_context, thiz->renderer, thiz->present);
+            EngineStepFragments::render_resource_step(thiz->renderer.d3_renderer, thiz->renderer.render_targets, thiz->gpu_context, thiz->database_connection, thiz->asset_database,
+                                                      thiz->renderer_resource_allocator, thiz->render_middleware, thiz->scene);
+            EngineStepFragments::d3renderer_draw_present(thiz->core, thiz->gpu_context, thiz->renderer.d3_renderer, thiz->present);
             thiz->scene.step();
         };
     };
@@ -147,8 +147,8 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
     {
         this->scene.free_and_consume_component_events_stateful(OnComponentRemoved{this});
 
-        this->render_middleware.free(this->renderer, this->gpu_context, this->asset_database, this->renderer_resource_allocator);
-        this->renderer_resource_allocator.free(this->renderer, this->gpu_context);
+        this->render_middleware.free(this->renderer.d3_renderer, this->gpu_context, this->asset_database, this->renderer_resource_allocator);
+        this->renderer_resource_allocator.free(this->renderer.d3_renderer, this->gpu_context);
         this->renderer.free(this->gpu_context);
 
         this->asset_database.free(this->database_connection);
@@ -172,8 +172,8 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
     AssetDatabase asset_database;
 
     RenderResourceAllocator2 renderer_resource_allocator;
-    RenderMiddleWare render_middleware;
-    D3Renderer renderer;
+    D3RenderMiddleWare render_middleware;
+    Renderer_3D renderer;
 
     struct OnComponentRemoved
     {
@@ -208,7 +208,7 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
         l_return.database_connection = DatabaseConnection::allocate(p_runtime_configuration.database_path);
         l_return.asset_database = AssetDatabase::allocate(l_return.database_connection);
         l_return.renderer_resource_allocator = RenderResourceAllocator2::allocate();
-        l_return.render_middleware = RenderMiddleWare::allocate();
+        l_return.render_middleware = D3RenderMiddleWare::allocate();
         l_return.renderer = EngineAllocationFragments::d3renderer_allocate_headless(l_return.gpu_context, p_runtime_configuration.render_size, p_runtime_configuration.render_target_host_readable);
 
         return l_return;
@@ -222,9 +222,9 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
         {
             loop_func(p_delta);
             thiz->scene.consume_component_events_stateful(OnComponentRemoved{thiz});
-            EngineStepFragments::render_resource_step(thiz->renderer, thiz->gpu_context, thiz->database_connection, thiz->asset_database, thiz->renderer_resource_allocator, thiz->render_middleware,
-                                                      thiz->scene);
-            EngineStepFragments::d3renderer_draw_headless(thiz->core, thiz->gpu_context, thiz->renderer);
+            EngineStepFragments::render_resource_step(thiz->renderer.d3_renderer, thiz->renderer.render_targets, thiz->gpu_context, thiz->database_connection, thiz->asset_database,
+                                                      thiz->renderer_resource_allocator, thiz->render_middleware, thiz->scene);
+            EngineStepFragments::d3renderer_draw_headless(thiz->core, thiz->gpu_context, thiz->renderer.d3_renderer);
             thiz->scene.step();
         };
     };
@@ -243,8 +243,8 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
     {
         this->scene.free_and_consume_component_events_stateful(OnComponentRemoved{this});
 
-        this->render_middleware.free(this->renderer, this->gpu_context, this->asset_database, this->renderer_resource_allocator);
-        this->renderer_resource_allocator.free(this->renderer, this->gpu_context);
+        this->render_middleware.free(this->renderer.d3_renderer, this->gpu_context, this->asset_database, this->renderer_resource_allocator);
+        this->renderer_resource_allocator.free(this->renderer.d3_renderer, this->gpu_context);
         this->renderer.free(this->gpu_context);
 
         this->asset_database.free(this->database_connection);

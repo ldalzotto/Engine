@@ -1,7 +1,5 @@
 #pragma once
 
-#include "GPU/gpu.hpp"
-
 struct Camera
 {
     m44f view;
@@ -295,7 +293,6 @@ SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN
 // responsible of the graphics passes supported by the module.
 struct ColorStep
 {
-    v3ui render_target_dimensions;
 
     Token<GraphicsPass> pass;
     Span<v4f> clear_values;
@@ -313,42 +310,19 @@ struct ColorStep
         };
     };
 
-    struct AllocateInfo
-    {
-        v3ui render_target_dimensions;
-        int8 attachment_host_read;
-        int8 color_attachment_sample;
-    };
-
-    inline static ColorStep allocate(GPUContext& p_gpu_context, const AllocateInfo& p_allocate_info)
+    inline static ColorStep allocate(GPUContext& p_gpu_context, const RenderTargetInternal_Color_Depth& p_render_target_internal)
     {
         ColorStep l_step;
 
         Span<ShaderLayoutParameterType> l_global_buffer_parameters = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&ColorStep_const::shaderlayout_before));
         Span<ShaderLayout::VertexInputParameter> l_global_buffer_vertices_parameters = Span<ShaderLayout::VertexInputParameter>::build(NULL, 0);
 
-        ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
-        if (p_allocate_info.attachment_host_read)
-        {
-            l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ);
-        }
-        if (p_allocate_info.color_attachment_sample)
-        {
-            l_additional_attachment_usage_flags = (ImageUsageFlag)((ImageUsageFlags)l_additional_attachment_usage_flags | (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
-        }
-
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR,
-                                 ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions,
-                                                             (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))},
-            RenderPassAttachment{AttachmentType::DEPTH,
-                                 ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions,
-                                                             (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT | (ImageUsageFlags)l_additional_attachment_usage_flags))}};
-
-        l_step.render_target_dimensions = p_allocate_info.render_target_dimensions;
         SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
         l_step.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
-        l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
+
+        l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_from_textures<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator,
+                                                                                           SliceN<Token<TextureGPU>, 2>{p_render_target_internal.color, p_render_target_internal.depth},
+                                                                                           SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH});
         l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
         Camera l_empty_camera{};
@@ -366,7 +340,7 @@ struct ColorStep
     {
         this->clear_values.free();
         p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->pass);
+        p_gpu_context.graphics_allocator.free_graphicspass_with_texture_slice(this->pass);
         this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
     };
 
@@ -375,9 +349,9 @@ struct ColorStep
         this->get_camera(p_gpu_context) = p_camera;
     };
 
-    inline void set_camera_projection(GPUContext& p_gpu_context, const float32 p_near, const float32 p_far, const float32 p_fov)
+    inline void set_camera_projection(GPUContext& p_gpu_context, const RenderTargetInternal_Color_Depth& p_render_target, const float32 p_near, const float32 p_far, const float32 p_fov)
     {
-        this->get_camera(p_gpu_context).projection = m44f::perspective(p_fov, (float32)this->render_target_dimensions.x / this->render_target_dimensions.y, p_near, p_far);
+        this->get_camera(p_gpu_context).projection = m44f::perspective(p_fov, (float32)p_render_target.dimensions.x / p_render_target.dimensions.y, p_near, p_far);
     };
 
     inline void set_camera_view(GPUContext& p_gpu_context, const v3f& p_world_position, const v3f& p_forward, const v3f& p_up)
@@ -414,9 +388,13 @@ struct D3Renderer
     D3RendererEvents events;
     ColorStep color_step;
 
-    inline static D3Renderer allocate(GPUContext& p_gpu_context, const ColorStep::AllocateInfo& p_allocation_info)
+    inline static D3Renderer allocate(GPUContext& p_gpu_context, const RenderTargetInternal_Color_Depth& p_render_targets)
     {
-        return D3Renderer{D3RendererAllocator::allocate(), D3RendererEvents::allocate(), ColorStep::allocate(p_gpu_context, p_allocation_info)};
+        D3Renderer l_return;
+        l_return.allocator = D3RendererAllocator::allocate();
+        l_return.events = D3RendererEvents::allocate();
+        l_return.color_step = ColorStep::allocate(p_gpu_context, p_render_targets);
+        return l_return;
     };
 
     inline void free(GPUContext& p_gpu_context)
@@ -586,7 +564,7 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_renderable_object_external_resources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                  RenderableObject& p_renderable_object)
+                                                                 RenderableObject& p_renderable_object)
     {
         GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, p_renderable_object.model);
         free_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_renderable_object.mesh);
@@ -619,7 +597,7 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_shader_recursively_with_gpu_resources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                   D3RendererEvents& p_render_events, const Token<ShaderIndex> p_shader)
+                                                                  D3RendererEvents& p_render_events, const Token<ShaderIndex> p_shader)
     {
         auto l_materials_to_remove = p_render_allocator.heap.get_materials_from_shader(p_shader);
 

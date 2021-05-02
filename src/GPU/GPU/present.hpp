@@ -242,7 +242,7 @@ struct SwapChain
             p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
 
             p_swap_chain.rendertarget_copy_pass.get(i) =
-                p_graphics_allocator.allocate_graphicspass<1>(p_buffer_memory.allocator.device, SliceN<Token<ImageGPU>, 1>{p_swap_chain.swap_chain_images.get(i)},
+                p_graphics_allocator.allocate_graphicspass_from_images<1>(p_buffer_memory.allocator.device, SliceN<Token<ImageGPU>, 1>{p_swap_chain.swap_chain_images.get(i)},
                                                               SliceN<ImageGPU, 1>{p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i))},
                                                               SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
         }
@@ -268,7 +268,7 @@ struct SwapChain
 
         for (loop(i, 0, p_swap_chain.rendertarget_copy_pass.Capacity))
         {
-            p_graphics_allocator.free_graphicspass(p_buffer_memory.allocator.device, p_swap_chain.rendertarget_copy_pass.get(i));
+            p_graphics_allocator.free_graphicspass_with_textures(p_buffer_memory.allocator.device, p_swap_chain.rendertarget_copy_pass.get(i));
         }
         p_swap_chain.rendertarget_copy_pass.free();
 

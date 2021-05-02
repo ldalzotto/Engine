@@ -76,35 +76,32 @@ struct EngineAllocationFragments
         return GPUContext::allocate(Slice<GPUExtension>::build_default());
     };
 
-    inline static D3Renderer d3renderer_allocate(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
+    inline static Renderer_3D d3renderer_allocate(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
     {
-        ColorStep::AllocateInfo l_colorstep_allocate_info;
-        l_colorstep_allocate_info.attachment_host_read = p_render_target_host_readable;
-        l_colorstep_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
-        l_colorstep_allocate_info.color_attachment_sample = 1;
+        RenderTargetInternal_Color_Depth::AllocateInfo l_rendertarget_allocate_info;
+        l_rendertarget_allocate_info.attachment_host_read = p_render_target_host_readable;
+        l_rendertarget_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
+        l_rendertarget_allocate_info.color_attachment_sample = 1;
 
-        return D3Renderer::allocate(p_gpu_context, l_colorstep_allocate_info);
+        return Renderer_3D::allocate(p_gpu_context, l_rendertarget_allocate_info);
     };
 
-    inline static D3Renderer d3renderer_allocate_headless(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
+    inline static Renderer_3D d3renderer_allocate_headless(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
     {
-        ColorStep::AllocateInfo l_colorstep_allocate_info;
-        l_colorstep_allocate_info.attachment_host_read = p_render_target_host_readable;
-        l_colorstep_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
-        l_colorstep_allocate_info.color_attachment_sample = 0;
-        return D3Renderer::allocate(p_gpu_context, l_colorstep_allocate_info);
+        RenderTargetInternal_Color_Depth::AllocateInfo l_rendertarget_allocate_info;
+        l_rendertarget_allocate_info.attachment_host_read = p_render_target_host_readable;
+        l_rendertarget_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
+        l_rendertarget_allocate_info.color_attachment_sample = 0;
+        return Renderer_3D::allocate(p_gpu_context, l_rendertarget_allocate_info);
     };
 
-    inline static GPUPresent present_allocate(GPUContext& p_gpu_context, D3Renderer& p_renderer, const Token<Window> p_window, const v2ui& p_render_size, DatabaseConnection& p_database_connection,
-                                              AssetDatabase& p_asset_database)
+    inline static GPUPresent present_allocate(GPUContext& p_gpu_context, RenderTargetInternal_Color_Depth& p_render_targets, const Token<Window> p_window, const v2ui& p_render_size,
+                                              DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         Span<int8> l_quad_blit_vert = p_asset_database.get_asset_blob(p_database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
         Span<int8> l_quad_blit_frag = p_asset_database.get_asset_blob(p_database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
-        GPUPresent l_present = GPUPresent::allocate(
-            p_gpu_context.instance, p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, WindowAllocator::get_window(p_window).handle, v3ui{p_render_size.x, p_render_size.y, 1},
-            p_gpu_context.graphics_allocator.heap.renderpass_attachment_textures.get_vector(p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass).attachment_textures)
-                .get(0),
-            l_quad_blit_vert.slice, l_quad_blit_frag.slice);
+        GPUPresent l_present = GPUPresent::allocate(p_gpu_context.instance, p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, WindowAllocator::get_window(p_window).handle,
+                                                    v3ui{p_render_size.x, p_render_size.y, 1}, p_render_targets.color, l_quad_blit_vert.slice, l_quad_blit_frag.slice);
         l_quad_blit_vert.free();
         l_quad_blit_frag.free();
 
@@ -147,15 +144,15 @@ struct EngineStepFragments
         p_collision.step();
     };
 
-    inline static void render_resource_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
-                                            RenderResourceAllocator2& p_render_resource_allocator, RenderMiddleWare& p_render_middleware, Scene& p_scene)
+    inline static void render_resource_step(D3Renderer& p_renderer, RenderTargetInternal_Color_Depth& p_render_targets, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection,
+                                            AssetDatabase& p_asset_database, RenderResourceAllocator2& p_render_resource_allocator, D3RenderMiddleWare& p_render_middleware, Scene& p_scene)
     {
         p_render_middleware.meshrenderer_component_unit.deallocation_step(p_renderer, p_gpu_context, p_render_resource_allocator);
         p_render_resource_allocator.deallocation_step(p_renderer, p_gpu_context);
         p_render_resource_allocator.allocation_step(p_renderer, p_gpu_context, p_database_connection, p_asset_database);
         p_render_middleware.meshrenderer_component_unit.allocation_step(p_renderer, p_gpu_context, p_render_resource_allocator, p_asset_database);
 
-        p_render_middleware.step(p_renderer, p_gpu_context, &p_scene);
+        p_render_middleware.step(p_renderer, p_render_targets, p_gpu_context, &p_scene);
     };
 
     inline static void d3renderer_draw_present(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer, GPUPresent& p_present)

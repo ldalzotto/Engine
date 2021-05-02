@@ -224,14 +224,14 @@ struct MeshRendererComponentComposition
     The render middleware is the interface between the scene and the render system. <br/>
     It update scene component render state when associated nodes are moving.
 */
-struct RenderMiddleWare
+struct D3RenderMiddleWare
 {
     MeshRendererComponentUnit meshrenderer_component_unit;
     CameraComponent camera_component;
 
-    inline static RenderMiddleWare allocate()
+    inline static D3RenderMiddleWare allocate()
     {
-        return RenderMiddleWare{MeshRendererComponentUnit::allocate(), CameraComponent::build_default()};
+        return D3RenderMiddleWare{MeshRendererComponentUnit::allocate(), CameraComponent::build_default()};
     };
 
     inline void free(D3Renderer& p_renderer, GPUContext& p_gpu_context, AssetDatabase& p_asset_database, RenderResourceAllocator2& p_render_resource_allocator)
@@ -261,7 +261,7 @@ struct RenderMiddleWare
 
     // TODO -> there is an opportunity for optimization. The fact that we iterate over mesh renderers and that only scene_node, force_update and node.haschanged_thisframe is required for the condition
     //         may provoque some cache loading of unused data (renderable_object and dependencies). This is a use case for a struct of array.
-    inline void step(D3Renderer& p_renderer, GPUContext& p_gpu_context, Scene* p_scene)
+    inline void step(D3Renderer& p_renderer, RenderTargetInternal_Color_Depth& p_render_targets, GPUContext& p_gpu_context, Scene* p_scene)
     {
         this->meshrenderer_component_unit.mesh_renderers.foreach ([&](const Token<MeshRendererComponent>, MeshRendererComponent& l_mesh_renderer) {
             NodeEntry l_node = p_scene->get_node(l_mesh_renderer.scene_node);
@@ -278,7 +278,7 @@ struct RenderMiddleWare
             NodeEntry l_camera_node = p_scene->get_node(this->camera_component.scene_node);
             if (this->camera_component.force_update)
             {
-                p_renderer.color_step.set_camera_projection(p_gpu_context, this->camera_component.asset.Near, this->camera_component.asset.Far, this->camera_component.asset.Fov);
+                p_renderer.color_step.set_camera_projection(p_gpu_context, p_render_targets, this->camera_component.asset.Near, this->camera_component.asset.Far, this->camera_component.asset.Fov);
 
                 m44f l_local_to_world = p_scene->tree.get_localtoworld(l_camera_node);
                 p_renderer.color_step.set_camera_view(p_gpu_context, p_scene->tree.get_worldposition(l_camera_node), l_local_to_world.Forward.Vec3, l_local_to_world.Up.Vec3);

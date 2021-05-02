@@ -26,12 +26,12 @@ inline static NodeComponent build_nodecomponent()
     return NodeComponent{CameraComponent::Type, tokent_build_default()};
 };
 
-inline static CameraComponent::Asset deconstruct_nodecomponent(RenderMiddleWare& p_render_middleware, D3Renderer& p_renderer)
+inline static CameraComponent::Asset deconstruct_nodecomponent(D3RenderMiddleWare& p_render_middleware, D3Renderer& p_renderer)
 {
     return p_render_middleware.camera_component.asset;
 };
 
-inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
+inline static void on_node_component_removed(D3RenderMiddleWare& p_render_middleware, const NodeComponent& p_node_component)
 {
     p_render_middleware.free_camera();
 };
@@ -45,7 +45,7 @@ inline static NodeComponent build_nodecomponent(const Token<MeshRendererComponen
     return NodeComponent{MeshRendererComponent::Type, token_value(p_component)};
 };
 
-inline static void on_node_component_removed(RenderMiddleWare& p_render_middleware, RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
+inline static void on_node_component_removed(D3RenderMiddleWare& p_render_middleware, RenderResourceAllocator2& p_render_resource_allocator, const NodeComponent& p_node_component)
 {
     MeshRendererComponentComposition::free_meshrenderer_with_dependencies(p_render_middleware.meshrenderer_component_unit, p_render_resource_allocator,
                                                                           token_build<MeshRendererComponent>(p_node_component.resource));

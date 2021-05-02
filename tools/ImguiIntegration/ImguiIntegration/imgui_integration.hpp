@@ -5,29 +5,25 @@
 #include "imgui_internal.h"
 
 /*
-  TODO -> in the D3Render module the graphics pass shouldn't allocate texture, they must be created separately and being able to be carried over the pipeline  ?
+    // TODO -> forbid the usage of imgui static
+    // TODO -> move to the render module as an independant renderer
+    // TODO -> write test with the default window
  */
-inline void imgui_assert_true(const int8 p_bool)
-{
-#if __DEBUG
-    assert_true(p_bool);
-#endif
-};
 
 struct ImguiRenderer
 {
     Token<GraphicsPass> graphics_pass;
     Span<v4f> clear_values;
 
-    inline static ImguiRenderer allocate(GPUContext& p_gpu_context)
+    inline static ImguiRenderer allocate(GPUContext& p_gpu_context, const RenderTargetInternal_Color_Depth& p_render_target)
     {
         ImguiRenderer l_return;
-        v3ui l_extend = v3ui{200, 200, 1};
-        SliceN<RenderPassAttachment, 2> l_attachments = {RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(l_extend, ImageUsageFlag::SHADER_COLOR_ATTACHMENT)},
-                                                         RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_extend, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
-        l_return.graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments);
+        SliceN<AttachmentType, 1> l_attachment_types = {AttachmentType::COLOR};
+        SliceN<Token<TextureGPU>, 1> l_attachments = {p_render_target.color};
+        l_return.graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_from_textures<1>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments, l_attachment_types);
 
-        SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
+        // SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
+        SliceN<v4f, 1> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}};
         l_return.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
 
         return l_return;
@@ -51,7 +47,10 @@ struct ImguiRenderer
         l_imgui_info.ImageCount = 2;
         l_imgui_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-        imgui_assert_true(ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass));
+        int8 l_success =ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass);
+#if __DEBUG
+        assert_true(l_success);
+#endif
     };
 
     inline void buffer_step(BufferMemory& p_buffer_memory)
@@ -64,16 +63,14 @@ struct ImguiRenderer
         ImGui_ImplVulkan_Shutdown();
         ImGui::DestroyContext();
 
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, this->graphics_pass);
+        p_gpu_context.graphics_allocator.free_graphicspass_with_texture_slice(this->graphics_pass);
         this->clear_values.free();
     };
 
-    inline void render(GraphicsBinder& p_graphics_binder)
+    inline void graphics_step(GraphicsBinder& p_graphics_binder, const RenderTargetInternal_Color_Depth& p_render_target)
     {
-        // ImGui_ImplVulkan_CreateFontsTexture(p_graphics_binder.buffer_allocator.device.command_buffer.command_buffer);
         ImGuiIO& l_io = ImGui::GetIO();
-        // TODO -> the display size must be set on the initiallization. Later when we will create a resize event, we will update it's value.
-        l_io.DisplaySize = ImVec2(800, 800);
+        l_io.DisplaySize = ImVec2((float32)p_render_target.dimensions.x, (float32)p_render_target.dimensions.y);
         l_io.DeltaTime = 1.0f / 60.0f;
 
         ImGui::NewFrame();

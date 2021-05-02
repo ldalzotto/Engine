@@ -322,7 +322,7 @@ struct D3RendererCubeSandboxEnvironmentV2
                 ToString::auimax_append(FrameCount(this->engine) - 1, l_image_path);
                 l_image_path.append(slice_int8_build_rawstr(".jpg"));
 
-                SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer, l_image_path.to_slice_with_null_termination());
+                SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
 
 #if 0
                 SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer, l_image_path.to_slice_with_null_termination());
