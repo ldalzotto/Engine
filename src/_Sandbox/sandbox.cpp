@@ -325,12 +325,11 @@ struct D3RendererCubeSandboxEnvironmentV2
                 SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
 
 #if 0
-                SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer, l_image_path.to_slice_with_null_termination());
+                SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
 #endif
 
                 l_image_path.free();
             }
-
             quat l_delta_rotation = quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * DeltaTime(this->engine));
             NodeAddWorldRotation(this->engine, this->l_square_root_node, l_delta_rotation);
         });

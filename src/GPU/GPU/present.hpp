@@ -241,10 +241,10 @@ struct SwapChain
             l_image_format.format = l_swapchain_create.imageFormat;
             p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
 
-            p_swap_chain.rendertarget_copy_pass.get(i) =
-                p_graphics_allocator.allocate_graphicspass_from_images_fixed_size<1>(p_buffer_memory.allocator.device, SliceN<Token<ImageGPU>, 1>{p_swap_chain.swap_chain_images.get(i)},
-                                                                                     SliceN<ImageGPU, 1>{p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i))},
-                                                                                     SliceN<RenderPassAttachment, 1>{RenderPassAttachment{AttachmentType::KHR, l_image_format}});
+            p_swap_chain.rendertarget_copy_pass.get(i) = p_graphics_allocator.allocate_graphicspass_from_images_fixed_size<1>(
+                p_buffer_memory.allocator.device, SliceN<Token<ImageGPU>, 1>{p_swap_chain.swap_chain_images.get(i)},
+                SliceN<ImageGPU, 1>{p_buffer_memory.allocator.gpu_images.get(p_swap_chain.swap_chain_images.get(i))},
+                SliceN<RenderPassAttachment, 1>{RenderPassAttachment::build(AttachmentType::KHR, l_image_format, RenderPassAttachment::ClearOp::CLEARED)});
         }
         l_images.free();
 

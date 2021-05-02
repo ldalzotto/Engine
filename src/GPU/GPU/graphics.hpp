@@ -273,7 +273,17 @@ struct RenderPassAttachment
 {
     AttachmentType type;
     ImageFormat image_format;
-    // TODO -> add configuration for clear
+
+    enum class ClearOp : int8
+    {
+        NOT_CLEARED = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD,
+        CLEARED = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR
+    } clear_op;
+
+    inline static RenderPassAttachment build(const AttachmentType p_type, const ImageFormat& p_image_format, const ClearOp p_clear_op)
+    {
+        return RenderPassAttachment{p_type, p_image_format, p_clear_op};
+    };
 };
 
 /*
@@ -298,17 +308,18 @@ struct RenderPass
 
         struct AttachmentDescription
         {
-            inline static VkAttachmentDescription build(const ImageFormat& p_image_format, const VkImageLayout p_target_image_layout)
+            inline static VkAttachmentDescription build(const ImageFormat& p_image_format, const RenderPassAttachment::ClearOp p_clear_op, const VkImageLayout p_source_image_layout,
+                                                        const VkImageLayout p_target_image_layout)
             {
                 VkAttachmentDescription l_attachment_description;
                 l_attachment_description = VkAttachmentDescription{};
                 l_attachment_description.format = p_image_format.format;
                 l_attachment_description.samples = p_image_format.samples;
-                l_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+                l_attachment_description.loadOp = (VkAttachmentLoadOp)p_clear_op;
                 l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
                 l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
                 l_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
-                l_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+                l_attachment_description.initialLayout = p_source_image_layout;
                 l_attachment_description.finalLayout = p_target_image_layout;
                 return l_attachment_description;
             };
@@ -324,8 +335,8 @@ struct RenderPass
             {
                 VkAttachmentDescription& l_attachment_description = local_attachment_descriptions.get(i);
                 VkAttachmentReference& l_color_attachment_reference = local_color_attachment_references.get(l_color_attachments_ref_count);
-                l_attachment_description =
-                    AttachmentDescription::build(l_attachment.image_format, ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage));
+                VkImageLayout l_image_layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
+                l_attachment_description = AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, l_image_layout, l_image_layout);
                 l_color_attachment_reference.attachment = (uint32)i;
                 l_color_attachment_reference.layout = l_attachment_description.finalLayout;
                 l_color_attachments_ref_count += 1;
@@ -334,8 +345,8 @@ struct RenderPass
             case AttachmentType::DEPTH:
             {
                 VkAttachmentDescription& l_attachment_description = local_attachment_descriptions.get(i);
-                l_attachment_description =
-                    AttachmentDescription::build(l_attachment.image_format, ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage));
+                VkImageLayout l_image_layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
+                l_attachment_description = AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, l_image_layout, l_image_layout);
 
                 l_depth_attachment_reference = VkAttachmentReference{};
                 l_depth_attachment_reference.attachment = (uint32)i;
@@ -348,7 +359,8 @@ struct RenderPass
                 VkAttachmentDescription& l_attachment_description = local_attachment_descriptions.get(i);
                 VkAttachmentReference& l_color_attachment_reference = local_color_attachment_references.get(l_color_attachments_ref_count);
 
-                l_attachment_description = AttachmentDescription::build(l_attachment.image_format, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                l_attachment_description =
+                    AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
                 l_color_attachment_reference.attachment = (uint32)i;
                 l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
                 l_color_attachments_ref_count += 1;
@@ -1172,7 +1184,8 @@ struct GraphicsAllocatorComposition
 
     template <uint8 AttachmentCount>
     inline static Token<GraphicsPass> allocate_graphicspass(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                            const SliceN<Token<ImageGPU>, AttachmentCount>& p_tokenized_attachments, const SliceN<AttachmentType, AttachmentCount>& p_attachment_types)
+                                                            const SliceN<Token<ImageGPU>, AttachmentCount>& p_tokenized_attachments, const SliceN<AttachmentType, AttachmentCount>& p_attachment_types,
+                                                            const SliceN<RenderPassAttachment::ClearOp, AttachmentCount>& p_clears)
     {
         SliceN<ImageGPU, AttachmentCount> l_images;
         SliceN<RenderPassAttachment, AttachmentCount> l_attachments;
@@ -1180,21 +1193,21 @@ struct GraphicsAllocatorComposition
         {
             ImageGPU& l_image = p_buffer_memory.allocator.gpu_images.get(p_tokenized_attachments.get(i));
             l_images.get(i) = l_image;
-            l_attachments.get(i) = RenderPassAttachment{p_attachment_types.get(i), l_image.format};
+            l_attachments.get(i) = RenderPassAttachment::build(p_attachment_types.get(i), l_image.format, p_clears.get(i));
         }
         return p_graphics_allocator.allocate_graphicspass_from_images_fixed_size<AttachmentCount>(p_buffer_memory.allocator.device, p_tokenized_attachments, l_images, l_attachments);
     };
 
     template <uint8 AttachmentCount>
-    inline static Token<GraphicsPass> allocate_graphicspass_from_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                                          const SliceN<Token<TextureGPU>, AttachmentCount>& p_tokenized_attachments,
-                                                                          const SliceN<AttachmentType, AttachmentCount>& p_attachment_types)
+    inline static Token<GraphicsPass>
+    allocate_graphicspass_from_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const SliceN<Token<TextureGPU>, AttachmentCount>& p_tokenized_attachments,
+                                        const SliceN<AttachmentType, AttachmentCount>& p_attachment_types, const SliceN<RenderPassAttachment::ClearOp, AttachmentCount>& p_clears)
     {
         SliceN<RenderPassAttachment, AttachmentCount> l_attachments;
         for (loop(i, 0, AttachmentCount))
         {
             ImageGPU& l_image = p_buffer_memory.allocator.gpu_images.get(p_graphics_allocator.heap.textures_gpu.get(p_tokenized_attachments.get(i)).Image);
-            l_attachments.get(i) = RenderPassAttachment{p_attachment_types.get(i), l_image.format};
+            l_attachments.get(i) = RenderPassAttachment::build(p_attachment_types.get(i), l_image.format, p_clears.get(i));
         }
         return p_graphics_allocator.allocate_graphicspass_from_textures_fixed_size<AttachmentCount>(p_buffer_memory.allocator.device, p_tokenized_attachments, l_attachments);
     };

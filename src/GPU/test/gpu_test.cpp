@@ -185,6 +185,7 @@ inline void gpu_image_allocation()
     Creates a GraphicsPass that only clear input attachments.
     We check that the attachment has well been cleared with the input color.
 */
+// TODO -> add a test for non clear
 inline void gpu_renderpass_clear()
 {
     GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -196,9 +197,9 @@ inline void gpu_renderpass_clear()
 #endif
 
     SliceN<RenderPassAttachment, 2> l_attachments = {
-        RenderPassAttachment{AttachmentType::COLOR,
-                             ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-        RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
+        RenderPassAttachment::build(AttachmentType::COLOR,
+                             ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
+        RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
     Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
@@ -266,9 +267,9 @@ inline void gpu_draw()
 
     {
         SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
+            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
+            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
         Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
@@ -512,11 +513,14 @@ inline void gpu_depth_compare_test()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT))}};
+        SliceN<RenderPassAttachment, 2> l_attachments = {RenderPassAttachment::build(AttachmentType::COLOR,
+                                                                              ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                          (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+                                                                              RenderPassAttachment::ClearOp::CLEARED),
+                                                         RenderPassAttachment::build(AttachmentType::DEPTH,
+                                                                              ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                                          (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)),
+                                                                              RenderPassAttachment::ClearOp::CLEARED)};
         Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
@@ -738,9 +742,9 @@ inline void gpu_draw_indexed()
 
     {
         SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
+            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
+            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
         Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex_position
@@ -911,9 +915,9 @@ inline void gpu_texture_mapping()
         v3ui l_render_extends = v3ui{16, 16, 1};
 
         SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment{AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                       (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT))},
-            RenderPassAttachment{AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)}};
+            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
+                                                                                                                       (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
+            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
         Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
 
         struct vertex
