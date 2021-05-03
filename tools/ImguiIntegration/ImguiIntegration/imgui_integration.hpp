@@ -18,9 +18,10 @@ struct ImguiRenderer
     inline static ImguiRenderer allocate(GPUContext& p_gpu_context, const RenderTargetInternal_Color_Depth& p_render_target)
     {
         ImguiRenderer l_return;
-        SliceN<AttachmentType, 1> l_attachment_types = {AttachmentType::COLOR};
-        SliceN<Token<TextureGPU>, 1> l_attachments = {p_render_target.color};
-        l_return.graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_from_textures<1>(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_attachments, l_attachment_types);
+        GraphicsPassAllocationComposition::RenderPassAttachmentInput<1> l_graphicspass_allocation_input = {
+            SliceN<Token<TextureGPU>, 1>{p_render_target.color}, SliceN<AttachmentType, 1>{AttachmentType::COLOR}, SliceN<RenderPassAttachment::ClearOp, 1>{RenderPassAttachment::ClearOp::CLEARED}};
+        l_return.graphics_pass =
+            GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_graphicspass_allocation_input);
 
         // SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
         SliceN<v4f, 1> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -47,7 +48,7 @@ struct ImguiRenderer
         l_imgui_info.ImageCount = 2;
         l_imgui_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-        int8 l_success =ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass);
+        int8 l_success = ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass);
 #if __DEBUG
         assert_true(l_success);
 #endif
@@ -63,7 +64,7 @@ struct ImguiRenderer
         ImGui_ImplVulkan_Shutdown();
         ImGui::DestroyContext();
 
-        p_gpu_context.graphics_allocator.free_graphicspass_with_texture_slice(this->graphics_pass);
+        GraphicsPassAllocationComposition::free_graphicspass(p_gpu_context.graphics_allocator, this->graphics_pass);
         this->clear_values.free();
     };
 

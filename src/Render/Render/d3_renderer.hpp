@@ -320,10 +320,14 @@ struct ColorStep
         SliceN<v4f, 2> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}, v4f{1.0f, 0.0f, 0.0f, 0.0f}};
         l_step.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
 
-        l_step.pass = GraphicsAllocatorComposition::allocate_graphicspass_from_textures<2>(
-            p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, SliceN<Token<TextureGPU>, 2>{p_render_target_internal.color, p_render_target_internal.depth},
-            SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
-            SliceN<RenderPassAttachment::ClearOp, 2>{RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED});
+        {
+            GraphicsPassAllocationComposition::RenderPassAttachmentInput<2> l_renderpasss_allocation_input = {
+                SliceN<Token<TextureGPU>, 2>{p_render_target_internal.color, p_render_target_internal.depth}, SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
+                SliceN<RenderPassAttachment::ClearOp, 2>{RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED}};
+
+            l_step.pass = GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_renderpasss_allocation_input);
+        }
+
         l_step.global_buffer_layout = p_gpu_context.graphics_allocator.allocate_shader_layout(l_global_buffer_parameters, l_global_buffer_vertices_parameters, 0);
 
         Camera l_empty_camera{};
@@ -341,7 +345,7 @@ struct ColorStep
     {
         this->clear_values.free();
         p_gpu_context.graphics_allocator.free_shader_layout(this->global_buffer_layout);
-        p_gpu_context.graphics_allocator.free_graphicspass_with_texture_slice(this->pass);
+        GraphicsPassAllocationComposition::free_graphicspass(p_gpu_context.graphics_allocator, this->pass);
         this->global_material.free_with_textures(p_gpu_context.graphics_allocator, p_gpu_context.buffer_memory);
     };
 

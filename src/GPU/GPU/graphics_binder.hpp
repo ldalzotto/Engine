@@ -40,7 +40,7 @@ struct GraphicsBinder
     inline void begin_render_pass(GraphicsPass& p_graphics_pass, const Slice<v4f>& p_clear_values)
     {
 #if __DEBUG
-        assert_true(p_graphics_pass.attachement_layout.Capacity == p_clear_values.Size);
+        assert_true(p_graphics_pass.render_pass.debug_attachement_layout.Capacity == p_clear_values.Size);
 #endif
         this->binded_graphics_pass = &p_graphics_pass;
         _cmd_beginRenderPass2(p_clear_values);

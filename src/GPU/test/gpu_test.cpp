@@ -196,11 +196,16 @@ inline void gpu_renderpass_clear()
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
-    SliceN<RenderPassAttachment, 2> l_attachments = {
-        RenderPassAttachment::build(AttachmentType::COLOR,
-                             ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
-        RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
-    Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+    // Token<ImageGPU> l_color_image = l_gpu_context.buffer_memory.allocator.allocate_imagegpu();
+    // Token<TextureGPU> l_color_texture = l_gpu_context.graphics_allocator.texturegpu_allocate(l_gpu_context.buffer_memory.allocator.device, );
+
+    SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
+    SliceN<ImageFormat, 2> l_attachment_formats = {
+        ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+        ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
+    SliceN<RenderPassAttachment::ClearOp, 2> l_attachment_clear = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
+    Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
+        l_buffer_memory, l_graphics_allocator, l_attachment_types, l_attachment_formats, l_attachment_clear);
 
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
 
@@ -237,7 +242,7 @@ inline void gpu_renderpass_clear()
     rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
-    GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+    GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
 
     l_gpu_context.free();
 };
@@ -266,11 +271,13 @@ inline void gpu_draw()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
-            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
-        Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
+        SliceN<ImageFormat, 2> l_image_formats = {
+            ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+            ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
+        SliceN<RenderPassAttachment::ClearOp, 2> l_clears = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
+        Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
+            l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_attachment_types, l_image_formats, l_clears);
 
         struct vertex_position
         {
@@ -372,13 +379,13 @@ inline void gpu_draw()
 
         {
 
-            Span<color> l_colors = Span<color>::allocate(l_attachments.get(0).image_format.extent.x * l_attachments.get(0).image_format.extent.y);
+            Span<color> l_colors = Span<color>::allocate(l_image_formats.get(0).extent.x * l_image_formats.get(0).extent.y);
             for (loop(i, 0, l_colors.Capacity))
             {
                 l_colors.get(i) = l_multiplied_color_texture_color;
             }
-            l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout,
-                                                                    l_attachments.get(0).image_format, l_colors.slice.build_asint8());
+            l_first_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shaders.get(l_first_shader).layout, l_image_formats.get(0),
+                                                                    l_colors.slice.build_asint8());
             l_colors.free();
         }
 
@@ -479,7 +486,7 @@ inline void gpu_draw()
         l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 
         l_graphics_allocator.free_shader(l_first_shader);
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+        GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -513,15 +520,13 @@ inline void gpu_depth_compare_test()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {RenderPassAttachment::build(AttachmentType::COLOR,
-                                                                              ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                                          (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
-                                                                              RenderPassAttachment::ClearOp::CLEARED),
-                                                         RenderPassAttachment::build(AttachmentType::DEPTH,
-                                                                              ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                                          (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)),
-                                                                              RenderPassAttachment::ClearOp::CLEARED)};
-        Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
+        SliceN<ImageFormat, 2> l_image_formats = {
+            ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+            ImageFormat::build_depth_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT))};
+        SliceN<RenderPassAttachment::ClearOp, 2> l_clears = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
+        Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
+            l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_attachment_types, l_image_formats, l_clears);
 
         struct vertex_position
         {
@@ -709,7 +714,7 @@ inline void gpu_depth_compare_test()
         l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 
         l_graphics_allocator.free_shader(l_first_shader);
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+        GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -741,11 +746,13 @@ inline void gpu_draw_indexed()
 #endif
 
     {
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                    (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
-            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
-        Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
+        SliceN<ImageFormat, 2> l_image_formats = {
+            ImageFormat::build_color_2d(v3ui{4, 4, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+            ImageFormat::build_depth_2d(v3ui{4, 4, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
+        SliceN<RenderPassAttachment::ClearOp, 2> l_clears = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
+        Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
+            l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_attachment_types, l_image_formats, l_clears);
 
         struct vertex_position
         {
@@ -879,7 +886,7 @@ inline void gpu_draw_indexed()
         l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 
         l_graphics_allocator.free_shader(l_first_shader);
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+        GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
     }
 
 #ifdef RENDER_DOC_DEBUG
@@ -914,11 +921,13 @@ inline void gpu_texture_mapping()
     {
         v3ui l_render_extends = v3ui{16, 16, 1};
 
-        SliceN<RenderPassAttachment, 2> l_attachments = {
-            RenderPassAttachment::build(AttachmentType::COLOR, ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ |
-                                                                                                                       (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)), RenderPassAttachment::ClearOp::CLEARED),
-            RenderPassAttachment::build(AttachmentType::DEPTH, ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT), RenderPassAttachment::ClearOp::CLEARED)};
-        Token<GraphicsPass> l_graphics_pass = GraphicsAllocatorComposition::allocate_graphicspass_with_associatedimages<2>(l_buffer_memory, l_graphics_allocator, l_attachments);
+        SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
+        SliceN<ImageFormat, 2> l_image_formats = {
+            ImageFormat::build_color_2d(l_render_extends, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
+            ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
+        SliceN<RenderPassAttachment::ClearOp, 2> l_clears = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
+        Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
+            l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_attachment_types, l_image_formats, l_clears);
 
         struct vertex
         {
@@ -1015,7 +1024,7 @@ inline void gpu_texture_mapping()
         }
 
         Material l_material = Material::allocate_empty(l_graphics_allocator, 0);
-        l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_attachments.get(0).image_format,
+        l_material.add_and_allocate_texture_gpu_parameter(l_graphics_allocator, l_buffer_memory, l_graphics_allocator.heap.shader_layouts.get(l_first_shader_layout), l_image_formats.get(0),
                                                           l_texture_pixels.slice.build_asint8());
 
         color l_clear_color = color{0, 0, 0, 0};
@@ -1069,7 +1078,7 @@ inline void gpu_texture_mapping()
         l_graphics_allocator.free_shader_layout(l_first_shader_layout);
 
         l_graphics_allocator.free_shader(l_first_shader);
-        GraphicsAllocatorComposition::free_graphicspass_with_associatedimages(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+        GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
 
         l_texture_pixels.free();
     }
