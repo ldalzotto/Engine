@@ -5,13 +5,25 @@
 #include "imgui_internal.h"
 
 /*
-    // TODO -> forbid the usage of imgui static
-    // TODO -> move to the render module as an independant renderer
     // TODO -> write test with the default window
- */
+*/
+
+// This struct acts as an interface between imgui and the engine.
+// All coordinates are expressed in voewport space [-1.0f , 1.0f].
+struct ImguiLib
+{
+    v3ui render_target_dimensions;
+
+    inline void ShowDemoWindow()
+    {
+        ImGui::ShowDemoWindow(NULL);
+    };
+};
 
 struct ImguiRenderer
 {
+    ImGuiContext* imgui_ctx;
+
     Token<GraphicsPass> graphics_pass;
     Span<v4f> clear_values;
 
@@ -27,13 +39,13 @@ struct ImguiRenderer
         SliceN<v4f, 1> tmp_clear_values{v4f{0.0f, 0.0f, 0.0f, 1.0f}};
         l_return.clear_values = Span<v4f>::allocate_slice(slice_from_slicen(&tmp_clear_values));
 
-        return l_return;
-    };
+        l_return.imgui_ctx = ImGui::CreateContext();
 
-    inline void initialize_imgui(GPUContext& p_gpu_context)
-    {
+#if __MEMLEAK
+        push_ptr_to_tracked((int8*)l_return.imgui_ctx);
+#endif
+
         ImGui::SetCurrentContext(ImGui::CreateContext());
-        // ImGui::CreateContext();
         ImGui::StyleColorsClassic();
 
         ImGui_ImplVulkan_InitInfo l_imgui_info{};
@@ -48,10 +60,25 @@ struct ImguiRenderer
         l_imgui_info.ImageCount = 2;
         l_imgui_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-        int8 l_success = ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(this->graphics_pass).render_pass.render_pass);
+        int8 l_success = ImGui_ImplVulkan_Init(&l_imgui_info, p_gpu_context.graphics_allocator.heap.graphics_pass.get(l_return.graphics_pass).render_pass.render_pass);
 #if __DEBUG
         assert_true(l_success);
 #endif
+
+        return l_return;
+    };
+
+    inline void free(GPUContext& p_gpu_context)
+    {
+#if __MEMLEAK
+        remove_ptr_to_tracked((int8*)this->imgui_ctx);
+#endif
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui::DestroyContext(this->imgui_ctx);
+
+        GraphicsPassAllocationComposition::free_graphicspass(p_gpu_context.graphics_allocator, this->graphics_pass);
+        this->clear_values.free();
     };
 
     inline void buffer_step(BufferMemory& p_buffer_memory)
@@ -59,16 +86,7 @@ struct ImguiRenderer
         ImGui_ImplVulkan_CreateFontsTexture(p_buffer_memory.allocator.device.command_buffer.command_buffer);
     };
 
-    inline void free(GPUContext& p_gpu_context)
-    {
-        ImGui_ImplVulkan_Shutdown();
-        ImGui::DestroyContext();
-
-        GraphicsPassAllocationComposition::free_graphicspass(p_gpu_context.graphics_allocator, this->graphics_pass);
-        this->clear_values.free();
-    };
-
-    inline void graphics_step(GraphicsBinder& p_graphics_binder, const RenderTargetInternal_Color_Depth& p_render_target)
+    inline ImguiLib graphics_step_begin(const RenderTargetInternal_Color_Depth& p_render_target)
     {
         ImGuiIO& l_io = ImGui::GetIO();
         l_io.DisplaySize = ImVec2((float32)p_render_target.dimensions.x, (float32)p_render_target.dimensions.y);
@@ -76,9 +94,11 @@ struct ImguiRenderer
 
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow(NULL);
+        return ImguiLib{p_render_target.dimensions};
+    };
 
-        // ImGui::EndFrame();
+    inline void graphics_step_end(GraphicsBinder& p_graphics_binder)
+    {
         ImGui::Render();
         ImDrawData* l_draw_data = ImGui::GetDrawData();
 
