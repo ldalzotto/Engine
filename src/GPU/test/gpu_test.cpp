@@ -185,7 +185,6 @@ inline void gpu_image_allocation()
     Creates a GraphicsPass that only clear input attachments.
     We check that the attachment has well been cleared with the input color.
 */
-// TODO -> add a test for non clear
 inline void gpu_renderpass_clear()
 {
     GPUContext l_gpu_context = GPUContext::allocate(Slice<GPUExtension>::build_default());
@@ -195,17 +194,22 @@ inline void gpu_renderpass_clear()
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
+    Token<TextureGPU> l_color_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
+        l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
+        ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)));
+    Token<TextureGPU> l_depth_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
+                                                                                                        ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT));
 
     // Token<ImageGPU> l_color_image = l_gpu_context.buffer_memory.allocator.allocate_imagegpu();
     // Token<TextureGPU> l_color_texture = l_gpu_context.graphics_allocator.texturegpu_allocate(l_gpu_context.buffer_memory.allocator.device, );
 
-    SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
-    SliceN<ImageFormat, 2> l_attachment_formats = {
-        ImageFormat::build_color_2d(v3ui{32, 32, 1}, (ImageUsageFlag)((ImageUsageFlags)ImageUsageFlag::TRANSFER_READ | (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)),
-        ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
-    SliceN<RenderPassAttachment::ClearOp, 2> l_attachment_clear = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
-    Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
-        l_buffer_memory, l_graphics_allocator, l_attachment_types, l_attachment_formats, l_attachment_clear);
+    Token<GraphicsPass> l_graphics_pass;
+    {
+        GraphicsPassAllocationComposition::RenderPassAttachmentInput<2> l_renderpasss_allocation_input = {
+            SliceN<Token<TextureGPU>, 2>{l_color_texture, l_depth_texture}, SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
+            SliceN<RenderPassAttachment::ClearOp, 2>{RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED}};
+        l_graphics_pass = GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_renderpasss_allocation_input);
+    }
 
     color l_clear_color = color{0, uint8_max, 51, uint8_max};
 
@@ -238,11 +242,56 @@ inline void gpu_renderpass_clear()
 
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
 
+    // We instanciate another graphics pass that doesn't clear the buffer and specify a different clear color.
+    // The render target texture shoudl stay the same.
+
+#if 1
+    Token<GraphicsPass> l_not_cleared_graphics_pass;
+    {
+        GraphicsPassAllocationComposition::RenderPassAttachmentInput<2> l_renderpasss_allocation_input = {
+            SliceN<Token<TextureGPU>, 2>{l_color_texture, l_depth_texture}, SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
+            SliceN<RenderPassAttachment::ClearOp, 2>{RenderPassAttachment::ClearOp::NOT_CLEARED, RenderPassAttachment::ClearOp::CLEARED}};
+        l_not_cleared_graphics_pass = GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_renderpasss_allocation_input);
+    }
+
+    {
+        color l_not_cleared_color = color{uint8_max, 0, 51, uint8_max};
+        l_gpu_context.buffer_step_submit();
+
+        v4f l_clear_values[2];
+        l_clear_values[0] = v4f{0.0f, (float)l_not_cleared_color.y / (float)uint8_max, (float)l_not_cleared_color.z / (float)uint8_max, 1.0f};
+        l_clear_values[1] = v4f{0.0f, 0.0f, 0.0f, 0.0f};
+
+        GraphicsBinder l_graphics_binder = l_gpu_context.build_graphics_binder();
+        l_graphics_binder.begin_render_pass(l_graphics_allocator.heap.graphics_pass.get(l_not_cleared_graphics_pass), Slice<v4f>::build_memory_elementnb(l_clear_values, 2));
+        l_graphics_binder.end_render_pass();
+
+        l_gpu_context.submit_graphics_binder(l_graphics_binder);
+        l_gpu_context.wait_for_completion();
+    }
+
+    l_color_attachment_value = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost(l_buffer_memory, l_graphics_allocator, l_graphics_allocator.heap.graphics_pass.get(l_graphics_pass), 0);
+
+    l_gpu_context.buffer_step_force_execution();
+
+    l_color_attachment_value_pixels = slice_cast<color>(l_buffer_memory.allocator.host_buffers.get(l_color_attachment_value).get_mapped_memory());
+
+    // THe color of the color attachment is the same
+    for (loop(i, 0, l_color_attachment_value_pixels.Size))
+    {
+        assert_true(l_color_attachment_value_pixels.get(i).sRGB_to_linear() == l_clear_color);
+    }
+
+    BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
+    
+#endif
+
 #ifdef RENDER_DOC_DEBUG
     rdoc_api->EndFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
 
     GraphicsPassAllocationComposition::free_attachmentimages_then_attachmenttextures_then_graphicspass(l_buffer_memory, l_graphics_allocator, l_graphics_pass);
+    GraphicsPassAllocationComposition::free_graphicspass(l_graphics_allocator, l_not_cleared_graphics_pass);
 
     l_gpu_context.free();
 };
