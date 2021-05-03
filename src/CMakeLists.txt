@@ -24,6 +24,7 @@ target_link_libraries(Collision INTERFACE Math2)
 add_library(Render INTERFACE)
 target_include_directories(Render INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Render)
 target_link_libraries(Render INTERFACE GPU)
+target_link_libraries(Render INTERFACE IMGUI)
 
 add_library(AssetResource INTERFACE)
 target_include_directories(AssetResource INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetResource)

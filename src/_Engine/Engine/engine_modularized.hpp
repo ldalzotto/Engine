@@ -95,6 +95,15 @@ struct EngineAllocationFragments
         return Renderer_3D::allocate(p_gpu_context, l_rendertarget_allocate_info);
     };
 
+    inline static Renderer_3D_imgui d3renderer_imgui_allocate(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
+    {
+        RenderTargetInternal_Color_Depth::AllocateInfo l_rendertarget_allocate_info;
+        l_rendertarget_allocate_info.attachment_host_read = p_render_target_host_readable;
+        l_rendertarget_allocate_info.render_target_dimensions = v3ui{p_render_size.x, p_render_size.y, 1};
+        l_rendertarget_allocate_info.color_attachment_sample = 1;
+        return Renderer_3D_imgui::allocate(p_gpu_context, l_rendertarget_allocate_info);
+    };
+
     inline static GPUPresent present_allocate(GPUContext& p_gpu_context, RenderTargetInternal_Color_Depth& p_render_targets, const Token<Window> p_window, const v2ui& p_render_size,
                                               DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
@@ -178,6 +187,30 @@ struct EngineStepFragments
         GraphicsBinder l_graphics_binder = p_gpu_context.build_graphics_binder();
         p_renderer.graphics_step(l_graphics_binder);
         p_gpu_context.submit_graphics_binder(l_graphics_binder);
+        p_gpu_context.wait_for_completion();
+    };
+
+    // TODO -> the gui func must be removed
+    template<class GuiFunc>
+    inline static void d3renderer_imgui_draw_present(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer, ImguiRenderer& p_imgui_renderer,
+                                                     const RenderTargetInternal_Color_Depth& p_render_target, GPUPresent& p_present, const GuiFunc& p_gui_func)
+    {
+        BufferStepExecutionFlow::buffer_step_begin(p_gpu_context.buffer_memory);
+        p_renderer.buffer_step(p_gpu_context, p_core.clock.totaltime);
+        p_imgui_renderer.buffer_step(p_gpu_context.buffer_memory);
+        BufferStep::step(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events);
+        BufferStepExecutionFlow::buffer_step_submit(p_gpu_context);
+        GraphicsBinder l_graphics_binder = p_gpu_context.build_graphics_binder();
+        p_renderer.graphics_step(l_graphics_binder);
+
+        // TODO -> There is no obligation to call this just before the renderer. We can call it before the user defined engine loop function.
+        ImguiLib l_imgui_lib = p_imgui_renderer.graphics_step_begin(p_render_target);
+        p_gui_func(l_imgui_lib);
+        p_imgui_renderer.graphics_step(l_graphics_binder);
+
+        p_present.graphics_step(l_graphics_binder);
+        p_gpu_context.submit_graphics_binder_and_notity_end(l_graphics_binder);
+        p_present.present(p_gpu_context.graphics_end_semaphore);
         p_gpu_context.wait_for_completion();
     };
 };
