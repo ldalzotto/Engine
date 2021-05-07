@@ -9,7 +9,7 @@ The engine features :
 * Handmade 3D mathematics.
 * Manual manipulation of CPU and GPU memory.
 
-For an overview of the engine architecture see [architecture overview](https://ldalzotto.github.io/EngineCPPRewrite/#architecture_overview/).
+For an overview of the engine architecture see [architecture overview](https://ldalzotto.github.io/Engine/#architecture_overview/).
 
 # What this project can do ?
 
