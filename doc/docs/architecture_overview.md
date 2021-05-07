@@ -30,7 +30,7 @@ See ([scene](scene.md)).
 ## Resources
 
 Resources are objects loaded from the asset database. They act as an interface for allocating system objects by taking the asset data as input. Allocations input can either be provided directly by the user or by requesting the asset database. <br/>
-See ([resource](ressource.md)).
+See ([resource](resource.md)).
 
 ## Scene middleware
 

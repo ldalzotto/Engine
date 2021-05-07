@@ -3,7 +3,7 @@ The resource object doesn't have any logic, it simply holds references to the al
 
 # Architecture
 
-<svg-inline src="ressource_architecture.svg"></svg-inline>
+<svg-inline src="resource_architecture.svg"></svg-inline>
 
 Every resource is associated to an allocation unit. This allocation unit is in charge of handling all allocation and
 deallocation inputs. If the criteria is met, it stores the event in a buffer that is later consumed by the main loop.
@@ -32,7 +32,7 @@ If the resource input is provided inline, the caller provide the same data as if
 
 Allocation events are processed in the following order for a single allocation unit :
 
-<svg-inline src="ressource_allocation_order.svg""></svg-inline>
+<svg-inline src="resource_allocation_order.svg""></svg-inline>
 
 # Resource identification
 
@@ -49,11 +49,11 @@ linked internal system objects, so that the internal systems can blindly execute
 If resource A needs resource B to work, then the allocation order will be : (B) -> (A). And the deallocation order : (
 A) -> (B).
 
-<svg-inline src="ressource_dependencies.svg"></svg-inline>
+<svg-inline src="resource_dependencies.svg"></svg-inline>
 
 When the resource allocation input is provided inline, it is up to the caller to provide input for the requested
 resource and it's dependencies. <br/>
 When the resource allocation input is provided by the database, then an additional asset database request is performed
 to retrieve asset ID dependencies.
 
-<svg-inline src="ressource_allocation_database_dependencies.svg"></svg-inline>
+<svg-inline src="resource_allocation_database_dependencies.svg"></svg-inline>
