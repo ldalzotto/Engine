@@ -93,7 +93,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
     <p>A Resource is an instantiated object that load data from the asset database to allocate a system internal object.
 The resource object doesn't have any logic, it simply holds references to the allocated internal object.</p>
 <h1 id="architecture">Architecture</h1>
-<p><svg-inline src="ressource_architecture.svg"></svg-inline></p>
+<p><svg-inline src="resource_architecture.svg"></svg-inline></p>
 <p>Every resource is associated to an allocation unit. This allocation unit is in charge of handling all allocation and
 deallocation inputs. If the criteria is met, it stores the event in a buffer that is later consumed by the main loop.</p>
 <h1 id="allocationdeallocation">Allocation/Deallocation</h1>
@@ -112,7 +112,7 @@ the asset. <br/></p>
 <p><strong> Provided inline: </strong>
 If the resource input is provided inline, the caller provide the same data as if it were retrieved by the database.</p>
 <p>Allocation events are processed in the following order for a single allocation unit :</p>
-<p><svg-inline src="ressource_allocation_order.svg""></svg-inline></p>
+<p><svg-inline src="resource_allocation_order.svg""></svg-inline></p>
 <h1 id="resource-identification">Resource identification</h1>
 <p>All resources are associated to an internal ID. <br/>
 When the resource input is provided inline, the resource ID is given by the caller. <br/>
@@ -123,12 +123,12 @@ deallocation execution order. A goal of the allocation units is to handle the re
 linked internal system objects, so that the internal systems can blindly execute requests from the allocation unit.</p>
 <p>If resource A needs resource B to work, then the allocation order will be : (B) -&gt; (A). And the deallocation order : (
 A) -&gt; (B).</p>
-<p><svg-inline src="ressource_dependencies.svg"></svg-inline></p>
+<p><svg-inline src="resource_dependencies.svg"></svg-inline></p>
 <p>When the resource allocation input is provided inline, it is up to the caller to provide input for the requested
 resource and it's dependencies. <br/>
 When the resource allocation input is provided by the database, then an additional asset database request is performed
 to retrieve asset ID dependencies.</p>
-<p><svg-inline src="ressource_allocation_database_dependencies.svg"></svg-inline></p>
+<p><svg-inline src="resource_allocation_database_dependencies.svg"></svg-inline></p>
 
   <br>
     
