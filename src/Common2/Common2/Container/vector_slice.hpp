@@ -41,7 +41,7 @@ template <class ElementType> struct VectorSlice
         this->bound_check(p_index);
         this->bound_head_check(p_index);
 #endif
-        return this->Memory.Memory[p_index];
+        return this->Memory.Begin[p_index];
     };
 
     inline const ElementType& get(const uimax p_index) const
@@ -284,7 +284,7 @@ template <class ElementType> struct VectorSlice
     inline int8 insert_element_at_unchecked(const ElementType& p_element, const uimax p_index)
     {
         this->move_memory_down(p_index, 1);
-        this->Memory[p_index] = p_element;
+        this->Memory.Begin[p_index] = p_element;
         this->Size += 1;
 
         return 1;

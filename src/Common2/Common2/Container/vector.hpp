@@ -1,5 +1,6 @@
 #pragma once
 
+
 /*
     A Vector is a Span with an imaginary boundary (Size).
     Vector memory is continuous, there is no "hole" between items.
@@ -275,38 +276,19 @@ template <class ElementType> struct Vector
         }
     };
 
-    // TODO erase_if, erase_all_elements_that_matches_element, erase_all_elements_that_matches_any_of_element must move to a VectorAlgorithms to be able to be used by multiple
-    // ShadowVectors.
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
     {
-        for (loop_reverse(i, 0, this->Size))
-        {
-            if (p_predicate(this->get(i)))
-            {
-                this->erase_element_at_always(i);
-            }
-        }
+        VectorAlgorithm::erase_if(*this, p_predicate);
     };
 
     inline void erase_all_elements_that_matches_element(const ElementType& p_compared_element)
     {
-        this->erase_if([&](const ElementType& p_element) {
-            return p_element == p_compared_element;
-        });
+        VectorAlgorithm::erase_all_elements_that_matches_element(*this, p_compared_element);
     };
 
     inline void erase_all_elements_that_matches_any_of_element(const Slice<ElementType>& p_compared_elements)
     {
-        this->erase_if([&](const ElementType& p_element) {
-            for (loop(i, 0, p_compared_elements.Size))
-            {
-                if (p_element == p_compared_elements.get(i))
-                {
-                    return 1;
-                }
-            }
-            return 0;
-        });
+        VectorAlgorithm::erase_all_elements_that_matches_any_of_element(*this, p_compared_elements);
     };
 
   private:
@@ -370,25 +352,4 @@ template <class ElementType> struct Vector
 
         return 1;
     };
-
-#define ShadowVector(ElementType) ShadowVector_##ElementType
-
-#define sv_func_get_size() get_size()
-#define sv_func_empty() empty()
-#define sv_func_get(p_index) get(p_index)
-#define sv_func_erase_element_at(p_index) erase_element_at(p_index)
-#define sv_func_erase_element_at_always(p_index) erase_element_at_always(p_index)
-#define sv_func_push_back_element(p_element) push_back_element(p_element)
-#define sv_func_push_back_array(p_array) push_back_array(p_array)
-#define sv_func_pop_back() pop_back()
-#define sv_func_to_slice() to_slice()
-
-#define sv_c_get_size(p_shadow_vector) (p_shadow_vector).sv_func_get_size()
-#define sv_c_empty(p_shadow_vector) (p_shadow_vector).sv_func_empty()
-#define sv_c_get(p_shadow_vector, p_index) (p_shadow_vector).sv_func_get(p_index)
-#define sv_c_erase_element_at_always(p_shadow_vector, p_index) (p_shadow_vector).sv_func_erase_element_at_always(p_index)
-#define sv_c_push_back_element(p_shadow_vector, p_element) (p_shadow_vector).sv_func_push_back_element(p_element)
-#define sv_c_push_back_array(p_shadow_vector, p_array) (p_shadow_vector).sv_func_push_back_array(p_array)
-#define sv_c_pop_back(p_shadow_vector) (p_shadow_vector).pop_back()
-#define sv_c_to_slice(p_shadow_vector) (p_shadow_vector).sv_func_to_slice()
 };
