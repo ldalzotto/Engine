@@ -1357,7 +1357,10 @@ l_v3.next_field("z");
 assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.750000f);
 
 float32 l_delta = 0.0f;
-json_deser_iterate_array_start("nodes", &l_deserialized);
+JSONDeserializer l_array = JSONDeserializer::allocate_default();
+JSONDeserializer l_object = JSONDeserializer::allocate_default();
+l_deserialized.next_array("nodes", &l_array);
+while (l_array.next_array_object(&l_object))
 {
     json_deser_iterate_array_object.next_object("local_position", &l_v3);
     l_v3.next_field("x");
@@ -1368,7 +1371,8 @@ json_deser_iterate_array_start("nodes", &l_deserialized);
     assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
     l_delta += 1;
 }
-json_deser_iterate_array_end();
+l_array.free();
+l_object.free();
 
 l_v3.free();
 l_deserialized.free();
@@ -1597,38 +1601,52 @@ inline void serialize_json_test()
 
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
     l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(16.55f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(16.65f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(16.75f, l_float_buffer_slice));
     l_serializer.end_object();
+    l_serializer.coma();
 
     l_serializer.start_object(slice_int8_build_rawstr("local_position2"));
     l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(17.55f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(17.65f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(17.75f, l_float_buffer_slice));
     l_serializer.end_object();
+    l_serializer.coma();
 
     l_serializer.start_array(slice_int8_build_rawstr("nodes"));
 
     l_serializer.start_object();
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
     l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(10.55f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(10.65f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(10.75f, l_float_buffer_slice));
     l_serializer.end_object();
     l_serializer.end_object();
+    l_serializer.coma();
 
     l_serializer.start_object();
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
     l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(11.55f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(11.65f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(11.75f, l_float_buffer_slice));
     l_serializer.end_object();
     l_serializer.end_object();
+    l_serializer.coma();
 
     l_serializer.start_object();
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
     l_serializer.push_field(slice_int8_build_rawstr("x"), ToString::afloat32(12.55f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("y"), ToString::afloat32(12.65f, l_float_buffer_slice));
+    l_serializer.coma();
     l_serializer.push_field(slice_int8_build_rawstr("z"), ToString::afloat32(12.75f, l_float_buffer_slice));
     l_serializer.end_object();
     l_serializer.end_object();

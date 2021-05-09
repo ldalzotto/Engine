@@ -371,30 +371,7 @@ struct JSONDeserializer
     };
 };
 
-// TODO -> we want to have clean templated functions here instead of macros
-
-#define json_deser_iterate_array_start(JsonFieldName, DeserializerVariable)                                                                                                                            \
-    {                                                                                                                                                                                                  \
-        JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();                                                                              \
-        (DeserializerVariable)->next_array(JsonFieldName, &l_array);                                                                                                                                   \
-        while (l_array.next_array_object(&l_object))                                                                                                                                                   \
-        {
-
-#define json_deser_iterate_array_end()                                                                                                                                                                 \
-    }                                                                                                                                                                                                  \
-    l_array.free();                                                                                                                                                                                    \
-    l_object.free();                                                                                                                                                                                   \
-    }
-
 #define json_deser_iterate_array_object l_object
-
-#define json_deser_object_field(FieldNameValue, DeserializerVariable, OutValueTypedVariable, FromString)                                                                                               \
-    (DeserializerVariable)->next_field(FieldNameValue);                                                                                                                                                \
-    OutValueTypedVariable = FromString((DeserializerVariable)->get_currentfield().value);
-
-#define json_deser_object(ObjectFieldNameValue, DeserializerVariable, TmpDeserializerVariable, OutValueTypedVariable, FromSerializer)                                                                  \
-    (DeserializerVariable)->next_object(ObjectFieldNameValue, TmpDeserializerVariable);                                                                                                                \
-    OutValueTypedVariable = FromSerializer(TmpDeserializerVariable);
 
 #if __DEBUG
 
@@ -428,8 +405,11 @@ struct JSONSerializer
 
     inline void end()
     {
-        this->remove_last_coma();
         this->output.append(slice_int8_build_rawstr("}"));
+    };
+
+    inline void coma(){
+        this->output.append(slice_int8_build_rawstr(","));
     };
 
     inline void push_field(const Slice<int8>& p_name, const Slice<int8>& p_value)
@@ -438,7 +418,7 @@ struct JSONSerializer
         this->output.append(p_name);
         this->output.append(slice_int8_build_rawstr("\":\""));
         this->output.append(p_value);
-        this->output.append(slice_int8_build_rawstr("\","));
+        this->output.append(slice_int8_build_rawstr("\""));
     };
 
     inline void start_object(const Slice<int8>& p_name)
@@ -455,8 +435,7 @@ struct JSONSerializer
 
     inline void end_object()
     {
-        this->remove_last_coma();
-        this->output.append(slice_int8_build_rawstr("},"));
+        this->output.append(slice_int8_build_rawstr("}"));
     };
 
     inline void start_array(const Slice<int8>& p_name)
@@ -469,29 +448,18 @@ struct JSONSerializer
     inline void push_array_number(const Slice<int8>& p_number)
     {
         this->output.append(p_number);
-        this->output.append(slice_int8_build_rawstr(","));
     };
 
     inline void push_array_field(const Slice<int8>& p_number)
     {
         this->output.append(slice_int8_build_rawstr("\""));
         this->output.append(p_number);
-        this->output.append(slice_int8_build_rawstr("\","));
+        this->output.append(slice_int8_build_rawstr("\""));
     };
 
     inline void end_array()
     {
-        this->remove_last_coma();
-        this->output.append(slice_int8_build_rawstr("],"));
+        this->output.append(slice_int8_build_rawstr("]"));
     };
 
-  private:
-    // TODO -> this function must be removed. Instead, it is up to the consumer to decide what is the last field to serialize
-    void remove_last_coma()
-    {
-        if (this->output.get(this->output.get_length() - 1) == ',')
-        {
-            this->output.erase_array_at(this->output.get_length() - 1, 1);
-        }
-    };
 };

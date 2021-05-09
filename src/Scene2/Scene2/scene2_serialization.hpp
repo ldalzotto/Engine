@@ -1,6 +1,5 @@
 #pragma once
 
-
 struct SceneAssetComponent
 {
     component_t type;
@@ -150,18 +149,18 @@ struct SceneAsset
             NodeEntry l_node = p_scene->tree.node_tree.get(p_start_node_included);
             Token<transform> l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
             l_allocated_nodes.get(token_value(l_node.Node->index)) = l_allocated_node;
-            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>( l_node.Node->index));
+            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>(l_node.Node->index));
             for (loop(i, 0, l_components.Size))
             {
                 p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{this, l_allocated_node});
             }
         }
 
-        p_scene->tree.node_tree.traverse3_excluded(token_build_from<NTreeNode>( p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
+        p_scene->tree.node_tree.traverse3_excluded(token_build_from<NTreeNode>(p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
             Token<transform> l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(token_value(p_node.Node->parent)));
             l_allocated_nodes.get(token_value(p_node.Node->index)) = l_allocated_node;
 
-            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>( p_node.Node->index));
+            Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>(p_node.Node->index));
             for (loop(i, 0, l_components.Size))
             {
                 p_component_resrouce_deconstructor(l_components.get(i), AddComponentAssetToSceneAsset{this, l_allocated_node});
@@ -250,7 +249,10 @@ struct SceneJSON_TO_SceneAsset
 
         in_out_SceneAssetTree->add_node_without_parent(transform_const::ORIGIN);
 
-        json_deser_iterate_array_start(SceneSerialization_const::scene_nodes_field, &p_nodes);
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+        JSONDeserializer l_object = JSONDeserializer::allocate_default();
+        p_nodes.next_array(SceneSerialization_const::scene_nodes_field, &l_array);
+        while (l_array.next_array_object(&l_object))
         {
 
             transform l_transform;
@@ -292,7 +294,8 @@ struct SceneJSON_TO_SceneAsset
 
             l_object_iterator.free();
         }
-        json_deser_iterate_array_end();
+        l_array.free();
+        l_object.free();
 
         l_stack.free();
     };
@@ -300,24 +303,31 @@ struct SceneJSON_TO_SceneAsset
     inline static transform deserialize_node_transform(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator)
     {
         transform l_tranfsorm;
-        json_deser_object(SceneSerialization_const::node_local_position_field, &p_node, &p_tmp_iterator, l_tranfsorm.position, MathJSONDeserialization::_v3f);
-        json_deser_object(SceneSerialization_const::node_local_rotation_field, &p_node, &p_tmp_iterator, l_tranfsorm.rotation, MathJSONDeserialization::_quat);
-        json_deser_object(SceneSerialization_const::node_local_scale_field, &p_node, &p_tmp_iterator, l_tranfsorm.scale, MathJSONDeserialization::_v3f);
+        p_node.next_object(SceneSerialization_const::node_local_position_field, &p_tmp_iterator);
+        l_tranfsorm.position = MathJSONDeserialization::_v3f(&p_tmp_iterator);
+        p_node.next_object(SceneSerialization_const::node_local_rotation_field, &p_tmp_iterator);
+        l_tranfsorm.rotation = MathJSONDeserialization::_quat(&p_tmp_iterator);
+        p_node.next_object(SceneSerialization_const::node_local_scale_field, &p_tmp_iterator);
+        l_tranfsorm.scale = MathJSONDeserialization::_v3f(&p_tmp_iterator);
         return l_tranfsorm;
     };
 
     template <class ComponentDeserializationFunc>
     inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token<transform> p_node_token, SceneAsset* in_in_out_SceneAssetTreeout_scene)
     {
-        json_deser_iterate_array_start(SceneSerialization_const::node_components_field, &p_node);
+        p_node.next_array(SceneSerialization_const::node_components_field, &p_tmp_iterator);
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+
+        while (p_tmp_iterator.next_array_object(&l_array))
         {
-            json_deser_iterate_array_object.next_field(SceneSerialization_const::node_component_type_field);
-            Slice<int8> l_type = json_deser_iterate_array_object.get_currentfield().value;
+            l_array.next_field(SceneSerialization_const::node_component_type_field);
+            Slice<int8> l_type = l_array.get_currentfield().value;
             JSONDeserializer l_component_object_iterator = JSONDeserializer::allocate_default();
-            json_deser_iterate_array_object.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
+            l_array.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
             ComponentDeserializationFunc::push_json_to_sceneassettree(l_component_object_iterator, HashSlice(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
             l_component_object_iterator.free();
         }
-        json_deser_iterate_array_end();
+
+        l_array.free();
     };
 };
