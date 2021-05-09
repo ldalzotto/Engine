@@ -149,6 +149,7 @@ struct MeshResource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
+            // TODO -> we can predit the size
             Vector<int8> l_binary = Vector<int8>::allocate(0);
             BinarySerializer::slice(&l_binary, p_values.initial_vertices.build_asint8());
             BinarySerializer::slice(&l_binary, p_values.initial_indices.build_asint8());
@@ -205,7 +206,7 @@ struct ShaderResource
     inline static ShaderResource build_from_id(const hash_t p_id)
     {
         return ShaderResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(),
-                               Dependencies{token_build_default<ShaderModuleResource>(), token_build_default<ShaderModuleResource>()}};
+                              Dependencies{token_build_default<ShaderModuleResource>(), token_build_default<ShaderModuleResource>()}};
     };
 
     struct Asset
@@ -236,6 +237,7 @@ struct ShaderResource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
+            // TODO -> we can predit the size
             Vector<int8> l_binary = Vector<int8>::allocate(0);
             BinarySerializer::slice(&l_binary, p_values.specific_parameters.build_asint8());
             BinarySerializer::type(&l_binary, p_values.execution_order);
@@ -274,6 +276,7 @@ struct ShaderResource
 
             inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
             {
+                // TODO -> we can predit the size
                 BinarySerializer::type(in_out_buffer, this->vertex_module);
                 BinarySerializer::type(in_out_buffer, this->fragment_module);
             };
@@ -359,6 +362,7 @@ struct TextureResource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
+            // TODO -> we can predit the size
             Vector<int8> l_binary = Vector<int8>::allocate(0);
             BinarySerializer::type(&l_binary, p_value.size);
             BinarySerializer::type(&l_binary, p_value.channel_nb);
@@ -500,6 +504,7 @@ struct MaterialResource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
+            // TODO -> we can predit the size
             Vector<int8> l_binary = Vector<int8>::allocate(0);
             BinarySerializer::varying_slice(&l_binary, p_value.parameters.parameters);
             return build_from_binary(l_binary.Memory);
@@ -533,6 +538,7 @@ struct MaterialResource
 
             inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
             {
+                // TODO -> we can predit the size
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);
                 BinarySerializer::slice(in_out_buffer, this->textures.build_asint8());

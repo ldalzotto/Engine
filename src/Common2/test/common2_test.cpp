@@ -279,6 +279,15 @@ inline void vector_test()
     }
 };
 
+inline void vector_slice_test()
+{
+    // TODO -> write test :)
+    SliceN<int8, 10> l_arr = {};
+    VectorSlice<int8> l_vf;
+    l_vf = VectorSlice<int8>::build(slice_from_slicen(&l_arr), 0);
+    l_vf.push_back_element('p');
+};
+
 inline void hashmap_test()
 {
     struct Key
@@ -1674,13 +1683,27 @@ inline void serialize_deserialize_binary_test()
 
     BinarySerializer::slice(&l_binary_data, l_slice.build_asint8());
 
-    BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
-    Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
+    {
+        BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
+        Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
 
-    assert_true(l_slice.Size == l_slice_deserialized.Size);
-    assert_true(l_slice.compare(l_slice_deserialized));
+        assert_true(l_slice.Size == l_slice_deserialized.Size);
+        assert_true(l_slice.compare(l_slice_deserialized));
+    }
 
     l_binary_data.free();
+
+    SliceN<uimax, 10> l_buffer;
+    VectorSlice<int8> l_binary_data_slice = VectorSlice<int8>::build(slice_from_slicen(&l_buffer).build_asint8(), 0);
+    BinarySerializer::slice(&l_binary_data_slice, slice_from_slicen(&l_slice_arr).build_asint8());
+
+    {
+        BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data_slice.to_slice());
+        Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
+
+        assert_true(l_slice.Size == l_slice_deserialized.Size);
+        assert_true(l_slice.compare(l_slice_deserialized));
+    }
 };
 
 inline void file_test()
@@ -2332,6 +2355,7 @@ int main(int argc, int8** argv)
     slice_functional_algorithm_test();
     base64_test();
     vector_test();
+    vector_slice_test();
     hashmap_test();
     pool_test();
     varyingslice_test();

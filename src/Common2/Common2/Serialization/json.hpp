@@ -10,6 +10,7 @@ inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int
     return p_type;
 };
 
+// TODO -> the parameter must be a ShadowVector
 inline void sanitize_json(Vector<int8>& p_source)
 {
     SliceN<int8, 4> l_chars_removed = {' ', '\n', '\r', '\t'};
@@ -67,6 +68,7 @@ struct JSONDeserializer
         return allocate(p_source, p_source.slide_rv(l_start_index));
     };
 
+    // TODO -> the parameter must be a ShadowVector
     inline static JSONDeserializer sanitize_and_start(Vector<int8>& p_source)
     {
         JSONUtil::sanitize_json(p_source);
@@ -408,7 +410,8 @@ struct JSONSerializer
         this->output.append(slice_int8_build_rawstr("}"));
     };
 
-    inline void coma(){
+    inline void coma()
+    {
         this->output.append(slice_int8_build_rawstr(","));
     };
 
@@ -461,5 +464,4 @@ struct JSONSerializer
     {
         this->output.append(slice_int8_build_rawstr("]"));
     };
-
 };

@@ -258,7 +258,7 @@ template <class ElementType, uint32 Size_t> struct SliceN
 {
     ElementType Memory[Size_t];
 
-    inline uimax Size()
+    inline constexpr uimax Size()
     {
         return Size_t;
     };

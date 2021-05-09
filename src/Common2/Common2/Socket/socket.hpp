@@ -776,7 +776,7 @@ struct SocketTypedRequestWriter
 
     inline static Slice<int8> set(const int32 p_code, const Slice<int8>& p_element, const Slice<int8>& p_write_to_buffer)
     {
-        Slice<int8> l_target = p_write_to_buffer;
+        VectorSlice<int8> l_target = VectorSlice<int8>::build(p_write_to_buffer, 0);
         Slice<int8> l_return = p_write_to_buffer;
         l_return.Size = 0;
         BinarySerializer::type(&l_target, p_code);
@@ -808,7 +808,7 @@ struct SocketTypedHeaderRequestWriter
 {
     inline static Slice<int8> set(const int32 p_code, const Slice<int8>& p_header, const Slice<int8>& p_body, const Slice<int8>& p_writeto_buffer)
     {
-        Slice<int8> l_target = p_writeto_buffer;
+        VectorSlice<int8> l_target = VectorSlice<int8>::build(p_writeto_buffer, 0);
         Slice<int8> l_return = p_writeto_buffer;
         l_return.Size = 0;
         BinarySerializer::type(&l_target, p_code);
@@ -820,7 +820,7 @@ struct SocketTypedHeaderRequestWriter
 
     inline static Slice<int8> set_code_header(const int32 p_code, const Slice<int8>& p_header, const Slice<int8>& p_writeto_buffer)
     {
-        Slice<int8> l_target = p_writeto_buffer;
+        VectorSlice<int8> l_target = VectorSlice<int8>::build(p_writeto_buffer, 0);
         Slice<int8> l_return = p_writeto_buffer;
         l_return.Size = 0;
         BinarySerializer::type(&l_target, p_code);

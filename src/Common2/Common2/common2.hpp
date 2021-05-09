@@ -55,6 +55,7 @@
 #include "./Functional/slice_algorithm.hpp"
 
 #include "./Container/vector.hpp"
+#include "./Container/vector_slice.hpp"
 #include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
 #include "./Container/varying_slice.hpp"
