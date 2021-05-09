@@ -4,6 +4,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(EngineCPP VERSION 0.0.1)
 
+set (CMAKE_CXX_STANDARD 11)
 enable_language(CXX)
 
 

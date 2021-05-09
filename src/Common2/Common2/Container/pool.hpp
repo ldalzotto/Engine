@@ -1,38 +1,54 @@
 #pragma once
 
-// TODO -> finding a better way to do this ? Can we have an abstract ShadowPool structure with multiple types ?
-struct PoolGenerics
+#define ShadowPool(ElementType) ShadowPool_##ElementType
+
+#define ShadowPool_func_allocate_element_empty() alloc_element_empty()
+#define ShadowPool_func_get_free_blocks() get_free_blocs()
+#define ShadowPool_func__set_element(p_token, p_element) _set_element(p_token, p_element)
+#define ShadowPool_func__push_back_element(p_element) _push_back_element(p_element)
+#define ShadowPool_func__push_back_element_empty() _push_back_element_empty()
+
+#define ShadowPool_c_allocate_element_empty(p_shadow_pool) (p_shadow_pool).ShadowPool_func_allocate_element_empty()
+#define ShadowPool_c_get_free_blocks(p_shadow_pool) (p_shadow_pool).ShadowPool_func_get_free_blocks()
+#define ShadowPool_c__set_element(p_shadow_pool, p_token, p_element) (p_shadow_pool).ShadowPool_func__set_element(p_token, p_element)
+#define ShadowPool_c__push_back_element(p_shadow_pool, p_element) (p_shadow_pool).ShadowPool_func__push_back_element(p_element)
+#define ShadowPool_c__push_back_element_empty(p_shadow_pool) (p_shadow_pool).ShadowPool_func__push_back_element_empty()
+
+struct PoolAlgorithms
 {
-    template <class TokenOuterType, class PoolType, class Pool_PushBackElementEmpty_Func>
-    inline static TokenOuterType allocate_element_empty(PoolType& p_pool, Vector<TokenOuterType>& p_free_blocks, const Pool_PushBackElementEmpty_Func& p_pool_pushback_element_empty_func)
+
+    template <class ShadowPool(ElementType)> inline static auto allocate_element_empty_v2(ShadowPool(ElementType) & p_pool) -> Token<decltype(ShadowPool(ElementType)::CompileType::Element)>
     {
-        if (!p_free_blocks.empty())
+        using ElementType = decltype(ShadowPool(ElementType)::CompileType::Element);
+        using ShadowVector(FreeBlocks) = decltype(ShadowPool_c_get_free_blocks(p_pool));
+        ShadowVector(FreeBlocks) l_free_blocks = ShadowPool_c_get_free_blocks(p_pool);
+        if (!sv_c_empty(l_free_blocks))
         {
-            TokenOuterType l_availble_token = p_free_blocks.get(p_free_blocks.Size - 1);
-            p_free_blocks.pop_back();
+            Token<ElementType> l_availble_token = sv_c_get(l_free_blocks, l_free_blocks.Size - 1);
+            sv_c_pop_back(l_free_blocks);
             return l_availble_token;
         }
         else
         {
-            uimax p_index = p_pool_pushback_element_empty_func(p_pool);
-            return TokenOuterType{p_index};
+            uimax p_index = ShadowPool_c__push_back_element_empty(p_pool);
+            return Token<ElementType>{p_index};
         }
     };
 
-    template <class ElementType, class PoolType, class Pool_SetElement_Func, class Pool_PushBackelement_Func>
-    inline static Token<ElementType> allocate_element(PoolType& p_pool, const ElementType& p_element, Vector<Token<ElementType>>& p_free_blocks, const Pool_SetElement_Func& p_pool_set_element_func,
-                                                      const Pool_PushBackelement_Func& p_pool_pushback_element_func)
+    template <class ShadowPool(ElementType), class ElementType> inline static Token<ElementType> allocate_element_v2(ShadowPool(ElementType) & p_pool, const ElementType& p_element)
     {
-        if (!p_free_blocks.empty())
+        using ShadowVector(FreeBlocks) = decltype(ShadowPool_c_get_free_blocks(p_pool));
+        ShadowVector(FreeBlocks) l_free_blocks = ShadowPool_c_get_free_blocks(p_pool);
+        if (!sv_c_empty(l_free_blocks))
         {
-            Token<ElementType> l_availble_token = p_free_blocks.get(p_free_blocks.Size - 1);
-            p_free_blocks.pop_back();
-            p_pool_set_element_func(p_pool, l_availble_token, p_element);
+            Token<ElementType> l_availble_token = sv_c_get(l_free_blocks, sv_c_get_size(l_free_blocks) - 1);
+            sv_c_pop_back(l_free_blocks);
+            ShadowPool_c__set_element(p_pool, l_availble_token, p_element);
             return l_availble_token;
         }
         else
         {
-            uimax p_index = p_pool_pushback_element_func(p_pool, p_element);
+            uimax p_index = ShadowPool_c__push_back_element(p_pool, p_element);
             return Token<ElementType>{p_index};
         }
     };
@@ -48,6 +64,11 @@ template <class ElementType> struct Pool
 {
     Vector<ElementType> memory;
     Vector<Token<ElementType>> free_blocks;
+
+    struct CompileType
+    {
+        ElementType Element;
+    };
 
     inline static Pool<ElementType> build(const Vector<ElementType>& p_memory, const Vector<Token<ElementType>>& p_free_blocks)
     {
@@ -78,6 +99,11 @@ template <class ElementType> struct Pool
     inline uimax get_free_size()
     {
         return this->free_blocks.Size;
+    };
+
+    inline Vector<Token<ElementType>>& get_free_blocs()
+    {
+        return this->free_blocks;
     };
 
     inline ElementType* get_memory()
@@ -112,14 +138,36 @@ template <class ElementType> struct Pool
         return this->memory.get(token_value(p_token));
     };
 
+    struct ShadowPool
+    {
+        Pool<ElementType>& pool;
+    };
+
     inline Token<ElementType> alloc_element_empty()
     {
-        PoolGenerics::allocate_element_empty(*this, this->free_blocks, push_back_element_empty);
+        PoolAlgorithms::allocate_element_empty_v2(*this);
     }
 
     inline Token<ElementType> alloc_element(const ElementType& p_element)
     {
-        return PoolGenerics::allocate_element(*this, p_element, this->free_blocks, set_element, push_back_element);
+        return PoolAlgorithms::allocate_element_v2(*this, p_element);
+    };
+
+    inline void _set_element(const Token<ElementType> p_token, const ElementType& p_element)
+    {
+        this->memory.get(token_value(p_token)) = p_element;
+    };
+
+    inline uimax _push_back_element_empty()
+    {
+        this->memory.push_back_element_empty();
+        return this->memory.Size - 1;
+    };
+
+    inline uimax _push_back_element(const ElementType& p_element)
+    {
+        this->memory.push_back_element(p_element);
+        return this->memory.Size - 1;
     };
 
     inline void release_element(const Token<ElementType> p_token)
@@ -151,21 +199,4 @@ template <class ElementType> struct Pool
         }
 #endif
     };
-
-    inline static uimax push_back_element_empty(Pool<ElementType>& p_pool)
-    {
-        p_pool.memory.push_back_element_empty();
-        return p_pool.memory.Size - 1;
-    };
-
-    inline static uimax push_back_element(Pool<ElementType>& p_pool, const ElementType& p_element)
-    {
-        p_pool.memory.push_back_element(p_element);
-        return p_pool.memory.Size - 1;
-    };
-
-    inline static void set_element(Pool<ElementType>& p_pool, const Token<ElementType> p_token, const ElementType& p_element)
-    {
-        p_pool.memory.get(token_value(p_token)) = p_element;
-    }
 };

@@ -14,6 +14,11 @@ template <class ElementType> struct PoolOfVector
     VectorOfVector<ElementType> Memory;
     Vector<PoolOfVectorToken<ElementType>> FreeBlocks;
 
+    struct CompileType
+    {
+        Slice<ElementType> Element;
+    };
+
     inline static PoolOfVector<ElementType> allocate_default()
     {
         return PoolOfVector<ElementType>{VectorOfVector<ElementType>::allocate_default(), Vector<PoolOfVectorToken<ElementType>>::allocate(0)};
@@ -23,6 +28,11 @@ template <class ElementType> struct PoolOfVector
     {
         this->Memory.free();
         this->FreeBlocks.free();
+    };
+
+    inline Vector<PoolOfVectorToken<ElementType>>& get_free_blocs()
+    {
+        return this->FreeBlocks;
     };
 
     inline int8 is_token_free(const PoolOfVectorToken<ElementType> p_token)
@@ -44,12 +54,12 @@ template <class ElementType> struct PoolOfVector
 
     inline PoolOfVectorToken<ElementType> alloc_vector_with_values(const Slice<ElementType>& p_initial_elements)
     {
-        return PoolGenerics::allocate_element(*this, p_initial_elements, this->FreeBlocks, set_element, push_back_element);
+        return PoolAlgorithms::allocate_element_v2(*this, p_initial_elements);
     };
 
     inline PoolOfVectorToken<ElementType> alloc_vector()
     {
-        return PoolGenerics::allocate_element_empty(*this, this->FreeBlocks, push_back_element_empty);
+        return PoolAlgorithms::allocate_element_empty_v2(*this);
     };
 
     inline void release_vector(const PoolOfVectorToken<ElementType> p_token)
@@ -146,6 +156,23 @@ template <class ElementType> struct PoolOfVector
         return Element_ShadowVector::build(this, p_index);
     };
 
+    inline uimax _push_back_element_empty()
+    {
+        this->Memory.push_back();
+        return this->Memory.varying_vector.get_size() - 1;
+    };
+
+    inline uimax _push_back_element(const Slice<ElementType>& p_element)
+    {
+        this->Memory.push_back_element(p_element);
+        return this->Memory.varying_vector.get_size() - 1;
+    };
+
+    inline void _set_element(const Token<Slice<ElementType>> p_token, const Slice<ElementType>& p_element)
+    {
+        this->Memory.element_push_back_array(token_value(p_token), p_element);
+    };
+
   private:
     inline void token_not_free_check(const PoolOfVectorToken<ElementType> p_token)
     {
@@ -155,22 +182,5 @@ template <class ElementType> struct PoolOfVector
             abort();
         }
 #endif
-    };
-
-    inline static uimax push_back_element_empty(PoolOfVector<ElementType>& p_pool)
-    {
-        p_pool.Memory.push_back();
-        return p_pool.Memory.varying_vector.get_size() - 1;
-    };
-
-    inline static uimax push_back_element(PoolOfVector<ElementType>& p_pool, const Slice<ElementType>& p_element)
-    {
-        p_pool.Memory.push_back_element(p_element);
-        return p_pool.Memory.varying_vector.get_size() - 1;
-    };
-
-    inline static void set_element(PoolOfVector<ElementType>& p_pool, const Token<Slice<ElementType>> p_token, const Slice<ElementType>& p_element)
-    {
-        p_pool.Memory.element_push_back_array(token_value(p_token), p_element);
     };
 };
