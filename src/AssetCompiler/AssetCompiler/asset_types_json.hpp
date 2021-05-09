@@ -323,7 +323,7 @@ struct MaterialAssetJSON
         {
             Span<int8> l_shader_file_content = AssetCompiler_open_and_read_asset_file(p_root_path, p_json_deserializer->get_currentfield().value);
             Vector<int8> l_shader_file_content_vector = Vector<int8>{l_shader_file_content.Capacity, l_shader_file_content};
-            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::start(l_shader_file_content_vector);
+            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::sanitize_and_start(l_shader_file_content_vector);
             JSONDeserializer l_shader_asset_value_deserializer;
             AssetJSON::move_json_deserializer_to_value(&l_shader_asset_deserializer, &l_shader_asset_value_deserializer);
             ShaderAssetJSON::push_dependencies_from_json_to_buffer(&l_shader_asset_value_deserializer, &l_binary);

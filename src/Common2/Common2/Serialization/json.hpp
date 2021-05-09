@@ -10,12 +10,10 @@ inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int
     return p_type;
 };
 
-inline void remove_spaces(Vector<int8>& p_source)
+inline void sanitize_json(Vector<int8>& p_source)
 {
-    p_source.erase_all_elements_that_matches_element(' ');
-    p_source.erase_all_elements_that_matches_element('\n');
-    p_source.erase_all_elements_that_matches_element('\r');
-    p_source.erase_all_elements_that_matches_element('\t');
+    SliceN<int8, 4> l_chars_removed = {' ', '\n', '\r', '\t'};
+    p_source.erase_all_elements_that_matches_any_of_element(slice_from_slicen(&l_chars_removed));
 };
 }; // namespace JSONUtil
 
@@ -25,24 +23,41 @@ struct JSONDeserializer
     {
         Slice<int8> value;
         Slice<int8> whole_field;
+
+        inline static FieldNode build_default()
+        {
+            FieldNode l_return;
+            l_return.value = Slice<int8>::build_default();
+            l_return.whole_field = Slice<int8>::build_default();
+            return l_return;
+        };
     };
 
     Slice<int8> source;
 
     Slice<int8> parent_cursor;
-    Vector<FieldNode> stack_fields;
-    uimax current_field;
+    FieldNode current_field;
+    Slice<int8> deserialization_cursor;
 
     inline static JSONDeserializer allocate_default()
     {
-        return JSONDeserializer{Slice<int8>::build_default(), Slice<int8>::build_default(), Vector<FieldNode>::allocate(0), (uimax)-1};
+        JSONDeserializer l_return;
+        l_return.source = Slice<int8>::build_default();
+        l_return.parent_cursor = Slice<int8>::build_default();
+        l_return.current_field = FieldNode::build_default();
+        l_return.deserialization_cursor = Slice<int8>::build_default();
+        return l_return;
     };
 
     inline static JSONDeserializer allocate(const Slice<int8>& p_source, const Slice<int8>& p_parent_cursor)
     {
-        return JSONDeserializer{p_source, p_parent_cursor, Vector<FieldNode>::allocate(0), (uimax)-1};
+        JSONDeserializer l_return;
+        l_return.source = p_source;
+        l_return.parent_cursor = p_parent_cursor;
+        l_return.current_field = FieldNode::build_default();
+        l_return.deserialization_cursor = p_parent_cursor;
+        return l_return;
     };
-
 
     inline static JSONDeserializer start(const Slice<int8>& p_source)
     {
@@ -52,22 +67,19 @@ struct JSONDeserializer
         return allocate(p_source, p_source.slide_rv(l_start_index));
     };
 
-    // TODO -> we must remove this function, the sanitizing of input json is optional
-    inline static JSONDeserializer start(Vector<int8>& p_source)
+    inline static JSONDeserializer sanitize_and_start(Vector<int8>& p_source)
     {
-        JSONUtil::remove_spaces(p_source);
-        return start(p_source.to_slice());
+        JSONUtil::sanitize_json(p_source);
+        return JSONDeserializer::start(p_source.to_slice());
     };
 
     inline JSONDeserializer clone()
     {
-        return JSONDeserializer{this->source, this->parent_cursor, Vector<FieldNode>::allocate_elements(this->stack_fields.to_slice()), this->current_field};
+        return *this;
     };
 
-    inline void free()
-    {
-        this->stack_fields.free();
-        this->current_field = -1;
+    inline void free(){
+        //  this->stack_fields.free();
     };
 
     inline int8 next_field(const int8* p_field_name)
@@ -93,8 +105,7 @@ struct JSONDeserializer
                 l_field_node.value = l_next_field_value_with_quotes;
                 l_field_node.whole_field = l_next_field_whole_value;
 
-                this->stack_fields.push_back_element(l_field_node);
-                this->current_field = this->stack_fields.Size - 1;
+                this->push_field_to_stack(l_field_node);
                 l_field_found = 1;
             }
 
@@ -124,8 +135,7 @@ struct JSONDeserializer
                 l_field_node.value = l_next_field_value;
                 l_field_node.whole_field = l_next_field_whole_value;
 
-                this->stack_fields.push_back_element(l_field_node);
-                this->current_field = this->stack_fields.Size - 1;
+                this->push_field_to_stack(l_field_node);
                 l_field_found = 1;
             }
 
@@ -141,7 +151,7 @@ struct JSONDeserializer
 
         int8 l_field_found = 0;
 
-        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        Slice<int8> l_compared_slice = this->deserialization_cursor;
 
         String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
         l_field_name_json.append(slice_int8_build_rawstr("\""));
@@ -154,8 +164,7 @@ struct JSONDeserializer
             l_field_node.value.slide(1); // for '{'
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
-            this->stack_fields.push_back_element(l_field_node);
-            this->current_field = this->stack_fields.Size - 1;
+            this->push_field_to_stack(l_field_node);
             l_field_found = 1;
         }
 
@@ -170,7 +179,7 @@ struct JSONDeserializer
 
         int8 l_field_found = 0;
 
-        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        Slice<int8> l_compared_slice = this->deserialization_cursor;
 
         String l_field_name_json = String::allocate(strlen(p_field_name) + 2);
         l_field_name_json.append(slice_int8_build_rawstr("\""));
@@ -186,8 +195,7 @@ struct JSONDeserializer
 
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
-            this->stack_fields.push_back_element(l_field_node);
-            this->current_field = this->stack_fields.Size - 1;
+            this->push_field_to_stack(l_field_node);
             l_field_found = 1;
         }
 
@@ -203,7 +211,7 @@ struct JSONDeserializer
 
         int8 l_field_found = 0;
 
-        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        Slice<int8> l_compared_slice = this->deserialization_cursor;
 
         Slice<int8> l_field_name_json_slice = slice_int8_build_rawstr("{");
 
@@ -212,26 +220,23 @@ struct JSONDeserializer
         {
             *out_object_iterator = JSONDeserializer::allocate(this->source, l_field_node.value);
 
-            this->stack_fields.push_back_element(l_field_node);
-            this->current_field = this->stack_fields.Size - 1;
+            this->push_field_to_stack(l_field_node);
             l_field_found = 1;
         }
         return l_field_found;
     };
 
-    // TODO -> remove the out, we must query the current field instead
-    inline int8 next_array_plain_value(Slice<int8>* out_plain_value)
+    inline int8 next_array_string_value(Slice<int8>* out_plain_value)
     {
         int8 l_plain_value_found = 0;
 
-        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        Slice<int8> l_compared_slice = this->deserialization_cursor;
 
         FieldNode l_field_node;
-        if (find_next_json_array_plain_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
+        if (find_next_json_array_string_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
         {
             // We still push the plain value to the field stack so that the cursor is moving forward
-            this->stack_fields.push_back_element(l_field_node);
-            this->current_field = this->stack_fields.Size - 1;
+            this->push_field_to_stack(l_field_node);
 
             l_plain_value_found = 1;
         }
@@ -239,22 +244,21 @@ struct JSONDeserializer
         return l_plain_value_found;
     };
 
-    // TODO -> remove the out, we must query the current field instead
     inline int8 next_array_number_value(Slice<int8>* out_plain_value)
     {
-        Slice<int8> l_compared_slice = this->get_current_slice_cursor();
+        Slice<int8> l_compared_slice = this->deserialization_cursor;
         FieldNode l_field_node;
         if (find_next_json_array_number_value(l_compared_slice, &l_field_node.whole_field, out_plain_value))
         {
-            this->stack_fields.push_back_element(l_field_node);
-            this->current_field = this->stack_fields.Size - 1;
+            this->push_field_to_stack(l_field_node);
         }
         return 1;
     };
 
     inline FieldNode& get_currentfield()
     {
-        return this->stack_fields.get(this->current_field);
+        return this->current_field;
+        // return this->stack_fields.get(this->stack_fields.Size - 1);
     }
 
     inline static const Slice<int8> get_json_type(JSONDeserializer& p_deserializer)
@@ -264,24 +268,15 @@ struct JSONDeserializer
     };
 
   private:
-    inline FieldNode* get_current_field()
-    {
-        if (this->current_field != (uimax)-1)
-        {
-            return &this->stack_fields.get(this->current_field);
-        }
-        return NULL;
-    };
-
     inline int8 find_next_field_whole_value(Slice<int8>* out_field_whole_value)
     {
 
-        *out_field_whole_value = this->get_current_slice_cursor();
+        *out_field_whole_value = this->deserialization_cursor;
 
-        // If there is an unexpected int8acter, before the field name.
+        // If there is an unexpected characte, before the field name.
         // This can occur if the field is in the middle of a JSON Object.
         // This if statement is mendatory because if the field is at the first position of the JSON
-        // object, then there is no unexpected int8acter. So we handle both cases;
+        // object, then there is no unexpected character. So we handle both cases;
         if (out_field_whole_value->Size > 0 && (out_field_whole_value->get(0) == ',' || out_field_whole_value->get(0) == '{'))
         {
             out_field_whole_value->slide(1);
@@ -301,19 +296,10 @@ struct JSONDeserializer
         return 0;
     };
 
-    // TODO -> this is a total waste to recompute the cursor for every field, we must increment an internal counter for every add to the stack instead
-    inline Slice<int8> get_current_slice_cursor()
+    inline void push_field_to_stack(const FieldNode& p_field)
     {
-        Slice<int8> l_compared_slice = this->parent_cursor;
-        if (this->current_field != (uimax)-1)
-        {
-            for (uimax i = 0; i < this->stack_fields.Size; i++)
-            {
-                l_compared_slice.slide(this->stack_fields.get(i).whole_field.Size);
-                l_compared_slice.slide(1); // for getting after ","
-            }
-        }
-        return l_compared_slice;
+        this->current_field = p_field;
+        this->deserialization_cursor.slide(p_field.whole_field.Size + 1); // the +1 is for getting after ","
     };
 
     inline static int8 find_next_json_field(const Slice<int8>& p_source, const Slice<int8>& p_field_name, const int8 value_begin_delimiter, const int8 value_end_delimiter,
@@ -352,32 +338,32 @@ struct JSONDeserializer
         return 0;
     };
 
-    inline static int8 find_next_json_array_plain_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
+    inline static int8 find_next_json_array_string_value(const Slice<int8>& p_source, Slice<int8>* out_string_value_with_quotes, Slice<int8>* out_string_value)
     {
         if (p_source.compare(slice_int8_build_rawstr("\"")))
         {
-            *out_plain_value_whole = p_source;
+            *out_string_value_with_quotes = p_source;
             Slice<int8> l_plain_value_with_trail = p_source.slide_rv(1);
             uimax l_end_index;
             if (Slice_find(l_plain_value_with_trail, slice_int8_build_rawstr("\""), &l_end_index))
             {
-                *out_plain_value_only = Slice<int8>::build_begin_end(l_plain_value_with_trail.Begin, 0, l_end_index);
-                out_plain_value_whole->Size = l_end_index + 2; // To add the "
+                *out_string_value = Slice<int8>::build_begin_end(l_plain_value_with_trail.Begin, 0, l_end_index);
+                out_string_value_with_quotes->Size = l_end_index + 2; // To add the "
                 return 1;
             }
         }
         return 0;
     };
 
-    inline static int8 find_next_json_array_number_value(const Slice<int8>& p_source, Slice<int8>* out_plain_value_whole, Slice<int8>* out_plain_value_only)
+    inline static int8 find_next_json_array_number_value(const Slice<int8>& p_source, Slice<int8>* out_number_value_with_quotes, Slice<int8>* out_number_value)
     {
-        *out_plain_value_whole = p_source;
+        *out_number_value_with_quotes = p_source;
         for (loop(i, 0, p_source.Size))
         {
             if (p_source.get(i) == ',' || p_source.get(i) == ']')
             {
-                *out_plain_value_only = Slice<int8>::build_begin_end(p_source.Begin, 0, i);
-                out_plain_value_whole->Size = out_plain_value_only->Size;
+                *out_number_value = Slice<int8>::build_begin_end(p_source.Begin, 0, i);
+                out_number_value_with_quotes->Size = out_number_value->Size;
                 return 1;
             }
         }
@@ -493,7 +479,6 @@ struct JSONSerializer
         this->output.append(slice_int8_build_rawstr("\","));
     };
 
-
     inline void end_array()
     {
         this->remove_last_coma();
@@ -501,7 +486,6 @@ struct JSONSerializer
     };
 
   private:
-
     // TODO -> this function must be removed. Instead, it is up to the consumer to decide what is the last field to serialize
     void remove_last_coma()
     {

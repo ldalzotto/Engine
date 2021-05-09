@@ -293,6 +293,20 @@ template <class ElementType> struct Vector
         });
     };
 
+    inline void erase_all_elements_that_matches_any_of_element(const Slice<ElementType>& p_compared_elements)
+    {
+        this->erase_if([&](const ElementType& p_element) {
+            for (loop(i, 0, p_compared_elements.Size))
+            {
+                if (p_element == p_compared_elements.get(i))
+                {
+                    return 1;
+                }
+            }
+            return 0;
+        });
+    };
+
   private:
     inline void bound_check(const uimax p_index)
     {

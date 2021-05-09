@@ -118,7 +118,7 @@ struct AssetCompilerConfigurationJSON
                 JSONDeserializer l_assets_array = JSONDeserializer::allocate_default();
                 Slice<int8> l_assets_array_item;
                 l_common_item.next_array("assets", &l_assets_array);
-                while (l_assets_array.next_array_plain_value(&l_assets_array_item))
+                while (l_assets_array.next_array_string_value(&l_assets_array_item))
                 {
                     l_static_pass.assets_to_compile.push_back_element(String::allocate_elements(l_assets_array_item));
                 }
@@ -147,7 +147,7 @@ struct AssetCompilerConfigurationJSON
                 JSONDeserializer l_assets_array = JSONDeserializer::allocate_default();
                 Slice<int8> l_assets_array_item;
                 l_local_array_item.next_array("assets", &l_assets_array);
-                while (l_assets_array.next_array_plain_value(&l_assets_array_item))
+                while (l_assets_array.next_array_string_value(&l_assets_array_item))
                 {
                     l_local_config.assets_to_compile.push_back_element(String::allocate_elements(l_assets_array_item));
                 }
@@ -169,7 +169,7 @@ struct AssetCompilerConfigurationJSON
         l_file.free();
 
         Vector<int8> l_file_content_vector = Vector<int8>{l_file_content.Capacity, l_file_content};
-        JSONDeserializer l_deserializer = JSONDeserializer::start(l_file_content_vector);
+        JSONDeserializer l_deserializer = JSONDeserializer::sanitize_and_start(l_file_content_vector);
 
         AssetCompilerConfigurationJSON l_return = allocate_from_json(l_deserializer, p_pathes_absolute_prefix);
 
