@@ -1272,6 +1272,35 @@ inline void heap_memory_test()
     l_heap_memory.free();
 };
 
+template <class ShadowString(_)>
+inline void shadow_string_test(ShadowString(_) & p_string){
+
+    // append
+    {ShadowString_c_append(p_string, slice_int8_build_rawstr("ABC"));
+assert_true(ShadowString_c_get_length(p_string) == 3);
+assert_true(ShadowString_c_get(p_string, 0) == 'A');
+assert_true(ShadowString_c_get(p_string, 1) == 'B');
+assert_true(ShadowString_c_get(p_string, 2) == 'C');
+}
+
+{
+    ShadowString_c_insert_array_at(p_string, slice_int8_build_rawstr("DEA"), 2);
+    assert_true(ShadowString_c_get_length(p_string) == 6);
+    assert_true(ShadowString_c_get(p_string, 2) == 'D');
+    assert_true(ShadowString_c_get(p_string, 3) == 'E');
+    assert_true(ShadowString_c_get(p_string, 4) == 'A');
+}
+
+// to_slice
+{
+    Slice<int8> l_slice = ShadowString_c_to_slice(p_string);
+    assert_true(l_slice.Size == 6);
+    assert_true(l_slice.get(1) == 'B');
+    assert_true(l_slice.get(5) == 'C');
+}
+}
+;
+
 inline void string_test()
 {
     uimax l_initial_string_capacity = 20;
@@ -1281,30 +1310,7 @@ inline void string_test()
     assert_true(l_str.get_size() == 1);
     assert_true(l_str.get_length() == 0);
 
-    // append
-    {
-        l_str.append(slice_int8_build_rawstr("ABC"));
-        assert_true(l_str.get_length() == 3);
-        assert_true(l_str.get(0) == 'A');
-        assert_true(l_str.get(1) == 'B');
-        assert_true(l_str.get(2) == 'C');
-    }
-
-    {
-        l_str.insert_array_at(slice_int8_build_rawstr("DEA"), 2);
-        assert_true(l_str.get_length() == 6);
-        assert_true(l_str.get(2) == 'D');
-        assert_true(l_str.get(3) == 'E');
-        assert_true(l_str.get(4) == 'A');
-    }
-
-    // to_slice
-    {
-        Slice<int8> l_slice = l_str.to_slice();
-        assert_true(l_slice.Size == 6);
-        assert_true(l_slice.get(1) == 'B');
-        assert_true(l_slice.get(5) == 'C');
-    }
+    shadow_string_test(l_str);
 
     l_str.free();
 };
@@ -1604,7 +1610,8 @@ inline void serialize_json_test()
     int8 l_float_buffer[ToString::float32str_size];
     Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
 
-    JSONSerializer l_serializer = JSONSerializer::allocate_default();
+    String l_serializer_buffer = String::allocate(0);
+    JSONSerializer<String> l_serializer = JSONSerializer<String>::build(l_serializer_buffer);
     l_serializer.start();
 
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
@@ -1670,7 +1677,7 @@ inline void serialize_json_test()
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
 
     l_compared_json.free();
-    l_serializer.free();
+    l_serializer_buffer.free();
 };
 
 inline void serialize_deserialize_binary_test()

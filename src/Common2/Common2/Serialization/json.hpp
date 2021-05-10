@@ -383,83 +383,77 @@ struct JSONDeserializer
 
 #endif
 
-// TODO -> we don't want to use a string here because we may have preallocated a slice, instead, what we want is a generic algorithm that takes a ShadowString struct that expose the "append" method.
-struct JSONSerializer
+template <class ShadowString(_)> struct JSONSerializer
 {
-    String output;
+    ShadowString(_) & output;
 
-    inline static JSONSerializer allocate_default()
+    inline static JSONSerializer build(ShadowString(_) & p_shadow_string)
     {
-        return JSONSerializer{String::allocate(0)};
-    }
-
-    inline void free()
-    {
-        this->output.free();
+        return JSONSerializer{p_shadow_string};
     }
 
     inline void start()
     {
-        this->output.append(slice_int8_build_rawstr("{"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("{"));
     };
 
     inline void end()
     {
-        this->output.append(slice_int8_build_rawstr("}"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("}"));
     };
 
     inline void coma()
     {
-        this->output.append(slice_int8_build_rawstr(","));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr(","));
     };
 
     inline void push_field(const Slice<int8>& p_name, const Slice<int8>& p_value)
     {
-        this->output.append(slice_int8_build_rawstr("\""));
-        this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\":\""));
-        this->output.append(p_value);
-        this->output.append(slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, p_name);
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\":\""));
+        ShadowString_c_append(this->output, p_value);
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
     };
 
     inline void start_object(const Slice<int8>& p_name)
     {
-        this->output.append(slice_int8_build_rawstr("\""));
-        this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\":{"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, p_name);
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\":{"));
     };
 
     inline void start_object()
     {
-        this->output.append(slice_int8_build_rawstr("{"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("{"));
     };
 
     inline void end_object()
     {
-        this->output.append(slice_int8_build_rawstr("}"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("}"));
     };
 
     inline void start_array(const Slice<int8>& p_name)
     {
-        this->output.append(slice_int8_build_rawstr("\""));
-        this->output.append(p_name);
-        this->output.append(slice_int8_build_rawstr("\":["));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, p_name);
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\":["));
     };
 
     inline void push_array_number(const Slice<int8>& p_number)
     {
-        this->output.append(p_number);
+        ShadowString_c_append(this->output, p_number);
     };
 
     inline void push_array_field(const Slice<int8>& p_number)
     {
-        this->output.append(slice_int8_build_rawstr("\""));
-        this->output.append(p_number);
-        this->output.append(slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
+        ShadowString_c_append(this->output, p_number);
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("\""));
     };
 
     inline void end_array()
     {
-        this->output.append(slice_int8_build_rawstr("]"));
+        ShadowString_c_append(this->output, slice_int8_build_rawstr("]"));
     };
 };

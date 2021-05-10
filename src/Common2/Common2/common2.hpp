@@ -57,6 +57,7 @@
 #include "./Container/Shadow/shadow_vector.hpp"
 #include "./Container/Shadow/shadow_pool.hpp"
 #include "./Container/Shadow/shadow_heap.hpp"
+#include "./Container/Shadow/shadow_string.hpp"
 
 #include "./Container/vector.hpp"
 #include "./Container/vector_slice.hpp"
