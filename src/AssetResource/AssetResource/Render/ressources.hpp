@@ -140,6 +140,11 @@ struct MeshResource
                 l_value.initial_indices = slice_cast<uint32>(l_deserializer.slice());
                 return l_value;
             };
+
+            inline uimax binary_size() const
+            {
+                return BinarySize::slice(this->initial_vertices.build_asint8()) + BinarySize::slice(this->initial_indices.build_asint8());
+            };
         };
 
         inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
@@ -149,11 +154,11 @@ struct MeshResource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
-            // TODO -> we can predit the size
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             BinarySerializer::slice(&l_binary, p_values.initial_vertices.build_asint8());
             BinarySerializer::slice(&l_binary, p_values.initial_indices.build_asint8());
-            return build_from_binary(l_binary.Memory);
+            return build_from_binary(l_binary_buffer);
         };
     };
 
@@ -228,6 +233,11 @@ struct ShaderResource
                 l_value.shader_configuration = *l_deserializer.type<ShaderConfiguration>();
                 return l_value;
             };
+
+            inline uimax binary_size() const
+            {
+                return BinarySize::slice(this->specific_parameters.build_asint8()) + sizeof(this->execution_order) + sizeof(this->shader_configuration);
+            };
         };
 
         inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
@@ -237,12 +247,12 @@ struct ShaderResource
 
         inline static Asset allocate_from_values(const Value& p_values)
         {
-            // TODO -> we can predit the size
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             BinarySerializer::slice(&l_binary, p_values.specific_parameters.build_asint8());
             BinarySerializer::type(&l_binary, p_values.execution_order);
             BinarySerializer::type(&l_binary, p_values.shader_configuration);
-            return build_from_binary(l_binary.Memory);
+            return build_from_binary(l_binary_buffer);
         };
 
         inline void free()
@@ -274,9 +284,13 @@ struct ShaderResource
                 return build_from_binarydeserializer(l_deserializer);
             };
 
-            inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
+            inline uimax binary_size() const
             {
-                // TODO -> we can predit the size
+                return sizeof(this->vertex_module) + sizeof(this->fragment_module);
+            };
+
+            template <class ShadowVector(int8_Buffer)> inline void push_to_binary_buffer(ShadowVector(int8_Buffer) * in_out_buffer) const
+            {
                 BinarySerializer::type(in_out_buffer, this->vertex_module);
                 BinarySerializer::type(in_out_buffer, this->fragment_module);
             };
@@ -284,9 +298,10 @@ struct ShaderResource
 
         inline static AssetDependencies allocate_from_values(const Value& p_values)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             p_values.push_to_binary_buffer(&l_binary);
-            return AssetDependencies{l_binary.Memory};
+            return AssetDependencies{l_binary_buffer};
         };
 
         inline void free()
@@ -353,6 +368,11 @@ struct TextureResource
                 l_value.pixels = l_deserializer.slice();
                 return l_value;
             };
+
+            inline uimax binary_size() const
+            {
+                return sizeof(this->size) + sizeof(this->channel_nb) + BinarySize::slice(this->pixels);
+            };
         };
 
         inline static Asset build_from_binary(const Span<int8>& p_allocated_binary)
@@ -362,12 +382,12 @@ struct TextureResource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
-            // TODO -> we can predit the size
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             BinarySerializer::type(&l_binary, p_value.size);
             BinarySerializer::type(&l_binary, p_value.channel_nb);
             BinarySerializer::slice(&l_binary, p_value.pixels);
-            return build_from_binary(l_binary.Memory);
+            return build_from_binary(l_binary_buffer);
         };
 
         inline void free()
@@ -490,6 +510,11 @@ struct MaterialResource
                 l_value.parameters.parameters = l_deserializer.varying_slice();
                 return l_value;
             };
+
+            inline uimax binary_size() const
+            {
+                return BinarySize::varying_slice(this->parameters.parameters);
+            };
         };
 
         inline void free()
@@ -504,10 +529,10 @@ struct MaterialResource
 
         inline static Asset allocate_from_values(const Value& p_value)
         {
-            // TODO -> we can predit the size
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             BinarySerializer::varying_slice(&l_binary, p_value.parameters.parameters);
-            return build_from_binary(l_binary.Memory);
+            return build_from_binary(l_binary_buffer);
         };
     };
 
@@ -536,12 +561,16 @@ struct MaterialResource
                 return build_from_binarydeserializer(l_deserializer);
             };
 
-            inline void push_to_binary_buffer(Vector<int8>* in_out_buffer) const
+            template <class ShadowVector(int8_buffer)> inline void push_to_binary_buffer(ShadowVector(int8_buffer) * in_out_buffer) const
             {
-                // TODO -> we can predit the size
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);
                 BinarySerializer::slice(in_out_buffer, this->textures.build_asint8());
+            };
+
+            inline uimax binary_size() const
+            {
+                return sizeof(this->shader) + sizeof(this->shader_dependencies) + BinarySize::slice(this->textures.build_asint8());
             };
         };
 
@@ -557,9 +586,10 @@ struct MaterialResource
 
         inline static AssetDependencies allocate_from_values(const Value& p_value)
         {
-            Vector<int8> l_binary = Vector<int8>::allocate(0);
+            Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
+            VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
             p_value.push_to_binary_buffer(&l_binary);
-            return build_from_binary(l_binary.Memory);
+            return build_from_binary(l_binary_buffer);
         };
     };
 

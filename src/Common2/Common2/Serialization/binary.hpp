@@ -1,5 +1,17 @@
 #pragma once
 
+namespace BinarySize
+{
+inline static uimax slice(const Slice<int8>& p_slice)
+{
+    return sizeof(p_slice.Size) + p_slice.Size;
+};
+inline static uimax varying_slice(const VaryingSlice& p_slice)
+{
+    return BinarySize::slice(p_slice.memory) + BinarySize::slice(p_slice.chunks.build_asint8());
+};
+}; // namespace BinarySize
+
 namespace BinarySerializer
 {
 template <class ShadowVector(int8), class ElementType> inline static void type(ShadowVector(int8) * in_out_serialization_target, const ElementType& p_value)
@@ -25,7 +37,7 @@ template <class ShadowVector(int8)> inline static void varying_slice(ShadowVecto
     BinarySerializer::slice(in_out_serialization_target, p_varying_slice.chunks.build_asint8());
 };
 
-}; // namespace BinarySerializer_v2
+}; // namespace BinarySerializer
 
 struct BinaryDeserializer
 {
