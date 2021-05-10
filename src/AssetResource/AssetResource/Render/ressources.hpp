@@ -291,6 +291,8 @@ struct ShaderResource
 
             template <class ShadowVector(int8_Buffer)> inline void push_to_binary_buffer(ShadowVector(int8_Buffer) * in_out_buffer) const
             {
+                sv_static_assert_element_type(ShadowVector(int8_Buffer), int8);
+
                 BinarySerializer::type(in_out_buffer, this->vertex_module);
                 BinarySerializer::type(in_out_buffer, this->fragment_module);
             };
@@ -563,6 +565,8 @@ struct MaterialResource
 
             template <class ShadowVector(int8_buffer)> inline void push_to_binary_buffer(ShadowVector(int8_buffer) * in_out_buffer) const
             {
+                sv_static_assert_element_type(ShadowVector(int8_buffer), int8);
+
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);
                 BinarySerializer::slice(in_out_buffer, this->textures.build_asint8());

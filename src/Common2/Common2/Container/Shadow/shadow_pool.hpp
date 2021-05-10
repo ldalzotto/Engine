@@ -3,6 +3,9 @@
 
 #define ShadowPool(ElementType) ShadowPool_##ElementType
 
+#define ShadowPool_static_assert_element_type(p_shadow_pool_type, p_compared_type)                                                                                                                                \
+    static_assert(sizeof(decltype(p_shadow_pool_type::CompileType::Element)) == sizeof(p_compared_type), "ShadowPool type assertion")
+
 #define ShadowPool_func_allocate_element_empty() alloc_element_empty()
 #define ShadowPool_func_get_free_blocks() get_free_blocs()
 #define ShadowPool_func__set_element(p_token, p_element) _set_element(p_token, p_element)
@@ -38,6 +41,8 @@ struct PoolAlgorithms
 
     template <class ShadowPool(ElementType), class ElementType> inline static Token<ElementType> allocate_element_v2(ShadowPool(ElementType) & p_pool, const ElementType& p_element)
     {
+        ShadowPool_static_assert_element_type(ShadowPool(ElementType), ElementType);
+
         using ShadowVector(FreeBlocks) = decltype(ShadowPool_c_get_free_blocks(p_pool));
         ShadowVector(FreeBlocks) l_free_blocks = ShadowPool_c_get_free_blocks(p_pool);
         if (!sv_c_empty(l_free_blocks))

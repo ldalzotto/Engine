@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
     A Vector is a Span with an imaginary boundary (Size).
     Vector memory is continuous, there is no "hole" between items.
@@ -12,6 +11,11 @@ template <class ElementType> struct Vector
 {
     uimax Size;
     Span<ElementType> Memory;
+
+    struct CompileType
+    {
+        ElementType Element;
+    };
 
     inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
     {

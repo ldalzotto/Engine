@@ -2,6 +2,9 @@
 
 #define ShadowVector(ElementType) ShadowVector_##ElementType
 
+#define sv_static_assert_element_type(p_shadow_vector_type, p_compared_type)                                                                                                                                \
+    static_assert(sizeof(decltype(p_shadow_vector_type::CompileType::Element)) == sizeof(p_compared_type), "ShadowVector type assertion")
+
 #define sv_func_get_size() get_size()
 #define sv_func_empty() empty()
 #define sv_func_clear() clear()
@@ -52,6 +55,8 @@ struct VectorAlgorithm
     template <class ShadowVector(ElementType), class ElementType>
     inline static void erase_all_elements_that_matches_element(ShadowVector(ElementType) & p_vector, const ElementType& p_compared_element)
     {
+        sv_static_assert_element_type(ShadowVector(ElementType), ElementType);
+
         VectorAlgorithm::erase_if(p_vector, [&](const ElementType& p_element) {
             return p_element == p_compared_element;
         });
@@ -60,6 +65,8 @@ struct VectorAlgorithm
     template <class ShadowVector(ElementType), class ElementType>
     inline static void erase_all_elements_that_matches_any_of_element(ShadowVector(ElementType) & p_vector, const Slice<ElementType>& p_compared_elements)
     {
+        sv_static_assert_element_type(ShadowVector(ElementType), ElementType);
+
         VectorAlgorithm::erase_if(p_vector, [&](const ElementType& p_element) {
             for (loop(i, 0, p_compared_elements.Size))
             {

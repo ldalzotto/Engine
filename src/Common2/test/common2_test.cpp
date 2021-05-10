@@ -120,6 +120,8 @@ inline void base64_test()
 template <class ShadowVector(uimax)>
 inline void shadow_vector_test(ShadowVector(uimax) & p_vector){
 
+    sv_static_assert_element_type(ShadowVector(uimax), uimax);
+
     // vector_push_back_array
     {uimax l_old_size = sv_c_get_size(p_vector);
 uimax l_elements[5] = {0, 1, 2, 3, 4};
@@ -1686,7 +1688,6 @@ inline void serialize_deserialize_binary_test()
     Slice<uimax> l_slice = slice_from_slicen(&l_slice_arr);
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
-
     BinarySerializer::slice(&l_binary_data, l_slice.build_asint8());
 
     {
