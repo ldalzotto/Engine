@@ -37,14 +37,14 @@ struct SceneAsset
     inline Token<transform> add_node_without_parent(const transform& p_node_local_transform)
     {
         Token<transform> l_node = this->nodes.push_root_value(p_node_local_transform);
-        this->node_to_components.push_back();
+        this->node_to_components.push_back_element_empty();
         return l_node;
     };
 
     inline Token<transform> add_node(const transform& p_node_local_transform, const Token<transform> p_parent)
     {
         Token<transform> l_node = this->nodes.push_value(p_node_local_transform, p_parent);
-        this->node_to_components.push_back();
+        this->node_to_components.push_back_element_empty();
         return l_node;
     };
 

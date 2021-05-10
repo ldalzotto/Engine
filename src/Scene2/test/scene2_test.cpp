@@ -76,10 +76,10 @@ inline void add_remove_setparent_node()
         assert_true(l_scene.scene_events.orphan_nodes_to_be_destroyed.Size == 1);
 
         // the link between node and components is only broken after the step call
-        assert_true(!l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_1)));
-        assert_true(!l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_2)));
-        assert_true(!l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_3)));
-        assert_true(!l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_5)));
+        assert_true(!l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_1)));
+        assert_true(!l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_2)));
+        assert_true(!l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_3)));
+        assert_true(!l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_5)));
 
         l_scene.step();
         assert_true(l_scene.scene_events.orphan_nodes_to_be_destroyed.Size == 0);
@@ -88,10 +88,10 @@ inline void add_remove_setparent_node()
         assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_3));
         assert_true(l_scene.tree.node_tree.Memory.is_element_free(l_node_5));
 
-        assert_true(l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_1)));
-        assert_true(l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_2)));
-        assert_true(l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_3)));
-        assert_true(l_scene.node_to_components.is_token_free(token_build_from<Slice<NodeComponent>>(l_node_5)));
+        assert_true(l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_1)));
+        assert_true(l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_2)));
+        assert_true(l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_3)));
+        assert_true(l_scene.node_to_components.is_element_free(token_build_from<Slice<NodeComponent>>(l_node_5)));
     }
 
     l_scene.remove_node(l_scene.get_node(l_node_4));

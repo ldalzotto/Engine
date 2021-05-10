@@ -66,7 +66,12 @@ template <class ElementType> struct VectorOfVector
         this->varying_vector.free();
     };
 
-    inline void push_back()
+    inline uimax get_size()
+    {
+        return this->varying_vector.get_size();
+    };
+
+    inline void push_back_element_empty()
     {
         VectorOfVector_VectorHeader l_header = VectorOfVector_VectorHeader::build_default();
         Slice<int8> l_header_slice = Slice<VectorOfVector_VectorHeader>::build_asint8_memory_singleelement(&l_header);
@@ -100,6 +105,12 @@ template <class ElementType> struct VectorOfVector
         Slice<int8> l_element = this->varying_vector.get_element(p_index);
         VectorOfVector_VectorHeader* l_header = cast(VectorOfVector_VectorHeader*, l_element.Begin);
         return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin), l_header->Size);
+    };
+
+    inline void set(const uimax p_index, const Slice<ElementType>& p_element)
+    {
+        this->element_clear(p_index);
+        this->element_push_back_array(p_index, p_element);
     };
 
     inline VectorOfVector_VectorHeader* get_vectorheader(const uimax p_index)

@@ -362,7 +362,7 @@ inline void pool_test()
     Pool<uimax> l_pool_sizet = Pool<uimax>::allocate(10);
 
     {
-        assert_true(l_pool_sizet.get_memory() != NULL);
+        assert_true(l_pool_sizet.get_memory_raw() != NULL);
         assert_true(l_pool_sizet.get_capacity() == 10);
         assert_true(l_pool_sizet.get_size() == 0);
     }
@@ -409,7 +409,7 @@ inline void pool_test()
         l_pool_sizet.free();
         assert_true(l_pool_sizet.get_size() == 0);
         assert_true(l_pool_sizet.get_capacity() == 0);
-        assert_true(l_pool_sizet.get_memory() == 0);
+        assert_true(l_pool_sizet.get_memory_raw() == 0);
     }
 };
 
@@ -608,13 +608,13 @@ inline void vectorofvector_test()
             l_sizets.slice.get(i) = i;
         }
 
-        l_vectorofvector_uimax.push_back();
+        l_vectorofvector_uimax.push_back_element_empty();
 
         l_vectorofvector_uimax.push_back_element(l_sizets.slice);
         uimax l_requested_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
         Slice<uimax> l_element = l_vectorofvector_uimax.get(l_requested_index);
 
-        l_vectorofvector_uimax.push_back();
+        l_vectorofvector_uimax.push_back_element_empty();
 
         assert_true(l_vectorofvector_uimax.get_vectorheader(l_requested_index)->Capacity == l_sizets.Capacity);
         for (loop(i, 0, l_sizets.Capacity))
@@ -630,7 +630,7 @@ inline void vectorofvector_test()
         uimax l_index;
         for (loop(i, 0, 2))
         {
-            l_vectorofvector_uimax.push_back();
+            l_vectorofvector_uimax.push_back_element_empty();
 
             uimax l_element = 30;
             l_index = l_vectorofvector_uimax.varying_vector.get_size() - 2;
@@ -749,7 +749,7 @@ inline void vectorofvector_test()
         l_vectorofvector_uimax.free();
         l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
 
-        l_vectorofvector_uimax.push_back();
+        l_vectorofvector_uimax.push_back_element_empty();
         l_vectorofvector_uimax.element_push_back_element(0, 10);
 
         l_vectorofvector_uimax.insert_empty_at(0);

@@ -101,6 +101,11 @@ template <class ElementType> struct Vector
         return ((Vector<ElementType>*)this)->get(p_index);
     };
 
+    inline void set(const uimax p_index, const ElementType& p_element_type)
+    {
+        this->get(p_index) = p_element_type;
+    };
+
     inline void clear()
     {
         this->Size = 0;

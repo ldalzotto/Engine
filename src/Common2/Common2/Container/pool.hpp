@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
     A Pool is a non continous Vector where elements are acessed via Tokens.
     Generated Tokens are unique from it's source Pool.
@@ -53,7 +52,12 @@ template <class ElementType> struct Pool
         return this->free_blocks;
     };
 
-    inline ElementType* get_memory()
+    inline Vector<ElementType>& get_memory()
+    {
+        return this->memory;
+    };
+
+    inline ElementType* get_memory_raw()
     {
         return this->memory.Memory.Memory;
     };
@@ -65,15 +69,7 @@ template <class ElementType> struct Pool
 
     inline int8 is_element_free(const Token<ElementType> p_token)
     {
-        for (vector_loop(&this->free_blocks, i))
-        {
-            if (token_value(this->free_blocks.get(i)) == token_value(p_token))
-            {
-                return 1;
-            };
-        };
-
-        return 0;
+        return PoolAlgorithms::is_element_free(*this, p_token);
     };
 
     inline ElementType& get(const Token<ElementType> p_token)
@@ -98,23 +94,6 @@ template <class ElementType> struct Pool
     inline Token<ElementType> alloc_element(const ElementType& p_element)
     {
         return PoolAlgorithms::allocate_element_v2(*this, p_element);
-    };
-
-    inline void _set_element(const Token<ElementType> p_token, const ElementType& p_element)
-    {
-        this->memory.get(token_value(p_token)) = p_element;
-    };
-
-    inline uimax _push_back_element_empty()
-    {
-        this->memory.push_back_element_empty();
-        return this->memory.Size - 1;
-    };
-
-    inline uimax _push_back_element(const ElementType& p_element)
-    {
-        this->memory.push_back_element(p_element);
-        return this->memory.Size - 1;
     };
 
     inline void release_element(const Token<ElementType> p_token)

@@ -35,16 +35,14 @@ template <class ElementType> struct PoolOfVector
         return this->FreeBlocks;
     };
 
-    inline int8 is_token_free(const PoolOfVectorToken<ElementType> p_token)
+    inline int8 is_element_free(const PoolOfVectorToken<ElementType> p_token)
     {
-        for (vector_loop(&this->FreeBlocks, i))
-        {
-            if (token_equals(this->FreeBlocks.get(i), p_token))
-            {
-                return 1;
-            }
-        }
-        return 0;
+        return PoolAlgorithms::is_element_free(*this, p_token);
+    };
+
+    inline VectorOfVector<ElementType>& get_memory()
+    {
+        return this->Memory;
     };
 
     inline int8 has_allocated_elements()
@@ -156,28 +154,11 @@ template <class ElementType> struct PoolOfVector
         return Element_ShadowVector::build(this, p_index);
     };
 
-    inline uimax _push_back_element_empty()
-    {
-        this->Memory.push_back();
-        return this->Memory.varying_vector.get_size() - 1;
-    };
-
-    inline uimax _push_back_element(const Slice<ElementType>& p_element)
-    {
-        this->Memory.push_back_element(p_element);
-        return this->Memory.varying_vector.get_size() - 1;
-    };
-
-    inline void _set_element(const Token<Slice<ElementType>> p_token, const Slice<ElementType>& p_element)
-    {
-        this->Memory.element_push_back_array(token_value(p_token), p_element);
-    };
-
   private:
     inline void token_not_free_check(const PoolOfVectorToken<ElementType> p_token)
     {
 #if __DEBUG
-        if (this->is_token_free(p_token))
+        if (this->is_element_free(p_token))
         {
             abort();
         }

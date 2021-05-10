@@ -198,7 +198,7 @@ struct AssetResource_TestAssertion
         }
         else
         {
-            assert_true(p_ctx.render_resource_allocator.material_unit.material_dynamic_dependencies.is_token_free(l_material.dependencies.dynamic_dependencies));
+            assert_true(p_ctx.render_resource_allocator.material_unit.material_dynamic_dependencies.is_element_free(l_material.dependencies.dynamic_dependencies));
         }
 
         ShaderResource& l_shader = p_ctx.render_resource_allocator.shader_unit.shaders.pool.get(l_material.dependencies.shader);
