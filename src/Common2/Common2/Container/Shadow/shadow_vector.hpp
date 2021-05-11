@@ -2,8 +2,10 @@
 
 #define ShadowVector(ElementType) ShadowVector_##ElementType
 
-#define sv_static_assert_element_type(p_shadow_vector_type, p_compared_type)                                                                                                                                \
-    static_assert(sizeof(decltype(p_shadow_vector_type::CompileType::Element)) == sizeof(p_compared_type), "ShadowVector type assertion")
+#define sv_static_assert_element_type(p_shadow_vector_type, p_compared_type)                                                                                                                           \
+    static_assert(sizeof(typename p_shadow_vector_type::_ElementValue) == sizeof(p_compared_type), "ShadowVector type assertion")
+
+// TODO -> use templates instead of macros
 
 #define sv_func_get_size() get_size()
 #define sv_func_empty() empty()
@@ -44,42 +46,68 @@
 
 struct VectorAlgorithm
 {
-    template <class ShadowVector(ElementType), class Predicate_t> inline static void erase_if(ShadowVector(ElementType) & p_vector, const Predicate_t& p_predicate)
+    // TODO -> move with other shadow definitions
+    template <class Container> inline static int8 empty(Container& p_container)
     {
-        uimax l_size = sv_c_get_size(p_vector);
-        for (loop_reverse(i, 0, l_size))
+        return p_container.empty();
+    };
+
+    template <class Container> inline static typename Container::_ElementValue pop_back_return(Container& p_container)
+    {
+        typename Container::_ElementValue l_return_value = p_container.get(p_container.get_size() - 1);
+        p_container.pop_back();
+        return l_return_value;
+    };
+
+    template <class Container, class ForeachFunc> inline static void iterator(Container& p_container, const ForeachFunc& p_foreach_func)
+    {
+        typename Container::_SizeType l_size = p_container.get_size();
+        for (loop(i, 0, l_size))
         {
-            if (p_predicate(sv_c_get(p_vector, i)))
-            {
-                sv_c_erase_element_at_always(p_vector, i);
-            }
+            p_foreach_func(p_container.get(i));
         }
     };
 
-    template <class ShadowVector(ElementType), class ElementType>
-    inline static void erase_all_elements_that_matches_element(ShadowVector(ElementType) & p_vector, const ElementType& p_compared_element)
+    template <class Container, class ForeachFunc> inline static void backward_iterator_index(Container& p_container, const ForeachFunc& p_foreach_func)
     {
-        sv_static_assert_element_type(ShadowVector(ElementType), ElementType);
+        typename Container::_SizeType l_size = p_container.get_size();
+        for (loop_reverse(i, 0, l_size))
+        {
+            p_foreach_func(i, p_container.get(i));
+        }
+    };
 
-        VectorAlgorithm::erase_if(p_vector, [&](const ElementType& p_element) {
-            return p_element == p_compared_element;
+    template <class Container, class Predicate_t> inline static void erase_if(Container& p_container, const Predicate_t& p_predicate_func)
+    {
+        backward_iterator_index(p_container, [&](const uimax i, const typename Container::_ElementValue& p_element) {
+            if (p_predicate_func(p_element))
+            {
+                p_container.erase_element_at_always(i);
+            }
         });
     };
 
-    template <class ShadowVector(ElementType), class ElementType>
-    inline static void erase_all_elements_that_matches_any_of_element(ShadowVector(ElementType) & p_vector, const Slice<ElementType>& p_compared_elements)
+    template <class Container, class ComparedElementType, class EqualityFunc>
+    inline static void erase_all_elements_that_matches_element(Container& p_container, const ComparedElementType& p_compared_element, const EqualityFunc& p_equality_func)
     {
-        sv_static_assert_element_type(ShadowVector(ElementType), ElementType);
+        erase_if(p_container, [&](const typename Container::_ElementValue& p_element) {
+            return p_equality_func(p_element, p_compared_element);
+        });
+    };
 
-        VectorAlgorithm::erase_if(p_vector, [&](const ElementType& p_element) {
-            for (loop(i, 0, p_compared_elements.Size))
-            {
-                if (p_element == p_compared_elements.get(i))
+    template <class Container, class ContainerCompared, class EqualityFunc>
+    inline static void erase_all_elements_that_matches_any_of_element(Container& p_container, const ContainerCompared& p_compared_elements, const EqualityFunc& p_equality_func)
+    {
+        erase_if(p_container, [&](const typename Container::_ElementValue& p_element) {
+            int8 l_element_erased = 0;
+            iterator(p_compared_elements, [&](const typename ContainerCompared::_ElementValue p_compared_element) {
+                if (p_equality_func(p_element, p_compared_element))
                 {
-                    return 1;
+                    l_element_erased = 1;
+                    return;
                 }
-            }
-            return 0;
+            });
+            return l_element_erased;
         });
     };
 };

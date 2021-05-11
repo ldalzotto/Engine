@@ -117,157 +117,157 @@ inline void base64_test()
     l_encoded.free();
 };
 
-template <class ShadowVector(uimax)>
-inline void shadow_vector_test(ShadowVector(uimax) & p_vector){
+template <class ShadowVector(uimax)> inline void shadow_vector_test(ShadowVector(uimax) & p_vector)
+{
 
     sv_static_assert_element_type(ShadowVector(uimax), uimax);
 
     // vector_push_back_array
-    {uimax l_old_size = sv_c_get_size(p_vector);
-uimax l_elements[5] = {0, 1, 2, 3, 4};
-Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
-
-sv_c_push_back_array(p_vector, l_elements_slice);
-assert_true(sv_c_get_size(p_vector) == l_old_size + 5);
-for (loop(i, l_old_size, sv_c_get_size(p_vector)))
-{
-    assert_true(sv_c_get(p_vector, i) == l_elements[i - l_old_size]);
-}
-}
-
-// push_back_array_empty
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    sv_c_push_back_array_empty(p_vector, 5);
-    assert_true(sv_c_get_size(p_vector) == (l_old_size + (uimax)5));
-}
-
-// vector_push_back_element
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    uimax l_element = 25;
-    sv_c_push_back_element(p_vector, l_element);
-    assert_true(sv_c_get_size(p_vector) == l_old_size + 1);
-    assert_true(sv_c_get(p_vector, sv_c_get_size(p_vector) - 1) == l_element);
-}
-
-// vector_insert_array_at
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    uimax l_elements[5] = {0, 1, 2, 3, 4};
-    Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
-    sv_c_insert_array_at(p_vector, l_elements_slice, 0);
-    assert_true(sv_c_get_size(p_vector) == l_old_size + 5);
-    for (loop_int16(i, 0, 5))
     {
-        assert_true(sv_c_get(p_vector, i) == (uimax)i);
+        uimax l_old_size = sv_c_get_size(p_vector);
+        uimax l_elements[5] = {0, 1, 2, 3, 4};
+        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+
+        sv_c_push_back_array(p_vector, l_elements_slice);
+        assert_true(sv_c_get_size(p_vector) == l_old_size + 5);
+        for (loop(i, l_old_size, sv_c_get_size(p_vector)))
+        {
+            assert_true(sv_c_get(p_vector, i) == l_elements[i - l_old_size]);
+        }
     }
 
-    sv_c_insert_array_at(p_vector, l_elements_slice, 3);
-    assert_true(sv_c_get_size(p_vector) == l_old_size + 10);
-    for (loop_int16(i, 0, 3))
+    // push_back_array_empty
     {
-        assert_true((sv_c_get(p_vector, i)) == l_elements[i]);
-    }
-    // Middle insertion
-    for (loop_int16(i, 3, 8))
-    {
-        assert_true((sv_c_get(p_vector, i)) == l_elements[i - cast(uimax, 3)]);
-    }
-    for (loop_int16(i, 8, 10))
-    {
-        assert_true((sv_c_get(p_vector, i)) == l_elements[i - cast(uimax, 5)]);
-    }
-}
-
-// vector_insert_element_at
-{
-    uimax l_element = 20;
-    uimax l_old_size = sv_c_get_size(p_vector);
-
-    sv_c_insert_element_at(p_vector, l_element, 7);
-    assert_true(sv_c_get(p_vector, 7) == l_element);
-    assert_true(sv_c_get_size(p_vector) == l_old_size + 1);
-
-    sv_c_insert_element_at(p_vector, cast(uimax, 20), 9);
-}
-
-// vector_erase_element_at
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    uimax l_erase_index = 1;
-    uimax l_element_after = sv_c_get(p_vector, l_erase_index + 1);
-    sv_c_erase_element_at(p_vector, 1);
-    assert_true(sv_c_get_size(p_vector) == l_old_size - 1);
-    assert_true(sv_c_get(p_vector, 1) == l_element_after);
-}
-
-// vector_erase_array_at
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    uimax l_erase_begin_index = 3;
-    const uimax l_erase_nb = 6;
-    const uimax l_old_element_check_nb = 3;
-
-    uimax l_old_values[l_old_element_check_nb];
-    for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
-    {
-        l_old_values[i - (l_erase_begin_index + l_erase_nb)] = sv_c_get(p_vector, i);
+        uimax l_old_size = sv_c_get_size(p_vector);
+        sv_c_push_back_array_empty(p_vector, 5);
+        assert_true(sv_c_get_size(p_vector) == (l_old_size + (uimax)5));
     }
 
-    sv_c_erase_array_at(p_vector, l_erase_begin_index, l_erase_nb);
-
-    assert_true(sv_c_get_size(p_vector) == l_old_size - l_erase_nb);
-    for (loop(i, 0, l_old_element_check_nb))
+    // vector_push_back_element
     {
-        assert_true(sv_c_get(p_vector, l_erase_begin_index + i) == l_old_values[i]);
+        uimax l_old_size = sv_c_get_size(p_vector);
+        uimax l_element = 25;
+        sv_c_push_back_element(p_vector, l_element);
+        assert_true(sv_c_get_size(p_vector) == l_old_size + 1);
+        assert_true(sv_c_get(p_vector, sv_c_get_size(p_vector) - 1) == l_element);
     }
-}
 
-// vector_pop_back
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    sv_c_pop_back(p_vector);
-    assert_true(sv_c_get_size(p_vector) == l_old_size - 1);
-}
+    // vector_insert_array_at
+    {
+        uimax l_old_size = sv_c_get_size(p_vector);
+        uimax l_elements[5] = {0, 1, 2, 3, 4};
+        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+        sv_c_insert_array_at(p_vector, l_elements_slice, 0);
+        assert_true(sv_c_get_size(p_vector) == l_old_size + 5);
+        for (loop_int16(i, 0, 5))
+        {
+            assert_true(sv_c_get(p_vector, i) == (uimax)i);
+        }
 
-// vector_pop_back_array
-{
-    uimax l_old_size = sv_c_get_size(p_vector);
-    sv_c_pop_back_array(p_vector, 3);
-    assert_true(sv_c_get_size(p_vector) == l_old_size - 3);
-}
+        sv_c_insert_array_at(p_vector, l_elements_slice, 3);
+        assert_true(sv_c_get_size(p_vector) == l_old_size + 10);
+        for (loop_int16(i, 0, 3))
+        {
+            assert_true((sv_c_get(p_vector, i)) == l_elements[i]);
+        }
+        // Middle insertion
+        for (loop_int16(i, 3, 8))
+        {
+            assert_true((sv_c_get(p_vector, i)) == l_elements[i - cast(uimax, 3)]);
+        }
+        for (loop_int16(i, 8, 10))
+        {
+            assert_true((sv_c_get(p_vector, i)) == l_elements[i - cast(uimax, 5)]);
+        }
+    }
 
-// format
-{
-    sv_c_clear(p_vector);
-    sv_c_push_back_element(p_vector, 0);
-    sv_c_push_back_element(p_vector, 1);
-    sv_c_push_back_element(p_vector, 2);
-    sv_c_push_back_element(p_vector, 2);
-    sv_c_push_back_element(p_vector, 3);
-    assert_true(sv_c_get_size(p_vector) == 5);
-    VectorAlgorithm::erase_all_elements_that_matches_element(p_vector, (uimax)2);
-    assert_true(sv_c_get_size(p_vector) == 3);
-    assert_true(sv_c_get(p_vector, 2) == 3);
-}
+    // vector_insert_element_at
+    {
+        uimax l_element = 20;
+        uimax l_old_size = sv_c_get_size(p_vector);
 
-{
-    sv_c_clear(p_vector);
-    sv_c_push_back_element(p_vector, 0);
-    sv_c_push_back_element(p_vector, 1);
-    sv_c_push_back_element(p_vector, 2);
-    sv_c_push_back_element(p_vector, 2);
-    sv_c_push_back_element(p_vector, 3);
-    assert_true(sv_c_get_size(p_vector) == 5);
-    SliceN<uimax, 2> l_erased_elements = {0, 2};
-    VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_vector, slice_from_slicen(&l_erased_elements));
-    assert_true(sv_c_get_size(p_vector) == 2);
-    assert_true(sv_c_get(p_vector, 0) == 1);
-    assert_true(sv_c_get(p_vector, 1) == 3);
-}
-}
-;
+        sv_c_insert_element_at(p_vector, l_element, 7);
+        assert_true(sv_c_get(p_vector, 7) == l_element);
+        assert_true(sv_c_get_size(p_vector) == l_old_size + 1);
+
+        sv_c_insert_element_at(p_vector, cast(uimax, 20), 9);
+    }
+
+    // vector_erase_element_at
+    {
+        uimax l_old_size = sv_c_get_size(p_vector);
+        uimax l_erase_index = 1;
+        uimax l_element_after = sv_c_get(p_vector, l_erase_index + 1);
+        sv_c_erase_element_at(p_vector, 1);
+        assert_true(sv_c_get_size(p_vector) == l_old_size - 1);
+        assert_true(sv_c_get(p_vector, 1) == l_element_after);
+    }
+
+    // vector_erase_array_at
+    {
+        uimax l_old_size = sv_c_get_size(p_vector);
+        uimax l_erase_begin_index = 3;
+        const uimax l_erase_nb = 6;
+        const uimax l_old_element_check_nb = 3;
+
+        uimax l_old_values[l_old_element_check_nb];
+        for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
+        {
+            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = sv_c_get(p_vector, i);
+        }
+
+        sv_c_erase_array_at(p_vector, l_erase_begin_index, l_erase_nb);
+
+        assert_true(sv_c_get_size(p_vector) == l_old_size - l_erase_nb);
+        for (loop(i, 0, l_old_element_check_nb))
+        {
+            assert_true(sv_c_get(p_vector, l_erase_begin_index + i) == l_old_values[i]);
+        }
+    }
+
+    // vector_pop_back
+    {
+        uimax l_old_size = sv_c_get_size(p_vector);
+        sv_c_pop_back(p_vector);
+        assert_true(sv_c_get_size(p_vector) == l_old_size - 1);
+    }
+
+    // vector_pop_back_array
+    {
+        uimax l_old_size = sv_c_get_size(p_vector);
+        sv_c_pop_back_array(p_vector, 3);
+        assert_true(sv_c_get_size(p_vector) == l_old_size - 3);
+    }
+
+    // format
+    {
+        sv_c_clear(p_vector);
+        sv_c_push_back_element(p_vector, 0);
+        sv_c_push_back_element(p_vector, 1);
+        sv_c_push_back_element(p_vector, 2);
+        sv_c_push_back_element(p_vector, 2);
+        sv_c_push_back_element(p_vector, 3);
+        assert_true(sv_c_get_size(p_vector) == 5);
+        VectorAlgorithm::erase_all_elements_that_matches_element(p_vector, (uimax)2, Equality::Default{});
+        assert_true(sv_c_get_size(p_vector) == 3);
+        assert_true(sv_c_get(p_vector, 2) == 3);
+    }
+
+    {
+        sv_c_clear(p_vector);
+        sv_c_push_back_element(p_vector, 0);
+        sv_c_push_back_element(p_vector, 1);
+        sv_c_push_back_element(p_vector, 2);
+        sv_c_push_back_element(p_vector, 2);
+        sv_c_push_back_element(p_vector, 3);
+        assert_true(sv_c_get_size(p_vector) == 5);
+        SliceN<uimax, 2> l_erased_elements = {0, 2};
+        VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_vector, slice_from_slicen(&l_erased_elements), Equality::Default{});
+        assert_true(sv_c_get_size(p_vector) == 2);
+        assert_true(sv_c_get(p_vector, 0) == 1);
+        assert_true(sv_c_get(p_vector, 1) == 3);
+    }
+};
 
 inline void vector_test()
 {

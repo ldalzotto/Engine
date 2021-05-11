@@ -14,10 +14,8 @@ template <class ElementType> struct PoolOfVector
     VectorOfVector<ElementType> Memory;
     Vector<PoolOfVectorToken<ElementType>> FreeBlocks;
 
-    struct CompileType
-    {
-        Slice<ElementType> Element;
-    };
+    using _ElementValue = Slice<ElementType>;
+    using _FreeBlocks = Vector<PoolOfVectorToken<ElementType>>&;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {
@@ -152,6 +150,23 @@ template <class ElementType> struct PoolOfVector
     inline Element_ShadowVector get_element_as_shadow_vector(const PoolOfVectorToken<ElementType> p_index)
     {
         return Element_ShadowVector::build(this, p_index);
+    };
+
+    inline void _set_element(const PoolOfVectorToken<ElementType> p_token, const Slice<ElementType>& p_element)
+    {
+        this->Memory.set(token_value(p_token), p_element);
+    };
+
+    inline uimax _push_back_element_empty()
+    {
+        this->Memory.push_back_element_empty();
+        return this->Memory.get_size() - 1;
+    };
+
+    inline uimax _push_back_element(const Slice<ElementType>& p_element)
+    {
+        this->Memory.push_back_element(p_element);
+        return this->Memory.get_size() - 1;
     };
 
   private:

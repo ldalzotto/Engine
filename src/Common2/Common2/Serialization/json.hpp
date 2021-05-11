@@ -15,7 +15,7 @@ template <class ShadowVector(int8)> inline void sanitize_json(ShadowVector(int8)
     sv_static_assert_element_type(ShadowVector(int8), int8);
 
     SliceN<int8, 4> l_chars_removed = {' ', '\n', '\r', '\t'};
-    VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_source, slice_from_slicen(&l_chars_removed));
+    VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_source, slice_from_slicen(&l_chars_removed), Equality::Default{});
 };
 }; // namespace JSONUtil
 

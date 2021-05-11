@@ -11,10 +11,8 @@ template <class ElementType> struct Pool
     Vector<ElementType> memory;
     Vector<Token<ElementType>> free_blocks;
 
-    struct CompileType
-    {
-        ElementType Element;
-    };
+    using _ElementValue = ElementType;
+    using _FreeBlocks = Vector<Token<ElementType>>&;
 
     inline static Pool<ElementType> build(const Vector<ElementType>& p_memory, const Vector<Token<ElementType>>& p_free_blocks)
     {
@@ -103,6 +101,23 @@ template <class ElementType> struct Pool
 #endif
 
         this->free_blocks.push_back_element(p_token);
+    };
+
+    inline void _set_element(const Token<ElementType> p_token, const ElementType& p_element)
+    {
+        this->memory.set(token_value(p_token), p_element);
+    };
+
+    inline uimax _push_back_element_empty()
+    {
+        this->memory.push_back_element_empty();
+        return this->memory.Size - 1;
+    };
+
+    inline uimax _push_back_element(const ElementType& p_element)
+    {
+        this->memory.push_back_element(p_element);
+        return this->memory.Size - 1;
     };
 
   private:

@@ -8,6 +8,9 @@ template <class ElementType> struct Slice
     uimax Size;
     ElementType* Begin;
 
+    using _ElementValue = ElementType;
+    using _SizeType = uimax;
+
     inline static Slice<ElementType> build_default()
     {
         return Slice<ElementType>{0, NULL};
@@ -46,6 +49,11 @@ template <class ElementType> struct Slice
     inline static Slice<int8> build_asint8_memory_singleelement(const ElementType* p_memory)
     {
         return Slice<int8>{sizeof(ElementType), cast(int8*, p_memory)};
+    };
+
+    inline uimax get_size() const
+    {
+        return this->Size;
     };
 
     inline ElementType& get(const uimax p_index)

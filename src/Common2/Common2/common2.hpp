@@ -36,6 +36,8 @@
 
 #include "./Include/platform_include.hpp"
 
+#include "./Functional/equality.hpp"
+
 #include "./Functional/assert.hpp"
 #include "./Thread/mutex.hpp"
 #include "./Thread/barrier.hpp"

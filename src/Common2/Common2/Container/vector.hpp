@@ -12,10 +12,8 @@ template <class ElementType> struct Vector
     uimax Size;
     Span<ElementType> Memory;
 
-    struct CompileType
-    {
-        ElementType Element;
-    };
+    using _ElementValue = ElementType;
+    using _SizeType = uimax;
 
     inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
     {
@@ -288,16 +286,6 @@ template <class ElementType> struct Vector
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
     {
         VectorAlgorithm::erase_if(*this, p_predicate);
-    };
-
-    inline void erase_all_elements_that_matches_element(const ElementType& p_compared_element)
-    {
-        VectorAlgorithm::erase_all_elements_that_matches_element(*this, p_compared_element);
-    };
-
-    inline void erase_all_elements_that_matches_any_of_element(const Slice<ElementType>& p_compared_elements)
-    {
-        VectorAlgorithm::erase_all_elements_that_matches_any_of_element(*this, p_compared_elements);
     };
 
   private:
