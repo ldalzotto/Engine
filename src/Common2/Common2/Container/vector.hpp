@@ -80,7 +80,7 @@ template <class ElementType> struct Vector
         return this->Memory.Capacity;
     };
 
-    inline int8 empty()
+    inline int8 empty() const
     {
         return this->Size == 0;
     };
