@@ -10,12 +10,13 @@ inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int
     return p_type;
 };
 
-template <class ShadowVector(int8)> inline void sanitize_json(ShadowVector(int8) & p_source)
+template <class Container> inline void sanitize_json(ShadowVector_v3<Container>& p_source)
 {
-    sv_static_assert_element_type(ShadowVector(int8), int8);
+    // TODO
+    //    sv_static_assert_element_type(ShadowVector(int8), int8);
 
     SliceN<int8, 4> l_chars_removed = {' ', '\n', '\r', '\t'};
-    VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_source, slice_from_slicen(&l_chars_removed), Equality::Default{});
+    VectorAlgorithm::erase_all_elements_that_matches_any_of_element_v2(p_source, slice_from_slicen(&l_chars_removed), Equality::Default{});
 };
 }; // namespace JSONUtil
 
@@ -69,9 +70,10 @@ struct JSONDeserializer
         return allocate(p_source, p_source.slide_rv(l_start_index));
     };
 
-    template <class ShadowVector(int8)> inline static JSONDeserializer sanitize_and_start(ShadowVector(int8) & p_source)
+    template <class Container> inline static JSONDeserializer sanitize_and_start(ShadowVector_v3<Container>& p_source)
     {
-        sv_static_assert_element_type(ShadowVector(int8), int8);
+        // TODO
+        // sv_static_assert_element_type(ShadowVector(int8), int8);
 
         JSONUtil::sanitize_json(p_source);
         return JSONDeserializer::start(p_source.to_slice());

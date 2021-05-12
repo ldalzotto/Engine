@@ -282,7 +282,7 @@ template <class ElementType, uint32 Size_t> struct SliceN
     inline const ElementType& get(const uimax p_index) const
     {
         return ((SliceN<ElementType, Size_t>*)this)->get(p_index);
-    }
+    };
 };
 
 template <class ElementType, uint32 Size_t> inline Slice<ElementType> slice_from_slicen(const SliceN<ElementType, Size_t>* p_slice_n)

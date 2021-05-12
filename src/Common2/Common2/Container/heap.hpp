@@ -13,6 +13,9 @@ struct Heap
     Vector<SliceIndex> FreeChunks;
     uimax Size;
 
+    using _FreeChunks = Vector<SliceIndex>&;
+    using _AllocatedChunks = Pool<SliceIndex>&;
+
     inline static Heap allocate(const uimax p_heap_size)
     {
         Heap l_heap = Heap{Pool<SliceIndex>::allocate(0), Vector<SliceIndex>::allocate(1), p_heap_size};
@@ -121,6 +124,9 @@ struct HeapPaged
         HeapPaged* heapPaged;
         uimax index;
         VectorOfVector<SliceIndex>::Element_ShadowVector tmp_shadow_vec;
+
+        using _FreeChunks = VectorOfVector<SliceIndex>::Element_ShadowVector&;
+        using _AllocatedChunks = Pool<SliceIndex>&;
 
         inline static SingleShadowHeap build(HeapPaged* p_heap_paged, const uimax p_index)
         {

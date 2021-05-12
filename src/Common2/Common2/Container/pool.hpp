@@ -12,7 +12,9 @@ template <class ElementType> struct Pool
     Vector<Token<ElementType>> free_blocks;
 
     using _ElementValue = ElementType;
-    using _FreeBlocks = Vector<Token<ElementType>>&;
+
+    using _FreeBlocksValue = Vector<Token<ElementType>>;
+    using _FreeBlocks = _FreeBlocksValue&;
 
     inline static Pool<ElementType> build(const Vector<ElementType>& p_memory, const Vector<Token<ElementType>>& p_free_blocks)
     {

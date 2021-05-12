@@ -70,12 +70,12 @@ template <class ElementType> struct Vector
         return this->Memory.Memory;
     };
 
-    inline uimax get_size()
+    inline uimax get_size() const
     {
         return this->Size;
     };
 
-    inline uimax get_capacity()
+    inline uimax get_capacity() const
     {
         return this->Memory.Capacity;
     };
@@ -83,6 +83,11 @@ template <class ElementType> struct Vector
     inline int8 empty() const
     {
         return this->Size == 0;
+    };
+
+    inline ShadowVector_v3<Vector<ElementType>> to_shadow_vector()
+    {
+        return ShadowVector_v3<Vector<ElementType>>{*this};
     };
 
     inline ElementType& get(const uimax p_index)
@@ -285,7 +290,8 @@ template <class ElementType> struct Vector
 
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
     {
-        VectorAlgorithm::erase_if(*this, p_predicate);
+        auto l_shadow_vector = this->to_shadow_vector();
+        VectorAlgorithm::erase_if_v2(l_shadow_vector, p_predicate);
     };
 
   private:

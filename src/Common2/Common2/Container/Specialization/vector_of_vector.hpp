@@ -257,37 +257,40 @@ template <class ElementType> struct VectorOfVector
         VectorOfVector<ElementType>* vectorOfVector;
         uimax Index;
 
+        using _ElementValue = ElementType;
+        using _SizeType = uimax;
+
         inline static Element_ShadowVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
         {
             return Element_ShadowVector{p_vector_of_vector, p_index};
         };
 
-        inline uimax sv_func_get_size()
+        inline uimax get_size() const
         {
             return this->vectorOfVector->get_vectorheader(this->Index)->Size;
         };
 
-        inline ElementType& sv_func_get(const uimax p_index)
+        inline ElementType& get(const uimax p_index)
         {
             return this->vectorOfVector->get(this->Index).get(p_index);
         };
 
-        inline void sv_func_erase_element_at(const uimax p_index)
+        inline void erase_element_at(const uimax p_index)
         {
             this->vectorOfVector->element_erase_element_at(this->Index, p_index);
         };
 
-        inline void sv_func_erase_element_at_always(const uimax p_index)
+        inline void erase_element_at_always(const uimax p_index)
         {
             this->vectorOfVector->element_erase_element_at_always(this->Index, p_index);
         };
 
-        inline void sv_func_push_back_element(const ElementType& p_index)
+        inline void push_back_element(const ElementType& p_index)
         {
             this->vectorOfVector->element_push_back_element(this->Index, p_index);
         };
 
-        inline Slice<ElementType> sv_func_to_slice()
+        inline Slice<ElementType> to_slice() const
         {
             return this->vectorOfVector->get(this->Index);
         };

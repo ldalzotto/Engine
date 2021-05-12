@@ -15,7 +15,9 @@ template <class ElementType> struct PoolOfVector
     Vector<PoolOfVectorToken<ElementType>> FreeBlocks;
 
     using _ElementValue = Slice<ElementType>;
-    using _FreeBlocks = Vector<PoolOfVectorToken<ElementType>>&;
+
+    using _FreeBlocksValue = Vector<PoolOfVectorToken<ElementType>>;
+    using _FreeBlocks = _FreeBlocksValue&;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {

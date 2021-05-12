@@ -117,94 +117,95 @@ inline void base64_test()
     l_encoded.free();
 };
 
-template <class Container> inline void shadow_vector_test(Container& p_vector)
+template <class Container> inline void shadow_vector_test_v2(ShadowVector_v3<Container>& p_vector)
 {
     static_assert(sizeof(typename Container::_ElementValue) == sizeof(uimax), "");
 
     // vector_push_back_array
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
 
-        ShadowVector_v2::push_back_array(p_vector, l_elements_slice);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size + 5);
-        for (loop(i, l_old_size, ShadowVector_v2::get_size(p_vector)))
+        p_vector.push_back_array(l_elements_slice);
+        assert_true(p_vector.get_size() == l_old_size + 5);
+        for (loop(i, l_old_size, p_vector.get_size()))
         {
-            assert_true(ShadowVector_v2::get(p_vector, i) == l_elements[i - l_old_size]);
+            assert_true(p_vector.get(i) == l_elements[i - l_old_size]);
         }
     }
 
     // push_back_array_empty
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
-        ShadowVector_v2::push_back_array_empty(p_vector, 5);
-        assert_true(ShadowVector_v2::get_size(p_vector) == (l_old_size + (uimax)5));
+        typename Container::_SizeType l_old_size = p_vector.get_size();
+        p_vector.push_back_array_empty(5);
+        assert_true(p_vector.get_size() == (l_old_size + (uimax)5));
     }
 
     // vector_push_back_element
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
         uimax l_element = 25;
-        ShadowVector_v2::push_back_element(p_vector, l_element);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size + 1);
-        assert_true(ShadowVector_v2::get(p_vector, ShadowVector_v2::get_size(p_vector) - 1) == l_element);
+        p_vector.push_back_element(l_element);
+        assert_true(p_vector.get_size() == l_old_size + 1);
+        assert_true(p_vector.get(p_vector.get_size() - 1) == l_element);
     }
 
     // vector_insert_array_at
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
-        ShadowVector_v2::insert_array_at(p_vector, l_elements_slice, 0);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size + 5);
+        p_vector.insert_array_at(l_elements_slice, 0);
+        assert_true(p_vector.get_size() == l_old_size + 5);
         for (loop_int16(i, 0, 5))
         {
-            assert_true(ShadowVector_v2::get(p_vector, i) == (uimax)i);
+            assert_true(p_vector.get(i) == (uimax)i);
         }
 
-        ShadowVector_v2::insert_array_at(p_vector, l_elements_slice, 3);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size + 10);
+        p_vector.insert_array_at(l_elements_slice, 3);
+        assert_true(p_vector.get_size() == l_old_size + 10);
         for (loop_int16(i, 0, 3))
         {
-            assert_true((ShadowVector_v2::get(p_vector, i)) == l_elements[i]);
+            assert_true((p_vector.get(i)) == l_elements[i]);
         }
         // Middle insertion
         for (loop_int16(i, 3, 8))
         {
-            assert_true((ShadowVector_v2::get(p_vector, i)) == l_elements[i - cast(uimax, 3)]);
+            assert_true((p_vector.get(i)) == l_elements[i - cast(uimax, 3)]);
         }
         for (loop_int16(i, 8, 10))
         {
-            assert_true((ShadowVector_v2::get(p_vector, i)) == l_elements[i - cast(uimax, 5)]);
+            assert_true((p_vector.get(i)) == l_elements[i - cast(uimax, 5)]);
         }
     }
 
+#if 1
     // vector_insert_element_at
     {
         uimax l_element = 20;
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
 
-        ShadowVector_v2::insert_element_at(p_vector, l_element, 7);
-        assert_true(ShadowVector_v2::get(p_vector, 7) == l_element);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size + 1);
+        p_vector.insert_element_at(l_element, 7);
+        assert_true(p_vector.get(7) == l_element);
+        assert_true(p_vector.get_size() == l_old_size + 1);
 
-        ShadowVector_v2::insert_element_at(p_vector, cast(uimax, 20), 9);
+        p_vector.insert_element_at(cast(uimax, 20), 9);
     }
 
     // vector_erase_element_at
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
         uimax l_erase_index = 1;
-        uimax l_element_after = ShadowVector_v2::get(p_vector, l_erase_index + 1);
-        ShadowVector_v2::erase_element_at(p_vector, 1);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size - 1);
-        assert_true(ShadowVector_v2::get(p_vector, 1) == l_element_after);
+        uimax l_element_after = p_vector.get(l_erase_index + 1);
+        p_vector.erase_element_at(1);
+        assert_true(p_vector.get_size() == l_old_size - 1);
+        assert_true(p_vector.get(1) == l_element_after);
     }
 
     // vector_erase_array_at
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
         uimax l_erase_begin_index = 3;
         const uimax l_erase_nb = 6;
         const uimax l_old_element_check_nb = 3;
@@ -212,66 +213,69 @@ template <class Container> inline void shadow_vector_test(Container& p_vector)
         uimax l_old_values[l_old_element_check_nb];
         for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
         {
-            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = ShadowVector_v2::get(p_vector, i);
+            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = p_vector.get( i);
         }
 
-        sv_c_erase_array_at(p_vector, l_erase_begin_index, l_erase_nb);
+        p_vector.erase_array_at(l_erase_begin_index, l_erase_nb);
 
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size - l_erase_nb);
+        assert_true(p_vector.get_size() == l_old_size - l_erase_nb);
         for (loop(i, 0, l_old_element_check_nb))
         {
-            assert_true(ShadowVector_v2::get(p_vector, l_erase_begin_index + i) == l_old_values[i]);
+            assert_true(p_vector.get(l_erase_begin_index + i) == l_old_values[i]);
         }
     }
 
     // vector_pop_back
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
-        ShadowVector_v2::pop_back(p_vector);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size - 1);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
+        p_vector.pop_back();
+        assert_true(p_vector.get_size() == l_old_size - 1);
     }
 
     // vector_pop_back_array
     {
-        typename Container::_SizeType l_old_size = ShadowVector_v2::get_size(p_vector);
-        ShadowVector_v2::pop_back_array(p_vector, 3);
-        assert_true(ShadowVector_v2::get_size(p_vector) == l_old_size - 3);
+        typename Container::_SizeType l_old_size = p_vector.get_size();
+        p_vector.pop_back_array(3);
+        assert_true(p_vector.get_size() == l_old_size - 3);
     }
 
     // format
     {
-        ShadowVector_v2::clear(p_vector);
-        ShadowVector_v2::push_back_element(p_vector, 0);
-        ShadowVector_v2::push_back_element(p_vector, 1);
-        ShadowVector_v2::push_back_element(p_vector, 2);
-        ShadowVector_v2::push_back_element(p_vector, 2);
-        ShadowVector_v2::push_back_element(p_vector, 3);
-        assert_true(ShadowVector_v2::get_size(p_vector) == 5);
-        VectorAlgorithm::erase_all_elements_that_matches_element(p_vector, (uimax)2, Equality::Default{});
-        assert_true(ShadowVector_v2::get_size(p_vector) == 3);
-        assert_true(ShadowVector_v2::get(p_vector, 2) == 3);
+        p_vector.clear();
+        p_vector.push_back_element(0);
+        p_vector.push_back_element(1);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(3);
+        assert_true(p_vector.get_size() == 5);
+        VectorAlgorithm::erase_all_elements_that_matches_element_v2(p_vector, (uimax)2, Equality::Default{});
+        assert_true(p_vector.get_size() == 3);
+        assert_true(p_vector.get(2) == 3);
     }
 
     {
-        ShadowVector_v2::clear(p_vector);
-        ShadowVector_v2::push_back_element(p_vector, 0);
-        ShadowVector_v2::push_back_element(p_vector, 1);
-        ShadowVector_v2::push_back_element(p_vector, 2);
-        ShadowVector_v2::push_back_element(p_vector, 2);
-        ShadowVector_v2::push_back_element(p_vector, 3);
-        assert_true(ShadowVector_v2::get_size(p_vector) == 5);
+        p_vector.clear();
+        p_vector.push_back_element(0);
+        p_vector.push_back_element(1);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(3);
+        assert_true(p_vector.get_size() == 5);
         SliceN<uimax, 2> l_erased_elements = {0, 2};
-        VectorAlgorithm::erase_all_elements_that_matches_any_of_element(p_vector, slice_from_slicen(&l_erased_elements), Equality::Default{});
-        assert_true(ShadowVector_v2::get_size(p_vector) == 2);
-        assert_true(ShadowVector_v2::get(p_vector, 0) == 1);
-        assert_true(ShadowVector_v2::get(p_vector, 1) == 3);
+        VectorAlgorithm::erase_all_elements_that_matches_any_of_element_v2(p_vector, slice_from_slicen(&l_erased_elements), Equality::Default{});
+        assert_true(p_vector.get_size() == 2);
+        assert_true(p_vector.get(0) == 1);
+        assert_true(p_vector.get(1) == 3);
     }
+#endif
 };
 
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
-    shadow_vector_test(l_vector_sizet);
+    ShadowVector_v3<Vector<uimax>> l_vector_sizet_sahdow = l_vector_sizet.to_shadow_vector();
+    // shadow_vector_test(l_vector_sizet);
+    shadow_vector_test_v2(l_vector_sizet_sahdow);
     l_vector_sizet.free();
     // When freeing the vcetor, it's structure is resetted
     {
@@ -284,7 +288,8 @@ inline void vector_slice_test()
 {
     Span<uimax> l_vector_sizet_buffer = Span<uimax>::allocate(100);
     VectorSlice<uimax> l_vector_sizet = VectorSlice<uimax>::build(l_vector_sizet_buffer.slice, 0);
-    shadow_vector_test(l_vector_sizet);
+    ShadowVector_v3<VectorSlice<uimax>> l_vector_sizet_shadow = l_vector_sizet.to_shadow_vector();
+    shadow_vector_test_v2(l_vector_sizet_shadow);
     l_vector_sizet_buffer.free();
 };
 
@@ -1350,7 +1355,8 @@ inline void deserialize_json_test(){{
     });
 
 String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
 JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 l_deserialized.next_object("local_position", &l_v3);
@@ -1400,7 +1406,8 @@ l_json_str.free();
                          "\"nodes\":[]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
     l_deserialized.next_array("nodes", &l_array);
@@ -1422,7 +1429,8 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
     l_deserialized.next_object("local_position", &l_v3);
@@ -1446,7 +1454,8 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
     l_deserialized.next_field("x");
     assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
     l_deserialized.next_field("y");
@@ -1463,7 +1472,8 @@ l_json_str.free();
         "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
@@ -1498,7 +1508,8 @@ l_json_str.free();
 {
     const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     Slice<int8> l_array_plain_value;
@@ -1518,7 +1529,8 @@ l_json_str.free();
 {
     const int8* l_json = MULTILINE({"value_array" : [ 17.001, 18.001, 19.001 ]});
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     Slice<int8> l_array_plain_value;
@@ -1540,7 +1552,8 @@ l_json_str.free();
     const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str.Memory);
+    ShadowVector_v3<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
 
     assert_true(l_deserialized.next_field("field"));
     assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
@@ -1673,7 +1686,8 @@ inline void serialize_json_test()
 
     // JSONUtil::remove_spaces(l_serializer.output.Memory);
     String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    JSONUtil::sanitize_json(l_compared_json.Memory);
+    ShadowVector_v3<Vector<int8>> l_compared_json_shadow_vector = l_compared_json.Memory.to_shadow_vector();
+    JSONUtil::sanitize_json(l_compared_json_shadow_vector);
 
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
 

@@ -23,19 +23,24 @@ template <class ElementType> struct VectorSlice
         return this->Memory.Begin;
     };
 
-    inline uimax get_size()
+    inline uimax get_size() const
     {
         return this->Size;
     };
 
-    inline uimax get_capacity()
+    inline uimax get_capacity() const
     {
         return this->Memory.Size;
     };
 
-    inline int8 empty()
+    inline int8 empty() const
     {
         return this->Size == 0;
+    };
+
+    inline ShadowVector_v3<VectorSlice<ElementType>> to_shadow_vector()
+    {
+        return ShadowVector_v3<VectorSlice<ElementType>>{*this};
     };
 
     inline ElementType& get(const uimax p_index)
