@@ -85,9 +85,9 @@ template <class ElementType> struct Vector
         return this->Size == 0;
     };
 
-    inline ShadowVector_v3<Vector<ElementType>> to_shadow_vector()
+    inline ShadowVector<Vector<ElementType>> to_shadow_vector()
     {
-        return ShadowVector_v3<Vector<ElementType>>{*this};
+        return ShadowVector<Vector<ElementType>>{*this};
     };
 
     inline ElementType& get(const uimax p_index)
@@ -290,8 +290,7 @@ template <class ElementType> struct Vector
 
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
     {
-        auto l_shadow_vector = this->to_shadow_vector();
-        VectorAlgorithm::erase_if_v2(l_shadow_vector, p_predicate);
+        this->to_shadow_vector().erase_if(p_predicate);
     };
 
   private:

@@ -192,7 +192,7 @@ struct ShaderAssetJSON
         p_json_deserializer->next_field("fragment");
         l_shader_dependencies_value.fragment_module = HashSlice(p_json_deserializer->get_currentfield().value);
 
-        l_shader_dependencies_value.push_to_binary_buffer(in_out_buffer);
+        l_shader_dependencies_value.push_to_binary_buffer(in_out_buffer->to_shadow_vector());
     };
 
     inline static ShaderResource::AssetDependencies allocate_dependencies_from_json(JSONDeserializer* p_json_deserializer)
@@ -318,12 +318,12 @@ struct MaterialAssetJSON
         Vector<int8> l_binary = Vector<int8>::allocate(0);
 
         p_json_deserializer->next_field("shader");
-        BinarySerializer::type(&l_binary, HashSlice(p_json_deserializer->get_currentfield().value));
+        BinarySerializer::type(l_binary.to_shadow_vector(), HashSlice(p_json_deserializer->get_currentfield().value));
 
         {
             Span<int8> l_shader_file_content = AssetCompiler_open_and_read_asset_file(p_root_path, p_json_deserializer->get_currentfield().value);
             Vector<int8> l_shader_file_content_vector = Vector<int8>{l_shader_file_content.Capacity, l_shader_file_content};
-            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::sanitize_and_start(l_shader_file_content_vector);
+            JSONDeserializer l_shader_asset_deserializer = JSONDeserializer::sanitize_and_start(l_shader_file_content_vector.to_shadow_vector());
             JSONDeserializer l_shader_asset_value_deserializer;
             AssetJSON::move_json_deserializer_to_value(&l_shader_asset_deserializer, &l_shader_asset_value_deserializer);
             ShaderAssetJSON::push_dependencies_from_json_to_buffer(&l_shader_asset_value_deserializer, &l_binary);
@@ -352,7 +352,7 @@ struct MaterialAssetJSON
         }
         l_parameter_array_deserializer.free();
 
-        BinarySerializer::slice(&l_binary, l_textures.Memory.slice.build_asint8());
+        BinarySerializer::slice(l_binary.to_shadow_vector(), l_textures.Memory.slice.build_asint8());
 
         l_textures.free();
 

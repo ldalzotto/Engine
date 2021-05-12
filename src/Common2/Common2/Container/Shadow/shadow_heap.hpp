@@ -1,39 +1,35 @@
 #pragma once
 
-struct ShadowHeap_v2
+template <class _Heap> struct ShadowHeap_v3
 {
-    template <class Heap> inline static uimax get_size(const Heap& p_heap)
+    _Heap& heap;
+
+    using _FreeChunksValue = typename _Heap::_FreeChunksValue;
+    using _FreeChunks = typename _Heap::_FreeChunks;
+
+    using _AllocatedChunksValue = typename _Heap::_AllocatedChunksValue;
+    using _AllocatedChunks = typename _Heap::_AllocatedChunks;
+
+    inline uimax get_size()
     {
-        return p_heap.get_size();
+        return this->heap.get_size();
     };
 
-    template <class Heap> inline static void resize(Heap& p_heap, const uimax p_new_size)
+    inline void resize(const uimax p_new_size)
     {
-        p_heap.resize(p_new_size);
+        this->heap.resize(p_new_size);
     };
 
-    template <class Heap> inline static typename Heap::_FreeChunks get_free_chunks(Heap& p_heap)
+    inline _FreeChunks get_free_chunks()
     {
-        return p_heap.get_freechunks();
+        return this->heap.get_freechunks();
     };
 
-    template <class Heap> inline static typename Heap::_AllocatedChunks get_allocated_chunks(Heap& p_heap)
+    inline _AllocatedChunks get_allocated_chunks()
     {
-        return p_heap.get_allocated_chunks();
+        return this->heap.get_allocated_chunks();
     };
 };
-
-#define ShadowHeap(Prefix) ShadowHeap_##Prefix
-
-#define sh_func_get_size() get_size()
-#define sh_func_resize(p_newsize) resize(p_newsize)
-#define sh_func_get_freechunks() get_freechunks()
-#define sh_func_get_allocated_chunks() get_allocated_chunks()
-
-#define sh_c_get_size(p_shadow_heap) (p_shadow_heap).sh_func_get_size()
-#define sh_c_resize(p_shadow_heap, p_newsize) (p_shadow_heap).sh_func_resize(p_newsize)
-#define sh_c_get_freechunks(p_shadow_heap) (p_shadow_heap).sh_func_get_freechunks()
-#define sh_c_get_allocated_chunks(p_shadow_heap) (p_shadow_heap).sh_func_get_allocated_chunks()
 
 struct HeapAlgorithms
 {
@@ -57,15 +53,15 @@ struct HeapAlgorithms
         };
     };
 
-    template <class ShadowHeap(s)> inline static AllocationState allocate_element(ShadowHeap(s) & p_heap, const uimax p_size, AllocatedElementReturn* out_chunk)
+    template <class Heap> inline static AllocationState allocate_element(ShadowHeap_v3<Heap> p_heap, const uimax p_size, AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element(p_heap, p_size, out_chunk))
         {
             _defragment(p_heap);
             if (!_allocate_element(p_heap, p_size, out_chunk))
             {
-                uimax l_heap_size = sh_c_get_size(p_heap);
-                sh_c_resize(p_heap, l_heap_size == 0 ? p_size : ((l_heap_size * 2) + p_size));
+                uimax l_heap_size = p_heap.get_size();
+                p_heap.resize(l_heap_size == 0 ? p_size : ((l_heap_size * 2) + p_size));
 
 #if __DEBUG
                 assert_true(
@@ -83,16 +79,16 @@ struct HeapAlgorithms
         return HeapAlgorithms::AllocationState::ALLOCATED;
     };
 
-    template <class ShadowHeap(s)>
-    inline static AllocationState allocate_element_with_modulo_offset(ShadowHeap(s) & p_heap, const uimax p_size, const uimax p_modulo_offset, HeapAlgorithms::AllocatedElementReturn* out_chunk)
+    template <class Heap>
+    inline static AllocationState allocate_element_with_modulo_offset(ShadowHeap_v3<Heap> p_heap, const uimax p_size, const uimax p_modulo_offset, HeapAlgorithms::AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element_with_modulo_offset(p_heap, p_size, p_modulo_offset, out_chunk))
         {
             _defragment(p_heap);
             if (!_allocate_element_with_modulo_offset(p_heap, p_size, p_modulo_offset, out_chunk))
             {
-                uimax l_heap_size = sh_c_get_size(p_heap);
-                sh_c_resize(p_heap, l_heap_size == 0 ? (p_modulo_offset > p_size ? p_modulo_offset : p_size) : ((l_heap_size * 2) + (p_modulo_offset > p_size ? p_modulo_offset : p_size)));
+                uimax l_heap_size = p_heap.get_size();
+                p_heap.resize(l_heap_size == 0 ? (p_modulo_offset > p_size ? p_modulo_offset : p_size) : ((l_heap_size * 2) + (p_modulo_offset > p_size ? p_modulo_offset : p_size)));
 
 #if __DEBUG
                 assert_true(
@@ -110,8 +106,8 @@ struct HeapAlgorithms
         return HeapAlgorithms::AllocationState::ALLOCATED;
     };
 
-    template <class ShadowHeap(s)>
-    inline static AllocationState allocate_element_norealloc_with_modulo_offset(ShadowHeap(s) & p_heap, const uimax p_size, const uimax p_alignement_modulo,
+    template <class Heap>
+    inline static AllocationState allocate_element_norealloc_with_modulo_offset(ShadowHeap_v3<Heap> p_heap, const uimax p_size, const uimax p_alignement_modulo,
                                                                                 HeapAlgorithms::AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element_with_modulo_offset(p_heap, p_size, p_alignement_modulo, out_chunk))
@@ -134,17 +130,18 @@ struct HeapAlgorithms
     };
 #endif
 
-    template <class ShadowHeap(s)> inline static int8 _allocate_element(ShadowHeap(s) & p_heap, const uimax p_size, HeapAlgorithms::AllocatedElementReturn* out_return)
+    template<class Heap> inline static int8 _allocate_element(ShadowHeap_v3<Heap> p_heap, const uimax p_size, HeapAlgorithms::AllocatedElementReturn* out_return)
     {
 #if __DEBUG
         assert_true(p_size != 0);
 #endif
 
-        using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(p_heap));
-        ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(p_heap);
-        for (loop_reverse(i, 0, sv_c_get_size(l_free_chunks)))
+        typename Heap::_FreeChunks __free_chunks = p_heap.get_free_chunks();
+        ShadowVector<typename Heap::_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
+
+        for (loop_reverse(i, 0, l_free_chunks.get_size()))
         {
-            SliceIndex& l_free_chunk = sv_c_get(l_free_chunks, i);
+            SliceIndex& l_free_chunk = l_free_chunks.get(i);
             if (l_free_chunk.Size > p_size)
             {
                 SliceIndex l_new_allocated_chunk;
@@ -155,7 +152,7 @@ struct HeapAlgorithms
             else if (l_free_chunk.Size == p_size)
             {
                 *out_return = _push_chunk(p_heap, &l_free_chunk);
-                sv_c_erase_element_at_always(l_free_chunks, i);
+                l_free_chunks.erase_element_at_always(i);
                 return 1;
             }
         }
@@ -163,21 +160,20 @@ struct HeapAlgorithms
         return 0;
     };
 
-
-    template <class Heap>
-    inline static int8 _allocate_element_with_modulo_offset(Heap& p_heap, const uimax p_size, const uimax p_modulo_offset, HeapAlgorithms::AllocatedElementReturn* out_chunk)
+    template <class Heap> inline static int8 _allocate_element_with_modulo_offset(ShadowHeap_v3<Heap> p_heap, const uimax p_size, const uimax p_modulo_offset, HeapAlgorithms::AllocatedElementReturn* out_chunk)
     {
 #if __DEBUG
         assert_true(p_size != 0);
 #endif
 
-        typename Heap::_FreeChunks l_free_chunks = ShadowHeap_v2::get_free_chunks(p_heap);
+        typename Heap::_FreeChunks __free_chunks = p_heap.get_free_chunks();
+        ShadowVector<typename Heap::_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
         // using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(p_heap));
         // ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(p_heap);
-        for (loop_reverse(i, 0, ShadowVector_v2::get_size(l_free_chunks)))
-            // for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
+        for (loop_reverse(i, 0, l_free_chunks.get_size()))
+        // for (uimax i = 0; i < sv_c_get_size(&l_free_chunks); i++)
         {
-            SliceIndex& l_free_chunk = ShadowVector_v2::get(l_free_chunks, i);
+            SliceIndex& l_free_chunk = l_free_chunks.get(i);
 
             if (l_free_chunk.Size > p_size)
             {
@@ -207,7 +203,7 @@ struct HeapAlgorithms
                         l_tmp_chunk.slice_two(l_tmp_chunk.Begin + p_size, &l_new_allocated_chunk, &l_new_free_chunk);
                         *out_chunk = _push_chunk(p_heap, &l_new_allocated_chunk);
 
-                        ShadowVector_v2::push_back_element(l_free_chunks, l_new_free_chunk);
+                        l_free_chunks.push_back_element(l_new_free_chunk);
 
 #if __DEBUG
                         HeapAlgorithms::_assert_memory_alignment(p_modulo_offset, *out_chunk);
@@ -230,7 +226,7 @@ struct HeapAlgorithms
                 if (l_offset_modulo == 0)
                 {
                     *out_chunk = _push_chunk(p_heap, &l_free_chunk);
-                    ShadowVector_v2::erase_element_at_always(l_free_chunks, i);
+                    l_free_chunks.erase_element_at_always(i);
 #if __DEBUG
                     HeapAlgorithms::_assert_memory_alignment(p_modulo_offset, *out_chunk);
 #endif
@@ -242,17 +238,18 @@ struct HeapAlgorithms
         return 0;
     };
 
-    template <class Heap> inline static AllocatedElementReturn _push_chunk(Heap& p_heap, SliceIndex* p_chunk)
+    template <class Heap> inline static AllocatedElementReturn _push_chunk(ShadowHeap_v3<Heap> p_heap, SliceIndex* p_chunk)
     {
-        typename Heap::_AllocatedChunks l_allocated_chunks = ShadowHeap_v2::get_allocated_chunks(p_heap);
-        return HeapAlgorithms::AllocatedElementReturn::build(PoolAlgorithms::allocate_element_v2(l_allocated_chunks, *p_chunk), p_chunk->Begin);
+        typename Heap::_AllocatedChunks __allocated_chunks = p_heap.get_allocated_chunks();
+        return HeapAlgorithms::AllocatedElementReturn::build(__allocated_chunks.to_shadow_pool().allocate_element_v2(*p_chunk), p_chunk->Begin);
     };
 
-    template <class Heap> inline static void _defragment(Heap& p_heap)
+    template <class Heap> inline static void _defragment(ShadowHeap_v3<Heap> p_heap)
     {
-        typename Heap::_FreeChunks l_free_chunks = ShadowHeap_v2::get_free_chunks(p_heap);
+        typename Heap::_FreeChunks __free_chunks = p_heap.get_free_chunks();
+        ShadowVector<typename Heap::_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
 
-        if (ShadowVector_v2::get_size(l_free_chunks) > 0)
+        if (l_free_chunks.get_size() > 0)
         {
             {
                 struct FreeChunkSortByAddress
@@ -262,18 +259,18 @@ struct HeapAlgorithms
                         return p_left.Begin > p_right.Begin;
                     };
                 };
-                Slice<SliceIndex> l_freechunks_slice = ShadowVector_v2::to_slice(l_free_chunks);
+                Slice<SliceIndex> l_freechunks_slice = l_free_chunks.to_slice();
                 Sort::Linear3(l_freechunks_slice, 0, FreeChunkSortByAddress{});
             }
 
-            SliceIndex& l_compared_chunk = ShadowVector_v2::get(l_free_chunks, 0);
-            for (loop(i, 1, sv_c_get_size(l_free_chunks)))
+            SliceIndex& l_compared_chunk = l_free_chunks.get(0);
+            for (loop(i, 1, l_free_chunks.get_size()))
             {
-                SliceIndex& l_chunk = ShadowVector_v2::get(l_free_chunks, i);
+                SliceIndex& l_chunk = l_free_chunks.get(i);
                 if ((l_compared_chunk.Begin + l_compared_chunk.Size) == l_chunk.Begin)
                 {
                     l_compared_chunk.Size += l_chunk.Size;
-                    ShadowVector_v2::erase_element_at_always(l_free_chunks, i);
+                    l_free_chunks.erase_element_at_always(i);
                     i -= 1;
                 }
                 else

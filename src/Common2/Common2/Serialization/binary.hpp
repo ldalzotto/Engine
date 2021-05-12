@@ -14,32 +14,32 @@ inline static uimax varying_slice(const VaryingSlice& p_slice)
 
 namespace BinarySerializer
 {
-template <class ShadowVector(int8), class ElementType> inline static void type(ShadowVector(int8) * in_out_serialization_target, const ElementType& p_value)
+template <class Vector, class ElementType> inline static void type(ShadowVector<Vector> in_out_serialization_target, const ElementType& p_value)
 {
-    sv_static_assert_element_type(ShadowVector(int8), int8);
+    ShadowVector<Vector>::Assert::element_type<int8>();
 
-    sv_c_push_back_array(*in_out_serialization_target, Slice<ElementType>::build_asint8_memory_singleelement(&p_value));
+    in_out_serialization_target.push_back_array(Slice<ElementType>::build_asint8_memory_singleelement(&p_value));
 };
 
-template <class ShadowVector(int8)> inline static void slice(ShadowVector(int8) * in_out_serialization_target, const Slice<int8>& p_slice)
+template <class Vector> inline static void slice(ShadowVector<Vector> in_out_serialization_target, const Slice<int8>& p_slice)
 {
-    sv_static_assert_element_type(ShadowVector(int8), int8);
+    ShadowVector<Vector>::Assert::element_type<int8>();
 
     BinarySerializer::type(in_out_serialization_target, p_slice.Size);
-    sv_c_push_back_array(*in_out_serialization_target, p_slice);
+    in_out_serialization_target.push_back_array(p_slice);
 };
 
-template <class ShadowVector(int8)> inline static uimax slice_ret_bytesnb(ShadowVector(int8) * in_out_serialization_target, const Slice<int8>& p_slice)
+template <class Vector> inline static uimax slice_ret_bytesnb(ShadowVector<Vector> in_out_serialization_target, const Slice<int8>& p_slice)
 {
-    sv_static_assert_element_type(ShadowVector(int8), int8);
+    ShadowVector<Vector>::Assert::element_type<int8>();
 
     BinarySerializer::slice(in_out_serialization_target, p_slice);
     return sizeof(p_slice.Size) + p_slice.Size;
 };
 
-template <class ShadowVector(int8)> inline static void varying_slice(ShadowVector(int8) * in_out_serialization_target, const VaryingSlice& p_varying_slice)
+template <class Vector> inline static void varying_slice(ShadowVector<Vector> in_out_serialization_target, const VaryingSlice& p_varying_slice)
 {
-    sv_static_assert_element_type(ShadowVector(int8), int8);
+    ShadowVector<Vector>::Assert::element_type<int8>();
 
     BinarySerializer::slice(in_out_serialization_target, p_varying_slice.memory);
     BinarySerializer::slice(in_out_serialization_target, p_varying_slice.chunks.build_asint8());

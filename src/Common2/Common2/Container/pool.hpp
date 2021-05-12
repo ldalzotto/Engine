@@ -62,6 +62,11 @@ template <class ElementType> struct Pool
         return this->memory.Memory.Memory;
     };
 
+    inline ShadowPool<Pool<ElementType>> to_shadow_pool()
+    {
+        return ShadowPool<Pool<ElementType>>{*this};
+    };
+
     inline int8 has_allocated_elements()
     {
         return this->memory.Size != this->free_blocks.Size;
@@ -69,7 +74,7 @@ template <class ElementType> struct Pool
 
     inline int8 is_element_free(const Token<ElementType> p_token)
     {
-        return PoolAlgorithms::is_element_free(*this, p_token);
+        return this->to_shadow_pool().is_element_free(p_token);
     };
 
     inline ElementType& get(const Token<ElementType> p_token)
@@ -81,19 +86,14 @@ template <class ElementType> struct Pool
         return this->memory.get(token_value(p_token));
     };
 
-    struct ShadowPool
-    {
-        Pool<ElementType>& pool;
-    };
-
     inline Token<ElementType> alloc_element_empty()
     {
-        PoolAlgorithms::allocate_element_empty_v2(*this);
+        this->to_shadow_pool().allocate_element_empty_v2();
     }
 
     inline Token<ElementType> alloc_element(const ElementType& p_element)
     {
-        return PoolAlgorithms::allocate_element_v2(*this, p_element);
+        return this->to_shadow_pool().allocate_element_v2(p_element);
     };
 
     inline void release_element(const Token<ElementType> p_token)

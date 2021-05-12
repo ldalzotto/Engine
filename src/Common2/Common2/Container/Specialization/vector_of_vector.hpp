@@ -294,6 +294,11 @@ template <class ElementType> struct VectorOfVector
         {
             return this->vectorOfVector->get(this->Index);
         };
+
+        inline ShadowVector<Element_ShadowVector> to_shadow_vector()
+        {
+            return ShadowVector<Element_ShadowVector>{*this};
+        };
     };
 
     inline Element_ShadowVector element_as_shadow_vector(const uimax p_nested_vector_index)

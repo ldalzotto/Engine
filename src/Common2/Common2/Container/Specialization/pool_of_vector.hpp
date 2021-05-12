@@ -35,9 +35,14 @@ template <class ElementType> struct PoolOfVector
         return this->FreeBlocks;
     };
 
+    inline ShadowPool<PoolOfVector<ElementType>> to_shadow_pool()
+    {
+        return ShadowPool<PoolOfVector<ElementType>>{*this};
+    };
+
     inline int8 is_element_free(const PoolOfVectorToken<ElementType> p_token)
     {
-        return PoolAlgorithms::is_element_free(*this, p_token);
+        return this->to_shadow_pool().is_element_free(p_token);
     };
 
     inline VectorOfVector<ElementType>& get_memory()
@@ -52,12 +57,12 @@ template <class ElementType> struct PoolOfVector
 
     inline PoolOfVectorToken<ElementType> alloc_vector_with_values(const Slice<ElementType>& p_initial_elements)
     {
-        return PoolAlgorithms::allocate_element_v2(*this, p_initial_elements);
+        return this->to_shadow_pool().allocate_element_v2(p_initial_elements);
     };
 
     inline PoolOfVectorToken<ElementType> alloc_vector()
     {
-        return PoolAlgorithms::allocate_element_empty_v2(*this);
+        return this->to_shadow_pool().allocate_element_empty_v2();
     };
 
     inline void release_vector(const PoolOfVectorToken<ElementType> p_token)
@@ -123,27 +128,27 @@ template <class ElementType> struct PoolOfVector
             return Element_ShadowVector{p_pool_of_vector, p_index};
         };
 
-        inline uimax sv_func_get_size()
+        inline uimax get_size()
         {
             return this->pool_of_vector->get_vector(this->index).Size;
         };
 
-        inline ElementType& sv_func_get(const uimax p_index)
+        inline ElementType& get(const uimax p_index)
         {
             return this->pool_of_vector->get_vector(this->index).get(p_index);
         };
 
-        inline void sv_func_push_back_element(const ElementType& p_element)
+        inline void push_back_element(const ElementType& p_element)
         {
             this->pool_of_vector->element_push_back_element(this->index, p_element);
         };
 
-        inline void sv_func_erase_element_at_always(const uimax p_index)
+        inline void erase_element_at_always(const uimax p_index)
         {
             this->pool_of_vector->element_erase_element_at_always(this->index, p_index);
         };
 
-        inline Slice<ElementType> sv_func_to_slice()
+        inline Slice<ElementType> to_slice()
         {
             return this->pool_of_vector->get_vector(this->index);
         };

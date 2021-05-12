@@ -779,9 +779,9 @@ struct SocketTypedRequestWriter
         VectorSlice<int8> l_target = VectorSlice<int8>::build(p_write_to_buffer, 0);
         Slice<int8> l_return = p_write_to_buffer;
         l_return.Size = 0;
-        BinarySerializer::type(&l_target, p_code);
+        BinarySerializer::type(l_target.to_shadow_vector(), p_code);
         l_return.Size += sizeof(p_code);
-        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_element);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(l_target.to_shadow_vector(), p_element);
         return l_return;
     };
 };
@@ -811,10 +811,10 @@ struct SocketTypedHeaderRequestWriter
         VectorSlice<int8> l_target = VectorSlice<int8>::build(p_writeto_buffer, 0);
         Slice<int8> l_return = p_writeto_buffer;
         l_return.Size = 0;
-        BinarySerializer::type(&l_target, p_code);
+        BinarySerializer::type(l_target.to_shadow_vector(), p_code);
         l_return.Size += sizeof(p_code);
-        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_header);
-        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_body);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(l_target.to_shadow_vector(), p_header);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(l_target.to_shadow_vector(), p_body);
         return l_return;
     }
 
@@ -823,9 +823,9 @@ struct SocketTypedHeaderRequestWriter
         VectorSlice<int8> l_target = VectorSlice<int8>::build(p_writeto_buffer, 0);
         Slice<int8> l_return = p_writeto_buffer;
         l_return.Size = 0;
-        BinarySerializer::type(&l_target, p_code);
+        BinarySerializer::type(l_target.to_shadow_vector(), p_code);
         l_return.Size += sizeof(p_code);
-        l_return.Size += BinarySerializer::slice_ret_bytesnb(&l_target, p_header);
+        l_return.Size += BinarySerializer::slice_ret_bytesnb(l_target.to_shadow_vector(), p_header);
         return l_return;
     }
 };
