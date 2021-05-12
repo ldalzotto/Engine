@@ -26,7 +26,7 @@ struct HeapMemory
 
     inline Token<SliceIndex> allocate_element(const Slice<int8>* p_element_bytes)
     {
-        HeapAlgorithms::AllocatedElementReturn l_heap_allocated_element;
+        ShadowHeapTypes::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_bytes->Size, &l_heap_allocated_element));
         this->Memory.slice.copy_memory_at_index(l_heap_allocated_element.Offset, *p_element_bytes);
         return l_heap_allocated_element.token;
@@ -34,14 +34,14 @@ struct HeapMemory
 
     inline Token<SliceIndex> allocate_empty_element(const uimax p_element_size)
     {
-        HeapAlgorithms::AllocatedElementReturn l_heap_allocated_element;
+        ShadowHeapTypes::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
         return l_heap_allocated_element.token;
     };
 
     inline Token<SliceIndex> allocate_empty_element_return_chunk(const uimax p_element_size, Slice<int8>* out_chunk)
     {
-        HeapAlgorithms::AllocatedElementReturn l_heap_allocated_element;
+        ShadowHeapTypes::AllocatedElementReturn l_heap_allocated_element;
         this->handle_heap_allocation_state(this->_Heap.allocate_element(p_element_size, &l_heap_allocated_element));
         *out_chunk = Slice<int8>::build_memory_elementnb(&this->Memory.Memory[l_heap_allocated_element.Offset], p_element_size);
         return l_heap_allocated_element.token;
@@ -79,9 +79,9 @@ struct HeapMemory
     };
 
   private:
-    void handle_heap_allocation_state(const HeapAlgorithms::AllocationState p_allocation_state)
+    void handle_heap_allocation_state(const ShadowHeapTypes::AllocationState p_allocation_state)
     {
-        if ((HeapAlgorithms::AllocationState_t)p_allocation_state & (HeapAlgorithms::AllocationState_t)HeapAlgorithms::AllocationState::HEAP_RESIZED)
+        if ((ShadowHeapTypes::AllocationState_t)p_allocation_state & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::HEAP_RESIZED)
         {
 #if __DEBUG
             if (!this->Memory.resize(this->_Heap.Size))
@@ -94,7 +94,7 @@ struct HeapMemory
         };
 
 #if __DEBUG
-        if (!((HeapAlgorithms::AllocationState_t)p_allocation_state & (HeapAlgorithms::AllocationState_t)HeapAlgorithms::AllocationState::ALLOCATED))
+        if (!((ShadowHeapTypes::AllocationState_t)p_allocation_state & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED))
         {
             abort();
         }

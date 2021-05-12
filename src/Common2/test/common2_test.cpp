@@ -213,7 +213,7 @@ template <class Container> inline void shadow_vector_test_v2(ShadowVector<Contai
         uimax l_old_values[l_old_element_check_nb];
         for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
         {
-            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = p_vector.get( i);
+            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = p_vector.get(i);
         }
 
         p_vector.erase_array_at(l_erase_begin_index, l_erase_nb);
@@ -1108,7 +1108,7 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
 };
 
-inline void assert_heap_memory_alignement(const uimax p_alignment, const HeapAlgorithms::AllocatedElementReturn& p_chunk)
+inline void assert_heap_memory_alignement(const uimax p_alignment, const ShadowHeapTypes::AllocatedElementReturn& p_chunk)
 {
     assert_true((p_chunk.Offset % p_alignment) == 0);
 };
@@ -1139,19 +1139,19 @@ inline void heap_test()
 
     {
 
-        HeapAlgorithms::AllocatedElementReturn l_chunk_1;
-        assert_true((HeapAlgorithms::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (HeapAlgorithms::AllocationState_t)HeapAlgorithms::AllocationState::ALLOCATED);
+        ShadowHeapTypes::AllocatedElementReturn l_chunk_1;
+        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_1.token)->Begin == 0);
         assert_true(l_heap.get(l_chunk_1.token)->Size == 10);
         assert_heap_integrity(&l_heap);
 
-        HeapAlgorithms::AllocatedElementReturn l_chunk_0;
-        assert_true((HeapAlgorithms::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (HeapAlgorithms::AllocationState_t)HeapAlgorithms::AllocationState::ALLOCATED);
+        ShadowHeapTypes::AllocatedElementReturn l_chunk_0;
+        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_0.token)->Begin == 10);
         assert_true(l_heap.get(l_chunk_0.token)->Size == 5);
         assert_heap_integrity(&l_heap);
 
-        HeapAlgorithms::AllocatedElementReturn l_chunk_2;
+        ShadowHeapTypes::AllocatedElementReturn l_chunk_2;
         l_heap.allocate_element(5, &l_chunk_2);
         assert_heap_integrity(&l_heap);
 
@@ -1161,12 +1161,12 @@ inline void heap_test()
         assert_heap_integrity(&l_heap);
 
         // We try to allocate 10 but there is two chunks size 5 free next to each other
-        assert_true(l_heap.allocate_element(10, &l_chunk_0) == HeapAlgorithms::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element(10, &l_chunk_0) == ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
 
         // The heap is resized
-        HeapAlgorithms::AllocatedElementReturn l_chunk_3;
-        assert_true((HeapAlgorithms::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (HeapAlgorithms::AllocationState_t)HeapAlgorithms::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
+        ShadowHeapTypes::AllocatedElementReturn l_chunk_3;
+        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
         assert_true(l_chunk_3.Offset == 20);
         assert_true(l_heap.get(l_chunk_3.token)->Size == 50);
         assert_true(l_heap.Size > l_initial_heap_size);
@@ -1180,15 +1180,15 @@ inline void heap_test()
     assert_heap_integrity(&l_heap);
     {
 
-        HeapAlgorithms::AllocatedElementReturn l_allocated_chunk;
-        assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == HeapAlgorithms::AllocationState::ALLOCATED);
+        ShadowHeapTypes::AllocatedElementReturn l_allocated_chunk;
+        assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_heap_memory_alignement(5, l_allocated_chunk);
-        assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == HeapAlgorithms::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 5);
         assert_heap_memory_alignement(5, l_allocated_chunk);
-        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == HeapAlgorithms::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 14);
         assert_heap_memory_alignement(7, l_allocated_chunk);
@@ -1196,7 +1196,7 @@ inline void heap_test()
         // There was a bug that were causing the heap to align memory chunk with the size of the chunk instead of the desired alignment
         l_heap.release_element(l_allocated_chunk.token);
         assert_heap_integrity(&l_heap);
-        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == HeapAlgorithms::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_allocated_chunk.Offset == 14);
         assert_heap_memory_alignement(7, l_allocated_chunk);
 
@@ -1208,10 +1208,10 @@ inline void heap_test()
     l_heap = Heap::allocate(l_initial_heap_size);
     assert_heap_integrity(&l_heap);
     {
-        HeapAlgorithms::AllocatedElementReturn l_allocated_chunk;
+        ShadowHeapTypes::AllocatedElementReturn l_allocated_chunk;
 
         assert_true(l_heap.AllocatedChunks.get_size() == 0);
-        assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == HeapAlgorithms::AllocationState::NOT_ALLOCATED);
+        assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::NOT_ALLOCATED);
         assert_true(l_heap.AllocatedChunks.get_size() == 0);
     }
 
@@ -1278,28 +1278,28 @@ inline void heap_memory_test()
     l_heap_memory.free();
 };
 
-template <class ShadowString(_)>
-inline void shadow_string_test(ShadowString(_) & p_string){
+template <class StringContainer>
+inline void shadow_string_test(ShadowString_v2<StringContainer> p_string){
 
     // append
-    {ShadowString_c_append(p_string, slice_int8_build_rawstr("ABC"));
-assert_true(ShadowString_c_get_length(p_string) == 3);
-assert_true(ShadowString_c_get(p_string, 0) == 'A');
-assert_true(ShadowString_c_get(p_string, 1) == 'B');
-assert_true(ShadowString_c_get(p_string, 2) == 'C');
+    {p_string.append(slice_int8_build_rawstr("ABC"));
+assert_true(p_string.get_length() == 3);
+assert_true(p_string.get(0) == 'A');
+assert_true(p_string.get(1) == 'B');
+assert_true(p_string.get(2) == 'C');
 }
 
 {
-    ShadowString_c_insert_array_at(p_string, slice_int8_build_rawstr("DEA"), 2);
-    assert_true(ShadowString_c_get_length(p_string) == 6);
-    assert_true(ShadowString_c_get(p_string, 2) == 'D');
-    assert_true(ShadowString_c_get(p_string, 3) == 'E');
-    assert_true(ShadowString_c_get(p_string, 4) == 'A');
+    p_string.insert_array_at(slice_int8_build_rawstr("DEA"), 2);
+    assert_true(p_string.get_length() == 6);
+    assert_true(p_string.get(2) == 'D');
+    assert_true(p_string.get(3) == 'E');
+    assert_true(p_string.get(4) == 'A');
 }
 
 // to_slice
 {
-    Slice<int8> l_slice = ShadowString_c_to_slice(p_string);
+    Slice<int8> l_slice = p_string.to_slice();
     assert_true(l_slice.Size == 6);
     assert_true(l_slice.get(1) == 'B');
     assert_true(l_slice.get(5) == 'C');
@@ -1316,7 +1316,7 @@ inline void string_test()
     assert_true(l_str.get_size() == 1);
     assert_true(l_str.get_length() == 0);
 
-    shadow_string_test(l_str);
+    shadow_string_test(l_str.to_shadow_string());
 
     l_str.free();
 };
@@ -1625,7 +1625,7 @@ inline void serialize_json_test()
     Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
 
     String l_serializer_buffer = String::allocate(0);
-    JSONSerializer<String> l_serializer = JSONSerializer<String>::build(l_serializer_buffer);
+    JSONSerializer<String> l_serializer = JSONSerializer<String>::build(l_serializer_buffer.to_shadow_string());
     l_serializer.start();
 
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
