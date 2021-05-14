@@ -159,7 +159,7 @@ template <class _ResourceUnit> struct iResourceUnit
 
             PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
             _Resource __resource = l_resource_pool.pool.get(l_event.get_allocated_resource());
-            __resource.resource = p_resource_allocation_func(l_asset_value);
+            p_resource_allocation_func(__resource, l_asset_value);
             __resource.header.allocated = 1;
             l_asset_binary.free();
         }
@@ -176,7 +176,7 @@ template <class _ResourceUnit> struct iResourceUnit
 
             PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
             _Resource __resource = l_resource_pool.pool.get(l_event.get_allocated_resource());
-            __resource.resource = p_resource_allocation_func(l_asset_value);
+            p_resource_allocation_func(__resource, l_asset_value);
             __resource.header.allocated = 1;
             l_event.get_asset().free();
         }

@@ -132,7 +132,7 @@ struct MeshRendererComponentUnit
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.allocated_resource);
 
             l_mesh_renderer.renderable_object = D3RendererAllocatorComposition::allocate_renderable_object_with_buffers(
-                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_resource_allocator.mesh_unit.meshes.pool.get(l_mesh_renderer.dependencies.mesh).mesh);
+                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_resource_allocator.mesh_unit.meshes.pool.get(l_mesh_renderer.dependencies.mesh).resource);
             p_renderer.allocator.heap.link_material_with_renderable_object(p_render_resource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material).material,
                                                                            l_mesh_renderer.renderable_object);
             l_mesh_renderer.allocated = 1;

@@ -200,6 +200,8 @@ struct ShaderResource
     Token<ShaderIndex> shader;
     Dependencies dependencies;
 
+    RESOURCE_DECLARE_TYPES(ShaderIndex);
+
     inline static ShaderResource build_from_id(const hash_t p_id)
     {
         return ShaderResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(),
@@ -311,12 +313,16 @@ struct ShaderResource
 
     struct DatabaseAllocationEvent
     {
+        RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(ShaderResource);
+
         hash_t id;
         Token<ShaderResource> allocated_resource;
     };
 
     struct InlineAllocationEvent
     {
+        RESOURCE_InlineAllocationEvent_DECLARE_TYPES(ShaderResource);
+
         ShaderResource::Asset asset;
         Token<ShaderResource> allocated_resource;
     };
@@ -329,6 +335,8 @@ struct ShaderResource
 
     struct FreeEvent
     {
+        RESOURCE_FreeEvent_DECLARE_TYPES(ShaderResource);
+
         Token<ShaderResource> allocated_resource;
 
         inline static ShaderResource::FreeEvent build_from_token(const Token<ShaderResource> p_token)
@@ -429,6 +437,8 @@ struct TextureResource
 
 struct MaterialResource
 {
+    RESOURCE_DECLARE_TYPES(Material);
+
     struct DynamicDependency
     {
         Token<TextureResource> dependency;
@@ -605,6 +615,8 @@ struct MaterialResource
 
     struct DatabaseAllocationEvent
     {
+        RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(MaterialResource);
+
         hash_t id;
         Token<MaterialResource> allocated_resource;
     };
@@ -618,12 +630,16 @@ struct MaterialResource
 
     struct InlineAllocationEvent
     {
+        RESOURCE_InlineAllocationEvent_DECLARE_TYPES(MaterialResource);
+
         Asset asset;
         Token<MaterialResource> allocated_resource;
     };
 
     struct FreeEvent
     {
+        RESOURCE_FreeEvent_DECLARE_TYPES(MaterialResource);
+
         Token<MaterialResource> allocated_resource;
     };
 };
