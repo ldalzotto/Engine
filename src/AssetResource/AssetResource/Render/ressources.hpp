@@ -5,7 +5,7 @@ struct ShaderModuleResource
     ResourceIdentifiedHeader header;
     Token<ShaderModule> resource;
 
-    using _SystemObjectValue = ShaderModule;
+    RESOURCE_DECLARE_TYPES(ShaderModule);
 
     inline static ShaderModuleResource build_inline_from_id(const hash_t p_id)
     {
@@ -54,7 +54,7 @@ struct ShaderModuleResource
 
     struct DatabaseAllocationEvent
     {
-        using _ResourceValue = ShaderModuleResource;
+        RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(ShaderModuleResource);
 
         hash_t id;
         Token<ShaderModuleResource> allocated_resource;
@@ -68,10 +68,7 @@ struct ShaderModuleResource
 
     struct InlineAllocationEvent
     {
-        using _ResourceValue = ShaderModuleResource;
-
-        using _Asset = Asset&;
-        using _AssetValue = Asset;
+        RESOURCE_InlineAllocationEvent_DECLARE_TYPES(ShaderModuleResource);
 
         Asset asset;
         Token<ShaderModuleResource> allocated_resource;
@@ -79,7 +76,7 @@ struct ShaderModuleResource
 
     struct FreeEvent
     {
-        using _ResourceValue = ShaderModuleResource;
+        RESOURCE_FreeEvent_DECLARE_TYPES(ShaderModuleResource);
 
         Token<ShaderModuleResource> allocated_resource;
 
@@ -93,7 +90,9 @@ struct ShaderModuleResource
 struct MeshResource
 {
     ResourceIdentifiedHeader header;
-    Token<Mesh> mesh;
+    Token<Mesh> resource;
+
+    RESOURCE_DECLARE_TYPES(Mesh);
 
     inline static MeshResource build_inline_from_id(const hash_t p_id)
     {
@@ -156,6 +155,8 @@ struct MeshResource
 
     struct DatabaseAllocationEvent
     {
+        RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(MeshResource);
+
         hash_t id;
         Token<MeshResource> allocated_resource;
     };
@@ -168,12 +169,16 @@ struct MeshResource
 
     struct InlineAllocationEvent
     {
+        RESOURCE_InlineAllocationEvent_DECLARE_TYPES(MeshResource);
+
         Asset asset;
         Token<MeshResource> allocated_resource;
     };
 
     struct FreeEvent
     {
+        RESOURCE_FreeEvent_DECLARE_TYPES(MeshResource);
+
         Token<MeshResource> allocated_resource;
 
         inline static FreeEvent build_from_token(const Token<MeshResource> p_resource)
@@ -336,7 +341,9 @@ struct ShaderResource
 struct TextureResource
 {
     ResourceIdentifiedHeader header;
-    Token<TextureGPU> texture;
+    Token<TextureGPU> resource;
+
+    RESOURCE_DECLARE_TYPES(TextureGPU);
 
     struct Asset
     {
@@ -392,6 +399,8 @@ struct TextureResource
 
     struct DatabaseAllocationEvent
     {
+        RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(TextureResource);
+
         hash_t id;
         Token<TextureResource> allocated_resource;
     };
@@ -404,12 +413,16 @@ struct TextureResource
 
     struct InlineAllocationEvent
     {
+        RESOURCE_InlineAllocationEvent_DECLARE_TYPES(TextureResource);
+
         Asset asset;
         Token<TextureResource> allocated_resource;
     };
 
     struct FreeEvent
     {
+        RESOURCE_FreeEvent_DECLARE_TYPES(TextureResource);
+
         Token<TextureResource> allocated_resource;
     };
 };

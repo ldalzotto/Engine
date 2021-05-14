@@ -11,7 +11,7 @@ struct ShaderModuleResourceUnit
     Vector<ShaderModuleResource::DatabaseAllocationEvent> shader_module_database_allocation_events;
     Vector<ShaderModuleResource::FreeEvent> shader_modules_free_events;
 
-    RESOURCE_DECLARE_TYPES(ShaderModuleResource);
+    RESOURCEUNIT_DECLARE_TYPES(ShaderModuleResource);
 
     inline static ShaderModuleResourceUnit allocate()
     {
@@ -91,6 +91,22 @@ struct ShaderModuleResourceUnit
         };
     };
 
+    struct ResourceIncrementDatabaseFunction
+    {
+        inline ShaderModuleResource operator()(const hash_t p_id) const
+        {
+            return ShaderModuleResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderModule>()};
+        };
+    };
+
+    struct ResourceIncrementInlineFunction
+    {
+        inline ShaderModuleResource operator()(const hash_t p_id) const
+        {
+            return ShaderModuleResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderModule>()};
+        };
+    };
+
     struct ResourceDecrementFunction
     {
         inline void operator()(const ShaderModuleResource&) const {}
@@ -101,12 +117,12 @@ struct ShaderModuleResourceComposition
 {
     inline static Token<ShaderModuleResource> allocate_or_increment_inline(ShaderModuleResourceUnit& p_unit, const ShaderModuleResource::InlineAllocationInput& p_inline_input)
     {
-        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset);
+        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, ShaderModuleResourceUnit::ResourceIncrementInlineFunction{});
     };
 
     inline static Token<ShaderModuleResource> allocate_or_increment_database(ShaderModuleResourceUnit& p_unit, const ShaderModuleResource::DatabaseAllocationInput& p_inline_input)
     {
-        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_database(p_inline_input.id);
+        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_database(p_inline_input.id, ShaderModuleResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
     inline static void decrement_or_release(ShaderModuleResourceUnit& p_unit, const Token<ShaderModuleResource> p_resource)
@@ -121,6 +137,8 @@ struct TextureResourceUnit
     Vector<TextureResource::InlineAllocationEvent> textures_allocation_events;
     Vector<TextureResource::DatabaseAllocationEvent> texture_database_allocation_events;
     Vector<TextureResource::FreeEvent> textures_free_events;
+
+    RESOURCEUNIT_DECLARE_TYPES(TextureResource);
 
     inline static TextureResourceUnit allocate()
     {
@@ -150,31 +168,72 @@ struct TextureResourceUnit
 #endif
     };
 
-    inline void deallocation_step(GPUContext& p_gpu_context)
+    inline Vector<TextureResource::DatabaseAllocationEvent>& get_database_allocation_events()
     {
-        ResourceAlgorithm::deallocation_step(this->textures, this->textures_free_events, [&](const TextureResource& p_resource) {
-            GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_resource.texture);
-        });
+        return this->texture_database_allocation_events;
     };
 
-    inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
+    inline Vector<TextureResource::InlineAllocationEvent>& get_inline_allocation_events()
     {
-        ResourceAlgorithm::allocation_step(this->textures, this->texture_database_allocation_events, this->textures_allocation_events, p_database_connection, p_asset_database,
-                                           TextureResourceAllocation{p_gpu_context});
+        return this->textures_allocation_events;
     };
 
-    struct TextureResourceAllocation
+    inline Vector<TextureResource::FreeEvent>& get_free_events()
+    {
+        return this->textures_free_events;
+    };
+
+    inline PoolHashedCounted<hash_t, TextureResource>& get_pool()
+    {
+        return this->textures;
+    };
+
+    struct ResourceAllocationFunction
     {
         GPUContext& gpu_context;
 
-        inline void operator()(TextureResource& p_resource, const TextureResource::Asset::Value& p_value) const
+        inline Token<TextureGPU> operator()(const TextureResource::Asset::Value& p_value) const
         {
-            p_resource.texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(gpu_context.graphics_allocator, gpu_context.buffer_memory,
-                                                                                                                    ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
-            TextureGPU& l_texture_gpu = gpu_context.graphics_allocator.heap.textures_gpu.get(p_resource.texture);
+            Token<TextureGPU> l_texture = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(gpu_context.graphics_allocator, gpu_context.buffer_memory,
+                                                                                                                             ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
+            TextureGPU& l_texture_gpu = gpu_context.graphics_allocator.heap.textures_gpu.get(l_texture);
             BufferReadWrite::write_to_imagegpu(gpu_context.buffer_memory.allocator, gpu_context.buffer_memory.events, l_texture_gpu.Image,
                                                gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image), p_value.pixels);
+            return l_texture;
         }
+    };
+
+    struct ResourceFreeFunction
+    {
+        GPUContext& gpu_context;
+
+        inline void operator()(const TextureResource& p_resource) const
+        {
+            GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator, p_resource.resource);
+        }
+    };
+
+    struct ResourceIncrementDatabaseFunction
+    {
+        inline TextureResource operator()(const hash_t p_id) const
+        {
+            return TextureResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<TextureGPU>()};
+        };
+    };
+
+    struct ResourceIncrementInlineFunction
+    {
+        inline TextureResource operator()(const hash_t p_id) const
+        {
+            return TextureResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<TextureGPU>()};
+        };
+    };
+
+    struct ResourceDecrementFunction
+    {
+        inline void operator()(const TextureResource&) const {
+
+        };
     };
 };
 
@@ -182,25 +241,17 @@ struct TextureResourceComposition
 {
     inline static Token<TextureResource> allocate_or_increment_inline(TextureResourceUnit& p_unit, const TextureResource::InlineAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_inline_v2(p_unit.textures, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            TextureResource l_resource = TextureResource{p_header, token_build_default<TextureGPU>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_inline_v2(p_unit.textures, l_resource, p_unit.textures_allocation_events, p_header.id, p_inline_input.asset);
-        });
+        return iResourceUnit<TextureResourceUnit>{p_unit}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, TextureResourceUnit::ResourceIncrementInlineFunction{});
     };
 
     inline static Token<TextureResource> allocate_or_increment_database(TextureResourceUnit& p_unit, const TextureResource::DatabaseAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_database_v2(p_unit.textures, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            TextureResource l_resource = TextureResource{p_header, token_build_default<TextureGPU>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_database_v2(p_unit.textures, l_resource, p_unit.texture_database_allocation_events, p_header.id);
-        });
+        return iResourceUnit<TextureResourceUnit>{p_unit}.allocate_or_increment_database(p_inline_input.id, TextureResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
     inline static void decrement_or_release(TextureResourceUnit& p_unit, const Token<TextureResource> p_resource)
     {
-        ResourceAlgorithm::decrement_or_release_resource_by_token_v3(p_unit.textures, p_unit.textures_free_events, p_unit.textures_allocation_events, p_unit.texture_database_allocation_events,
-                                                                     p_resource, [](auto) {
-                                                                     });
+        iResourceUnit<TextureResourceUnit>{p_unit}.decrement_or_release_resource_by_token(p_resource, TextureResourceUnit::ResourceDecrementFunction{});
     };
 };
 
@@ -210,6 +261,8 @@ struct MeshResourceUnit
     Vector<MeshResource::InlineAllocationEvent> meshes_allocation_events;
     Vector<MeshResource::DatabaseAllocationEvent> meshes_database_allocation_events;
     Vector<MeshResource::FreeEvent> meshes_free_events;
+
+    RESOURCEUNIT_DECLARE_TYPES(MeshResource);
 
     inline static MeshResourceUnit allocate()
     {
@@ -239,20 +292,67 @@ struct MeshResourceUnit
 #endif
     };
 
-    inline void deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context)
+    inline Vector<MeshResource::DatabaseAllocationEvent>& get_database_allocation_events()
     {
-        ResourceAlgorithm::deallocation_step(this->meshes, this->meshes_free_events, [&](const MeshResource& p_resource) {
-            D3RendererAllocatorComposition::free_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator, p_resource.mesh);
-        });
+        return this->meshes_database_allocation_events;
     };
 
-    inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
+    inline Vector<MeshResource::InlineAllocationEvent>& get_inline_allocation_events()
     {
-        ResourceAlgorithm::allocation_step(this->meshes, this->meshes_database_allocation_events, this->meshes_allocation_events, p_database_connection, p_asset_database,
-                                           [&](MeshResource& p_mesh_resource, const MeshResource::Asset::Value& p_value) {
-                                               p_mesh_resource.mesh = D3RendererAllocatorComposition::allocate_mesh_with_buffers(p_gpu_context.buffer_memory, p_renderer.allocator,
-                                                                                                                                 p_value.initial_vertices, p_value.initial_indices);
-                                           });
+        return this->meshes_allocation_events;
+    };
+
+    inline Vector<MeshResource::FreeEvent>& get_free_events()
+    {
+        return this->meshes_free_events;
+    };
+
+    inline PoolHashedCounted<hash_t, MeshResource>& get_pool()
+    {
+        return this->meshes;
+    };
+
+    struct ResourceAllocationFunc
+    {
+        D3Renderer& renderer;
+        GPUContext& gpu_context;
+        inline Token<Mesh> operator()(const MeshResource::Asset::Value& p_value) const
+        {
+            return D3RendererAllocatorComposition::allocate_mesh_with_buffers(this->gpu_context.buffer_memory, this->renderer.allocator, p_value.initial_vertices, p_value.initial_indices);
+        };
+    };
+
+    struct ResourceFreeFunc
+    {
+        D3Renderer& renderer;
+        GPUContext& gpu_context;
+        inline void operator()(const MeshResource& p_resource) const
+        {
+            D3RendererAllocatorComposition::free_mesh_with_buffers(this->gpu_context.buffer_memory, this->renderer.allocator, p_resource.resource);
+        };
+    };
+
+    struct ResourceIncrementDatabaseFunction
+    {
+        inline MeshResource operator()(const hash_t p_id) const
+        {
+            return MeshResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Mesh>()};
+        };
+    };
+
+    struct ResourceIncrementInlineFunction
+    {
+        inline MeshResource operator()(const hash_t p_id) const
+        {
+            return MeshResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Mesh>()};
+        };
+    };
+
+    struct ResourceDecrementFunc
+    {
+        inline void operator()(const MeshResource&) const {
+
+        };
     };
 };
 
@@ -260,25 +360,17 @@ struct MeshResourceComposition
 {
     inline static Token<MeshResource> allocate_or_increment_inline(MeshResourceUnit& p_unit, const MeshResource::InlineAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_inline_v2(p_unit.meshes, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            MeshResource l_mesh_resource = MeshResource{p_header, token_build_default<Mesh>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_inline_v2(p_unit.meshes, l_mesh_resource, p_unit.meshes_allocation_events, p_inline_input.id, p_inline_input.asset);
-        });
+        return iResourceUnit<MeshResourceUnit>{p_unit}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, MeshResourceUnit::ResourceIncrementInlineFunction{});
     };
 
     inline static Token<MeshResource> allocate_or_increment_database(MeshResourceUnit& p_unit, const MeshResource::DatabaseAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_database_v2(p_unit.meshes, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            MeshResource l_mesh_resource = MeshResource{p_header, token_build_default<Mesh>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_database_v2(p_unit.meshes, l_mesh_resource, p_unit.meshes_database_allocation_events, p_inline_input.id);
-        });
+        return iResourceUnit<MeshResourceUnit>{p_unit}.allocate_or_increment_database(p_inline_input.id, MeshResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
     inline static void decrement_or_release(MeshResourceUnit& p_unit, const Token<MeshResource> p_mesh_resource)
     {
-        ResourceAlgorithm::decrement_or_release_resource_by_token_v3(p_unit.meshes, p_unit.meshes_free_events, p_unit.meshes_allocation_events, p_unit.meshes_database_allocation_events,
-                                                                     p_mesh_resource, [](auto) {
-                                                                     });
+        iResourceUnit<MeshResourceUnit>{p_unit}.decrement_or_release_resource_by_token(p_mesh_resource, MeshResourceUnit::ResourceDecrementFunc{});
     };
 };
 
@@ -520,7 +612,7 @@ struct MaterialResourceUnit
                     case ShaderParameter::Type::TEXTURE_GPU:
                     {
                         const hash_t* l_texture_id = p_value.parameters.get_parameter_texture_gpu_value(j);
-                        Token<TextureGPU> l_texture = p_texture_unit.textures.pool.get(p_texture_unit.textures.CountMap.get_value_nothashed(*l_texture_id)->token).texture;
+                        Token<TextureGPU> l_texture = p_texture_unit.textures.pool.get(p_texture_unit.textures.CountMap.get_value_nothashed(*l_texture_id)->token).resource;
                         l_material_value.add_texture_gpu_parameter(p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_texture,
                                                                    p_gpu_context.graphics_allocator.heap.textures_gpu.get(l_texture));
                     }
@@ -764,9 +856,9 @@ struct RenderResourceAllocator2
     inline void deallocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context)
     {
         this->material_unit.deallocation_step(this->shader_unit, p_renderer, p_gpu_context);
-        this->texture_unit.deallocation_step(p_gpu_context);
+        iResourceUnit<TextureResourceUnit>{this->texture_unit}.deallocation_step(TextureResourceUnit::ResourceFreeFunction{p_gpu_context});
         this->shader_unit.deallocation_step(p_renderer, p_gpu_context);
-        this->mesh_unit.deallocation_step(p_renderer, p_gpu_context);
+        iResourceUnit<MeshResourceUnit>{this->mesh_unit}.deallocation_step(MeshResourceUnit::ResourceFreeFunc{p_renderer, p_gpu_context});
         iResourceUnit<ShaderModuleResourceUnit>{this->shader_module_unit}.deallocation_step(ShaderModuleResourceUnit::ResourceFreeFunction::build(p_gpu_context));
     };
 
@@ -774,9 +866,9 @@ struct RenderResourceAllocator2
     {
         iResourceUnit<ShaderModuleResourceUnit>{this->shader_module_unit}.allocation_step(p_database_connection, p_asset_database,
                                                                                           ShaderModuleResourceUnit::ResourceAllocationFunction::build(p_gpu_context));
-        this->mesh_unit.allocation_step(p_renderer, p_gpu_context, p_database_connection, p_asset_database);
+        iResourceUnit<MeshResourceUnit>{this->mesh_unit}.allocation_step(p_database_connection, p_asset_database, MeshResourceUnit::ResourceAllocationFunc{p_renderer, p_gpu_context});
         this->shader_unit.allocation_step(this->shader_module_unit, p_renderer, p_gpu_context, p_database_connection, p_asset_database);
-        this->texture_unit.allocation_step(p_gpu_context, p_database_connection, p_asset_database);
+        iResourceUnit<TextureResourceUnit>{this->texture_unit}.allocation_step(p_database_connection, p_asset_database, TextureResourceUnit::ResourceAllocationFunction{p_gpu_context});
         this->material_unit.allocation_step(this->shader_unit, this->texture_unit, p_renderer, p_gpu_context, p_database_connection, p_asset_database);
     };
 };

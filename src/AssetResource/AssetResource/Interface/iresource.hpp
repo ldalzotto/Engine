@@ -202,7 +202,8 @@ template <class _ResourceUnit> struct iResourceUnit
         l_resource_free_events.clear();
     };
 
-    inline Token<_ResourceValue> allocate_or_increment_inline(const hash_t p_id, const _AssetBinaryValue& p_asset_binary)
+    template <class ResourceValueBuilderFunc>
+    inline Token<_ResourceValue> allocate_or_increment_inline(const hash_t p_id, const _AssetBinaryValue& p_asset_binary, const ResourceValueBuilderFunc& p_resource_builder)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         if (l_resource_pool.has_key_nothashed(p_id))
@@ -217,13 +218,12 @@ template <class _ResourceUnit> struct iResourceUnit
         else
         {
             // iResource<>
-            return this->push_resource_to_be_allocated_inline(
-                iResource<_ResourceValue>::build_resource(ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<iResource<_ResourceValue>::_SystemObjectValue>()), p_id,
-                p_asset_binary);
+            _ResourceValue l_resource = p_resource_builder(p_id);
+            return this->push_resource_to_be_allocated_inline(l_resource, p_id, p_asset_binary);
         }
     };
 
-    inline Token<_ResourceValue> allocate_or_increment_database(const hash_t p_id)
+    template <class ResourceValueBuilderFunc> inline Token<_ResourceValue> allocate_or_increment_database(const hash_t p_id, const ResourceValueBuilderFunc& p_resource_builder)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         if (l_resource_pool.has_key_nothashed(p_id))
@@ -235,8 +235,8 @@ template <class _ResourceUnit> struct iResourceUnit
         }
         else
         {
-            return this->push_resource_to_be_allocated_database(
-                iResource<_ResourceValue>::build_resource(ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<iResource<_ResourceValue>::_SystemObjectValue>()), p_id);
+            _ResourceValue l_resource = p_resource_builder(p_id);
+            return this->push_resource_to_be_allocated_database(l_resource, p_id);
         }
     };
 
@@ -321,7 +321,7 @@ template <class _ResourceUnit> struct iResourceUnit
     };
 };
 
-#define RESOURCE_DECLARE_TYPES(ResourceValue)                                                                                                                                                          \
+#define RESOURCEUNIT_DECLARE_TYPES(ResourceValue)                                                                                                                                                      \
     using _Resource = ResourceValue&;                                                                                                                                                                  \
     using _ResourceValue = ResourceValue;                                                                                                                                                              \
                                                                                                                                                                                                        \
@@ -351,3 +351,11 @@ template <class _ResourceUnit> struct iResourceUnit
                                                                                                                                                                                                        \
     using _FreeEvent = ResourceValue::FreeEvent&;                                                                                                                                                      \
     using _FreeEventValue = ResourceValue::FreeEvent;
+
+#define RESOURCE_DECLARE_TYPES(InternalResourceValue) using _SystemObjectValue = InternalResourceValue;
+#define RESOURCE_DatabaseAllocationEvent_DECLARE_TYPES(ResourceValue) using _ResourceValue = ResourceValue;
+#define RESOURCE_InlineAllocationEvent_DECLARE_TYPES(ResourceValue)                                                                                                                                    \
+    using _ResourceValue = ResourceValue;                                                                                                                                                              \
+    using _Asset = Asset&;                                                                                                                                                                             \
+    using _AssetValue = Asset;
+#define RESOURCE_FreeEvent_DECLARE_TYPES(ResourceValue) using _ResourceValue = ResourceValue;
