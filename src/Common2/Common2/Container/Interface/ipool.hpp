@@ -5,6 +5,7 @@ template <class _Pool> struct iPool
     _Pool& pool;
 
     using _ElementValue = typename _Pool::_ElementValue;
+    using _Element = typename _Pool::_Element;
     using _FreeBlocksValue = typename _Pool::_FreeBlocksValue;
     using _FreeBlocks = typename _Pool::_FreeBlocks;
 
@@ -58,6 +59,16 @@ template <class _Pool> struct iPool
             }
         }
         return 0;
+    };
+
+    inline void release_element(const Token<_ElementValue> p_token)
+    {
+        this->pool.release_element(p_token);
+    };
+
+    inline _Element get(const Token<_ElementValue> p_token)
+    {
+        return this->pool.get(p_token);
     };
 
   private:

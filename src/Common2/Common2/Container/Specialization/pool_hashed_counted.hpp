@@ -98,4 +98,5 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
             return this->push_back_element_nothashed(p_key, p_allocation_func());
         }
     };
+
 };

@@ -12,6 +12,7 @@ template <class ElementType> struct Vector
     uimax Size;
     Span<ElementType> Memory;
 
+    using _Element = ElementType&;
     using _ElementValue = ElementType;
     using _SizeType = uimax;
 

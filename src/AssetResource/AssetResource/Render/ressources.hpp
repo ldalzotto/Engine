@@ -1,33 +1,11 @@
 #pragma once
 
-enum class ResourceAllocationType
-{
-    UNKNOWN = 0,
-    INLINE = 1,
-    ASSET_DATABASE = 2
-};
-
-struct ResourceIdentifiedHeader
-{
-    ResourceAllocationType allocation_type;
-    int8 allocated;
-    hash_t id;
-
-    inline static ResourceIdentifiedHeader build_inline_with_id(const hash_t p_id)
-    {
-        return ResourceIdentifiedHeader{ResourceAllocationType::INLINE, 0, p_id};
-    };
-
-    inline static ResourceIdentifiedHeader build_database_with_id(const hash_t p_id)
-    {
-        return ResourceIdentifiedHeader{ResourceAllocationType::ASSET_DATABASE, 0, p_id};
-    };
-};
-
 struct ShaderModuleResource
 {
     ResourceIdentifiedHeader header;
-    Token<ShaderModule> shader_module;
+    Token<ShaderModule> resource;
+
+    using _SystemObjectValue = ShaderModule;
 
     inline static ShaderModuleResource build_inline_from_id(const hash_t p_id)
     {
@@ -76,6 +54,8 @@ struct ShaderModuleResource
 
     struct DatabaseAllocationEvent
     {
+        using _ResourceValue = ShaderModuleResource;
+
         hash_t id;
         Token<ShaderModuleResource> allocated_resource;
     };
@@ -88,12 +68,19 @@ struct ShaderModuleResource
 
     struct InlineAllocationEvent
     {
+        using _ResourceValue = ShaderModuleResource;
+
+        using _Asset = Asset&;
+        using _AssetValue = Asset;
+
         Asset asset;
         Token<ShaderModuleResource> allocated_resource;
     };
 
     struct FreeEvent
     {
+        using _ResourceValue = ShaderModuleResource;
+
         Token<ShaderModuleResource> allocated_resource;
 
         inline static FreeEvent build_from_token(const Token<ShaderModuleResource> p_token)
@@ -181,7 +168,7 @@ struct MeshResource
 
     struct InlineAllocationEvent
     {
-        MeshResource::Asset asset;
+        Asset asset;
         Token<MeshResource> allocated_resource;
     };
 

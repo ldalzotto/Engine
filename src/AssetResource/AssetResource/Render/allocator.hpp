@@ -4,13 +4,14 @@
     Some resource depedencies are stored inside the resource itself. Wouldn't it be better to store dependencies in a separated Pool ?
     Not necessarily, because we never iterate over resources, we request them by key.
 */
-
 struct ShaderModuleResourceUnit
 {
     PoolHashedCounted<hash_t, ShaderModuleResource> shader_modules;
     Vector<ShaderModuleResource::InlineAllocationEvent> shader_modules_allocation_events;
     Vector<ShaderModuleResource::DatabaseAllocationEvent> shader_module_database_allocation_events;
     Vector<ShaderModuleResource::FreeEvent> shader_modules_free_events;
+
+    RESOURCE_DECLARE_TYPES(ShaderModuleResource);
 
     inline static ShaderModuleResourceUnit allocate()
     {
@@ -40,19 +41,59 @@ struct ShaderModuleResourceUnit
 #endif
     };
 
-    inline void deallocation_step(GPUContext& p_gpu_context)
+    inline Vector<ShaderModuleResource::DatabaseAllocationEvent>& get_database_allocation_events()
     {
-        ResourceAlgorithm::deallocation_step(this->shader_modules, this->shader_modules_free_events, [&](const ShaderModuleResource& p_resource) {
-            p_gpu_context.graphics_allocator.free_shader_module(p_resource.shader_module);
-        });
+        return this->shader_module_database_allocation_events;
     };
 
-    inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
+    inline Vector<ShaderModuleResource::InlineAllocationEvent>& get_inline_allocation_events()
     {
-        ResourceAlgorithm::allocation_step(this->shader_modules, this->shader_module_database_allocation_events, this->shader_modules_allocation_events, p_database_connection, p_asset_database,
-                                           [&](ShaderModuleResource& p_resource, const ShaderModuleResource::Asset::Value& p_value) {
-                                               p_resource.shader_module = p_gpu_context.graphics_allocator.allocate_shader_module(p_value.compiled_shader);
-                                           });
+        return this->shader_modules_allocation_events;
+    };
+
+    inline Vector<ShaderModuleResource::FreeEvent>& get_free_events()
+    {
+        return this->shader_modules_free_events;
+    };
+
+    inline PoolHashedCounted<hash_t, ShaderModuleResource>& get_pool()
+    {
+        return this->shader_modules;
+    };
+
+    struct ResourceAllocationFunction
+    {
+        GPUContext* gpu_context;
+
+        inline static ResourceAllocationFunction build(GPUContext& p_gpu_context)
+        {
+            return ResourceAllocationFunction{&p_gpu_context};
+        };
+
+        inline Token<ShaderModule> operator()(const ShaderModuleResource::Asset::Value& p_value) const
+        {
+            return gpu_context->graphics_allocator.allocate_shader_module(p_value.compiled_shader);
+        };
+    };
+
+    struct ResourceFreeFunction
+    {
+        GPUContext* gpu_context;
+
+        inline static ResourceFreeFunction build(GPUContext& p_gpu_context)
+        {
+            return ResourceFreeFunction{&p_gpu_context};
+        };
+
+        inline void operator()(const ShaderModuleResource& p_resource) const
+        {
+            this->gpu_context->graphics_allocator.free_shader_module(p_resource.resource);
+        };
+    };
+
+    struct ResourceDecrementFunction
+    {
+        inline void operator()(const ShaderModuleResource&) const {}
     };
 };
 
@@ -60,25 +101,17 @@ struct ShaderModuleResourceComposition
 {
     inline static Token<ShaderModuleResource> allocate_or_increment_inline(ShaderModuleResourceUnit& p_unit, const ShaderModuleResource::InlineAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_inline_v2(p_unit.shader_modules, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            ShaderModuleResource l_resource = ShaderModuleResource{p_header, token_build_default<ShaderModule>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_inline_v2(p_unit.shader_modules, l_resource, p_unit.shader_modules_allocation_events, p_header.id, p_inline_input.asset);
-        });
+        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset);
     };
 
     inline static Token<ShaderModuleResource> allocate_or_increment_database(ShaderModuleResourceUnit& p_unit, const ShaderModuleResource::DatabaseAllocationInput& p_inline_input)
     {
-        return ResourceAlgorithm::allocate_or_increment_database_v2(p_unit.shader_modules, p_inline_input.id, [&](const ResourceIdentifiedHeader& p_header) {
-            ShaderModuleResource l_resource = ShaderModuleResource{p_header, token_build_default<ShaderModule>()};
-            return ResourceAlgorithm::push_resource_to_be_allocated_database_v2(p_unit.shader_modules, l_resource, p_unit.shader_module_database_allocation_events, p_header.id);
-        });
+        return iResourceUnit<ShaderModuleResourceUnit>{p_unit}.allocate_or_increment_database(p_inline_input.id);
     };
 
     inline static void decrement_or_release(ShaderModuleResourceUnit& p_unit, const Token<ShaderModuleResource> p_resource)
     {
-        ResourceAlgorithm::decrement_or_release_resource_by_token_v3(p_unit.shader_modules, p_unit.shader_modules_free_events, p_unit.shader_modules_allocation_events,
-                                                                     p_unit.shader_module_database_allocation_events, p_resource, [](auto) {
-                                                                     });
+        iResourceUnit<ShaderModuleResourceUnit>{p_unit}.decrement_or_release_resource_by_token(p_resource, ShaderModuleResourceUnit::ResourceDecrementFunction{});
     };
 };
 
@@ -310,7 +343,7 @@ struct ShaderResourceUnit
             p_mesh_resource.shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
                 gpu_context.graphics_allocator, renderer.allocator, p_value.specific_parameters, p_value.execution_order,
                 gpu_context.graphics_allocator.heap.graphics_pass.get(renderer.color_step.pass), p_value.shader_configuration,
-                gpu_context.graphics_allocator.heap.shader_modules.get(l_vertex_shader.shader_module), gpu_context.graphics_allocator.heap.shader_modules.get(l_fragment_shader.shader_module));
+                gpu_context.graphics_allocator.heap.shader_modules.get(l_vertex_shader.resource), gpu_context.graphics_allocator.heap.shader_modules.get(l_fragment_shader.resource));
         };
     };
 };
@@ -734,12 +767,13 @@ struct RenderResourceAllocator2
         this->texture_unit.deallocation_step(p_gpu_context);
         this->shader_unit.deallocation_step(p_renderer, p_gpu_context);
         this->mesh_unit.deallocation_step(p_renderer, p_gpu_context);
-        this->shader_module_unit.deallocation_step(p_gpu_context);
+        iResourceUnit<ShaderModuleResourceUnit>{this->shader_module_unit}.deallocation_step(ShaderModuleResourceUnit::ResourceFreeFunction::build(p_gpu_context));
     };
 
     inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
-        this->shader_module_unit.allocation_step(p_gpu_context, p_database_connection, p_asset_database);
+        iResourceUnit<ShaderModuleResourceUnit>{this->shader_module_unit}.allocation_step(p_database_connection, p_asset_database,
+                                                                                          ShaderModuleResourceUnit::ResourceAllocationFunction::build(p_gpu_context));
         this->mesh_unit.allocation_step(p_renderer, p_gpu_context, p_database_connection, p_asset_database);
         this->shader_unit.allocation_step(this->shader_module_unit, p_renderer, p_gpu_context, p_database_connection, p_asset_database);
         this->texture_unit.allocation_step(p_gpu_context, p_database_connection, p_asset_database);

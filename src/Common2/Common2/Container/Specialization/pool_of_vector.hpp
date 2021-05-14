@@ -14,6 +14,7 @@ template <class ElementType> struct PoolOfVector
     VectorOfVector<ElementType> Memory;
     Vector<PoolOfVectorToken<ElementType>> FreeBlocks;
 
+    using _Element = Slice<ElementType>;
     using _ElementValue = Slice<ElementType>;
 
     using _FreeBlocksValue = Vector<PoolOfVectorToken<ElementType>>;

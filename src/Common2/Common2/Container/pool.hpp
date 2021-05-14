@@ -11,6 +11,7 @@ template <class ElementType> struct Pool
     Vector<ElementType> memory;
     Vector<Token<ElementType>> free_blocks;
 
+    using _Element = ElementType&;
     using _ElementValue = ElementType;
 
     using _FreeBlocksValue = Vector<Token<ElementType>>;
