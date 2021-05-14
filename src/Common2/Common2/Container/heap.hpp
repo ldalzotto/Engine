@@ -53,24 +53,24 @@ struct Heap
         return this->AllocatedChunks;
     };
 
-    inline ShadowHeap<Heap> to_shadow_heap()
+    inline iHeap<Heap> to_iheap()
     {
-        return ShadowHeap<Heap>{*this};
+        return iHeap<Heap>{*this};
     };
 
     inline ShadowHeapTypes::AllocationState allocate_element(const uimax p_size, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
     {
-        return this->to_shadow_heap().allocate_element(p_size, out_chunk);
+        return this->to_iheap().allocate_element(p_size, out_chunk);
     };
 
     inline ShadowHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
     {
-        return this->to_shadow_heap().allocate_element_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
+        return this->to_iheap().allocate_element_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
 
     inline ShadowHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
     {
-        return this->to_shadow_heap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
+        return this->to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
 
     inline SliceIndex* get(const Token<SliceIndex> p_chunk)
@@ -125,28 +125,28 @@ struct HeapPaged
     /*
         A ShadowHeap_t that wraps a sigle Heap of the HeapPaged to use it on Heap generic algorithms.
     */
-    struct SingleShadowHeap
+    struct Single_iHeap
     {
         HeapPaged* heapPaged;
         uimax index;
-        VectorOfVector<SliceIndex>::Element_ShadowVector tmp_shadow_vec;
+        VectorOfVector<SliceIndex>::Element_iVector tmp_shadow_vec;
 
-        using _FreeChunksValue = VectorOfVector<SliceIndex>::Element_ShadowVector;
+        using _FreeChunksValue = VectorOfVector<SliceIndex>::Element_iVector;
         using _FreeChunks = _FreeChunksValue&;
         using _AllocatedChunksValue = Pool<SliceIndex>;
         using _AllocatedChunks = _AllocatedChunksValue&;
 
-        inline static SingleShadowHeap build(HeapPaged* p_heap_paged, const uimax p_index)
+        inline static Single_iHeap build(HeapPaged* p_heap_paged, const uimax p_index)
         {
-            SingleShadowHeap l_shadow_heap;
-            l_shadow_heap.heapPaged = p_heap_paged;
-            l_shadow_heap.index = p_index;
-            return l_shadow_heap;
+            Single_iHeap l_iheap;
+            l_iheap.heapPaged = p_heap_paged;
+            l_iheap.index = p_index;
+            return l_iheap;
         };
 
-        inline VectorOfVector<SliceIndex>::Element_ShadowVector& get_freechunks()
+        inline VectorOfVector<SliceIndex>::Element_iVector& get_freechunks()
         {
-            this->tmp_shadow_vec = this->heapPaged->FreeChunks.element_as_shadow_vector(this->index);
+            this->tmp_shadow_vec = this->heapPaged->FreeChunks.element_as_iVector(this->index);
             return tmp_shadow_vec;
         };
 
@@ -155,9 +155,9 @@ struct HeapPaged
             return this->heapPaged->AllocatedChunks;
         };
 
-        inline ShadowHeap<SingleShadowHeap> to_shadow_heap()
+        inline iHeap<Single_iHeap> to_iheap()
         {
-            return ShadowHeap<SingleShadowHeap>{*this};
+            return iHeap<Single_iHeap>{*this};
         };
     };
 
@@ -183,8 +183,8 @@ struct HeapPaged
 
         for (loop(i, 0, this->FreeChunks.varying_vector.get_size()))
         {
-            SingleShadowHeap l_single_shadow_heap = SingleShadowHeap::build(this, i);
-            if ((ShadowHeapTypes::AllocationState_t)l_single_shadow_heap.to_shadow_heap().allocate_element_norealloc_with_modulo_offset( p_size, p_modulo_offset, &l_heap_allocated_element_return) &
+            Single_iHeap l_single_iheap = Single_iHeap::build(this, i);
+            if ((ShadowHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset( p_size, p_modulo_offset, &l_heap_allocated_element_return) &
                 (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED)
             {
                 *out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(i, l_heap_allocated_element_return);
@@ -194,8 +194,8 @@ struct HeapPaged
 
         this->create_new_page();
 
-        SingleShadowHeap l_single_shadow_heap = SingleShadowHeap::build(this, this->FreeChunks.varying_vector.get_size() - 1);
-        if ((ShadowHeapTypes::AllocationState_t)l_single_shadow_heap.to_shadow_heap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_heap_allocated_element_return) &
+        Single_iHeap l_single_iheap = Single_iHeap::build(this, this->FreeChunks.varying_vector.get_size() - 1);
+        if ((ShadowHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_heap_allocated_element_return) &
             (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED)
         {
             *out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(this->FreeChunks.varying_vector.get_size() - 1, l_heap_allocated_element_return);

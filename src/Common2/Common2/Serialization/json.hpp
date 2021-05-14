@@ -10,9 +10,9 @@ inline Slice<int8> validate_json_type(const Slice<int8>& p_type, const Slice<int
     return p_type;
 };
 
-template <class Container> inline void sanitize_json(ShadowVector<Container> p_source)
+template <class Container> inline void sanitize_json(iVector<Container> p_source)
 {
-    ShadowVector<Container>::Assert::element_type<int8>();
+    iVector<Container>::Assert::element_type<int8>();
 
     SliceN<int8, 4> l_chars_removed = {' ', '\n', '\r', '\t'};
     p_source.erase_all_elements_that_matches_any_of_element_v2(slice_from_slicen(&l_chars_removed), Equality::Default{});
@@ -69,9 +69,9 @@ struct JSONDeserializer
         return allocate(p_source, p_source.slide_rv(l_start_index));
     };
 
-    template <class Container> inline static JSONDeserializer sanitize_and_start(ShadowVector<Container> p_source)
+    template <class Container> inline static JSONDeserializer sanitize_and_start(iVector<Container> p_source)
     {
-        ShadowVector<Container>::Assert::element_type<int8>();
+        iVector<Container>::Assert::element_type<int8>();
 
         JSONUtil::sanitize_json(p_source);
         return JSONDeserializer::start(p_source.to_slice());
@@ -389,11 +389,11 @@ struct JSONDeserializer
 
 template <class StringContainer> struct JSONSerializer
 {
-    ShadowString_v2<StringContainer> output;
+    iString<StringContainer> output;
 
-    inline static JSONSerializer build(ShadowString_v2<StringContainer> p_shadow_string)
+    inline static JSONSerializer build(iString<StringContainer> p_istring)
     {
-        return JSONSerializer{p_shadow_string};
+        return JSONSerializer{p_istring};
     }
 
     inline void start()

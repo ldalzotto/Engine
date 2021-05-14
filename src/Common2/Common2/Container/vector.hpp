@@ -85,9 +85,9 @@ template <class ElementType> struct Vector
         return this->Size == 0;
     };
 
-    inline ShadowVector<Vector<ElementType>> to_shadow_vector()
+    inline iVector<Vector<ElementType>> to_ivector()
     {
-        return ShadowVector<Vector<ElementType>>{*this};
+        return iVector<Vector<ElementType>>{*this};
     };
 
     inline ElementType& get(const uimax p_index)
@@ -290,7 +290,7 @@ template <class ElementType> struct Vector
 
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
     {
-        this->to_shadow_vector().erase_if(p_predicate);
+        this->to_ivector().erase_if(p_predicate);
     };
 
   private:

@@ -38,9 +38,9 @@ template <class ElementType> struct VectorSlice
         return this->Size == 0;
     };
 
-    inline ShadowVector<VectorSlice<ElementType>> to_shadow_vector()
+    inline iVector<VectorSlice<ElementType>> to_ivector()
     {
-        return ShadowVector<VectorSlice<ElementType>>{*this};
+        return iVector<VectorSlice<ElementType>>{*this};
     };
 
     inline ElementType& get(const uimax p_index)

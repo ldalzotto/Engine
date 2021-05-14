@@ -249,10 +249,10 @@ template <class ElementType> struct VectorOfVector
     };
 
     /*
-        Element_ShadowVector is a wrapper around a VectorOfVector that acts like a regular Vector.
+        Element_iVector is a wrapper around a VectorOfVector that acts like a regular Vector.
         It can be used in some templated algorithm that uses Vector.
     */
-    struct Element_ShadowVector
+    struct Element_iVector
     {
         VectorOfVector<ElementType>* vectorOfVector;
         uimax Index;
@@ -260,9 +260,9 @@ template <class ElementType> struct VectorOfVector
         using _ElementValue = ElementType;
         using _SizeType = uimax;
 
-        inline static Element_ShadowVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
+        inline static Element_iVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
         {
-            return Element_ShadowVector{p_vector_of_vector, p_index};
+            return Element_iVector{p_vector_of_vector, p_index};
         };
 
         inline uimax get_size() const
@@ -295,15 +295,15 @@ template <class ElementType> struct VectorOfVector
             return this->vectorOfVector->get(this->Index);
         };
 
-        inline ShadowVector<Element_ShadowVector> to_shadow_vector()
+        inline iVector<Element_iVector> to_ivector()
         {
-            return ShadowVector<Element_ShadowVector>{*this};
+            return iVector<Element_iVector>{*this};
         };
     };
 
-    inline Element_ShadowVector element_as_shadow_vector(const uimax p_nested_vector_index)
+    inline Element_iVector element_as_iVector(const uimax p_nested_vector_index)
     {
-        return Element_ShadowVector::build(this, p_nested_vector_index);
+        return Element_iVector::build(this, p_nested_vector_index);
     };
 
   private:

@@ -119,8 +119,8 @@ struct String
         return Slice<int8>::build_memory_elementnb(this->Memory.Memory.Memory, this->Memory.Size);
     };
 
-    inline ShadowString_v2<String> to_shadow_string()
+    inline iString<String> to_istring()
     {
-        return ShadowString_v2<String>{*this};
+        return iString<String>{*this};
     };
 };

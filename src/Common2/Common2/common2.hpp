@@ -56,10 +56,10 @@
 #include "./Functional/sort.hpp"
 #include "./Functional/slice_algorithm.hpp"
 
-#include "./Container/Shadow/shadow_vector.hpp"
-#include "./Container/Shadow/shadow_pool.hpp"
-#include "./Container/Shadow/shadow_heap.hpp"
-#include "./Container/Shadow/shadow_string.hpp"
+#include "./Container/Interface/ivector.hpp"
+#include "./Container/Interface/ipool.hpp"
+#include "./Container/Interface/iheap.hpp"
+#include "./Container/Interface/istring.hpp"
 
 #include "./Container/vector.hpp"
 #include "./Container/vector_slice.hpp"

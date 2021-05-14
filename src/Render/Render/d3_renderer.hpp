@@ -127,9 +127,9 @@ struct D3RendererHeap
         in_out_materials->push_back_array(l_materials.to_slice());
     };
 
-    inline PoolOfVector<Token<Material>>::Element_ShadowVector get_materials_from_shader(const Token<ShaderIndex> p_shader)
+    inline PoolOfVector<Token<Material>>::Element_iVector get_materials_from_shader(const Token<ShaderIndex> p_shader)
     {
-        return this->shaders_to_materials.get_element_as_shadow_vector(token_build_from<Slice<Token<Material>>>(p_shader));
+        return this->shaders_to_materials.get_element_as_iVector(token_build_from<Slice<Token<Material>>>(p_shader));
     };
 
     inline void link_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
@@ -150,9 +150,9 @@ struct D3RendererHeap
         }
     };
 
-    inline PoolOfVector<Token<RenderableObject>>::Element_ShadowVector get_renderableobjects_from_material(const Token<Material> p_material)
+    inline PoolOfVector<Token<RenderableObject>>::Element_iVector get_renderableobjects_from_material(const Token<Material> p_material)
     {
-        return this->material_to_renderable_objects.get_element_as_shadow_vector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
+        return this->material_to_renderable_objects.get_element_as_iVector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
     };
 };
 

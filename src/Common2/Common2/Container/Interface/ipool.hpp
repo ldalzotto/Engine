@@ -1,6 +1,6 @@
 #pragma once
 
-template <class _Pool> struct ShadowPool
+template <class _Pool> struct iPool
 {
     _Pool& pool;
 
@@ -16,7 +16,7 @@ template <class _Pool> struct ShadowPool
     inline Token<_ElementValue> allocate_element_empty_v2()
     {
         _FreeBlocks __free_blocks = this->get_free_blocks();
-        ShadowVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_shadow_vector();
+        iVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_ivector();
         if (!l_free_blocks.empty())
         {
             return l_free_blocks.pop_back_return();
@@ -31,7 +31,7 @@ template <class _Pool> struct ShadowPool
     inline Token<_ElementValue> allocate_element_v2(const _ElementValue& p_element)
     {
         _FreeBlocks __free_blocks = this->get_free_blocks();
-        ShadowVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_shadow_vector();
+        iVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_ivector();
         if (!l_free_blocks.empty())
         {
             Token<_ElementValue> l_availble_token = l_free_blocks.pop_back_return();
@@ -48,7 +48,7 @@ template <class _Pool> struct ShadowPool
     inline int8 is_element_free(const Token<_ElementValue> p_token)
     {
         _FreeBlocks __free_blocks = this->get_free_blocks();
-        ShadowVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_shadow_vector();
+        iVector<_FreeBlocksValue> l_free_blocks = __free_blocks.to_ivector();
         for (loop(i, 0, l_free_blocks.get_size()))
         {
             Token<_ElementValue> l_pool_token = l_free_blocks.get(i);

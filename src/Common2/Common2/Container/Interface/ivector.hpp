@@ -1,6 +1,6 @@
 #pragma once
 
-template <class _Vector> struct ShadowVector
+template <class _Vector> struct iVector
 {
     _Vector& vector;
 
@@ -12,7 +12,7 @@ template <class _Vector> struct ShadowVector
         template <class ComparedType> inline static constexpr void element_type()
         {
 #if __DEBUG
-            static_assert(sizeof(_ElementValue) == sizeof(ComparedType), "ShadowVector : element_type");
+            static_assert(sizeof(_ElementValue) == sizeof(ComparedType), "iVector : element_type");
 #endif
         };
     };

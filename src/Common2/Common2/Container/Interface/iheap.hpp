@@ -24,7 +24,7 @@ struct ShadowHeapTypes
     };
 };
 
-template <class _Heap> struct ShadowHeap
+template <class _Heap> struct iHeap
 {
     _Heap& heap;
 
@@ -137,7 +137,7 @@ template <class _Heap> struct ShadowHeap
 #endif
 
         _FreeChunks __free_chunks = this->get_free_chunks();
-        ShadowVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
+        iVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_ivector();
 
         for (loop_reverse(i, 0, l_free_chunks.get_size()))
         {
@@ -167,7 +167,7 @@ template <class _Heap> struct ShadowHeap
 #endif
 
         _FreeChunks __free_chunks = this->get_free_chunks();
-        ShadowVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
+        iVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_ivector();
         // using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(p_heap));
         // ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(p_heap);
         for (loop_reverse(i, 0, l_free_chunks.get_size()))
@@ -241,13 +241,13 @@ template <class _Heap> struct ShadowHeap
     inline ShadowHeapTypes::AllocatedElementReturn _push_chunk(SliceIndex* p_chunk)
     {
         _AllocatedChunks __allocated_chunks = this->get_allocated_chunks();
-        return ShadowHeapTypes::AllocatedElementReturn::build(__allocated_chunks.to_shadow_pool().allocate_element_v2(*p_chunk), p_chunk->Begin);
+        return ShadowHeapTypes::AllocatedElementReturn::build(__allocated_chunks.to_ipool().allocate_element_v2(*p_chunk), p_chunk->Begin);
     };
 
     inline void _defragment()
     {
         _FreeChunks __free_chunks = this->get_free_chunks();
-        ShadowVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_shadow_vector();
+        iVector<_FreeChunksValue> l_free_chunks = __free_chunks.to_ivector();
 
         if (l_free_chunks.get_size() > 0)
         {

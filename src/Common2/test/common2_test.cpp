@@ -117,9 +117,9 @@ inline void base64_test()
     l_encoded.free();
 };
 
-template <class Container> inline void shadow_vector_test_v2(ShadowVector<Container> p_vector)
+template <class Container> inline void ivector_test_v2(iVector<Container> p_vector)
 {
-    static_assert(sizeof(typename Container::_ElementValue) == sizeof(uimax), "");
+    iVector<Container>::Assert::element_type<uimax>();
 
     // vector_push_back_array
     {
@@ -180,7 +180,6 @@ template <class Container> inline void shadow_vector_test_v2(ShadowVector<Contai
         }
     }
 
-#if 1
     // vector_insert_element_at
     {
         uimax l_element = 20;
@@ -267,15 +266,14 @@ template <class Container> inline void shadow_vector_test_v2(ShadowVector<Contai
         assert_true(p_vector.get(0) == 1);
         assert_true(p_vector.get(1) == 3);
     }
-#endif
 };
 
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
-    ShadowVector<Vector<uimax>> l_vector_sizet_sahdow = l_vector_sizet.to_shadow_vector();
+    iVector<Vector<uimax>> l_vector_sizet_sahdow = l_vector_sizet.to_ivector();
     // shadow_vector_test(l_vector_sizet);
-    shadow_vector_test_v2(l_vector_sizet_sahdow);
+    ivector_test_v2(l_vector_sizet_sahdow);
     l_vector_sizet.free();
     // When freeing the vcetor, it's structure is resetted
     {
@@ -288,8 +286,8 @@ inline void vector_slice_test()
 {
     Span<uimax> l_vector_sizet_buffer = Span<uimax>::allocate(100);
     VectorSlice<uimax> l_vector_sizet = VectorSlice<uimax>::build(l_vector_sizet_buffer.slice, 0);
-    ShadowVector<VectorSlice<uimax>> l_vector_sizet_shadow = l_vector_sizet.to_shadow_vector();
-    shadow_vector_test_v2(l_vector_sizet_shadow);
+    iVector<VectorSlice<uimax>> l_vector_sizet_shadow = l_vector_sizet.to_ivector();
+    ivector_test_v2(l_vector_sizet_shadow);
     l_vector_sizet_buffer.free();
 };
 
@@ -776,7 +774,7 @@ inline void vectorofvector_test()
         }
 
         {
-            VectorOfVector<uimax>::Element_ShadowVector l_shadow = l_vectorofvector_uimax.element_as_shadow_vector(0);
+            VectorOfVector<uimax>::Element_iVector l_shadow = l_vectorofvector_uimax.element_as_iVector(0);
             l_shadow.push_back_element(9);
             assert_true(l_shadow.get_size() == 4);
             assert_true(l_shadow.get(3) == 9);
@@ -829,7 +827,7 @@ inline void poolofvector_test()
 
     {
         PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
-        PoolOfVector<uimax>::Element_ShadowVector l_shadow = l_pool_of_vector.get_element_as_shadow_vector(l_vector_0);
+        PoolOfVector<uimax>::Element_iVector l_shadow = l_pool_of_vector.get_element_as_iVector(l_vector_0);
 
         assert_true(l_shadow.get_size() == 0);
         l_shadow.push_back_element(10);
@@ -843,32 +841,32 @@ inline void poolofvector_test()
     {
         l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
         PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
-        auto l_shadow_vector_0 = l_pool_of_vector.get_element_as_shadow_vector(l_vector_0);
+        PoolOfVector<uimax>::Element_iVector l_element_ivector_0 = l_pool_of_vector.get_element_as_iVector(l_vector_0);
 
         uimax l_el_0 = 10;
         uimax l_el_1 = 20;
 
-        assert_true(l_shadow_vector_0.get_size() == 0);
-        l_shadow_vector_0.push_back_element(l_el_0);
-        assert_true(l_shadow_vector_0.get_size() == 1);
-        assert_true(l_shadow_vector_0.get(0) == l_el_0);
-        l_shadow_vector_0.push_back_element(l_el_1);
-        assert_true(l_shadow_vector_0.get_size() == 2);
-        assert_true(l_shadow_vector_0.get(1) == l_el_1);
+        assert_true(l_element_ivector_0.get_size() == 0);
+        l_element_ivector_0.push_back_element(l_el_0);
+        assert_true(l_element_ivector_0.get_size() == 1);
+        assert_true(l_element_ivector_0.get(0) == l_el_0);
+        l_element_ivector_0.push_back_element(l_el_1);
+        assert_true(l_element_ivector_0.get_size() == 2);
+        assert_true(l_element_ivector_0.get(1) == l_el_1);
 
         PoolOfVectorToken<uimax> l_vector_1 = l_pool_of_vector.alloc_vector();
-        auto l_shadow_vector_1 = l_pool_of_vector.get_element_as_shadow_vector(l_vector_1);
-        l_shadow_vector_1.push_back_element(30);
-        l_shadow_vector_1.push_back_element(40);
-        l_shadow_vector_1.push_back_element(50);
+        PoolOfVector<uimax>::Element_iVector l_element_ivector_1 = l_pool_of_vector.get_element_as_iVector(l_vector_1);
+        l_element_ivector_1.push_back_element(30);
+        l_element_ivector_1.push_back_element(40);
+        l_element_ivector_1.push_back_element(50);
 
-        assert_true(l_shadow_vector_0.get_size() == 2);
-        assert_true(l_shadow_vector_1.get_size() == 3);
+        assert_true(l_element_ivector_0.get_size() == 2);
+        assert_true(l_element_ivector_1.get_size() == 3);
 
-        Slice<uimax> l_shadow_vector_0_slice = l_shadow_vector_0.to_slice();
-        assert_true(l_shadow_vector_0_slice.Size == 2);
-        assert_true(l_shadow_vector_0_slice.get(0) == l_el_0);
-        assert_true(l_shadow_vector_0_slice.get(1) == l_el_1);
+        Slice<uimax> l_ivector_0_slice = l_element_ivector_0.to_slice();
+        assert_true(l_ivector_0_slice.Size == 2);
+        assert_true(l_ivector_0_slice.get(0) == l_el_0);
+        assert_true(l_ivector_0_slice.get(1) == l_el_1);
 
         l_pool_of_vector.free();
     }
@@ -1279,7 +1277,7 @@ inline void heap_memory_test()
 };
 
 template <class StringContainer>
-inline void shadow_string_test(ShadowString_v2<StringContainer> p_string){
+inline void istring_test(iString<StringContainer> p_string){
 
     // append
     {p_string.append(slice_int8_build_rawstr("ABC"));
@@ -1316,7 +1314,7 @@ inline void string_test()
     assert_true(l_str.get_size() == 1);
     assert_true(l_str.get_length() == 0);
 
-    shadow_string_test(l_str.to_shadow_string());
+    istring_test(l_str.to_istring());
 
     l_str.free();
 };
@@ -1355,8 +1353,8 @@ inline void deserialize_json_test(){{
     });
 
 String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
 JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
 l_deserialized.next_object("local_position", &l_v3);
@@ -1406,8 +1404,8 @@ l_json_str.free();
                          "\"nodes\":[]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
     l_deserialized.next_array("nodes", &l_array);
@@ -1429,8 +1427,8 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
     l_deserialized.next_object("local_position", &l_v3);
@@ -1454,8 +1452,8 @@ l_json_str.free();
                          "}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
     l_deserialized.next_field("x");
     assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
     l_deserialized.next_field("y");
@@ -1472,8 +1470,8 @@ l_json_str.free();
         "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
@@ -1508,8 +1506,8 @@ l_json_str.free();
 {
     const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     Slice<int8> l_array_plain_value;
@@ -1529,8 +1527,8 @@ l_json_str.free();
 {
     const int8* l_json = MULTILINE({"value_array" : [ 17.001, 18.001, 19.001 ]});
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     JSONDeserializer l_array = JSONDeserializer::allocate_default();
     Slice<int8> l_array_plain_value;
@@ -1552,8 +1550,8 @@ l_json_str.free();
     const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
 
     String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_json_str_shadow_vector = l_json_str.Memory.to_shadow_vector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_shadow_vector);
+    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
+    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
 
     assert_true(l_deserialized.next_field("field"));
     assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
@@ -1625,7 +1623,7 @@ inline void serialize_json_test()
     Slice<int8> l_float_buffer_slice = Slice<int8>::build_asint8_memory_elementnb(l_float_buffer, ToString::float32str_size);
 
     String l_serializer_buffer = String::allocate(0);
-    JSONSerializer<String> l_serializer = JSONSerializer<String>::build(l_serializer_buffer.to_shadow_string());
+    JSONSerializer<String> l_serializer = JSONSerializer<String>::build(l_serializer_buffer.to_istring());
     l_serializer.start();
 
     l_serializer.start_object(slice_int8_build_rawstr("local_position"));
@@ -1686,8 +1684,8 @@ inline void serialize_json_test()
 
     // JSONUtil::remove_spaces(l_serializer.output.Memory);
     String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    ShadowVector<Vector<int8>> l_compared_json_shadow_vector = l_compared_json.Memory.to_shadow_vector();
-    JSONUtil::sanitize_json(l_compared_json_shadow_vector);
+    iVector<Vector<int8>> l_compared_json_ivector = l_compared_json.Memory.to_ivector();
+    JSONUtil::sanitize_json(l_compared_json_ivector);
 
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
 
@@ -1701,7 +1699,7 @@ inline void serialize_deserialize_binary_test()
     Slice<uimax> l_slice = slice_from_slicen(&l_slice_arr);
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
-    BinarySerializer::slice(l_binary_data.to_shadow_vector(), l_slice.build_asint8());
+    BinarySerializer::slice(l_binary_data.to_ivector(), l_slice.build_asint8());
 
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
@@ -1715,7 +1713,7 @@ inline void serialize_deserialize_binary_test()
 
     SliceN<uimax, 10> l_buffer;
     VectorSlice<int8> l_binary_data_slice = VectorSlice<int8>::build(slice_from_slicen(&l_buffer).build_asint8(), 0);
-    BinarySerializer::slice(l_binary_data_slice.to_shadow_vector(), slice_from_slicen(&l_slice_arr).build_asint8());
+    BinarySerializer::slice(l_binary_data_slice.to_ivector(), slice_from_slicen(&l_slice_arr).build_asint8());
 
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data_slice.to_slice());

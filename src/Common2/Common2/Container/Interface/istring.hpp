@@ -1,6 +1,6 @@
 #pragma once
 
-template <class _String> struct ShadowString_v2
+template <class _String> struct iString
 {
     _String& string;
 

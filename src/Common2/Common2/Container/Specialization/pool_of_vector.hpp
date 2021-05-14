@@ -35,14 +35,14 @@ template <class ElementType> struct PoolOfVector
         return this->FreeBlocks;
     };
 
-    inline ShadowPool<PoolOfVector<ElementType>> to_shadow_pool()
+    inline iPool<PoolOfVector<ElementType>> to_ipool()
     {
-        return ShadowPool<PoolOfVector<ElementType>>{*this};
+        return iPool<PoolOfVector<ElementType>>{*this};
     };
 
     inline int8 is_element_free(const PoolOfVectorToken<ElementType> p_token)
     {
-        return this->to_shadow_pool().is_element_free(p_token);
+        return this->to_ipool().is_element_free(p_token);
     };
 
     inline VectorOfVector<ElementType>& get_memory()
@@ -57,12 +57,12 @@ template <class ElementType> struct PoolOfVector
 
     inline PoolOfVectorToken<ElementType> alloc_vector_with_values(const Slice<ElementType>& p_initial_elements)
     {
-        return this->to_shadow_pool().allocate_element_v2(p_initial_elements);
+        return this->to_ipool().allocate_element_v2(p_initial_elements);
     };
 
     inline PoolOfVectorToken<ElementType> alloc_vector()
     {
-        return this->to_shadow_pool().allocate_element_empty_v2();
+        return this->to_ipool().allocate_element_empty_v2();
     };
 
     inline void release_vector(const PoolOfVectorToken<ElementType> p_token)
@@ -118,14 +118,14 @@ template <class ElementType> struct PoolOfVector
         this->Memory.element_clear(token_value(p_token));
     };
 
-    struct Element_ShadowVector
+    struct Element_iVector
     {
         PoolOfVector<ElementType>* pool_of_vector;
         PoolOfVectorToken<ElementType> index;
 
-        inline static Element_ShadowVector build(PoolOfVector<ElementType>* p_pool_of_vector, const PoolOfVectorToken<ElementType> p_index)
+        inline static Element_iVector build(PoolOfVector<ElementType>* p_pool_of_vector, const PoolOfVectorToken<ElementType> p_index)
         {
-            return Element_ShadowVector{p_pool_of_vector, p_index};
+            return Element_iVector{p_pool_of_vector, p_index};
         };
 
         inline uimax get_size()
@@ -154,9 +154,9 @@ template <class ElementType> struct PoolOfVector
         };
     };
 
-    inline Element_ShadowVector get_element_as_shadow_vector(const PoolOfVectorToken<ElementType> p_index)
+    inline Element_iVector get_element_as_iVector(const PoolOfVectorToken<ElementType> p_index)
     {
-        return Element_ShadowVector::build(this, p_index);
+        return Element_iVector::build(this, p_index);
     };
 
     inline void _set_element(const PoolOfVectorToken<ElementType> p_token, const Slice<ElementType>& p_element)

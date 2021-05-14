@@ -62,9 +62,9 @@ template <class ElementType> struct Pool
         return this->memory.Memory.Memory;
     };
 
-    inline ShadowPool<Pool<ElementType>> to_shadow_pool()
+    inline iPool<Pool<ElementType>> to_ipool()
     {
-        return ShadowPool<Pool<ElementType>>{*this};
+        return iPool<Pool<ElementType>>{*this};
     };
 
     inline int8 has_allocated_elements()
@@ -74,7 +74,7 @@ template <class ElementType> struct Pool
 
     inline int8 is_element_free(const Token<ElementType> p_token)
     {
-        return this->to_shadow_pool().is_element_free(p_token);
+        return this->to_ipool().is_element_free(p_token);
     };
 
     inline ElementType& get(const Token<ElementType> p_token)
@@ -88,12 +88,12 @@ template <class ElementType> struct Pool
 
     inline Token<ElementType> alloc_element_empty()
     {
-        this->to_shadow_pool().allocate_element_empty_v2();
+        this->to_ipool().allocate_element_empty_v2();
     }
 
     inline Token<ElementType> alloc_element(const ElementType& p_element)
     {
-        return this->to_shadow_pool().allocate_element_v2(p_element);
+        return this->to_ipool().allocate_element_v2(p_element);
     };
 
     inline void release_element(const Token<ElementType> p_token)
