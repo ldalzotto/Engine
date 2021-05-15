@@ -313,10 +313,10 @@ struct MaterialViewerWindow
                 AssetMetadataDatabase::Paths l_material_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MATERIAL_NAME);
 
                 this->widgets.selected_material->clear();
-                for (loop(i, 0, l_material_paths.data.Size))
+                for (loop(i, 0, l_material_paths.data_v2.get_size()))
                 {
-                    Span<int8>& l_path = l_material_paths.data.get(i);
-                    QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                    Slice<int8> l_path = l_material_paths.data_v2.get(i);
+                    QString l_str = QString::fromLocal8Bit(l_path.Begin, l_path.Size);
                     this->widgets.selected_material->addItem(l_str);
                 }
                 l_material_paths.free();
@@ -325,10 +325,10 @@ struct MaterialViewerWindow
                 AssetMetadataDatabase::Paths l_mesh_paths = l_asset_metadata_database.get_all_path_from_type(l_connection, AssetType_Const::MESH_NAME);
 
                 this->widgets.selected_mesh->clear();
-                for (loop(i, 0, l_mesh_paths.data.Size))
+                for (loop(i, 0, l_mesh_paths.data_v2.get_size()))
                 {
-                    Span<int8>& l_path = l_mesh_paths.data.get(i);
-                    QString l_str = QString::fromLocal8Bit(l_path.Memory, l_path.Capacity);
+                    Slice<int8> l_path = l_mesh_paths.data_v2.get(i);
+                    QString l_str = QString::fromLocal8Bit(l_path.Begin, l_path.Size);
                     this->widgets.selected_mesh->addItem(l_str);
                 }
                 l_mesh_paths.free();

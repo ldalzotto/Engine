@@ -49,9 +49,9 @@ inline void asset_metatadata_get_by_type()
     {
         AssetMetadataDatabase::Paths l_paths = l_ctx.assetmetadata_database.get_all_path_from_type(l_ctx.connection, l_type_1);
 
-        assert_true(l_paths.data.Size == 2);
-        assert_true(l_paths.data.get(0).slice.compare(l_path_1));
-        assert_true(l_paths.data.get(1).slice.compare(l_path_2));
+        assert_true(l_paths.data_v2.get_size() == 2);
+        assert_true(l_paths.data_v2.get(0).compare(l_path_1));
+        assert_true(l_paths.data_v2.get(1).compare(l_path_2));
 
         l_paths.free();
     }

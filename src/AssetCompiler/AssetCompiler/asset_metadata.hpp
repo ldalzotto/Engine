@@ -168,19 +168,15 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
 
         struct Paths
         {
-            Vector<Span<int8>> data;
+            VectorOfVector<int8> data_v2;
             inline static Paths allocate_default()
             {
-                return Paths{Vector<Span<int8>>::allocate(0)};
+                return Paths{VectorOfVector<int8>::allocate_default()};
             };
 
             inline void free()
             {
-                for (loop(i, 0, this->data.Size))
-                {
-                    this->data.get(i).free();
-                }
-                this->data.free();
+                this->data_v2.free();
             };
         };
 
@@ -194,7 +190,9 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
 
             SQLiteResultSet rs = SQLiteResultSet::build_from_prepared_query(this->assetmetadata_select_paths_from_type);
             SQliteQueryExecution::execute_sync(p_database_connection, this->assetmetadata_select_paths_from_type.statement, [&]() {
-                l_return.data.push_back_element(rs.get_text(0));
+                Span<int8> l_column = rs.get_text(0);
+                l_return.data_v2.push_back_element(l_column.slice);
+                l_column.free();
             });
 
             return l_return;
