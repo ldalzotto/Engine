@@ -1,5 +1,4 @@
-1/ Migrating the resource algorithm the new way of creating interface objects
-   Migrating the render algorithm the new way of creating interface objects
+1/ Migrating the render algorithm the new way of creating interface objects
 
 1/ We can improve the shader compiler so that we only need to write shader program parts that are not common.
    On compilation, the shader compiler can append the common parts.

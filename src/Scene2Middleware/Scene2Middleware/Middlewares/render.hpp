@@ -158,10 +158,10 @@ struct MeshRendererComponentComposition
                                                    const ShaderResource::InlineAllocationInput& p_shader, const MaterialResource::InlineAllocationInput& p_material,
                                                    const MeshResource::InlineAllocationInput& p_mesh, const Token<Node> p_scene_node)
     {
-        Token<MaterialResource> l_material_resource = MaterialResourceComposition::allocate_or_increment_inline(
-            p_render_resource_allocator.material_unit, p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit, p_render_resource_allocator.texture_unit,
-            p_material, p_shader, p_vertex_shader, p_fragment_shader);
-        Token<MeshResource> l_mesh_resource = MeshResourceComposition::allocate_or_increment_inline(p_render_resource_allocator.mesh_unit, p_mesh);
+        Token<MaterialResource> l_material_resource =
+            p_render_resource_allocator.material_unit.allocate_or_increment_inline(p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
+                                                                                   p_render_resource_allocator.texture_unit, p_material, p_shader, p_vertex_shader, p_fragment_shader);
+        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_inline(p_mesh);
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
@@ -171,10 +171,10 @@ struct MeshRendererComponentComposition
                                                      const ShaderResource::DatabaseAllocationInput& p_shader, const MaterialResource::DatabaseAllocationInput& p_material,
                                                      const MeshResource::DatabaseAllocationInput& p_mesh, const Token<Node> p_scene_node)
     {
-        Token<MaterialResource> l_material_resource = MaterialResourceComposition::allocate_or_increment_database(
-            p_render_resource_allocator.material_unit, p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit, p_render_resource_allocator.texture_unit,
-            p_material, p_shader, p_vertex_shader, p_fragment_shader);
-        Token<MeshResource> l_mesh_resource = MeshResourceComposition::allocate_or_increment_database(p_render_resource_allocator.mesh_unit, p_mesh);
+        Token<MaterialResource> l_material_resource =
+            p_render_resource_allocator.material_unit.allocate_or_increment_database(p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
+                                                                                     p_render_resource_allocator.texture_unit, p_material, p_shader, p_vertex_shader, p_fragment_shader);
+        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(p_mesh);
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
@@ -183,11 +183,10 @@ struct MeshRendererComponentComposition
                                                         DatabaseConnection& p_database_connection, AssetDatabase& p_assrt_database,
                                                         const MeshRendererComponent::DatabaseAllocationLoadDependenciesInput& p_meshrenderer_asset_dependencied, const Token<Node> p_scene_node)
     {
-        Token<MaterialResource> l_material_resource = MaterialResourceComposition::allocate_or_increment_database_and_load_dependecies(
-            p_render_resource_allocator.material_unit, p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit, p_render_resource_allocator.texture_unit,
-            p_database_connection, p_assrt_database, p_meshrenderer_asset_dependencied.material);
-        Token<MeshResource> l_mesh_resource =
-            MeshResourceComposition::allocate_or_increment_database(p_render_resource_allocator.mesh_unit, MeshResource::DatabaseAllocationInput{p_meshrenderer_asset_dependencied.mesh});
+        Token<MaterialResource> l_material_resource = p_render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
+            p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit, p_render_resource_allocator.texture_unit, p_database_connection, p_assrt_database,
+            p_meshrenderer_asset_dependencied.material);
+        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(MeshResource::DatabaseAllocationInput{p_meshrenderer_asset_dependencied.mesh});
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
@@ -214,9 +213,9 @@ struct MeshRendererComponentComposition
             p_meshrenderer_component_unit.mesh_renderers.release_element(p_mesh_renderer);
         }
 
-        MeshResourceComposition::decrement_or_release(p_render_resource_allocator.mesh_unit, l_mesh_renderer.dependencies.mesh);
-        MaterialResourceComposition::decrement_or_release(p_render_resource_allocator.material_unit, p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
-                                                           p_render_resource_allocator.texture_unit, l_mesh_renderer.dependencies.material);
+        p_render_resource_allocator.mesh_unit.decrement_or_release(l_mesh_renderer.dependencies.mesh);
+        p_render_resource_allocator.material_unit.decrement_or_release(p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
+                                                                       p_render_resource_allocator.texture_unit, l_mesh_renderer.dependencies.material);
     };
 };
 
