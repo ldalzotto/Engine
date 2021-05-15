@@ -254,10 +254,19 @@ struct MappedHostMemory
     };
 };
 
-#define ShadowBuffer_t(Prefix) ShadowBuffer_##Prefix
+template <class _Buffer> struct iBuffer
+{
+    const _Buffer& buffer;
+    inline VkBuffer get_buffer() const
+    {
+        return this->buffer.buffer;
+    };
 
-#define ShadowBuffer_c_get_buffer(p_shadow_buffer) (p_shadow_buffer)->buffer
-#define ShadowBuffer_c_get_size(p_shadow_buffer) (p_shadow_buffer)->size
+    inline uimax get_size() const
+    {
+        return this->buffer.size;
+    }
+};
 
 /*
     A BufferHost is a pointer to a HeapPaged chunk that have been specified to be visible by the CPU.

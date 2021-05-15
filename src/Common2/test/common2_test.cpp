@@ -1106,7 +1106,7 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
 };
 
-inline void assert_heap_memory_alignement(const uimax p_alignment, const ShadowHeapTypes::AllocatedElementReturn& p_chunk)
+inline void assert_heap_memory_alignement(const uimax p_alignment, const iHeapTypes::AllocatedElementReturn& p_chunk)
 {
     assert_true((p_chunk.Offset % p_alignment) == 0);
 };
@@ -1137,19 +1137,19 @@ inline void heap_test()
 
     {
 
-        ShadowHeapTypes::AllocatedElementReturn l_chunk_1;
-        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED);
+        iHeapTypes::AllocatedElementReturn l_chunk_1;
+        assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_1.token)->Begin == 0);
         assert_true(l_heap.get(l_chunk_1.token)->Size == 10);
         assert_heap_integrity(&l_heap);
 
-        ShadowHeapTypes::AllocatedElementReturn l_chunk_0;
-        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED);
+        iHeapTypes::AllocatedElementReturn l_chunk_0;
+        assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_0.token)->Begin == 10);
         assert_true(l_heap.get(l_chunk_0.token)->Size == 5);
         assert_heap_integrity(&l_heap);
 
-        ShadowHeapTypes::AllocatedElementReturn l_chunk_2;
+        iHeapTypes::AllocatedElementReturn l_chunk_2;
         l_heap.allocate_element(5, &l_chunk_2);
         assert_heap_integrity(&l_heap);
 
@@ -1159,12 +1159,12 @@ inline void heap_test()
         assert_heap_integrity(&l_heap);
 
         // We try to allocate 10 but there is two chunks size 5 free next to each other
-        assert_true(l_heap.allocate_element(10, &l_chunk_0) == ShadowHeapTypes::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element(10, &l_chunk_0) == iHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
 
         // The heap is resized
-        ShadowHeapTypes::AllocatedElementReturn l_chunk_3;
-        assert_true((ShadowHeapTypes::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
+        iHeapTypes::AllocatedElementReturn l_chunk_3;
+        assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
         assert_true(l_chunk_3.Offset == 20);
         assert_true(l_heap.get(l_chunk_3.token)->Size == 50);
         assert_true(l_heap.Size > l_initial_heap_size);
@@ -1178,15 +1178,15 @@ inline void heap_test()
     assert_heap_integrity(&l_heap);
     {
 
-        ShadowHeapTypes::AllocatedElementReturn l_allocated_chunk;
-        assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
+        iHeapTypes::AllocatedElementReturn l_allocated_chunk;
+        assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == iHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_heap_memory_alignement(5, l_allocated_chunk);
-        assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(7, 5, &l_allocated_chunk) == iHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 5);
         assert_heap_memory_alignement(5, l_allocated_chunk);
-        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == iHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_true(l_allocated_chunk.Offset == 14);
         assert_heap_memory_alignement(7, l_allocated_chunk);
@@ -1194,7 +1194,7 @@ inline void heap_test()
         // There was a bug that were causing the heap to align memory chunk with the size of the chunk instead of the desired alignment
         l_heap.release_element(l_allocated_chunk.token);
         assert_heap_integrity(&l_heap);
-        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::ALLOCATED);
+        assert_true(l_heap.allocate_element_with_modulo_offset(3, 7, &l_allocated_chunk) == iHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_allocated_chunk.Offset == 14);
         assert_heap_memory_alignement(7, l_allocated_chunk);
 
@@ -1206,10 +1206,10 @@ inline void heap_test()
     l_heap = Heap::allocate(l_initial_heap_size);
     assert_heap_integrity(&l_heap);
     {
-        ShadowHeapTypes::AllocatedElementReturn l_allocated_chunk;
+        iHeapTypes::AllocatedElementReturn l_allocated_chunk;
 
         assert_true(l_heap.AllocatedChunks.get_size() == 0);
-        assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == ShadowHeapTypes::AllocationState::NOT_ALLOCATED);
+        assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == iHeapTypes::AllocationState::NOT_ALLOCATED);
         assert_true(l_heap.AllocatedChunks.get_size() == 0);
     }
 

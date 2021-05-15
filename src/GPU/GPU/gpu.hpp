@@ -188,18 +188,3 @@ struct BufferStepExecutionFlow
         p_gpu_context.buffer_memory.allocator.device.command_buffer.wait_for_completion();
     };
 };
-
-#undef ShadowBuffer_t
-#undef ShadowBuffer_c_get_buffer
-#undef ShadowBuffer_c_get_size
-
-#undef ShadowImage_t
-#undef ShadowImage_c_get_image
-#undef ShadowImage_c_get_format
-
-#undef ShadowShaderUniformBufferParameter_t
-#undef ShadowShaderUniformBufferParameter_c_get_descriptor_set
-#undef ShadowShaderUniformBufferParameter_c_get_memory
-#undef ShadowShaderUniformBufferParameter_c_set_memory
-#undef ShadowShaderUniformBufferParameter_func_method_free
-#undef ShadowShaderUniformBufferParameter_c_free

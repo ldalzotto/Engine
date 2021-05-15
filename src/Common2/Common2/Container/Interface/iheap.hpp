@@ -1,6 +1,6 @@
 #pragma once
 
-struct ShadowHeapTypes
+struct iHeapTypes
 {
     enum class AllocationState : int8
     {
@@ -54,7 +54,7 @@ template <class _Heap> struct iHeap
         return this->heap.get_allocated_chunks();
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element(const uimax p_size, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element(const uimax p_size, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element(p_size, out_chunk))
         {
@@ -73,15 +73,14 @@ template <class _Heap> struct iHeap
 #endif
                     ;
 
-                return ShadowHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED;
+                return iHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED;
             }
-            return ShadowHeapTypes::AllocationState::ALLOCATED;
+            return iHeapTypes::AllocationState::ALLOCATED;
         }
-        return ShadowHeapTypes::AllocationState::ALLOCATED;
+        return iHeapTypes::AllocationState::ALLOCATED;
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset,
-                                                                                       ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element_with_modulo_offset(p_size, p_modulo_offset, out_chunk))
         {
@@ -100,37 +99,36 @@ template <class _Heap> struct iHeap
 #endif
                     ;
 
-                return ShadowHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED;
+                return iHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED;
             }
-            return ShadowHeapTypes::AllocationState::ALLOCATED;
+            return iHeapTypes::AllocationState::ALLOCATED;
         }
-        return ShadowHeapTypes::AllocationState::ALLOCATED;
+        return iHeapTypes::AllocationState::ALLOCATED;
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_alignement_modulo,
-                                                                                                 ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_alignement_modulo, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         if (!_allocate_element_with_modulo_offset(p_size, p_alignement_modulo, out_chunk))
         {
             _defragment();
             if (!_allocate_element_with_modulo_offset(p_size, p_alignement_modulo, out_chunk))
             {
-                return ShadowHeapTypes::AllocationState::NOT_ALLOCATED;
+                return iHeapTypes::AllocationState::NOT_ALLOCATED;
             }
-            return ShadowHeapTypes::AllocationState::ALLOCATED;
+            return iHeapTypes::AllocationState::ALLOCATED;
         }
-        return ShadowHeapTypes::AllocationState::ALLOCATED;
+        return iHeapTypes::AllocationState::ALLOCATED;
     };
 
   private:
 #if __DEBUG
-    inline static void _assert_memory_alignment(const uimax p_alignment_modulo, const ShadowHeapTypes::AllocatedElementReturn& p_allocated_chunk)
+    inline static void _assert_memory_alignment(const uimax p_alignment_modulo, const iHeapTypes::AllocatedElementReturn& p_allocated_chunk)
     {
         assert_true((p_allocated_chunk.Offset % p_alignment_modulo) == 0);
     };
 #endif
 
-    inline int8 _allocate_element(const uimax p_size, ShadowHeapTypes::AllocatedElementReturn* out_return)
+    inline int8 _allocate_element(const uimax p_size, iHeapTypes::AllocatedElementReturn* out_return)
     {
 #if __DEBUG
         assert_true(p_size != 0);
@@ -160,7 +158,7 @@ template <class _Heap> struct iHeap
         return 0;
     };
 
-    inline int8 _allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline int8 _allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
 #if __DEBUG
         assert_true(p_size != 0);
@@ -238,10 +236,10 @@ template <class _Heap> struct iHeap
         return 0;
     };
 
-    inline ShadowHeapTypes::AllocatedElementReturn _push_chunk(SliceIndex* p_chunk)
+    inline iHeapTypes::AllocatedElementReturn _push_chunk(SliceIndex* p_chunk)
     {
         _AllocatedChunks __allocated_chunks = this->get_allocated_chunks();
-        return ShadowHeapTypes::AllocatedElementReturn::build(__allocated_chunks.to_ipool().allocate_element_v2(*p_chunk), p_chunk->Begin);
+        return iHeapTypes::AllocatedElementReturn::build(__allocated_chunks.to_ipool().allocate_element_v2(*p_chunk), p_chunk->Begin);
     };
 
     inline void _defragment()

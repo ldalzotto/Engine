@@ -58,17 +58,17 @@ struct Heap
         return iHeap<Heap>{*this};
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element(const uimax p_size, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element(const uimax p_size, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         return this->to_iheap().allocate_element(p_size, out_chunk);
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         return this->to_iheap().allocate_element_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
 
-    inline ShadowHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, ShadowHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
     {
         return this->to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
@@ -112,7 +112,7 @@ struct HeapPaged
         HeapPagedToken token;
         uimax Offset;
 
-        inline static AllocatedElementReturn buid_from_HeapAllocatedElementReturn(const uimax p_page_index, const ShadowHeapTypes::AllocatedElementReturn& p_heap_allocated_element_return)
+        inline static AllocatedElementReturn buid_from_HeapAllocatedElementReturn(const uimax p_page_index, const iHeapTypes::AllocatedElementReturn& p_heap_allocated_element_return)
         {
             return AllocatedElementReturn{HeapPagedToken{p_page_index, p_heap_allocated_element_return.token}, p_heap_allocated_element_return.Offset};
         };
@@ -179,13 +179,13 @@ struct HeapPaged
 
     inline AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, AllocatedElementReturn* out_chunk)
     {
-        ShadowHeapTypes::AllocatedElementReturn l_heap_allocated_element_return;
+        iHeapTypes::AllocatedElementReturn l_heap_allocated_element_return;
 
         for (loop(i, 0, this->FreeChunks.varying_vector.get_size()))
         {
             Single_iHeap l_single_iheap = Single_iHeap::build(this, i);
-            if ((ShadowHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset( p_size, p_modulo_offset, &l_heap_allocated_element_return) &
-                (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED)
+            if ((iHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset( p_size, p_modulo_offset, &l_heap_allocated_element_return) &
+                (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED)
             {
                 *out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(i, l_heap_allocated_element_return);
                 return AllocationState::ALLOCATED;
@@ -195,8 +195,8 @@ struct HeapPaged
         this->create_new_page();
 
         Single_iHeap l_single_iheap = Single_iHeap::build(this, this->FreeChunks.varying_vector.get_size() - 1);
-        if ((ShadowHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_heap_allocated_element_return) &
-            (ShadowHeapTypes::AllocationState_t)ShadowHeapTypes::AllocationState::ALLOCATED)
+        if ((iHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_heap_allocated_element_return) &
+            (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED)
         {
             *out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(this->FreeChunks.varying_vector.get_size() - 1, l_heap_allocated_element_return);
             return (AllocationState)((AllocationState_t)AllocationState::ALLOCATED | (AllocationState_t)AllocationState::PAGE_CREATED);
