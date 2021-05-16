@@ -1363,6 +1363,15 @@ struct BufferReadWrite
         p_buffer_events.write_buffer_host_to_buffer_gpu_events.push_back_element(BufferEvents::WriteBufferHostToBufferGPU{l_staging_buffer, 1, p_buffer_gpu});
     };
 
+        // TODO -> we want this to be the default behavior
+#if 0
+    inline static void write_to_buffergpu_no_allocation(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<BufferGPU> p_buffer_gpu,
+                                                        const Token<BufferHost> p_buffer_source)
+    {
+        p_buffer_events.write_buffer_host_to_buffer_gpu_events.push_back_element(BufferEvents::WriteBufferHostToBufferGPU{p_buffer_source, 0, p_buffer_gpu});
+    };
+#endif
+
     inline static Token<BufferHost> read_from_buffergpu(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<BufferGPU> p_buffer_gpu_token, const BufferGPU& p_buffer_gpu)
     {
         Token<BufferHost> l_staging_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_buffer_gpu.size, BufferUsageFlag::TRANSFER_WRITE);

@@ -356,112 +356,121 @@ inline void d3renderer_cube()
 };
 
 #if 0
-struct D3RendererCubeSandboxEnvironmentV3
+struct ProceduralMeshEnvironment
 {
-    Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present engine;
-    Token<Node> camera_node;
-    Token<Node> l_square_root_node;
-
-    inline static D3RendererCubeSandboxEnvironmentV3 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present::RuntimeConfiguration& p_configuration)
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
+    inline static ProceduralMeshEnvironment allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration& p_configuration)
     {
-        return D3RendererCubeSandboxEnvironmentV3{Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present::allocate(p_configuration)};
+        return ProceduralMeshEnvironment{Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(p_configuration)};
     };
 
-    inline void free()
+    // TODO -> having a bufferhostvector object. That behaves like vector but allocates memory in host gpu instead
+    struct MeshProcedural
     {
-        this->engine.free();
+        Token<Mesh> mesh;
+        Vector<Vertex> vertices;
+        Vector<uint32> indices;
+        Token<BufferHost> vertices_source_buffer;
+        Token<BufferHost> indices_source_buffer;
+
+        inline static MeshProcedural allocate_default(GPUContext& p_gpu_context, const Token<Mesh> p_mesh)
+        {
+            MeshProcedural l_return;
+            l_return.mesh = p_mesh;
+            l_return.vertices = Vector<Vertex>::allocate(1);
+            l_return.vertices_source_buffer = p_gpu_context.buffer_memory.allocator.allocate_bufferhost(l_return.vertices.Memory.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+            l_return.indices = Vector<uint32>::allocate(1);
+            l_return.indices_source_buffer = p_gpu_context.buffer_memory.allocator.allocate_bufferhost(l_return.indices.Memory.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+
+            return l_return;
+        };
+
+        inline void free(GPUContext& p_gpu_context)
+        {
+            this->vertices.free();
+            this->indices.free();
+
+            BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, this->vertices_source_buffer);
+            BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, this->indices_source_buffer);
+        };
+
+        inline void push_to_gpu(GPUContext& p_gpu_context, D3Renderer& p_rendenrer)
+        {
+            Mesh& l_mesh = p_rendenrer.heap().meshes.get(this->mesh);
+            ;
+            // TOOD -> add a write to BufferHost ?
+            {
+                Slice<int8> l_mesh_source_vertex_memory = p_gpu_context.buffer_memory.allocator.host_buffers.get(this->vertices_source_buffer).get_mapped_effective_memory();
+                l_mesh_source_vertex_memory.copy_memory(this->vertices.to_slice().build_asint8());
+                BufferReadWrite::write_to_buffergpu_no_allocation(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_mesh.vertices_buffer, this->vertices_source_buffer);
+            }
+            {
+                Slice<int8> l_indices_source_indices_memory = p_gpu_context.buffer_memory.allocator.host_buffers.get(this->indices_source_buffer).get_mapped_effective_memory();
+                l_indices_source_indices_memory.copy_memory(this->vertices.to_slice().build_asint8());
+                BufferReadWrite::write_to_buffergpu_no_allocation(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_mesh.vertices_buffer, this->vertices_source_buffer);
+            }
+        };
     };
 
-    inline void main(float32 p_forced_delta)
+    Token<MeshResource> mesh_resource;
+    MeshProcedural mesh_procedural;
+
+    inline void main(const float32 p_forced_delta)
     {
-        this->engine.main_loop_forced_delta(
-            p_forced_delta,
-            [&](const float32 p_delta) {
-                uimax l_frame_count = FrameCount(this->engine);
-                if (l_frame_count == 1)
+
+        this->engine.main_loop_forced_delta(p_forced_delta, [&](const float32 p_delta) {
+            uimax l_frame = FrameCount(this->engine);
+            if (l_frame == 1)
+            {
+                SliceN<Vertex, 4> l_vertices_arr = {Vertex{v3f{0.0f, 0.0f, 0.0f}, v2f{0.0f, 0.0f}}, Vertex{v3f{1.0f, 0.0f, 0.0f}, v2f{0.0f, 0.0f}}, Vertex{v3f{0.0f, 1.0f, 0.0f}, v2f{0.0f, 0.0f}},
+                                                    Vertex{v3f{0.0f, 0.0f, 1.0f}, v2f{0.0f, 0.0f}}};
+                SliceN<uint32, 6> l_indices_arr = {0, 1, 2, 1, 2, 3};
+                MeshResource::Asset::Value l_mesh_value;
+                l_mesh_value.initial_indices = slice_from_slicen(&l_indices_arr);
+                l_mesh_value.initial_vertices = slice_from_slicen(&l_vertices_arr);
+
+                MeshResource::InlineAllocationInput l_mesh_allocation;
+                l_mesh_allocation.id = 985;
+                l_mesh_allocation.asset = MeshResource::Asset::allocate_from_values(l_mesh_value);
+
+                // TODO -> having something like forced allocation ?
+                //         no, this is not necessary
+                this->mesh_resource = this->engine.renderer_resource_allocator.mesh_unit.allocate_or_increment_inline(l_mesh_allocation);
+
+                // this->mesh_source_buffer = this->engine.gpu_context.buffer_memory.allocator.allocate_bufferhost(this->procedural_vertices.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+            }
+            else
+            {
+                if (l_frame == 2)
                 {
-
-                    quat l_rot = m33f::lookat(v3f{7.0f, 7.0f, 7.0f}, v3f{0.0f, 0.0f, 0.0f}, v3f_const::UP).to_rotation();
-                    this->camera_node = CreateNode(this->engine, transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE.vec3});
-                    NodeAddCamera(this->engine, camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
-
-                    {
-                        this->l_square_root_node = CreateNode(this->engine, transform_const::ORIGIN);
-
-                        Token<Node> l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    return;
+                    MeshResource& l_mesh_resource = this->engine.renderer_resource_allocator.mesh_unit.meshes.pool.get(this->mesh_resource);
+                    this->mesh_procedural = MeshProcedural::allocate_default(this->engine.gpu_context, l_mesh_resource.resource);
+                    // Mesh& l_mesh = this->engine.renderer.d3_renderer.heap().meshes.get(l_mesh_resource.resource);
+                    // this->mesh_vertex_buffer = l_mesh.vertices_buffer;
                 }
 
-#if 0
-                if (l_frame_count == 60)
-                {
-                    RemoveNode(this->engine, this->camera_node);
-                    RemoveNode(this->engine, this->l_square_root_node);
-                    this->engine.core.close();
-                }
+                this->mesh_procedural.push_to_gpu(this->engine.gpu_context, this->engine.renderer.d3_renderer);
+            }
+        });
 
-                if (l_frame_count == 21 || l_frame_count == 41)
-                {
-                    String l_image_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("d3renderer_cube/frame/frame_"));
-                    ToString::auimax_append(FrameCount(this->engine) - 1, l_image_path);
-                    l_image_path.append(slice_int8_build_rawstr(".jpg"));
-
-                    SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
-
-#if 0
-              SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
-#endif
-
-                    l_image_path.free();
-                }
-#endif
-                quat l_delta_rotation = quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * DeltaTime(this->engine));
-                NodeAddWorldRotation(this->engine, this->l_square_root_node, l_delta_rotation);
-            },
-            [&](ImguiLib& p_imgui_lib) {
-                p_imgui_lib.ShowDemoWindow();
-            });
+        this->engine.renderer_resource_allocator.mesh_unit.decrement_or_release(this->mesh_resource);
     };
 };
 
-inline void d3renderer_cube_imgui()
+inline void procedural_mesh()
 {
     String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
     {
     }
 
-    Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present::RuntimeConfiguration l_configuration{};
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration l_configuration{};
     l_configuration.core = EngineModuleCore::RuntimeConfiguration{0};
     l_configuration.render_target_host_readable = 1;
     l_configuration.render_size = v2ui{800, 600};
     l_configuration.database_path = l_database_path.to_slice();
 
-    D3RendererCubeSandboxEnvironmentV3 l_sandbox_environment = D3RendererCubeSandboxEnvironmentV3::allocate(l_configuration);
+    ProceduralMeshEnvironment l_sandbox_environment = ProceduralMeshEnvironment::allocate(l_configuration);
     l_sandbox_environment.main(1.0f / 60.0f);
-    l_sandbox_environment.free();
 
     l_database_path.free();
 };

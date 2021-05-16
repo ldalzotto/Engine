@@ -1,3 +1,167 @@
+== Integrating an immediate gui system ==
+
+The immediate gui system generates vertices based on commands pushed by the user every frame.
+The execution flow is :
+    1/ Clear ImGuiChunk.
+    2/ User command push. -> this part is backed up by the Dear ImGUI library.
+    3/ Fill ImGuiChunks with immediate gui vertices.
+An ImGuiChunk is an aggrate of vertices. It is essentially a draw call.
+
+To integrate it in the engine we create an ImmediateGUIMiddleware that consumes the immediate gui system events to know if ImGuiChunks have been created.
+If that's the case then we allocate a MeshRenderer component and store the Mesh reference.
+The execution flow is :
+    1/ Update the immediate gui system to get ImGuiChunk events.
+    2/ Allocates MeshResource with GPUBuffer dynamic vectors if ImGuiChunk created.
+    3/ Wait for render resource allocation
+    4/ Update gpu dynamic buffers with ImGuiChunk values and push it to mesh.
+
+There is no specific component because it's the immediate gui system itself that dictates allocations.
+
+=== Impacts ===
+
+# Creating a resizable gpu host container. (GPU)
+    -> This container will be used to update the mesh staging buffers. We want a container that behaves like a Vector
+       but instead of allocating memory on the CPU, it allocates memory with the GPUHeap.
+    REFACTOR - Logic has already been duplicated between Vector and Vector slice, so we want to avoid doing it a third time.
+               We first want to move logic as mush as possible to the iVector.
+
+# Implementing the imgui system.
+    -> Defining output ImGuiChunk events to trigger MeshRenderer allocations.
+    -> The update function can be a mockup for now by sending random data.
+
+# Communication between the imgui system and the renderer.
+    -> Creating a middleware that consumes the imgui system events and allocate mesh renderer with dynamic mesh buffers.
+
+# Making it possible to push shaders other than the 3D color in the d3_renderer.
+    -> The d3_renderer shader allocation is too specific, it only allows allocation of shaders that uses the d3Vertex structure (pos, uv).
+       For the imgui system, we want to add color to it. Because this color field is a waste of space for regular 3D rendering, we must
+       update the d3_renderer so that shader allocations can be specialized.
+
+
+-- Test Code --
+
+struct ProceduralMeshEnvironment
+{
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
+    inline static ProceduralMeshEnvironment allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration& p_configuration)
+    {
+        return ProceduralMeshEnvironment{Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(p_configuration)};
+    };
+
+    // No, we just want resizabe host buffers.
+    struct MeshProcedural
+    {
+        Token<Mesh> mesh;
+        Vector<Vertex> vertices;
+        Vector<uint32> indices;
+        Token<BufferHost> vertices_source_buffer;
+        Token<BufferHost> indices_source_buffer;
+
+        inline static MeshProcedural allocate_default(GPUContext& p_gpu_context, const Token<Mesh> p_mesh)
+        {
+            MeshProcedural l_return;
+            l_return.mesh = p_mesh;
+            l_return.vertices = Vector<Vertex>::allocate(1);
+            l_return.vertices_source_buffer = p_gpu_context.buffer_memory.allocator.allocate_bufferhost(l_return.vertices.Memory.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+            l_return.indices = Vector<uint32>::allocate(1);
+            l_return.indices_source_buffer = p_gpu_context.buffer_memory.allocator.allocate_bufferhost(l_return.indices.Memory.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+
+            return l_return;
+        };
+
+        inline void free(GPUContext& p_gpu_context)
+        {
+            this->vertices.free();
+            this->indices.free();
+
+            BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, this->vertices_source_buffer);
+            BufferAllocatorComposition::free_buffer_host_and_remove_event_references(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, this->indices_source_buffer);
+        };
+
+        inline void push_to_gpu(GPUContext& p_gpu_context, D3Renderer& p_rendenrer)
+        {
+            Mesh& l_mesh = p_rendenrer.heap().meshes.get(this->mesh);
+            ;
+            // TOOD -> add a write to BufferHost ?
+            {
+                Slice<int8> l_mesh_source_vertex_memory = p_gpu_context.buffer_memory.allocator.host_buffers.get(this->vertices_source_buffer).get_mapped_effective_memory();
+                l_mesh_source_vertex_memory.copy_memory(this->vertices.to_slice().build_asint8());
+                BufferReadWrite::write_to_buffergpu_no_allocation(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_mesh.vertices_buffer, this->vertices_source_buffer);
+            }
+            {
+                Slice<int8> l_indices_source_indices_memory = p_gpu_context.buffer_memory.allocator.host_buffers.get(this->indices_source_buffer).get_mapped_effective_memory();
+                l_indices_source_indices_memory.copy_memory(this->vertices.to_slice().build_asint8());
+                BufferReadWrite::write_to_buffergpu_no_allocation(p_gpu_context.buffer_memory.allocator, p_gpu_context.buffer_memory.events, l_mesh.vertices_buffer, this->vertices_source_buffer);
+            }
+        };
+    };
+
+    Token<MeshResource> mesh_resource;
+    MeshProcedural mesh_procedural;
+
+    inline void main(const float32 p_forced_delta)
+    {
+
+        this->engine.main_loop_forced_delta(p_forced_delta, [&](const float32 p_delta) {
+            uimax l_frame = FrameCount(this->engine);
+            if (l_frame == 1)
+            {
+                SliceN<Vertex, 4> l_vertices_arr = {Vertex{v3f{0.0f, 0.0f, 0.0f}, v2f{0.0f, 0.0f}}, Vertex{v3f{1.0f, 0.0f, 0.0f}, v2f{0.0f, 0.0f}}, Vertex{v3f{0.0f, 1.0f, 0.0f}, v2f{0.0f, 0.0f}},
+                                                    Vertex{v3f{0.0f, 0.0f, 1.0f}, v2f{0.0f, 0.0f}}};
+                SliceN<uint32, 6> l_indices_arr = {0, 1, 2, 1, 2, 3};
+                MeshResource::Asset::Value l_mesh_value;
+                l_mesh_value.initial_indices = slice_from_slicen(&l_indices_arr);
+                l_mesh_value.initial_vertices = slice_from_slicen(&l_vertices_arr);
+
+                MeshResource::InlineAllocationInput l_mesh_allocation;
+                l_mesh_allocation.id = 985;
+                l_mesh_allocation.asset = MeshResource::Asset::allocate_from_values(l_mesh_value);
+
+                // TODO -> having something like forced allocation ?
+                //         no, this is not necessary
+                this->mesh_resource = this->engine.renderer_resource_allocator.mesh_unit.allocate_or_increment_inline(l_mesh_allocation);
+
+                // this->mesh_source_buffer = this->engine.gpu_context.buffer_memory.allocator.allocate_bufferhost(this->procedural_vertices.slice.build_asint8(), BufferUsageFlag::TRANSFER_READ);
+            }
+            else
+            {
+                if (l_frame == 2)
+                {
+                    MeshResource& l_mesh_resource = this->engine.renderer_resource_allocator.mesh_unit.meshes.pool.get(this->mesh_resource);
+                    this->mesh_procedural = MeshProcedural::allocate_default(this->engine.gpu_context, l_mesh_resource.resource);
+                    // Mesh& l_mesh = this->engine.renderer.d3_renderer.heap().meshes.get(l_mesh_resource.resource);
+                    // this->mesh_vertex_buffer = l_mesh.vertices_buffer;
+                }
+
+                this->mesh_procedural.push_to_gpu(this->engine.gpu_context, this->engine.renderer.d3_renderer);
+            }
+        });
+
+        this->engine.renderer_resource_allocator.mesh_unit.decrement_or_release(this->mesh_resource);
+    };
+};
+
+inline void procedural_mesh()
+{
+    String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("/d3renderer_cube/asset.db"));
+    {
+    }
+
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration l_configuration{};
+    l_configuration.core = EngineModuleCore::RuntimeConfiguration{0};
+    l_configuration.render_target_host_readable = 1;
+    l_configuration.render_size = v2ui{800, 600};
+    l_configuration.database_path = l_database_path.to_slice();
+
+    ProceduralMeshEnvironment l_sandbox_environment = ProceduralMeshEnvironment::allocate(l_configuration);
+    l_sandbox_environment.main(1.0f / 60.0f);
+
+    l_database_path.free();
+};
+
+
+
+
 1/ We can improve the shader compiler so that we only need to write shader program parts that are not common.
    On compilation, the shader compiler can append the common parts.
    -> This will invole to define types to shader assets in order to know if it's a color step shader (or another one in the future).
