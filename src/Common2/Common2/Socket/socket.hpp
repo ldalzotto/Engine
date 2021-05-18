@@ -320,11 +320,12 @@ struct Socket
   private:
     inline static void _allocate_socket_and_bind_and_listen(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
     {
-        int8 p_port_str_raw[ToString::int32str_size];
-        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
+        SliceN<int8, ToString::int32str_size> p_port_str_raw;
+        Slice<int8> l_port_str = slice_from_slicen(&p_port_str_raw);
+        ToString::aint32(p_port, l_port_str);
 
         p_socket.native_addr_info = NULL;
-        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &p_addr_info, &p_socket.native_addr_info));
+        winsock_error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
 
         p_socket.native_socket = socket_allocate(p_ctx, socket(p_socket.native_addr_info->ai_family, p_socket.native_addr_info->ai_socktype, p_socket.native_addr_info->ai_protocol));
         winsock_error_handler(bind(p_socket.native_socket, p_socket.native_addr_info->ai_addr, (int)p_socket.native_addr_info->ai_addrlen));
@@ -334,11 +335,12 @@ struct Socket
 
     inline static void _allocate_socket_and_connect(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
     {
-        int8 p_port_str_raw[ToString::int32str_size];
-        ToString::aint32(p_port, slice_int8_build_rawstr(p_port_str_raw));
+        SliceN<int8, ToString::int32str_size> p_port_str_raw;
+        Slice<int8> l_port_str = slice_from_slicen(&p_port_str_raw);
+        ToString::aint32(p_port, l_port_str);
 
         p_socket.native_addr_info = NULL;
-        winsock_error_handler(getaddrinfo(NULL, p_port_str_raw, &p_addr_info, &p_socket.native_addr_info));
+        winsock_error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
 
         addrinfo* l_ptr;
         addrinfo* l_result = p_socket.native_addr_info;
