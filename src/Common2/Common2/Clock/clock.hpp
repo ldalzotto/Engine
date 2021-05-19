@@ -45,4 +45,11 @@ inline time_t clock_currenttime_mics()
     return round(spec.tv_nsec / 1000);
 };
 
+inline timespec miliseconds_to_timespec(const uimax p_miliseconds){
+    timespec l_ts;
+    l_ts.tv_sec = p_miliseconds / 1000;
+    l_ts.tv_nsec = (p_miliseconds % 1000) * 1000000;
+    return l_ts;
+};
+
 #endif

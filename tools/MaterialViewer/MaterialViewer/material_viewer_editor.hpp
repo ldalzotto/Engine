@@ -20,7 +20,7 @@ struct MaterialViewerEngineUnit
         int8 change_requested;
     };
 
-    MutexNative<SharedResources> shared;
+    Mutex<SharedResources> shared;
 
     Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
     thread_t thread;
@@ -90,7 +90,7 @@ struct MaterialViewerEngineUnit
     {
         MaterialViewerEngineUnit l_return{};
         l_return.set_sefault_values();
-        l_return.shared = MutexNative<SharedResources>::allocate();
+        l_return.shared = Mutex<SharedResources>::allocate();
         return l_return;
     };
 

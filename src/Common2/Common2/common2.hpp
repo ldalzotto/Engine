@@ -39,6 +39,8 @@
 #include "./Functional/equality.hpp"
 
 #include "./Functional/assert.hpp"
+
+#include "./Clock/clock.hpp"
 #include "./Thread/mutex.hpp"
 #include "./Thread/barrier.hpp"
 
@@ -47,7 +49,6 @@
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
 
-#include "./Clock/clock.hpp"
 #include "./Thread/thread.hpp"
 
 #include "./Functional/encode.hpp"

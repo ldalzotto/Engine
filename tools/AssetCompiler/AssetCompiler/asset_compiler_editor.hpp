@@ -75,7 +75,7 @@ struct AssetCompilationThread
         Vector<s_input_asset_compilation_pass_event> compilation_passes;
     };
 
-    MutexNative<s_input_events> input_events;
+    Mutex<s_input_events> input_events;
 
     struct s_asset_compilation_result
     {
@@ -88,13 +88,13 @@ struct AssetCompilationThread
         Vector<s_asset_compilation_result> compilation_results;
     };
 
-    MutexNative<s_output_result> output_result;
+    Mutex<s_output_result> output_result;
 
     inline static AssetCompilationThread allocate()
     {
         AssetCompilationThread l_thread = AssetCompilationThread{};
-        l_thread.input_events = MutexNative<s_input_events>::allocate();
-        l_thread.output_result = MutexNative<s_output_result>::allocate();
+        l_thread.input_events = Mutex<s_input_events>::allocate();
+        l_thread.output_result = Mutex<s_output_result>::allocate();
         l_thread.shader_compiler = ShaderCompiler::allocate();
         l_thread.running_state_V2 = RunningState_V2::build();
         return l_thread;

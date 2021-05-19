@@ -3,6 +3,9 @@ add_library(Common2 INTERFACE)
 target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
 target_link_libraries(Common2 INTERFACE SQLite)
 
+find_package(Threads REQUIRED)
+target_link_libraries(Common2 INTERFACE Threads::Threads)
+
 add_library(AssetDatabase INTERFACE)
 target_include_directories(AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase)
 target_link_libraries(AssetDatabase INTERFACE Common2)
@@ -62,7 +65,6 @@ target_include_directories(Test_AssetDatabase INTERFACE ${CMAKE_CURRENT_SOURCE_D
 add_executable(Common2Test ${CMAKE_CURRENT_SOURCE_DIR}/Common2/test/common2_test.cpp)
 target_link_libraries(Common2Test PUBLIC Common2)
 target_compile_definitions(Common2Test PUBLIC ASSET_FOLDER_PATH="${ASSET_FOLDER_VAR}/Common2/")
-
 
 add_executable(AssetDatabaseTest ${CMAKE_CURRENT_SOURCE_DIR}/AssetDatabase/test/asset_database_test.cpp)
 target_link_libraries(AssetDatabaseTest PUBLIC AssetDatabase)

@@ -1,15 +1,45 @@
 #pragma once
 
+#define SOCKET_DEFAULT_PORT 8000
+
+#if _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+#endif
 
-#define SOCKET_DEFAULT_PORT 8000
+using socket_t =
+#if _WIN32
+    SOCKET;
+#else
+    int;
+#endif
 
-template <class ReturnType> inline ReturnType winsock_error_handler(const ReturnType p_return)
+struct SocketNative
+{
+    inline static void context_startup();
+    inline static void context_cleanup();
+    template <class ReturnType> inline static ReturnType error_handler(const ReturnType p_return);
+    inline static void socket_close(const socket_t p_socket);
+};
+
+#if _WIN32
+
+inline void SocketNative::context_startup()
+{
+    WSADATA l_winsock_data;
+    SocketNative::error_handler(WSAStartup(MAKEWORD(2, 2), &l_winsock_data));
+};
+
+inline void SocketNative::context_cleanup()
+{
+    WSACleanup();
+};
+
+template <class ReturnType> inline ReturnType SocketNative::error_handler(const ReturnType p_return)
 {
 #if __DEBUG
     if (p_return != 0)
@@ -21,19 +51,52 @@ template <class ReturnType> inline ReturnType winsock_error_handler(const Return
     return p_return;
 };
 
-using socket_t = SOCKET;
+inline void SocketNative::socket_close(const socket_t p_socket)
+{
+    closesocket(p_socket);
+};
+
+#else
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+
+inline void SocketNative::context_startup(){};
+inline void SocketNative::context_cleanup(){};
+
+template <class ReturnType> inline ReturnType SocketNative::error_handler(const ReturnType p_return)
+{
+#if __DEBUG
+    if (p_return == -1)
+    {
+        abort();
+    }
+#endif
+
+    return p_return;
+};
+
+inline void SocketNative::socket_close(const socket_t p_socket)
+{
+    ::close(p_socket);
+};
+
+#endif
 
 struct SocketContext
 {
-    MutexNative<Vector<socket_t>> sockets;
+    Mutex<Vector<socket_t>> sockets;
 
     inline static SocketContext allocate()
     {
-        WSADATA l_winsock_data;
-        winsock_error_handler(WSAStartup(MAKEWORD(2, 2), &l_winsock_data));
+        SocketNative::context_startup();
 
         SocketContext l_ctx;
-        l_ctx.sockets = MutexNative<Vector<socket_t>>::allocate();
+        l_ctx.sockets = Mutex<Vector<socket_t>>::allocate();
         l_ctx.sockets._data = Vector<socket_t>::allocate(0);
         return l_ctx;
     };
@@ -47,7 +110,7 @@ struct SocketContext
             p_sockets.free();
         });
         this->sockets.free();
-        WSACleanup();
+        SocketNative::context_cleanup();
     };
 
     inline void remove_socket(const socket_t p_socket)
@@ -88,7 +151,7 @@ inline void socket_close(SocketContext& p_ctx, socket_t* p_socket)
 #if __DEBUG
     assert_true(*p_socket != INVALID_SOCKET);
 #endif
-    closesocket(*p_socket);
+    SocketNative::socket_close(*p_socket);
     p_ctx.remove_socket(*p_socket);
     *p_socket = INVALID_SOCKET;
 };
@@ -102,10 +165,14 @@ inline void socket_graceful_shut(SocketContext& p_ctx, socket_t* p_socket)
 #if __DEBUG
     assert_true(*p_socket != INVALID_SOCKET);
 #endif
+#if _WIN32
     HANDLE l_wsa_event = WSACreateEvent();
     WSAEventSelect(*p_socket, l_wsa_event, FD_CLOSE);
     shutdown(*p_socket, SD_BOTH);
     WSAWaitForMultipleEvents(1, &l_wsa_event, TRUE, WSA_INFINITE, TRUE);
+#else
+    SocketNative::error_handler(shutdown(*p_socket, SHUT_RDWR));
+#endif
 };
 
 enum class SocketReturnCode
@@ -325,12 +392,12 @@ struct Socket
         ToString::aint32(p_port, l_port_str);
 
         p_socket.native_addr_info = NULL;
-        winsock_error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
+        SocketNative::error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
 
         p_socket.native_socket = socket_allocate(p_ctx, socket(p_socket.native_addr_info->ai_family, p_socket.native_addr_info->ai_socktype, p_socket.native_addr_info->ai_protocol));
-        winsock_error_handler(bind(p_socket.native_socket, p_socket.native_addr_info->ai_addr, (int)p_socket.native_addr_info->ai_addrlen));
+        SocketNative::error_handler(bind(p_socket.native_socket, p_socket.native_addr_info->ai_addr, (int)p_socket.native_addr_info->ai_addrlen));
 
-        winsock_error_handler(listen(p_socket.native_socket, SOMAXCONN));
+        SocketNative::error_handler(listen(p_socket.native_socket, SOMAXCONN));
     };
 
     inline static void _allocate_socket_and_connect(Socket& p_socket, SocketContext& p_ctx, const addrinfo& p_addr_info, const int32 p_port)
@@ -340,7 +407,7 @@ struct Socket
         ToString::aint32(p_port, l_port_str);
 
         p_socket.native_addr_info = NULL;
-        winsock_error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
+        SocketNative::error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
 
         addrinfo* l_ptr;
         addrinfo* l_result = p_socket.native_addr_info;
