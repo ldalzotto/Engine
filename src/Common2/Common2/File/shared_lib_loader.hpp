@@ -1,5 +1,6 @@
 #pragma once
 
+#if 0
 typedef HMODULE
 #ifdef _WIN32
     sharedlib_t;
@@ -32,5 +33,7 @@ inline void* SharedLibLoader::get_procaddress(const sharedlib_t p_shader_lib, co
 {
     return (void*)GetProcAddress(p_shader_lib, p_proc_name);
 };
+
+#endif
 
 #endif

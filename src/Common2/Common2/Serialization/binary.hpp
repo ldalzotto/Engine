@@ -16,14 +16,14 @@ namespace BinarySerializer
 {
 template <class Vector, class ElementType> inline static void type(iVector<Vector> in_out_serialization_target, const ElementType& p_value)
 {
-    iVector<Vector>::Assert::element_type<int8>();
+    iVector<Vector>::Assert::template element_type<int8>();
 
     in_out_serialization_target.push_back_array(Slice<ElementType>::build_asint8_memory_singleelement(&p_value));
 };
 
 template <class Vector> inline static void slice(iVector<Vector> in_out_serialization_target, const Slice<int8>& p_slice)
 {
-    iVector<Vector>::Assert::element_type<int8>();
+    iVector<Vector>::Assert::template element_type<int8>();
 
     BinarySerializer::type(in_out_serialization_target, p_slice.Size);
     in_out_serialization_target.push_back_array(p_slice);
@@ -31,7 +31,7 @@ template <class Vector> inline static void slice(iVector<Vector> in_out_serializ
 
 template <class Vector> inline static uimax slice_ret_bytesnb(iVector<Vector> in_out_serialization_target, const Slice<int8>& p_slice)
 {
-    iVector<Vector>::Assert::element_type<int8>();
+    iVector<Vector>::Assert::template element_type<int8>();
 
     BinarySerializer::slice(in_out_serialization_target, p_slice);
     return sizeof(p_slice.Size) + p_slice.Size;
@@ -39,7 +39,7 @@ template <class Vector> inline static uimax slice_ret_bytesnb(iVector<Vector> in
 
 template <class Vector> inline static void varying_slice(iVector<Vector> in_out_serialization_target, const VaryingSlice& p_varying_slice)
 {
-    iVector<Vector>::Assert::element_type<int8>();
+    iVector<Vector>::Assert::template element_type<int8>();
 
     BinarySerializer::slice(in_out_serialization_target, p_varying_slice.memory);
     BinarySerializer::slice(in_out_serialization_target, p_varying_slice.chunks.build_asint8());

@@ -9,11 +9,12 @@ template <class _Vector> struct iVector
 
     struct Assert
     {
-        template <class ComparedType> inline static constexpr void element_type()
+        template <class ComparedType> inline static constexpr int8 element_type()
         {
 #if __DEBUG
             static_assert(sizeof(_ElementValue) == sizeof(ComparedType), "iVector : element_type");
 #endif
+            return 0;
         };
     };
 

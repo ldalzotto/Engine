@@ -119,7 +119,7 @@ inline void base64_test()
 
 template <class Container> inline void ivector_test_v2(iVector<Container> p_vector)
 {
-    iVector<Container>::Assert::element_type<uimax>();
+    iVector<Container>::Assert::template element_type<uimax>();
 
     // vector_push_back_array
     {
@@ -1724,42 +1724,6 @@ inline void serialize_deserialize_binary_test()
     }
 };
 
-inline void file_test()
-{
-    String l_file_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txt"));
-
-    {
-        File l_tmp_file = File::create_or_open(l_file_path.to_slice());
-        l_tmp_file.erase();
-    }
-
-    File l_file = File::create(l_file_path.to_slice());
-    assert_true(l_file.is_valid());
-
-    SliceN<int8, 100> l_source_buffer_arr = {0, 1, 2, 3, 4, 5};
-    Slice<int8> l_source_buffer = slice_from_slicen(&l_source_buffer_arr);
-    SliceN<int8, 100> l_buffer_arr = {};
-    Slice<int8> l_buffer = slice_from_slicen(&l_buffer_arr);
-
-    l_file.write_file(l_source_buffer);
-    l_file.read_file(&l_buffer);
-
-    assert_true(l_buffer.compare(l_source_buffer));
-
-    l_file.erase();
-
-    l_file_path.free();
-
-    // non null terminated path
-    Span<int8> l_file_path_not_null_terminated = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txtabcd"));
-    l_file_path_not_null_terminated.Capacity -= 4;
-    {
-        File l_tmp_file = File::create_or_open(l_file_path_not_null_terminated.slice);
-        l_tmp_file.erase();
-    }
-    l_file_path_not_null_terminated.free();
-};
-
 inline void database_test()
 {
     String l_database_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("asset.db"));
@@ -1966,6 +1930,42 @@ inline void barrier_test()
     assert_true(l_order_result.to_slice().compare(slice_from_slicen(&l_awaited_result)));
 
     l_order_result.free();
+};
+
+inline void file_test()
+{
+    String l_file_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txt"));
+
+    {
+        File l_tmp_file = File::create_or_open(l_file_path.to_slice());
+        l_tmp_file.erase();
+    }
+
+    File l_file = File::create(l_file_path.to_slice());
+    assert_true(l_file.is_valid());
+
+    SliceN<int8, 100> l_source_buffer_arr = {0, 1, 2, 3, 4, 5};
+    Slice<int8> l_source_buffer = slice_from_slicen(&l_source_buffer_arr);
+    SliceN<int8, 100> l_buffer_arr = {};
+    Slice<int8> l_buffer = slice_from_slicen(&l_buffer_arr);
+
+    l_file.write_file(l_source_buffer);
+    l_file.read_file(&l_buffer);
+
+    assert_true(l_buffer.compare(l_source_buffer));
+
+    l_file.erase();
+
+    l_file_path.free();
+
+    // non null terminated path
+    Span<int8> l_file_path_not_null_terminated = Span<int8>::allocate_slice_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("file_test.txtabcd"));
+    l_file_path_not_null_terminated.Capacity -= 4;
+    {
+        File l_tmp_file = File::create_or_open(l_file_path_not_null_terminated.slice);
+        l_tmp_file.erase();
+    }
+    l_file_path_not_null_terminated.free();
 };
 
 inline void native_window()
@@ -2392,12 +2392,13 @@ int main(int argc, int8** argv)
     deserialize_json_test();
     serialize_json_test();
     serialize_deserialize_binary_test();
-    native_window();
     file_test();
-    database_test();
     thread_test();
     socket_server_client_allocation_destruction();
     socket_server_client_send_receive_test();
     socket_client_to_server_to_client_request();
+    native_window();
+    database_test();
+
     memleak_ckeck();
 }

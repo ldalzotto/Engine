@@ -49,7 +49,7 @@ struct HashFunctions
 
     template <uimax _index, uimax _Size> struct HashCompileFragment
     {
-        constexpr uimax exec(const char* p_memory, const uimax p_hash)
+        constexpr uimax exec(const char* p_memory, const uimax p_hash) const
         {
             return HashCompileFragment<_index + 1, _Size>{}.exec(p_memory, HashFunctions::hash_step_indexed(p_memory, _index, p_hash));
         };
@@ -57,7 +57,7 @@ struct HashFunctions
 
     template <uimax _Size> struct HashCompileFragment<_Size, _Size>
     {
-        constexpr uimax exec(const char* p_memory, const uimax p_hash)
+        constexpr uimax exec(const char* p_memory, const uimax p_hash) const
         {
             return p_hash;
         };
@@ -65,7 +65,7 @@ struct HashFunctions
 
     template <uimax _Size> struct HashCompileInitialization
     {
-        constexpr uimax exec(const char* p_memory)
+        constexpr uimax exec(const char* p_memory) const
         {
             return HashCompileFragment<0, _Size>{}.exec(p_memory, hash_begin);
         };
