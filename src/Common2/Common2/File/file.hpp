@@ -1,30 +1,101 @@
 #pragma once
 
-// TODO -> there is a lot of duplication between windows and linux
-
 struct FileHandle
 {
 #if __MEMLEAK
     int8* memleak_ptr;
 #endif
 #if _WIN32
-    HANDLE handle;
+    using Handle = HANDLE;
 #else
-    int handle;
+    using Handle = int;
 #endif
+    Handle handle;
 };
 
 struct FileNative
 {
-    static FileHandle create_file(const Slice<int8>& p_path);
+    inline static FileHandle create_file(const Slice<int8>& p_path)
+    {
+        FileHandle l_handle;
 
-    static FileHandle open_file(const Slice<int8>& p_path);
+        // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
+        // So if that's the case, we allocate a temporary string to be null terminated.
+        if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
+        {
+            String l_file_path_null_terminated = String::allocate_elements(p_path);
+            l_handle.handle = create_file_unchecked(l_file_path_null_terminated.to_slice());
+            l_file_path_null_terminated.free();
+        }
+        else
+        {
+            l_handle.handle = create_file_unchecked(p_path);
+        }
 
-    static void close_file(FileHandle& p_file_handle);
+#if __MEMLEAK
+        if (FileNative::handle_is_valid(l_handle))
+        {
+            l_handle.memleak_ptr = heap_malloc(1);
+        }
+#endif
+        return l_handle;
+    };
+
+    inline static FileHandle open_file(const Slice<int8>& p_path)
+    {
+        FileHandle l_handle;
+        // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
+        // So if that's the case, we allocate a temporary string to be null terminated.
+        if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
+        {
+            String l_file_path_null_terminated = String::allocate_elements(p_path);
+            l_handle.handle = open_file_unchecked(l_file_path_null_terminated.to_slice());
+            l_file_path_null_terminated.free();
+        }
+        else
+        {
+            l_handle.handle = open_file_unchecked(p_path);
+        }
+
+#if __MEMLEAK
+        if (FileNative::handle_is_valid(l_handle))
+        {
+            l_handle.memleak_ptr = heap_malloc(1);
+        }
+#endif
+        return l_handle;
+    }
+
+    inline static void close_file(FileHandle& p_file_handle)
+    {
+#if __MEMLEAK
+        if (FileNative::handle_is_valid(p_file_handle))
+        {
+            heap_free(p_file_handle.memleak_ptr);
+        }
+#endif
+
+        close_file_unchecked(p_file_handle);
+        p_file_handle = FileHandle{0};
+    };
 
     static void set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer);
 
-    static void delete_file(const Slice<int8>& p_path);
+    inline static void delete_file(const Slice<int8>& p_path)
+    {
+        // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
+        // So if that's the case, we allocate a temporary string to be null terminated.
+        if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
+        {
+            String l_file_path_null_terminated = String::allocate_elements(p_path);
+            delete_file_unchecked(l_file_path_null_terminated.to_slice());
+            l_file_path_null_terminated.free();
+        }
+        else
+        {
+            delete_file_unchecked(p_path);
+        }
+    };
 
     static uimax get_file_size(const FileHandle& p_file_handle);
 
@@ -35,83 +106,15 @@ struct FileNative
     inline static void write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer);
 
     static int8 handle_is_valid(const FileHandle& p_file_handle);
+
+  private:
+    static FileHandle::Handle create_file_unchecked(const Slice<int8>& p_path);
+    static FileHandle::Handle open_file_unchecked(const Slice<int8>& p_path);
+    static void close_file_unchecked(const FileHandle& p_file_handle);
+    static void delete_file_unchecked(const Slice<int8>& p_path);
 };
 
 #if _WIN32
-
-inline FileHandle FileNative::create_file(const Slice<int8>& p_path)
-{
-    FileHandle l_handle;
-
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-        l_handle.handle =
-            CreateFile(l_file_path_null_terminated.get_memory(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-        l_handle.handle = CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-    }
-
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(l_handle))
-    {
-        l_handle.memleak_ptr = heap_malloc(1);
-    }
-#endif
-    return l_handle;
-};
-
-inline FileHandle FileNative::open_file(const Slice<int8>& p_path)
-{
-    FileHandle l_handle;
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-        l_handle.handle = CreateFile(l_file_path_null_terminated.get_memory(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-                              FILE_ATTRIBUTE_NORMAL, NULL);
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-        l_handle.handle = CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    }
-
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(l_handle))
-    {
-        l_handle.memleak_ptr = heap_malloc(1);
-    }
-#endif
-    return l_handle;
-};
-
-inline void FileNative::close_file(FileHandle& p_file_handle)
-{
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(p_file_handle))
-    {
-        heap_free(p_file_handle.memleak_ptr);
-    }
-#endif
-
-#if __DEBUG
-    assert_true(
-#endif
-        CloseHandle(p_file_handle.handle)
-#if __DEBUG
-    )
-#endif
-        ;
-
-    p_file_handle = FileHandle{0};
-};
 
 inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
 {
@@ -123,36 +126,6 @@ inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax 
         != INVALID_SET_FILE_POINTER)
 #endif
         ;
-};
-
-inline void FileNative::delete_file(const Slice<int8>& p_path)
-{
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-#if __DEBUG
-        assert_true(
-#endif
-            DeleteFile(l_file_path_null_terminated.get_memory())
-#if __DEBUG
-        )
-#endif
-            ;
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-#if __DEBUG
-        assert_true(
-#endif
-            DeleteFile(p_path.Begin)
-#if __DEBUG
-        )
-#endif
-            ;
-    }
 };
 
 inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
@@ -217,82 +190,45 @@ inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
     return p_file_handle.handle != INVALID_HANDLE_VALUE;
 };
 
+
+inline FileHandle::Handle FileNative::create_file_unchecked(const Slice<int8>& p_path)
+{
+    return CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+};
+
+inline FileHandle::Handle FileNative::open_file_unchecked(const Slice<int8>& p_path)
+{
+    return CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+};
+
+inline void FileNative::close_file_unchecked(const FileHandle& p_file_handle)
+{
+#if __DEBUG
+    assert_true(
+#endif
+        CloseHandle(p_file_handle.handle)
+#if __DEBUG
+    )
+#endif
+        ;
+};
+
+inline void FileNative::delete_file_unchecked(const Slice<int8>& p_path)
+{
+#if __DEBUG
+    assert_true(
+#endif
+        DeleteFile(p_path.Begin)
+#if __DEBUG
+    )
+#endif
+        ;
+};
+
 #else
 
 #include <fcntl.h>
 #include <sys/stat.h>
-
-inline FileHandle FileNative::create_file(const Slice<int8>& p_path)
-{
-    FileHandle l_handle;
-
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-        l_handle.handle = open(l_file_path_null_terminated.get_memory(), O_RDWR | O_CREAT, S_IRWXU);
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-        l_handle.handle = open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
-    }
-
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(l_handle))
-    {
-        l_handle.memleak_ptr = heap_malloc(1);
-    }
-#endif
-    return l_handle;
-};
-
-inline FileHandle FileNative::open_file(const Slice<int8>& p_path)
-{
-    FileHandle l_handle;
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-        l_handle.handle = open(l_file_path_null_terminated.get_memory(), O_RDWR | O_CREAT, S_IRWXU);
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-        l_handle.handle = open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
-    }
-
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(l_handle))
-    {
-        l_handle.memleak_ptr = heap_malloc(1);
-    }
-#endif
-    return l_handle;
-};
-
-inline void FileNative::close_file(FileHandle& p_file_handle)
-{
-#if __MEMLEAK
-    if (FileNative::handle_is_valid(p_file_handle))
-    {
-        heap_free(p_file_handle.memleak_ptr);
-    }
-#endif
-
-#if __DEBUG
-    assert_true(
-#endif
-        close(p_file_handle.handle)
-#if __DEBUG
-        == 0)
-#endif
-        ;
-
-    p_file_handle = FileHandle{0};
-};
 
 inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
 {
@@ -304,36 +240,6 @@ inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax 
         == 0)
 #endif
         ;
-};
-
-inline void FileNative::delete_file(const Slice<int8>& p_path)
-{
-    // We must do this check because the input path may not be null terminated and the win32 api CreateFile only allows null terminated string.
-    // So if that's the case, we allocate a temporary string to be null terminated.
-    if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
-    {
-        String l_file_path_null_terminated = String::allocate_elements(p_path);
-#if __DEBUG
-        assert_true(
-#endif
-            remove(l_file_path_null_terminated.get_memory())
-#if __DEBUG
-            == 0)
-#endif
-            ;
-        l_file_path_null_terminated.free();
-    }
-    else
-    {
-#if __DEBUG
-        assert_true(
-#endif
-            remove(p_path.Begin)
-#if __DEBUG
-            == 0)
-#endif
-            ;
-    }
 };
 
 inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
@@ -354,7 +260,6 @@ inline uimax FileNative::get_modification_ts(const FileHandle& p_file_handle)
 #if __DEBUG
     assert_true(l_ftat_return == 0);
 #endif
-
 
     uimax l_ct = l_stat.st_atime;
     uimax l_at = l_stat.st_mtime;
@@ -399,6 +304,37 @@ inline void FileNative::write_buffer(const FileHandle& p_file_handle, const uima
 inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
 {
     return p_file_handle.handle != -1;
+};
+
+inline FileHandle::Handle FileNative::create_file_unchecked(const Slice<int8>& p_path)
+{
+    return open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
+};
+inline FileHandle::Handle FileNative::open_file_unchecked(const Slice<int8>& p_path)
+{
+    return open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
+};
+inline void FileNative::close_file_unchecked(const FileHandle& p_file_handle)
+{
+#if __DEBUG
+    assert_true(
+#endif
+        close(p_file_handle.handle)
+#if __DEBUG
+        == 0)
+#endif
+        ;
+};
+inline void FileNative::delete_file_unchecked(const Slice<int8>& p_path)
+{
+#if __DEBUG
+    assert_true(
+#endif
+        remove(p_path.Begin)
+#if __DEBUG
+        == 0)
+#endif
+        ;
 };
 
 #endif
