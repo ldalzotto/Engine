@@ -77,7 +77,7 @@ inline void material_viewer(qt_test& qt_app)
                 assert_true(slice_int8_build_rawstr(l_material_viewer_editor.material_viewer_window.view.slected_mesh.toLocal8Bit().data()).compare(slice_int8_build_rawstr("shape_2.obj")));
 
                 assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.change_requested == 1);
-                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.mesh_hash == HashSlice(slice_int8_build_rawstr("shape_2.obj")));
+                assert_true(l_material_viewer_editor.material_viewer_engine_unit.shared._data.mesh_hash == HashFunctions::hash(slice_int8_build_rawstr("shape_2.obj")));
             });
         }
         else if (l_frame_count == 4)

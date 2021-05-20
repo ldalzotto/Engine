@@ -545,12 +545,12 @@ inline void render_middleware_database_allocation(CachedCompiledShaders p_cached
     const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
     const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
 
-    const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
-    const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
-    const hash_t l_shader_id = HashSlice(l_shader_path);
-    const hash_t l_texture_id = HashSlice(l_texture_path);
-    const hash_t l_material_id = HashSlice(l_material_path);
-    const hash_t l_mesh_id = HashSlice(l_mesh_path);
+    const hash_t l_vertex_shader_id = HashFunctions::hash(l_vertex_shader_path);
+    const hash_t l_fragment_shader_id = HashFunctions::hash(l_fragment_shader_path);
+    const hash_t l_shader_id = HashFunctions::hash(l_shader_path);
+    const hash_t l_texture_id = HashFunctions::hash(l_texture_path);
+    const hash_t l_material_id = HashFunctions::hash(l_material_path);
+    const hash_t l_mesh_id = HashFunctions::hash(l_mesh_path);
 
     {
         SliceN<ShaderLayoutParameterType, 2> l_shader_asset_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
@@ -649,12 +649,12 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
     const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
     const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
 
-    const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
-    const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
-    const hash_t l_shader_id = HashSlice(l_shader_path);
-    const hash_t l_texture_id = HashSlice(l_texture_path);
-    const hash_t l_material_id = HashSlice(l_material_path);
-    const hash_t l_mesh_id = HashSlice(l_mesh_path);
+    const hash_t l_vertex_shader_id = HashFunctions::hash(l_vertex_shader_path);
+    const hash_t l_fragment_shader_id = HashFunctions::hash(l_fragment_shader_path);
+    const hash_t l_shader_id = HashFunctions::hash(l_shader_path);
+    const hash_t l_texture_id = HashFunctions::hash(l_texture_path);
+    const hash_t l_material_id = HashFunctions::hash(l_material_path);
+    const hash_t l_mesh_id = HashFunctions::hash(l_mesh_path);
 
     {
         SliceN<ShaderLayoutParameterType, 2> l_shader_layout{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
@@ -667,7 +667,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
 
         MaterialResource::Asset l_material_asset;
         {
-            SliceN<hash_t, 1> tmp_material_textures_arr{HashSlice(l_texture_path)};
+            SliceN<hash_t, 1> tmp_material_textures_arr{HashFunctions::hash(l_texture_path)};
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
@@ -697,9 +697,9 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
-        SliceN<hash_t, 1> tmp_material_textures_arr{HashSlice(l_texture_path)};
+        SliceN<hash_t, 1> tmp_material_textures_arr{HashFunctions::hash(l_texture_path)};
         MaterialResource::AssetDependencies l_material_asset_dependencies = MaterialResource::AssetDependencies::allocate_from_values(MaterialResource::AssetDependencies::Value{
-            HashSlice(l_shader_path), ShaderResource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)}, slice_from_slicen(&tmp_material_textures_arr)});
+            HashFunctions::hash(l_shader_path), ShaderResource::AssetDependencies::Value{HashFunctions::hash(l_vertex_shader_path), HashFunctions::hash(l_fragment_shader_path)}, slice_from_slicen(&tmp_material_textures_arr)});
 
         l_ctx.asset_database.insert_asset_dependencies_blob(l_ctx.database_connection, l_material_path, l_material_asset_dependencies.allocated_binary.slice);
 
@@ -714,7 +714,7 @@ inline void render_middleware_get_dependencies_from_database(CachedCompiledShade
     {
         Token<MaterialResource> l_material = l_ctx.render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_resource_allocator.shader_unit, l_ctx.render_resource_allocator.shader_module_unit, l_ctx.render_resource_allocator.texture_unit, l_ctx.database_connection,
-            l_ctx.asset_database, HashSlice(l_material_path));
+            l_ctx.asset_database, HashFunctions::hash(l_material_path));
 
         {
             SliceN<AssetResource_TestAssertion::AssertResource, 1> l_material_assert_textures{AssetResource_TestAssertion::AssertResource{l_texture_id, 1, 0}};
@@ -750,12 +750,12 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     const Slice<int8> l_material_path = slice_int8_build_rawstr("material");
     const Slice<int8> l_mesh_path = slice_int8_build_rawstr("mesh");
 
-    const hash_t l_vertex_shader_id = HashSlice(l_vertex_shader_path);
-    const hash_t l_fragment_shader_id = HashSlice(l_fragment_shader_path);
-    const hash_t l_shader_id = HashSlice(l_shader_path);
-    const hash_t l_texture_id = HashSlice(l_texture_path);
-    const hash_t l_material_id = HashSlice(l_material_path);
-    const hash_t l_mesh_id = HashSlice(l_mesh_path);
+    const hash_t l_vertex_shader_id = HashFunctions::hash(l_vertex_shader_path);
+    const hash_t l_fragment_shader_id = HashFunctions::hash(l_fragment_shader_path);
+    const hash_t l_shader_id = HashFunctions::hash(l_shader_path);
+    const hash_t l_texture_id = HashFunctions::hash(l_texture_path);
+    const hash_t l_material_id = HashFunctions::hash(l_material_path);
+    const hash_t l_mesh_id = HashFunctions::hash(l_mesh_path);
 
     {
         SliceN<ShaderLayoutParameterType, 2> l_shader_asset_layout_arr{ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, ShaderLayoutParameterType::TEXTURE_FRAGMENT};
@@ -768,7 +768,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
 
         MaterialResource::Asset l_material_asset;
         {
-            SliceN<hash_t, 1> tmp_material_texture_arr{HashSlice(l_texture_path)};
+            SliceN<hash_t, 1> tmp_material_texture_arr{HashFunctions::hash(l_texture_path)};
             Span<int8> l_material_parameter_temp = Span<int8>::allocate(10);
             auto l_obj = ShaderParameter::Type::UNIFORM_HOST;
             auto l_tex = ShaderParameter::Type::TEXTURE_GPU;
@@ -798,9 +798,9 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_material_path, l_material_asset.allocated_binary.slice);
         l_ctx.asset_database.insert_asset_blob(l_ctx.database_connection, l_mesh_path, l_mesh_asset.allocated_binary.slice);
 
-        SliceN<hash_t, 1> tmp_material_textures{HashSlice(l_texture_path)};
+        SliceN<hash_t, 1> tmp_material_textures{HashFunctions::hash(l_texture_path)};
         MaterialResource::AssetDependencies l_material_asset_dependencies = MaterialResource::AssetDependencies::allocate_from_values(MaterialResource::AssetDependencies::Value{
-            HashSlice(l_shader_path), ShaderResource::AssetDependencies::Value{HashSlice(l_vertex_shader_path), HashSlice(l_fragment_shader_path)}, slice_from_slicen(&tmp_material_textures)});
+            HashFunctions::hash(l_shader_path), ShaderResource::AssetDependencies::Value{HashFunctions::hash(l_vertex_shader_path), HashFunctions::hash(l_fragment_shader_path)}, slice_from_slicen(&tmp_material_textures)});
 
         l_ctx.asset_database.insert_asset_dependencies_blob(l_ctx.database_connection, l_material_path, l_material_asset_dependencies.allocated_binary.slice);
 
@@ -816,7 +816,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     {
         l_material = l_ctx.render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_resource_allocator.shader_unit, l_ctx.render_resource_allocator.shader_module_unit, l_ctx.render_resource_allocator.texture_unit, l_ctx.database_connection,
-            l_ctx.asset_database, HashSlice(l_material_path));
+            l_ctx.asset_database, HashFunctions::hash(l_material_path));
         l_ctx.render_resource_allocator.deallocation_step(l_ctx.renderer, l_ctx.gpu_ctx);
         l_ctx.render_resource_allocator.allocation_step(l_ctx.renderer, l_ctx.gpu_ctx, l_ctx.database_connection, l_ctx.asset_database);
     }
@@ -834,7 +834,7 @@ inline void render_middleware_multiple_database_allocation(CachedCompiledShaders
     {
         Token<MaterialResource> l_material_2 = l_ctx.render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
             l_ctx.render_resource_allocator.shader_unit, l_ctx.render_resource_allocator.shader_module_unit, l_ctx.render_resource_allocator.texture_unit, l_ctx.database_connection,
-            l_ctx.asset_database, HashSlice(l_material_path));
+            l_ctx.asset_database, HashFunctions::hash(l_material_path));
 
         assert_true(token_equals(l_material_2, l_material));
 

@@ -2,68 +2,72 @@
 
 using hash_t = uimax;
 
-// http://www.cse.yorku.ca/~oz/hash.html
-inline constexpr uimax HashFunctionRaw(const int8* p_value, const uimax p_size)
+struct strlen_compile
 {
-    hash_t hash = 5381;
-
-    for (loop(i, 0, p_size))
+    static constexpr uimax get_size(const int8* p_memory)
     {
-        int8 c = *(p_value + i);
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
+        return get_size_step(p_memory, 0);
+    };
 
-    return hash;
-}
-
-// http://www.cse.yorku.ca/~oz/hash.html
-inline uimax HashFunctionRawChecked(const int8* p_value, const uimax p_size)
-{
-    hash_t hash = 5381;
-
-    for (loop(i, 0, p_size))
+  private:
+    static constexpr uimax get_size_step(const int8* p_memory, const uimax p_index)
     {
-        int8 c = *(p_value + i);
-        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-    }
-
-#if __DEBUG
-    // -1 is usually the default value of hash_t, we we prevent in debuf mode any value that can clash
-    assert_true(hash != (hash_t)-1);
-#endif
-
-    return hash;
-}
-
-template <class TYPE> inline hash_t HashFunction(const TYPE& p_value)
-{
-    return HashFunctionRaw((int8*)&p_value, sizeof(TYPE));
+        return ((*(p_memory + p_index)) == (int8)NULL) ? p_index : get_size_step(p_memory, p_index + 1);
+    };
 };
 
-template <class TYPE> inline hash_t HashCombineFunction(const uimax p_hash, const TYPE& p_value)
+struct HashFunctions
 {
-    return p_hash ^ (HashFunction<TYPE>(p_value) + 0x9e3779b9 + (p_hash << 6) + (p_hash >> 2));
-};
+    static hash_t hash(const Slice<int8>& p_memory)
+    {
+        hash_t l_hash = hash_begin;
+        for (loop(i, 0, p_memory.Size))
+        {
+            l_hash = hash_step(&p_memory.get(i), l_hash);
+        }
+        return l_hash;
+    };
 
-template <class TYPE> inline hash_t HashSlice(const Slice<TYPE>& p_value)
-{
-    return HashFunctionRaw((int8*)p_value.Begin, p_value.Size * sizeof(TYPE));
-};
+    template <uimax _Size> static constexpr hash_t hash_compile(const char* p_memory)
+    {
+        return HashCompileInitialization<_Size>{}.exec(p_memory);
+    };
 
-inline hash_t HashRaw(const int8* p_str)
-{
-    return HashFunctionRaw((int8*)p_str, strlen(p_str));
-};
+  private:
+    static constexpr uimax hash_begin = 5381;
 
-inline constexpr uimax strlen_constexpr(const char* start)
-{
-    const char* end = start;
-    while (*end++ != 0)
-        ;
-    return end - start - 1;
-};
+    // http://www.cse.yorku.ca/~oz/hash.html
+    static constexpr uimax hash_step(const int8* p_memory, const uimax p_hash)
+    {
+        return ((p_hash << 5) + p_hash) + (*(p_memory));
+    };
 
-inline constexpr hash_t HashRaw_constexpr(const int8* p_str)
-{
-    return HashFunctionRaw((int8*)p_str, strlen_constexpr(p_str));
+    static constexpr uimax hash_step_indexed(const int8* p_memory, const uimax p_index, const uimax p_hash)
+    {
+        return hash_step(p_memory + p_index, p_hash);
+    };
+
+    template <uimax _index, uimax _Size> struct HashCompileFragment
+    {
+        constexpr uimax exec(const char* p_memory, const uimax p_hash)
+        {
+            return HashCompileFragment<_index + 1, _Size>{}.exec(p_memory, HashFunctions::hash_step_indexed(p_memory, _index, p_hash));
+        };
+    };
+
+    template <uimax _Size> struct HashCompileFragment<_Size, _Size>
+    {
+        constexpr uimax exec(const char* p_memory, const uimax p_hash)
+        {
+            return p_hash;
+        };
+    };
+
+    template <uimax _Size> struct HashCompileInitialization
+    {
+        constexpr uimax exec(const char* p_memory)
+        {
+            return HashCompileFragment<0, _Size>{}.exec(p_memory, hash_begin);
+        };
+    };
 };

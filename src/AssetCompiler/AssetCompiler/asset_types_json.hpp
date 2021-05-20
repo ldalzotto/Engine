@@ -188,9 +188,9 @@ struct ShaderAssetJSON
 
         p_json_deserializer->next_field("execution_order");
         p_json_deserializer->next_field("vertex");
-        l_shader_dependencies_value.vertex_module = HashSlice(p_json_deserializer->get_currentfield().value);
+        l_shader_dependencies_value.vertex_module = HashFunctions::hash(p_json_deserializer->get_currentfield().value);
         p_json_deserializer->next_field("fragment");
-        l_shader_dependencies_value.fragment_module = HashSlice(p_json_deserializer->get_currentfield().value);
+        l_shader_dependencies_value.fragment_module = HashFunctions::hash(p_json_deserializer->get_currentfield().value);
 
         l_shader_dependencies_value.push_to_binary_buffer(in_out_buffer->to_ivector());
     };
@@ -243,7 +243,7 @@ struct MaterialAssetJSON
                 case ShaderParameter::Type::TEXTURE_GPU:
                 {
                     l_parameter_deserializer.next_field("val");
-                    MaterialResource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashSlice(l_parameter_deserializer.get_currentfield().value));
+                    MaterialResource::Asset::Value::Parameters::add_parameter_texture(l_material_parameters, HashFunctions::hash(l_parameter_deserializer.get_currentfield().value));
                 }
                 break;
                 case ShaderParameter::Type::UNIFORM_HOST:
@@ -318,7 +318,7 @@ struct MaterialAssetJSON
         Vector<int8> l_binary = Vector<int8>::allocate(0);
 
         p_json_deserializer->next_field("shader");
-        BinarySerializer::type(l_binary.to_ivector(), HashSlice(p_json_deserializer->get_currentfield().value));
+        BinarySerializer::type(l_binary.to_ivector(), HashFunctions::hash(p_json_deserializer->get_currentfield().value));
 
         {
             Span<int8> l_shader_file_content = AssetCompiler_open_and_read_asset_file(p_root_path, p_json_deserializer->get_currentfield().value);
@@ -345,7 +345,7 @@ struct MaterialAssetJSON
                 if (l_material_parameter_type.compare(slice_int8_build_rawstr("TEXTURE_GPU")))
                 {
                     l_parameter_deserializer.next_field("val");
-                    l_textures.push_back_element(HashSlice(l_parameter_deserializer.get_currentfield().value));
+                    l_textures.push_back_element(HashFunctions::hash(l_parameter_deserializer.get_currentfield().value));
                 }
             }
             l_parameter_deserializer.free();

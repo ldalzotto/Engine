@@ -5,7 +5,7 @@
 */
 struct CameraComponent
 {
-    static constexpr component_t Type = HashRaw_constexpr(STR(CameraComponent));
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(CameraComponent))>(STR(CameraComponent));
 
     struct Asset
     {
@@ -46,7 +46,7 @@ struct MeshRendererComponent
         Token<MeshResource> mesh;
     };
 
-    static constexpr component_t Type = HashRaw_constexpr(STR(MeshRendererComponent));
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(MeshRendererComponent))>(STR(MeshRendererComponent));
     int8 allocated;
     int8 force_update;
     Token<Node> scene_node;

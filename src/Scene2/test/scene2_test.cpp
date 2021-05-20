@@ -3,19 +3,15 @@
 
 struct ComponentTest
 {
-    static const component_t Type;
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(ComponentTest))>(STR(ComponentTest));
     int i0, i1, i2;
 };
 
-const component_t ComponentTest::Type = HashRaw(STR(ComponentTest));
-
 struct ComponentTest2
 {
-    static const component_t Type;
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(ComponentTest2))>(STR(ComponentTest2));
     uimax i0, i1, i2;
 };
-
-const component_t ComponentTest2::Type = HashRaw(STR(ComponentTest2));
 
 struct DefaulSceneComponentReleaser
 {
@@ -184,13 +180,16 @@ inline void component_consume()
 
         inline void on_component_removed(Scene* p_scene, const NodeEntry& p_node, const NodeComponent& p_component) const
         {
-            if (p_component.type == ComponentTest::Type)
+            switch (p_component.type)
             {
+            case ComponentTest::Type:
                 thiz->component_test_1_removed_called += 1;
-            }
-            else if (p_component.type == ComponentTest2::Type)
-            {
+                break;
+            case ComponentTest2::Type:
                 thiz->component_test_2_removed_called += 1;
+                break;
+            default:
+                abort();
             }
         };
     };
@@ -307,13 +306,13 @@ inline void math_hierarchy()
 
 struct CameraTestComponent
 {
-    static constexpr component_t Type = HashRaw_constexpr(STR(CameraTestComponent));
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(CameraTestComponent))>(STR(CameraTestComponent));
     float i0, i1;
 };
 
 struct MeshRendererTestComponent
 {
-    static constexpr component_t Type = HashRaw_constexpr(STR(MeshRendererTestComponent));
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(MeshRendererTestComponent))>(STR(MeshRendererTestComponent));
     float i0, i1, i2;
 };
 

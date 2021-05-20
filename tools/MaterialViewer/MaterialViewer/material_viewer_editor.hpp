@@ -406,7 +406,7 @@ struct MaterialViewerEditor
             return;
         }
 
-        this->material_viewer_engine_unit.set_new_material(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.selected_material.toLocal8Bit().data())));
-        this->material_viewer_engine_unit.set_new_mesh(HashSlice(slice_int8_build_rawstr(this->material_viewer_window.view.slected_mesh.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_material(HashFunctions::hash(slice_int8_build_rawstr(this->material_viewer_window.view.selected_material.toLocal8Bit().data())));
+        this->material_viewer_engine_unit.set_new_mesh(HashFunctions::hash(slice_int8_build_rawstr(this->material_viewer_window.view.slected_mesh.toLocal8Bit().data())));
     };
 };

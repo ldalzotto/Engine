@@ -324,7 +324,7 @@ struct SceneJSON_TO_SceneAsset
             Slice<int8> l_type = l_array.get_currentfield().value;
             JSONDeserializer l_component_object_iterator = JSONDeserializer::allocate_default();
             l_array.next_object(SceneSerialization_const::node_component_object_field, &l_component_object_iterator);
-            ComponentDeserializationFunc::push_json_to_sceneassettree(l_component_object_iterator, HashSlice(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
+            ComponentDeserializationFunc::push_json_to_sceneassettree(l_component_object_iterator, HashFunctions::hash(l_type), p_node_token, in_in_out_SceneAssetTreeout_scene);
             l_component_object_iterator.free();
         }
 

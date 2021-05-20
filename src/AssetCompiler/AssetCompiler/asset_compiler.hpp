@@ -192,7 +192,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
     File l_asset_file = File::open_silent(l_asset_full_path.slice);
     if (l_asset_file.is_valid())
     {
-        if (p_asset_metadata_database.does_assetmetadata_exists(p_database_connection, HashSlice(p_relative_asset_path)))
+        if (p_asset_metadata_database.does_assetmetadata_exists(p_database_connection, HashFunctions::hash(p_relative_asset_path)))
         {
             AssetMetadataDatabase::MetadataTS l_ts = p_asset_metadata_database.get_timestamps(p_database_connection, p_relative_asset_path);
             if (l_ts.file_modification_ts >= l_asset_file.get_modification_ts())

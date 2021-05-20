@@ -95,7 +95,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
         inline void insert_metadata(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_asset_type, const uimax p_modification_ts,
                                     const uimax p_insertion_ts)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->assetmetadata_insert_query, p_database_connection);
@@ -112,7 +112,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
         inline void update_metadata(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_asset_type, const uimax p_modification_ts,
                                     const uimax p_insertion_ts)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->assetmetadata_update_query, p_database_connection);
@@ -129,7 +129,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
         inline void insert_or_update_metadata(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_asset_type, const uimax p_modification_ts,
                                               const uimax p_insertion_ts)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
             if (this->does_assetmetadata_exists(p_database_connection, l_id))
             {
                 this->update_metadata(p_database_connection, p_asset_path, p_asset_type, p_modification_ts, p_insertion_ts);
@@ -150,7 +150,7 @@ static const int8* DB_ASSET_METADATA_TABLE_INITIALIZATION =
 
         inline MetadataTS get_timestamps(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->assetmetadata_select_timestamps, p_database_connection);

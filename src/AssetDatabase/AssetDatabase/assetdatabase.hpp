@@ -147,7 +147,7 @@ static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline hash_t insert_asset_blob(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->asset_insert_query, p_database_connection);
@@ -161,7 +161,7 @@ static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline hash_t insert_or_update_asset_blob(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             if (this->does_asset_exists(p_database_connection, l_id))
             {
@@ -218,7 +218,7 @@ static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline void insert_asset_dependencies_blob(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->asset_dependencies_insert_query, p_database_connection);
@@ -231,7 +231,7 @@ static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline void update_asset_dependencies_blob(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
 
             SQLiteQueryBinder l_binder = SQLiteQueryBinder::build_default();
             l_binder.bind_sqlitepreparedquery(this->asset_dependencies_update_query, p_database_connection);
@@ -244,7 +244,7 @@ static const int8* DB_ASSET_RESOURCE_TABLE_INITIALIZATION = MULTILINE(create tab
 
         inline void insert_or_update_asset_dependencies(DatabaseConnection& p_database_connection, const Slice<int8>& p_asset_path, const Slice<int8>& p_blob)
         {
-            hash_t l_id = HashSlice(p_asset_path);
+            hash_t l_id = HashFunctions::hash(p_asset_path);
             if (this->does_asset_dependencies_exists(p_database_connection, l_id))
             {
                 this->update_asset_dependencies_blob(p_database_connection, p_asset_path, p_blob);

@@ -151,10 +151,10 @@ inline void shader_module_compilation(ShaderCompiler& p_shader_compiler)
 
         l_raw_file.free();
 
-        Span<int8> l_shader_module_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad.frag")));
+        Span<int8> l_shader_module_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shad.frag")));
         assert_true(l_shader_module_compiled.slice.compare(l_shader.get_compiled_binary()));
 
-        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad.frag")));
+        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shad.frag")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::SHADER_MODULE_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("shad.frag")));
         l_metadata.free();
@@ -180,8 +180,8 @@ inline void shader_module_error_compilation(ShaderCompiler& p_shader_compiler)
                                                            slice_int8_build_rawstr("shad_wrong.frag"));
 
     {
-        assert_true(l_ctx.asset_database.does_asset_exists(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
-        assert_true(l_ctx.assetmetadata_database.does_assetmetadata_exists(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
+        assert_true(l_ctx.asset_database.does_asset_exists(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
+        assert_true(l_ctx.assetmetadata_database.does_assetmetadata_exists(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shad_wrong.frag"))) == 0);
     }
 
     l_asset_root_path.free();
@@ -202,7 +202,7 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
                                                            slice_int8_build_rawstr("shader_asset_test.json"));
 
     {
-        Span<int8> l_shader_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        Span<int8> l_shader_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shader_asset_test.json")));
         ShaderResource::Asset::Value l_shader_value = ShaderResource::Asset::Value::build_from_asset(ShaderResource::Asset::build_from_binary(l_shader_resource_compiled));
         SliceN<ShaderLayoutParameterType, 1> l_shader_layout_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
 
@@ -213,17 +213,17 @@ inline void shader_asset_compilation(ShaderCompiler& p_shader_compiler)
 
         l_shader_resource_compiled.free();
 
-        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shader_asset_test.json")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::SHADER_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("shader_asset_test.json")));
         l_metadata.free();
     }
     {
-        Span<int8> l_shader_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        Span<int8> l_shader_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("shader_asset_test.json")));
         ShaderResource::AssetDependencies::Value l_shader_dependencies = ShaderResource::AssetDependencies::Value::build_from_asset(ShaderResource::AssetDependencies{l_shader_dependencies_compiled});
 
-        assert_true(l_shader_dependencies.vertex_module == HashSlice(slice_int8_build_rawstr("shad.vert")));
-        assert_true(l_shader_dependencies.fragment_module == HashSlice(slice_int8_build_rawstr("shad.frag")));
+        assert_true(l_shader_dependencies.vertex_module == HashFunctions::hash(slice_int8_build_rawstr("shad.vert")));
+        assert_true(l_shader_dependencies.fragment_module == HashFunctions::hash(slice_int8_build_rawstr("shad.frag")));
 
         l_shader_dependencies_compiled.free();
     }
@@ -244,12 +244,12 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
                                                            slice_int8_build_rawstr("material_asset_test.json"));
 
     {
-        Span<int8> l_material_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
+        Span<int8> l_material_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("material_asset_test.json")));
         MaterialResource::Asset::Value l_material_value = MaterialResource::Asset::Value::build_from_asset(MaterialResource::Asset::build_from_binary(l_material_resource_compiled));
 
         assert_true(l_material_value.parameters.parameters.get_size() == 5);
         {
-            hash_t l_texture_hash = HashSlice(slice_int8_build_rawstr("link_to_png.png"));
+            hash_t l_texture_hash = HashFunctions::hash(slice_int8_build_rawstr("link_to_png.png"));
             assert_true(l_texture_hash == *l_material_value.parameters.get_parameter_texture_gpu_value(0));
         }
         {
@@ -271,19 +271,19 @@ inline void material_asset_compilation(ShaderCompiler& p_shader_compiler)
         l_material_resource_compiled.free();
     }
     {
-        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
+        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("material_asset_test.json")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::MATERIAL_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("material_asset_test.json")));
         l_metadata.free();
     }
     {
-        Span<int8> l_material_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json")));
+        Span<int8> l_material_dependencies_compiled = l_ctx.asset_database.get_asset_dependencies_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("material_asset_test.json")));
         MaterialResource::AssetDependencies::Value l_material_dependencies =
             MaterialResource::AssetDependencies::Value::build_from_asset(MaterialResource::AssetDependencies{l_material_dependencies_compiled});
 
-        assert_true(l_material_dependencies.shader == HashSlice(slice_int8_build_rawstr("shader_asset_test.json")));
+        assert_true(l_material_dependencies.shader == HashFunctions::hash(slice_int8_build_rawstr("shader_asset_test.json")));
         assert_true(l_material_dependencies.textures.Size == 1);
-        assert_true(l_material_dependencies.textures.get(0) == HashSlice(slice_int8_build_rawstr("link_to_png.png")));
+        assert_true(l_material_dependencies.textures.get(0) == HashFunctions::hash(slice_int8_build_rawstr("link_to_png.png")));
 
         l_material_dependencies_compiled.free();
     }
@@ -303,7 +303,7 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
                                                            slice_int8_build_rawstr("cube.obj"));
     {
-        Span<int8> l_mesh_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("cube.obj")));
+        Span<int8> l_mesh_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("cube.obj")));
         MeshResource::Asset::Value l_mesh_value = MeshResource::Asset::Value::build_from_asset(MeshResource::Asset::build_from_binary(l_mesh_resource_compiled));
 
         v3f l_positions[8] = {v3f{-1.0f, -1.0f, 1.0f}, v3f{-1.0f, 1.0f, 1.0f}, v3f{-1.0f, -1.0f, -1.0f}, v3f{-1.0f, 1.0f, -1.0f},
@@ -329,7 +329,7 @@ inline void mesh_asset_compilation(ShaderCompiler& p_shader_compiler)
         l_mesh_resource_compiled.free();
     }
     {
-        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("cube.obj")));
+        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("cube.obj")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::MESH_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("cube.obj")));
         l_metadata.free();
@@ -350,7 +350,7 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
     AssetCompiler_compile_and_push_to_database_single_file(p_shader_compiler, l_ctx.connection, l_ctx.asset_database, l_ctx.assetmetadata_database, l_asset_root_path.slice,
                                                            slice_int8_build_rawstr("texture.png"));
     {
-        Span<int8> l_texture_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashSlice(slice_int8_build_rawstr("texture.png")));
+        Span<int8> l_texture_resource_compiled = l_ctx.asset_database.get_asset_blob(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("texture.png")));
 
         TextureResource::Asset::Value l_texture_value = TextureResource::Asset::Value::build_from_asset(TextureResource::Asset{l_texture_resource_compiled});
         assert_true(l_texture_value.size == v3ui{4, 4, 1});
@@ -366,7 +366,7 @@ inline void texture_asset_compilation(ShaderCompiler& p_shader_compiler)
         l_texture_resource_compiled.free();
     }
     {
-        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashSlice(slice_int8_build_rawstr("texture.png")));
+        AssetMetadataDatabase::AssetMetadata l_metadata = l_ctx.assetmetadata_database.get_from_id(l_ctx.connection, HashFunctions::hash(slice_int8_build_rawstr("texture.png")));
         assert_true(l_metadata.type.slice.compare(AssetType_Const::TEXTURE_NAME));
         assert_true(l_metadata.path.slice.compare(slice_int8_build_rawstr("texture.png")));
         l_metadata.free();
@@ -425,18 +425,18 @@ inline void compilation_pass(ShaderCompiler& p_shader_compiler)
     {
         DatabaseConnection l_db_connection = DatabaseConnection::allocate(l_db_path.to_slice());
         AssetDatabase l_asset_db = AssetDatabase::allocate(l_db_connection);
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("cube.obj"))));
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json"))));
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("texture.png"))) == 0);
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("cube.obj"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("material_asset_test.json"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("texture.png"))) == 0);
         l_asset_db.free(l_db_connection);
         l_db_connection.free();
     }
     {
         DatabaseConnection l_db_connection = DatabaseConnection::allocate(l_db_2_path.to_slice());
         AssetDatabase l_asset_db = AssetDatabase::allocate(l_db_connection);
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("cube.obj"))));
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("material_asset_test.json"))));
-        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashSlice(slice_int8_build_rawstr("texture.png"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("cube.obj"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("material_asset_test.json"))));
+        assert_true(l_asset_db.does_asset_exists(l_db_connection, HashFunctions::hash(slice_int8_build_rawstr("texture.png"))));
         l_asset_db.free(l_db_connection);
         l_db_connection.free();
     }

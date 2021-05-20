@@ -6,7 +6,7 @@ template <class KeyType_t> struct HashMap_HashFn
 {
     inline static hash_t Hashmap_HashFn_Hash(const KeyType_t& p_key, const uimax p_modulo)
     {
-        return HashSlice(Slice<KeyType_t>::build_memory_elementnb((KeyType_t*)&p_key, 1)) % p_modulo;
+        return HashFunctions::hash(Slice<KeyType_t>::build_memory_elementnb((KeyType_t*)&p_key, 1).build_asint8()) % p_modulo;
     };
 };
 
@@ -186,7 +186,6 @@ template <class KeyType, class ElementType> struct HashMap
         this->Slots.get(l_hash) = 0;
     };
 
-
     inline hash_t hash_key(const KeyType& p_key)
     {
         return HashMap_HashFn<KeyType>::Hashmap_HashFn_Hash(p_key, this->Memory.Capacity);
@@ -204,7 +203,6 @@ template <class KeyType, class ElementType> struct HashMap
             }
         }
     };
-
 
     inline hash_t mod_key(const hash_t p_hash)
     {

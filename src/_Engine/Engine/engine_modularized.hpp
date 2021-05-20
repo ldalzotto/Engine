@@ -107,8 +107,8 @@ struct EngineAllocationFragments
     inline static GPUPresent present_allocate(GPUContext& p_gpu_context, RenderTargetInternal_Color_Depth& p_render_targets, const Token<Window> p_window, const v2ui& p_render_size,
                                               DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
-        Span<int8> l_quad_blit_vert = p_asset_database.get_asset_blob(p_database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.vert")));
-        Span<int8> l_quad_blit_frag = p_asset_database.get_asset_blob(p_database_connection, HashSlice(slice_int8_build_rawstr("internal/quad_blit.frag")));
+        Span<int8> l_quad_blit_vert = p_asset_database.get_asset_blob(p_database_connection, HashFunctions::hash(slice_int8_build_rawstr("internal/quad_blit.vert")));
+        Span<int8> l_quad_blit_frag = p_asset_database.get_asset_blob(p_database_connection, HashFunctions::hash(slice_int8_build_rawstr("internal/quad_blit.frag")));
         GPUPresent l_present = GPUPresent::allocate(p_gpu_context.instance, p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, WindowAllocator::get_window(p_window).handle,
                                                     v3ui{p_render_size.x, p_render_size.y, 1}, p_render_targets.color, l_quad_blit_vert.slice, l_quad_blit_frag.slice);
         l_quad_blit_vert.free();

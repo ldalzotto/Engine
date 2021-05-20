@@ -262,7 +262,7 @@ template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(c
 #define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice
 #endif
 
-template <class ElementType, uint32 Size_t> struct SliceN
+template <class ElementType, uimax Size_t> struct SliceN
 {
     ElementType Memory[Size_t];
 

@@ -248,8 +248,8 @@ inline void boxcollision()
 
 namespace D3RendererCubeSandboxEnvironment_Const
 {
-const hash_t block_1x1_material = HashSlice(slice_int8_build_rawstr("block_1x1_material.json"));
-const hash_t block_1x1_obj = HashSlice(slice_int8_build_rawstr("block_1x1.obj"));
+const hash_t block_1x1_material = HashFunctions::hash(slice_int8_build_rawstr("block_1x1_material.json"));
+const hash_t block_1x1_obj = HashFunctions::hash(slice_int8_build_rawstr("block_1x1.obj"));
 } // namespace D3RendererCubeSandboxEnvironment_Const
 
 struct D3RendererCubeSandboxEnvironmentV2

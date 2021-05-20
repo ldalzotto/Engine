@@ -7,7 +7,7 @@ struct BoxColliderComponentAsset
 
 struct BoxColliderComponent
 {
-    static constexpr component_t Type = HashRaw_constexpr(STR(BoxColliderComponent));
+    static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(BoxColliderComponent))>(STR(BoxColliderComponent));
     int8 force_update;
 
     Token<Node> scene_node;
