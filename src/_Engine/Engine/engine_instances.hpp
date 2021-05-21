@@ -66,7 +66,7 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
     D3RenderMiddleWare render_middleware;
     Renderer_3D renderer;
 
-    Token<Window> window;
+    Token<EWindow> window;
 
     GPUPresent present;
 
@@ -175,7 +175,7 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present
     D3RenderMiddleWare render_middleware;
     Renderer_3D_imgui renderer;
 
-    Token<Window> window;
+    Token<EWindow> window;
 
     GPUPresent present;
 

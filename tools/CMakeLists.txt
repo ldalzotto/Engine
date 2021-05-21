@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_definitions(-std=c++1z)
-else()
-    add_definitions(/std:c++17)
-endif ()
-
 enable_language(CXX)
 
 set(QT_PATH "E:/qt/6.0.2/msvc2019_64/")

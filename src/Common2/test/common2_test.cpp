@@ -1970,8 +1970,8 @@ inline void file_test()
 
 inline void native_window()
 {
-    Token<Window> l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
-    Window& l_allocated_window = WindowAllocator::get_window(l_window);
+    Token<EWindow> l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    EWindow& l_allocated_window = WindowAllocator::get_window(l_window);
     assert_true(!l_allocated_window.is_closing);
 
     {
@@ -1984,7 +1984,7 @@ inline void native_window()
         assert_true(l_allocated_window.client_height == 300);
     }
 
-    Window l_old_window = l_allocated_window;
+    EWindow l_old_window = l_allocated_window;
 
     WindowNative::simulate_resize_appevent(l_allocated_window.handle, 400, 400);
 

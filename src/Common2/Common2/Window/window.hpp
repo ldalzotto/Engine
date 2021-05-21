@@ -1,7 +1,11 @@
 #pragma once
 
 #if __DEBUG
+#if _WIN32
 #define window_handle_native_return(Code) assert_true(Code)
+#else
+#define window_handle_native_return(Code) assert_true((Code) == 0)
+#endif
 #else
 #define window_handle_native_return(Code) Code
 #endif
@@ -18,6 +22,7 @@ struct WindowNative
 };
 
 #ifdef _WIN32
+
 inline WindowHandle WindowNative::create_window(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_display_name)
 {
     DWORD l_windowStyle = WS_OVERLAPPEDWINDOW;
@@ -80,14 +85,86 @@ inline void WindowNative::simulate_resize_appevent(const WindowHandle p_window, 
     WindowNative::resize_window(p_window, p_client_width, p_client_height);
 };
 
-inline void WindowNative::simulate_close_appevent(const WindowHandle p_window){
+inline void WindowNative::simulate_close_appevent(const WindowHandle p_window)
+{
     // WindowNative::destroy_window(p_window);
     WindowProc((HWND)p_window, WM_CLOSE, 0, 0);
 };
 
+#else
+
+inline WindowHandle WindowNative::create_window(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_display_name)
+{
+    /* create window */
+    Window l_window = XCreateSimpleWindow(g_display_info.display, RootWindow(g_display_info.display, g_display_info.screen), 10, 10, p_client_width, p_client_height, 1,
+                                          BlackPixel(g_display_info.display, g_display_info.screen), WhitePixel(g_display_info.display, g_display_info.screen));
+
+#if __DEBUG
+    assert_true(l_window != 0);
 #endif
 
-struct Window
+    Atom del_window = XInternAtom(g_display_info.display, "WM_DELETE_WINDOW", 0);
+    XSetWMProtocols(g_display_info.display, l_window, &del_window, 1);
+
+    XSelectInput(g_display_info.display, l_window, ExposureMask | StructureNotifyMask | KeyPressMask);
+
+    XMapWindow(g_display_info.display, l_window);
+
+    return (WindowHandle)l_window;
+};
+
+inline void WindowNative::display_window(const WindowHandle p_window_handle)
+{
+    /* display the window */
+    XMapWindow(g_display_info.display, (Window)p_window_handle);
+};
+
+inline void WindowNative::destroy_window(const WindowHandle p_window_handle)
+{
+    XDestroyWindow(g_display_info.display, (Window)p_window_handle);
+};
+
+inline void WindowNative::resize_window(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height)
+{
+    int32 l_return = XResizeWindow(g_display_info.display, (Window)p_window_handle, p_client_width, p_client_height);
+
+#if __DEBUG
+    assert_true(l_return != BadValue && l_return != BadWindow);
+#endif
+};
+
+inline void WindowNative::get_window_client_dimensions(const WindowHandle p_window_handle, uint32* out_client_width, uint32* out_client_height)
+{
+    Window l_root_window;
+    int32 l_position_x, l_position_y;
+    uint32 l_border_widht, l_depth;
+
+    XGetGeometry(g_display_info.display, (Window)p_window_handle, &l_root_window, &l_position_x, &l_position_y, out_client_width, out_client_height, &l_border_widht, &l_depth);
+};
+
+inline void WindowNative::simulate_resize_appevent(const WindowHandle p_window, const uint32 p_client_width, const uint32 p_client_height)
+{
+    WindowNative::resize_window(p_window, p_client_width, p_client_height);
+
+    // TODO -> the window server may not have recevied the event yet, this leads to not taking the event into account during this poll event consumption
+    AppNativeEvent::poll_events();
+};
+
+inline void WindowNative::simulate_close_appevent(const WindowHandle p_window)
+{
+    // TOOD -> call the LinuxProc ?
+    int32 l_return = XDestroyWindow(g_display_info.display, (Window)p_window);
+#if __DEBUG
+    assert_true(l_return != BadWindow);
+#endif
+
+    // TODO -> the window server may not have recevied the event yet, this leads to not taking the event into account during this poll event consumption
+    AppNativeEvent::poll_events();
+};
+
+#endif
+
+struct EWindow
 {
     WindowHandle handle;
     uint32 client_width;
@@ -104,7 +181,7 @@ struct Window
         static ResizeEvent build_default();
     } resize_event;
 
-    static Window build(const WindowHandle p_handle, const uint32 p_client_width, const uint32 p_client_height);
+    static EWindow build(const WindowHandle p_handle, const uint32 p_client_width, const uint32 p_client_height);
 
     void close();
 
@@ -113,12 +190,12 @@ struct Window
     void consume_resize_event();
 };
 
-Pool<Window> g_app_windows;
+Pool<EWindow> g_app_windows;
 
 struct NativeWindow_to_Window
 {
     WindowHandle native_window;
-    Token<Window> window;
+    Token<EWindow> window;
 };
 
 Vector<NativeWindow_to_Window> g_native_to_window;
@@ -128,43 +205,43 @@ struct WindowAllocator
     static void initialize();
     static void finalize();
 
-    static Token<Window> allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
-    static void free(const Token<Window> p_window);
-    static void free_headless(const Token<Window> p_window);
+    static Token<EWindow> allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
+    static void free(const Token<EWindow> p_window);
+    static void free_headless(const Token<EWindow> p_window);
 
-    static Window& get_window(const Token<Window> p_window);
+    static EWindow& get_window(const Token<EWindow> p_window);
 
     static void on_appevent(WindowHandle p_window_handle, AppEventType* p_appevent);
 };
 
-inline Window::ResizeEvent Window::ResizeEvent::build_default()
+inline EWindow::ResizeEvent EWindow::ResizeEvent::build_default()
 {
     return ResizeEvent{0, 0, 0};
 };
 
-inline Window Window::build(const WindowHandle p_handle, const uint32 p_client_width, const uint32 p_client_height)
+inline EWindow EWindow::build(const WindowHandle p_handle, const uint32 p_client_width, const uint32 p_client_height)
 {
-    return Window{p_handle, p_client_width, p_client_height, 0, ResizeEvent::build_default()};
+    return EWindow{p_handle, p_client_width, p_client_height, 0, ResizeEvent::build_default()};
 };
 
-inline void Window::close()
+inline void EWindow::close()
 {
     this->is_closing = 1;
 };
 
-inline int8 Window::asks_for_resize() const
+inline int8 EWindow::asks_for_resize() const
 {
     return this->resize_event.ask;
 };
 
-inline void Window::on_resized(const uint32 p_frame_width, const uint32 p_frame_height)
+inline void EWindow::on_resized(const uint32 p_frame_width, const uint32 p_frame_height)
 {
     this->resize_event.ask = 1;
     this->resize_event.new_frame_width = p_frame_width;
     this->resize_event.new_frame_height = p_frame_height;
 };
 
-inline void Window::consume_resize_event()
+inline void EWindow::consume_resize_event()
 {
     this->resize_event.ask = 0;
 
@@ -173,7 +250,7 @@ inline void Window::consume_resize_event()
 
 inline void WindowAllocator::initialize()
 {
-    g_app_windows = Pool<Window>::allocate(0);
+    g_app_windows = Pool<EWindow>::allocate(0);
     g_native_to_window = Vector<NativeWindow_to_Window>::allocate(0);
 };
 inline void WindowAllocator::finalize()
@@ -186,7 +263,7 @@ inline void WindowAllocator::finalize()
     g_native_to_window.free();
 };
 
-inline Token<Window> WindowAllocator::allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name)
+inline Token<EWindow> WindowAllocator::allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name)
 {
     if (g_appevent_listeners.Size == 0)
     {
@@ -203,13 +280,13 @@ inline Token<Window> WindowAllocator::allocate(const uint32 p_client_width, cons
 
     uint32 l_native_client_width, l_native_client_height;
     WindowNative::get_window_client_dimensions(l_window, &l_native_client_width, &l_native_client_height);
-    Token<Window> l_allocated_window = g_app_windows.alloc_element(Window::build(l_window, l_native_client_width, l_native_client_height));
+    Token<EWindow> l_allocated_window = g_app_windows.alloc_element(EWindow::build(l_window, l_native_client_width, l_native_client_height));
     g_native_to_window.push_back_element(NativeWindow_to_Window{l_window, l_allocated_window});
 
     return l_allocated_window;
 };
 
-inline void WindowAllocator::free(const Token<Window> p_window)
+inline void WindowAllocator::free(const Token<EWindow> p_window)
 {
     free_headless(p_window);
 
@@ -230,7 +307,7 @@ inline void WindowAllocator::free(const Token<Window> p_window)
     };
 };
 
-inline void WindowAllocator::free_headless(const Token<Window> p_window)
+inline void WindowAllocator::free_headless(const Token<EWindow> p_window)
 {
     g_app_windows.release_element(p_window);
 
@@ -240,7 +317,7 @@ inline void WindowAllocator::free_headless(const Token<Window> p_window)
     };
 };
 
-inline Window& WindowAllocator::get_window(const Token<Window> p_window)
+inline EWindow& WindowAllocator::get_window(const Token<EWindow> p_window)
 {
     return g_app_windows.get(p_window);
 };

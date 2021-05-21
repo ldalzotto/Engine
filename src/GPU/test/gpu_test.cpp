@@ -1143,8 +1143,8 @@ inline void gpu_texture_mapping()
 inline void gpu_present()
 {
     v3ui l_window_size = v3ui{100, 100, 1};
-    Token<Window> l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
-    Window& l_window = WindowAllocator::get_window(l_window_token);
+    Token<EWindow> l_window_token = WindowAllocator::allocate(l_window_size.x, l_window_size.y, slice_int8_build_rawstr(""));
+    EWindow& l_window = WindowAllocator::get_window(l_window_token);
 
     SliceN<GPUExtension, 1> l_gpu_extension_arr{GPUExtension::WINDOW_PRESENT};
     GPUContext l_gpu_context = GPUContext::allocate(slice_from_slicen(&l_gpu_extension_arr));
