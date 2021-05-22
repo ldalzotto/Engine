@@ -9,6 +9,13 @@
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
 #endif
 
 using socket_t =
@@ -20,6 +27,15 @@ using socket_t =
 
 struct SocketNative
 {
+    inline static int32 get_last_error()
+    {
+#if _WIN32
+        return WSAGetLastError();
+#else
+        return errno;
+#endif
+    };
+
     template <class ReturnType> inline static ReturnType error_handler(const ReturnType p_return)
     {
 #if __DEBUG
@@ -31,12 +47,37 @@ struct SocketNative
         return p_return;
     };
 
+    // If the socket returns an error that tells that the call should have blocked
+    inline static int8 is_error_is_blocking_type(const int32 p_error)
+    {
+
+#if _WIN32
+        return p_error == WSAEWOULDBLOCK;
+#else
+        return (p_error == EWOULDBLOCK || p_error == EAGAIN);
+#endif
+    };
+
+    // If the socket returns an error that tells that there is still data to receive
+    inline static int8 is_error_is_msgsize_type(const int32 p_error)
+    {
+
+#if _WIN32
+        return p_error == WSAEMSGSIZE;
+#else
+        // TODO -> ?
+        return 0;
+#endif
+    };
+
     inline static socket_t socket_allocate_bind(addrinfo* p_native_addr_info)
     {
         socket_t l_socket = socket(p_native_addr_info->ai_family, p_native_addr_info->ai_socktype, p_native_addr_info->ai_protocol);
 #if __DEBUG
         assert_true(l_socket != INVALID_SOCKET);
 #endif
+        int32 l_reuse_addres = 1;
+        SocketNative::error_handler(setsockopt(l_socket, SOL_SOCKET, SO_REUSEADDR, (const int8*)&l_reuse_addres, sizeof(l_reuse_addres)));
         SocketNative::error_handler(bind(l_socket, p_native_addr_info->ai_addr, (int)p_native_addr_info->ai_addrlen));
         return l_socket;
     };
@@ -65,7 +106,23 @@ struct SocketNative
             ::abort();
         }
 
+        int32 l_reuse_addres = 1;
+        SocketNative::error_handler(setsockopt(l_socket, SOL_SOCKET, SO_REUSEADDR, (const int8*)&l_reuse_addres, sizeof(l_reuse_addres)));
+
         return l_socket;
+    };
+
+    inline static void set_socket_as_non_blocking(const socket_t& p_socket)
+    {
+        uint32 l_mode = 1; // non-blocking
+
+        SocketNative::error_handler(
+#if _WIN32
+            ioctlsocket(p_socket, FIONBIO, (u_long*)&l_mode)
+#else
+            fcntl(p_socket, F_SETFL, O_NONBLOCK)
+#endif
+        );
     };
 
     inline static void socket_connect(const socket_t& p_socket, const addrinfo* p_addr_info)
@@ -78,7 +135,11 @@ struct SocketNative
 #if __DEBUG
         assert_true(*p_socket != INVALID_SOCKET);
 #endif
+#if _WIN32
         closesocket(*p_socket);
+#else
+        close(*p_socket);
+#endif
         *p_socket = INVALID_SOCKET;
     };
 
@@ -117,12 +178,16 @@ struct SocketContext
   private:
     inline static void context_startup()
     {
+#if _WIN32
         WSADATA l_winsock_data;
         SocketNative::error_handler(WSAStartup(MAKEWORD(2, 2), &l_winsock_data));
+#endif
     };
     inline static void context_cleanup()
     {
+#if _WIN32
         WSACleanup();
+#endif
     };
 };
 
@@ -190,7 +255,7 @@ struct SocketServerNonBlocking
             this->accept_return.acceped_socket = ::accept(this->native_socket, NULL, NULL);
             if (this->accept_return.acceped_socket == INVALID_SOCKET)
             {
-                if (WSAGetLastError() != WSAEWOULDBLOCK)
+                if (!SocketNative::is_error_is_blocking_type(SocketNative::get_last_error()))
                 {
                     this->accept_state.enabled = 0;
                 }
@@ -209,8 +274,7 @@ struct SocketServerNonBlocking
         SocketNative::error_handler(getaddrinfo(NULL, l_port_str.Begin, &p_addr_info, &p_socket.native_addr_info));
 
         p_socket.native_socket = SocketNative::socket_allocate_bind(p_socket.native_addr_info);
-        uint32 l_mode = 1; // non-blocking
-        SocketNative::error_handler(ioctlsocket(p_socket.native_socket, FIONBIO, (u_long*)&l_mode));
+        SocketNative::set_socket_as_non_blocking(p_socket.native_socket);
 
         SocketNative::error_handler(listen(p_socket.native_socket, SOMAXCONN));
     };
@@ -275,6 +339,8 @@ struct SocketClientNonBlocking
 
     inline static SocketClientNonBlocking allocate_from_native(const socket_t p_native_socket)
     {
+        SocketNative::set_socket_as_non_blocking(p_native_socket);
+
         SocketClientNonBlocking l_socket;
         l_socket.native_socket = p_native_socket;
         l_socket.native_addr_info = NULL;
@@ -327,8 +393,7 @@ struct SocketClientNonBlocking
 
                 if (l_bytes_sent == INVALID_SOCKET)
                 {
-                    int32 l_last_error = WSAGetLastError();
-                    if (l_last_error != WSAEWOULDBLOCK)
+                    if (!SocketNative::is_error_is_blocking_type(SocketNative::get_last_error()))
                     {
                         this->send_state.enabled = 0;
                     }
@@ -361,11 +426,11 @@ struct SocketClientNonBlocking
 
             if (l_bytes_received == SOCKET_ERROR)
             {
-                int32 l_last_error = WSAGetLastError();
-                if (l_last_error != WSAEWOULDBLOCK)
+                int32 l_error = SocketNative::get_last_error();
+                if (!SocketNative::is_error_is_blocking_type(l_error))
                 {
                     // There is still data to receive
-                    if (l_last_error != WSAEMSGSIZE)
+                    if (!SocketNative::is_error_is_msgsize_type(l_error))
                     {
                         this->receive_state.enabled = 0;
                     }
@@ -390,9 +455,7 @@ struct SocketClientNonBlocking
         _load_addrinfos(p_socket, p_addr_info, p_port);
 
         p_socket.native_socket = SocketNative::socket_allocate_connect(p_socket.native_addr_info);
-
-        uint32 l_mode = 1; // non-blocking
-        SocketNative::error_handler(ioctlsocket(p_socket.native_socket, FIONBIO, (u_long*)&l_mode));
+        SocketNative::set_socket_as_non_blocking(p_socket.native_socket);
     };
 
     inline static void _load_addrinfos(SocketClientNonBlocking& p_socket, const addrinfo& p_addr_info, const int32 p_port)

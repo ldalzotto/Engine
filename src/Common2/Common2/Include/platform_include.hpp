@@ -31,6 +31,7 @@ inline uint64 FILETIME_to_mics(FILETIME& p_filetime)
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <errno.h>
 
 #include <X11/Xlib.h>
 
