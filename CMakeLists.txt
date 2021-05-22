@@ -4,7 +4,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(EngineCPP VERSION 0.0.1)
 
-set (CMAKE_CXX_STANDARD 11)
+# 17 is only to allow QT headers to compile
+set (CMAKE_CXX_STANDARD 17)
 enable_language(CXX)
 
 
