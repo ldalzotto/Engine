@@ -101,7 +101,7 @@
 #endif
 
 #if __SOCKET_ENABLED
-#include "./Socket/socket.hpp"
+#include "./Socket/socket_v2.hpp"
 #endif
 
 #undef __SQLITE_ENABLED
