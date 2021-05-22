@@ -2020,23 +2020,23 @@ inline void socket_server_client_allocation_destruction_v2()
 
     // single server, without client
     {
-        SocketNonBlocking l_server = SocketNonBlocking::allocate_as_server(SOCKET_DEFAULT_PORT);
+        SocketServerNonBlocking l_server = SocketServerNonBlocking::allocate(SOCKET_DEFAULT_PORT);
         l_server.accept();
-        SocketStep::step(l_server);
+        l_server.step();
         l_server.close();
     }
 
     // single server, with client
     {
-        SocketNonBlocking l_server = SocketNonBlocking::allocate_as_server(SOCKET_DEFAULT_PORT);
+        SocketServerNonBlocking l_server = SocketServerNonBlocking::allocate(SOCKET_DEFAULT_PORT);
         l_server.accept();
 
-        SocketNonBlocking l_client = SocketNonBlocking::allocate_as_client(SOCKET_DEFAULT_PORT);
+        SocketClientNonBlocking l_client = SocketClientNonBlocking::allocate(SOCKET_DEFAULT_PORT);
 
         int8 l_accept_found = 0;
         while (!l_accept_found)
         {
-            SocketStep::step(l_server);
+            l_server.step();
             if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
             {
                 l_accept_found = 1;
@@ -2045,7 +2045,7 @@ inline void socket_server_client_allocation_destruction_v2()
 
         l_client.close();
 
-        SocketStep::step(l_server);
+        l_server.step();
         assert_true(l_server.accept_return.acceped_socket == INVALID_SOCKET);
 
         l_server.close();
@@ -2059,34 +2059,34 @@ inline void socket_server_client_send_receive_test_v2()
 {
     SocketContext::allocate();
 
-    SocketNonBlocking l_server = SocketNonBlocking::allocate_as_server(SOCKET_DEFAULT_PORT);
+    SocketServerNonBlocking l_server = SocketServerNonBlocking::allocate(SOCKET_DEFAULT_PORT);
     l_server.accept();
-    SocketNonBlocking l_client = SocketNonBlocking::allocate_as_client(SOCKET_DEFAULT_PORT);
-    SocketNonBlocking l_client_server_connection;
+    SocketClientNonBlocking l_client = SocketClientNonBlocking::allocate(SOCKET_DEFAULT_PORT);
+    SocketClientNonBlocking l_client_server_connection;
 
     int8 l_accept_found = 0;
     while (!l_accept_found)
     {
-        SocketStep::step(l_server);
+        l_server.step();
         if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
         {
-            l_client_server_connection = SocketNonBlocking::allocate_as_client_from_native(l_server.accept_return.acceped_socket);
+            l_client_server_connection = SocketClientNonBlocking::allocate_from_native(l_server.accept_return.acceped_socket);
             l_accept_found = 1;
         }
     }
 
     uimax l_input_value = 10;
-    SocketNonBlocking::SendInput l_input;
+    SocketClientNonBlocking::SendInput l_input;
     l_input.sended_buffer = Slice<uimax>::build_asint8_memory_singleelement(&l_input_value);
     l_client.send(l_input);
 
     SliceN<uimax, 1> l_client_server_connection_received_value = {};
-    SocketNonBlocking::ReceiveInput l_receive_input;
+    SocketClientNonBlocking::ReceiveInput l_receive_input;
     l_receive_input.target_buffer = slice_from_slicen(&l_client_server_connection_received_value).build_asint8();
     l_client_server_connection.receive(l_receive_input);
 
     SliceN<uimax, 1> l_client_received_value = {};
-    SocketNonBlocking::ReceiveInput l_client_receive_input;
+    SocketClientNonBlocking::ReceiveInput l_client_receive_input;
     l_client_receive_input.target_buffer = slice_from_slicen(&l_client_received_value).build_asint8();
 
     int8 l_data_received = 0;
@@ -2094,9 +2094,9 @@ inline void socket_server_client_send_receive_test_v2()
 
     while (!l_data_received || !l_server_response_received)
     {
-        SocketStep::step(l_client);
-        SocketStep::step(l_client_server_connection);
-        SocketStep::step(l_server);
+        l_client.step();
+        l_client_server_connection.step();
+        l_server.step();
 
         if (!l_data_received && l_client_server_connection.receive_state.received_bytes_total == sizeof(l_input_value))
         {
@@ -2107,7 +2107,7 @@ inline void socket_server_client_send_receive_test_v2()
 
             l_client.receive(l_client_receive_input);
 
-            SocketNonBlocking::SendInput l_send_input;
+            SocketClientNonBlocking::SendInput l_send_input;
             l_send_input.sended_buffer = slice_from_slicen(&l_client_server_connection_received_value).build_asint8();
             l_client_server_connection.send(l_send_input);
         }
@@ -2128,9 +2128,9 @@ inline void socket_server_client_send_receive_test_v2()
     l_client_received_value = {0};
     l_client.receive(l_client_receive_input);
 
-    SocketStep::step(l_client);
-    SocketStep::step(l_client_server_connection);
-    SocketStep::step(l_server);
+    l_client.step();
+    l_client_server_connection.step();
+    l_server.step();
 
     assert_true(!l_client_server_connection.send_state.enabled && l_client_server_connection.send_state.sended_bytes == 0);
 
@@ -2154,29 +2154,29 @@ inline void socket_server_buffer_too_small()
 
     SocketContext::allocate();
 
-    SocketNonBlocking l_server = SocketNonBlocking::allocate_as_server(SOCKET_DEFAULT_PORT);
+    SocketServerNonBlocking l_server = SocketServerNonBlocking::allocate(SOCKET_DEFAULT_PORT);
     l_server.accept();
-    SocketNonBlocking l_client = SocketNonBlocking::allocate_as_client(SOCKET_DEFAULT_PORT);
-    SocketNonBlocking l_client_server_connection;
+    SocketClientNonBlocking l_client = SocketClientNonBlocking::allocate(SOCKET_DEFAULT_PORT);
+    SocketClientNonBlocking l_client_server_connection;
 
     int8 l_accept_found = 0;
     while (!l_accept_found)
     {
-        SocketStep::step(l_server);
+        l_server.step();
         if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
         {
-            l_client_server_connection = SocketNonBlocking::allocate_as_client_from_native(l_server.accept_return.acceped_socket);
+            l_client_server_connection = SocketClientNonBlocking::allocate_from_native(l_server.accept_return.acceped_socket);
             l_accept_found = 1;
         }
     }
 
     SliceN<uimax, 2> l_input_value = {10, 20};
-    SocketNonBlocking::SendInput l_input;
+    SocketClientNonBlocking::SendInput l_input;
     l_input.sended_buffer = slice_from_slicen(&l_input_value).build_asint8();
     l_client.send(l_input);
 
     SliceN<uimax, 1> l_client_server_connection_received_value = {};
-    SocketNonBlocking::ReceiveInput l_receive_input;
+    SocketClientNonBlocking::ReceiveInput l_receive_input;
     l_receive_input.target_buffer = slice_from_slicen(&l_client_server_connection_received_value).build_asint8();
     l_client_server_connection.receive(l_receive_input);
 
@@ -2184,9 +2184,9 @@ inline void socket_server_buffer_too_small()
 
     while (!l_data_received)
     {
-        SocketStep::step(l_client);
-        SocketStep::step(l_client_server_connection);
-        SocketStep::step(l_server);
+        l_client.step();
+        l_client_server_connection.step();
+        l_server.step();
 
         if (!l_data_received)
         {
