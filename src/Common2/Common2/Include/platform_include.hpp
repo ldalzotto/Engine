@@ -34,5 +34,29 @@ inline uint64 FILETIME_to_mics(FILETIME& p_filetime)
 #include <errno.h>
 
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
+#include <X11/Xmd.h>
+
+template <class ParameterType> inline ParameterType xlib_status_handle(const ParameterType p_function_return)
+{
+#if __DEBUG
+    if (p_function_return == 0)
+    {
+        abort();
+    }
+#endif
+    return p_function_return;
+};
+
+template <class ParameterType> inline ParameterType xlib_error_handle(const ParameterType p_function_return)
+{
+#if __DEBUG
+    if (p_function_return != 0)
+    {
+        abort();
+    }
+#endif
+    return p_function_return;
+};
 
 #endif

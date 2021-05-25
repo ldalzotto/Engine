@@ -34,9 +34,10 @@ const int8* CLASS_NAME = "window";
 inline void initialize();
 inline void finalize();
 inline void poll_events();
-inline uimax get_pending_event_size();
 inline void add_appevent_listener(const AppEventQueueListener& p_listener);
 inline void remove_appevent_listener(const WindowHandle p_window);
+
+inline void _test_wait_for_resize_event(const WindowHandle p_window, const int32 p_width, const int32 p_height);
 }; // namespace AppNativeEvent
 
 #if __linux__
@@ -51,6 +52,7 @@ struct DisplayInfo
 struct AppWindowDimensionsBuffer
 {
     WindowHandle window;
+    // We store last window dimensions to trigger resize events. X11 events doesn't natively support resize like windows.
     uint32 last_client_width;
     uint32 last_client_height;
 };
@@ -80,7 +82,7 @@ inline void AppNativeEvent::add_appevent_listener(const AppEventQueueListener& p
     Window l_root_window;
     int32 l_x, l_y;
     uint32 l_width, l_height, l_border_width, l_depth;
-    XGetGeometry(g_display_info.display, (Window)p_listener.window, &l_root_window, &l_x, &l_y, &l_width, &l_height, &l_border_width, &l_depth);
+    xlib_status_handle(XGetGeometry(g_display_info.display, (Window)p_listener.window, &l_root_window, &l_x, &l_y, &l_width, &l_height, &l_border_width, &l_depth));
     g_appevent_windowdimensions.push_back_element(AppWindowDimensionsBuffer{p_listener.window, l_width, l_height});
 #endif
 };
@@ -227,6 +229,8 @@ inline void AppNativeEvent::finalize()
 #endif
     g_appevent_listeners.free();
     g_appevent_windowdimensions.free();
+
+    XCloseDisplay(g_display_info.display);
 };
 
 inline void AppNativeEvent::poll_events()
@@ -235,29 +239,35 @@ inline void AppNativeEvent::poll_events()
 
     while (1)
     {
-
         if (XPending(g_display_info.display) == 0)
         {
             return;
         }
 
-        XNextEvent(g_display_info.display, &l_event);
+        xlib_error_handle(XNextEvent(g_display_info.display, &l_event));
         LinuxProc(l_event);
-
-#if 0
-        int32 l_queued_events = XEventsQueued(g_display_info.display, QueuedAfterReading);
-        printf("%lld \n", l_queued_events);
-        if (l_queued_events == 0)
-        {
-            return;
-        }
-#endif
     }
 };
 
-inline uimax AppNativeEvent::get_pending_event_size()
+inline void AppNativeEvent::_test_wait_for_resize_event(const WindowHandle p_window, const int32 p_width, const int32 p_height)
 {
-    return XEventsQueued(g_display_info.display, QueuedAfterFlush);
+    XEvent l_event;
+
+    while (1)
+    {
+        XPending(g_display_info.display);
+        xlib_error_handle(XNextEvent(g_display_info.display, &l_event));
+        LinuxProc(l_event);
+
+        if (l_event.type == ConfigureNotify)
+        {
+            XConfigureEvent l_configure_event = l_event.xconfigure;
+            if ((WindowHandle)l_configure_event.window == p_window && l_configure_event.width == p_width && l_configure_event.height == p_height)
+            {
+                return;
+            }
+        }
+    }
 };
 
 #endif

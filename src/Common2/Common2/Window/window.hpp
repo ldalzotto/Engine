@@ -96,37 +96,31 @@ inline void WindowNative::simulate_close_appevent(const WindowHandle p_window)
 inline WindowHandle WindowNative::create_window(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_display_name)
 {
     /* create window */
-    Window l_window = XCreateSimpleWindow(g_display_info.display, RootWindow(g_display_info.display, g_display_info.screen), 10, 10, p_client_width, p_client_height, 1,
-                                          BlackPixel(g_display_info.display, g_display_info.screen), WhitePixel(g_display_info.display, g_display_info.screen));
+    Window l_window = xlib_status_handle(XCreateSimpleWindow(g_display_info.display, RootWindow(g_display_info.display, g_display_info.screen), 10, 10, p_client_width, p_client_height, 1,
+                                                             BlackPixel(g_display_info.display, g_display_info.screen), WhitePixel(g_display_info.display, g_display_info.screen)));
 
-#if __DEBUG
-    assert_true(l_window != 0);
-#endif
+    Atom del_window = xlib_status_handle(XInternAtom(g_display_info.display, "WM_DELETE_WINDOW", 0));
 
-    Atom del_window = XInternAtom(g_display_info.display, "WM_DELETE_WINDOW", 0);
-    XSetWMProtocols(g_display_info.display, l_window, &del_window, 1);
-
-    XSelectInput(g_display_info.display, l_window, ExposureMask | StructureNotifyMask | KeyPressMask);
-
-    XMapWindow(g_display_info.display, l_window);
+    xlib_status_handle(XSetWMProtocols(g_display_info.display, l_window, &del_window, 1));
+    xlib_status_handle(XSelectInput(g_display_info.display, l_window, ExposureMask | StructureNotifyMask | KeyPressMask));
+    xlib_status_handle(XMapWindow(g_display_info.display, l_window));
 
     return (WindowHandle)l_window;
 };
 
 inline void WindowNative::display_window(const WindowHandle p_window_handle)
 {
-    /* display the window */
-    XMapWindow(g_display_info.display, (Window)p_window_handle);
+    xlib_status_handle(XMapWindow(g_display_info.display, (Window)p_window_handle));
 };
 
 inline void WindowNative::destroy_window(const WindowHandle p_window_handle)
 {
-    XDestroyWindow(g_display_info.display, (Window)p_window_handle);
+    xlib_status_handle(XDestroyWindow(g_display_info.display, (Window)p_window_handle));
 };
 
 inline void WindowNative::resize_window(const WindowHandle p_window_handle, const uint32 p_client_width, const uint32 p_client_height)
 {
-    int32 l_return = XResizeWindow(g_display_info.display, (Window)p_window_handle, p_client_width, p_client_height);
+    int32 l_return = xlib_status_handle(XResizeWindow(g_display_info.display, (Window)p_window_handle, p_client_width, p_client_height));
 
 #if __DEBUG
     assert_true(l_return != BadValue && l_return != BadWindow);
@@ -139,27 +133,22 @@ inline void WindowNative::get_window_client_dimensions(const WindowHandle p_wind
     int32 l_position_x, l_position_y;
     uint32 l_border_widht, l_depth;
 
-    XGetGeometry(g_display_info.display, (Window)p_window_handle, &l_root_window, &l_position_x, &l_position_y, out_client_width, out_client_height, &l_border_widht, &l_depth);
+    xlib_status_handle(XGetGeometry(g_display_info.display, (Window)p_window_handle, &l_root_window, &l_position_x, &l_position_y, out_client_width, out_client_height, &l_border_widht, &l_depth));
 };
 
 inline void WindowNative::simulate_resize_appevent(const WindowHandle p_window, const uint32 p_client_width, const uint32 p_client_height)
 {
     WindowNative::resize_window(p_window, p_client_width, p_client_height);
-
-    // TODO -> the window server may not have recevied the event yet, this leads to not taking the event into account during this poll event consumption
-    AppNativeEvent::poll_events();
+    AppNativeEvent::_test_wait_for_resize_event(p_window, p_client_width, p_client_height);
 };
 
 inline void WindowNative::simulate_close_appevent(const WindowHandle p_window)
 {
-    // TOOD -> call the LinuxProc ?
-    int32 l_return = XDestroyWindow(g_display_info.display, (Window)p_window);
-#if __DEBUG
-    assert_true(l_return != BadWindow);
-#endif
-
-    // TODO -> the window server may not have recevied the event yet, this leads to not taking the event into account during this poll event consumption
-    AppNativeEvent::poll_events();
+    XEvent l_close_event;
+    l_close_event.type = DestroyNotify;
+    l_close_event.xdestroywindow.display = g_display_info.display;
+    l_close_event.xdestroywindow.window = (Window)p_window;
+    LinuxProc(l_close_event);
 };
 
 #endif

@@ -2006,6 +2006,7 @@ inline void native_window()
     }
 
     assert_true(!l_allocated_window.is_closing);
+
     WindowNative::simulate_close_appevent(l_allocated_window.handle);
     assert_true(l_allocated_window.is_closing);
 
