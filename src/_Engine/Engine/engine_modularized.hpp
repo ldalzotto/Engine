@@ -20,13 +20,18 @@ struct EngineModuleCore
         return l_engine_core;
     };
 
-    template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
+    template <class LoopFunc> inline void single_frame_forced_delta_no_event_poll(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        AppNativeEvent::poll_events();
         this->engine_loop.update_forced_delta(p_delta);
         this->clock.newframe();
         this->clock.newupdate(p_delta);
         p_loop_func.operator()(p_delta);
+    };
+
+    template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
+    {
+        AppNativeEvent::poll_events();
+        this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
     };
 
     template <class LoopFunc> inline int8 single_frame(const LoopFunc& p_loop_func)
@@ -54,6 +59,14 @@ struct EngineModuleCore
         while (!this->abort_condition)
         {
             this->single_frame_forced_delta(p_delta, p_loop_func);
+        }
+    };
+
+    template <class LoopFunc> inline void main_loop_forced_delta_no_event_poll(const float32 p_delta, const LoopFunc& p_loop_func)
+    {
+        while (!this->abort_condition)
+        {
+            this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
         }
     };
 

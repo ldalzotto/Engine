@@ -106,3 +106,9 @@
 
 #undef __SQLITE_ENABLED
 #undef __NATIVE_WINDOW_ENABLED
+
+
+
+#ifdef Always
+#undef Always
+#endif

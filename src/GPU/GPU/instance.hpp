@@ -1,6 +1,5 @@
 #pragma once
 
-
 /*
     The GraphicsCard is the hardware responsible of all GPU related operations.
 */
@@ -35,7 +34,6 @@ struct GPUInstance
     static GPUInstance allocate(const Slice<GPUExtension>& p_required_extensions);
     void free();
 };
-
 
 namespace vk
 {
@@ -92,8 +90,6 @@ inline Span<VkImage> getSwapchainImagesKHR(const VkDevice p_device, const VkSwap
     vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, (uint32_t*)&l_array.Capacity, l_array.Memory));
     return l_array;
 };
-
-
 
 }; // namespace vk
 
@@ -172,6 +168,8 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
             l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
 #ifdef _WIN32
             l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#else
+            l_extensions.push_back_element(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
             break;
         }
@@ -262,7 +260,6 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
     l_device_create_info.queueCreateInfoCount = 1;
-    
 
 #if __DEBUG
 
@@ -270,7 +267,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
 #endif
 
-   int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
     if (l_window_present_enabled)
     {
         l_device_create_info.enabledExtensionCount = 1;

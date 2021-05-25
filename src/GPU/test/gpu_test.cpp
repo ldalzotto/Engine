@@ -283,7 +283,7 @@ inline void gpu_renderpass_clear()
     }
 
     BufferAllocatorComposition::free_buffer_host_and_remove_event_references(l_buffer_memory.allocator, l_buffer_memory.events, l_color_attachment_value);
-    
+
 #endif
 
 #ifdef RENDER_DOC_DEBUG
@@ -1268,9 +1268,8 @@ inline void gpu_present()
     l_gpu_present.free(l_gpu_context.instance, l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator);
     GraphicsAllocatorComposition::free_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_render_target_texture);
 
-    l_gpu_context.free();
-
     WindowAllocator::free(l_window_token);
+    l_gpu_context.free();
 };
 
 inline void gpu_material_parameter_set()

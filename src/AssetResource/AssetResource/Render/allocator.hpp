@@ -820,10 +820,17 @@ struct MaterialResourceUnit
         MaterialResource::AssetDependencies l_asset_dependencies_asset = MaterialResource::AssetDependencies::build_from_binary(l_asset_dependencies_span);
         MaterialResource::AssetDependencies::Value l_asset_dependencies = MaterialResource::AssetDependencies::Value::build_from_asset(l_asset_dependencies_asset);
 
-        DatabaseDependencyIncrement l_database_dependency_increment = DatabaseDependencyIncrement::build(
-            p_shader_unit, p_shader_module_unit, p_texture_unit, MaterialResource::DatabaseAllocationInput{p_id, *(Slice<TextureResource::DatabaseAllocationInput>*)&l_asset_dependencies.textures},
-            ShaderResource::DatabaseAllocationInput{l_asset_dependencies.shader}, ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.vertex_module},
-            ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.fragment_module});
+        MaterialResource::DatabaseAllocationInput l_material_database_allocation_input =
+            MaterialResource::DatabaseAllocationInput{p_id, *(Slice<TextureResource::DatabaseAllocationInput>*)&l_asset_dependencies.textures};
+        ShaderResource::DatabaseAllocationInput l_shader_resource_database_allocation_input = ShaderResource::DatabaseAllocationInput{l_asset_dependencies.shader};
+        ShaderModuleResource::DatabaseAllocationInput l_vertex_module_resource_database_allocation_input =
+            ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.vertex_module};
+        ShaderModuleResource::DatabaseAllocationInput l_fragment_module_resource_database_allocation_input =
+            ShaderModuleResource::DatabaseAllocationInput{l_asset_dependencies.shader_dependencies.fragment_module};
+
+        DatabaseDependencyIncrement l_database_dependency_increment =
+            DatabaseDependencyIncrement::build(p_shader_unit, p_shader_module_unit, p_texture_unit, l_material_database_allocation_input, l_shader_resource_database_allocation_input,
+                                               l_vertex_module_resource_database_allocation_input, l_fragment_module_resource_database_allocation_input);
 
         MaterialResource::Dependencies l_resource_dependencies = this->allocate_dependencies(iDependenciesAllocator<DatabaseDependencyIncrement>{l_database_dependency_increment});
 

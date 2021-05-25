@@ -284,6 +284,7 @@ inline void WindowAllocator::free(const Token<EWindow> p_window)
         if (token_equals(g_native_to_window.get(i).window, p_window))
         {
             WindowNative::destroy_window(g_native_to_window.get(i).native_window);
+            // AppNativeEvent::
             AppNativeEvent::remove_appevent_listener(g_native_to_window.get(i).native_window);
             g_native_to_window.erase_element_at_always(i);
         }

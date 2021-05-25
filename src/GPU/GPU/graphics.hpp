@@ -107,13 +107,20 @@ struct ShaderParameterPool
 
     inline static ShaderParameterPool allocate(const gc_t p_device, const uimax p_max_sets)
     {
-        VkDescriptorPoolSize l_types{};
-        l_types.descriptorCount = 4;
+        SliceN<VkDescriptorPoolSize, 2> l_types;
+
+        VkDescriptorPoolSize& l_uniform_buffer_types = l_types.get(0);
+        l_uniform_buffer_types.descriptorCount = p_max_sets;
+        l_uniform_buffer_types.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+
+        VkDescriptorPoolSize& l_texture_parameter_types = l_types.get(1);
+        l_texture_parameter_types.descriptorCount = p_max_sets;
+        l_texture_parameter_types.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
         VkDescriptorPoolCreateInfo l_descriptor_pool_create_info{};
         l_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        l_descriptor_pool_create_info.poolSizeCount = 1;
-        l_descriptor_pool_create_info.pPoolSizes = &l_types;
+        l_descriptor_pool_create_info.poolSizeCount = l_types.Size();
+        l_descriptor_pool_create_info.pPoolSizes = l_types.Memory;
         l_descriptor_pool_create_info.flags = VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         l_descriptor_pool_create_info.maxSets = (uint32_t)p_max_sets;
 
@@ -1164,11 +1171,16 @@ struct GraphicsPassAllocationComposition
                                                                 const SliceN<AttachmentType, AttachmentSize>& p_attachment_types,
                                                                 const SliceN<RenderPassAttachment::ClearOp, AttachmentSize>& p_attachment_clear)
         {
-            SliceN<RenderPassAttachment, AttachmentSize> l_renderpass_attachments;
-            SliceN<VkAttachmentDescription, AttachmentSize> l_attachment_descriptions;
-            SliceN<VkAttachmentReference, AttachmentSize> l_attachment_references;
+            SliceN<RenderPassAttachment, AttachmentSize> l_renderpass_attachments_arr;
+            SliceN<VkAttachmentDescription, AttachmentSize> l_attachment_descriptions_arr;
+            SliceN<VkAttachmentReference, AttachmentSize> l_attachment_references_arr;
+
+            Slice<RenderPassAttachment> l_renderpass_attachments = slice_from_slicen(&l_renderpass_attachments_arr);
+            Slice<VkAttachmentDescription> l_attachment_descriptions = slice_from_slicen(&l_attachment_descriptions_arr);
+            Slice<VkAttachmentReference> l_attachment_references = slice_from_slicen(&l_attachment_references_arr);
+
             return renderpass_allocate(p_graphics_allocator, slice_from_slicen(&p_extracted_textures), slice_from_slicen(&p_attachment_types), slice_from_slicen(&p_attachment_clear),
-                                       slice_from_slicen(&l_renderpass_attachments), slice_from_slicen(&l_attachment_descriptions), slice_from_slicen(&l_attachment_references));
+                                       l_renderpass_attachments, l_attachment_descriptions, l_attachment_references);
         };
 
         template <uint8 AttachmentCount>

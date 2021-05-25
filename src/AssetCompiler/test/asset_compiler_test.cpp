@@ -92,6 +92,12 @@ inline void compile_modificationts_cache(ShaderCompiler& p_shader_compiler)
     assert_true(l_ts_before.file_modification_ts == l_ts_after.file_modification_ts);
     assert_true(l_ts_before.insert_ts == l_ts_after.insert_ts);
 
+// TODO -> having a better way to handle this ?
+// We sleep to ensure that some time have elapsed
+#if __linux
+    Thread::sleep(Thread::get_current_thread(), 1000);
+#endif
+
     // We simulate a write operation
     {
         String l_src_asset_path = String::allocate_elements_2(l_asset_root_path.slice, slice_int8_build_rawstr("material_asset_test.json"));
@@ -581,7 +587,6 @@ inline void compilation_pass_configuration_serialization()
         l_pass_1_root_path.free();
         l_asset_database_path.free();
     }
-
 
     l_assets_to_compile_test.free();
 

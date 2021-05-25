@@ -31,7 +31,8 @@ struct ThreadNative
 
     template <class ThreadCtx> inline static thread_t spawn_thread(ThreadCtx& p_thread_ctx);
     inline static thread_t get_current_thread();
-    inline static int8 wait(const thread_t p_thread, const uimax p_time_in_ms);
+    inline static int8 wait_for_end(const thread_t p_thread, const uimax p_time_in_ms);
+    inline static void sleep(const thread_t p_thread, const uimax p_time_in_ms);
     inline static void terminate(const thread_t p_thread);
     inline static void kill(const thread_t p_thread);
 };
@@ -53,7 +54,11 @@ inline thread_t ThreadNative::get_current_thread()
     return GetCurrentThread();
 };
 
-inline int8 ThreadNative::wait(const thread_t p_thread, const uimax p_time_in_ms)
+inline void ThreadNative::sleep(const thread_t p_thread, const uimax p_time_in_ms){
+    // TODO
+};
+
+inline int8 ThreadNative::wait_for_end(const thread_t p_thread, const uimax p_time_in_ms)
 {
 #if __DEBUG
     assert_true(
@@ -96,7 +101,7 @@ inline thread_t ThreadNative::get_current_thread()
     return pthread_self();
 };
 
-inline int8 ThreadNative::wait(const thread_t p_thread, const uimax p_time_in_ms)
+inline int8 ThreadNative::wait_for_end(const thread_t p_thread, const uimax p_time_in_ms)
 {
     timespec l_time = miliseconds_to_timespec(p_time_in_ms);
     int8* l_return;
@@ -107,6 +112,11 @@ inline int8 ThreadNative::wait(const thread_t p_thread, const uimax p_time_in_ms
         return l_return_local;
     }
     return 1;
+};
+
+inline void ThreadNative::sleep(const thread_t p_thread, const uimax p_time_in_ms)
+{
+    usleep(p_time_in_ms * 1000);
 };
 
 inline void ThreadNative::terminate(const thread_t p_thread){
@@ -141,14 +151,19 @@ struct Thread
         return ThreadNative::get_current_thread();
     };
 
-    inline static int8 wait(const thread_t p_thread, const uimax p_time_in_ms)
+    inline static int8 wait_for_end(const thread_t p_thread, const uimax p_time_in_ms)
     {
-        return ThreadNative::wait(p_thread, p_time_in_ms);
+        return ThreadNative::wait_for_end(p_thread, p_time_in_ms);
+    };
+
+    inline static int8 sleep(const thread_t p_thread, const uimax p_time_in_ms)
+    {
+        ThreadNative::sleep(p_thread, p_time_in_ms);
     };
 
     inline static void wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
     {
-        int8 l_exit_code = Thread::wait(p_thread, p_max_time_in_ms);
+        int8 l_exit_code = Thread::wait_for_end(p_thread, p_max_time_in_ms);
         assert_true(l_exit_code == 0);
 #if __MEMLEAK
         remove_ptr_to_tracked((int8*)p_thread);

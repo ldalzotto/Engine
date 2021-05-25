@@ -35,7 +35,7 @@ struct Engine_Scene_Collision
 
     template <class LoopFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        this->core.main_loop_forced_delta(p_delta, [&](const float32 p_delta) {
+        this->core.main_loop_forced_delta_no_event_poll(p_delta, [&](const float32 p_delta) {
             p_loop_func(p_delta);
             this->scene.consume_component_events_stateful(OnComponentRemoved{this});
             EngineStepFragments::collision_step(this->collision, this->collision_middleware, this->scene);
@@ -155,8 +155,8 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
         this->database_connection.free();
 
         this->present.free(this->gpu_context.instance, this->gpu_context.buffer_memory, this->gpu_context.graphics_allocator);
-        this->gpu_context.free();
         WindowAllocator::free(this->window);
+        this->gpu_context.free();
     };
 };
 
@@ -342,12 +342,12 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
 
     template <class LoopFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        this->core.main_loop_forced_delta(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
+        this->core.main_loop_forced_delta_no_event_poll(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
     };
 
     template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        this->core.single_frame_forced_delta(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
+        this->core.single_frame_forced_delta_no_event_poll(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
     };
 
     inline void free()

@@ -285,7 +285,7 @@ struct ShaderResource
 
             template <class BufferContainer> inline void push_to_binary_buffer(iVector<BufferContainer> in_out_buffer) const
             {
-                iVector<BufferContainer>::Assert::element_type<int8>();
+                iVector<BufferContainer>::Assert::template element_type<int8>();
 
                 BinarySerializer::type(in_out_buffer, this->vertex_module);
                 BinarySerializer::type(in_out_buffer, this->fragment_module);
@@ -575,7 +575,7 @@ struct MaterialResource
 
             template <class BufferContainer> inline void push_to_binary_buffer(iVector<BufferContainer> in_out_buffer) const
             {
-                iVector<BufferContainer>::Assert::element_type<int8>();
+                iVector<BufferContainer>::Assert::template element_type<int8>();
 
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);

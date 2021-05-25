@@ -214,6 +214,9 @@ inline void AppNativeEvent::initialize()
 #if __DEBUG
     assert_true(g_display_info.display != NULL);
 #endif
+#if __MEMLEAK
+    push_ptr_to_tracked((int8*)g_display_info.display);
+#endif
 
     g_display_info.screen = DefaultScreen(g_display_info.display);
 
@@ -227,6 +230,10 @@ inline void AppNativeEvent::finalize()
     assert_true(g_appevent_listeners.empty());
     assert_true(g_appevent_windowdimensions.empty());
 #endif
+#if __MEMLEAK
+    remove_ptr_to_tracked((int8*)g_display_info.display);
+#endif
+
     g_appevent_listeners.free();
     g_appevent_windowdimensions.free();
 

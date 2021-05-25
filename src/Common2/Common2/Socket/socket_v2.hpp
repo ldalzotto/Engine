@@ -65,7 +65,7 @@ struct SocketNative
 #if _WIN32
         return p_error == WSAEMSGSIZE;
 #else
-        // TODO -> ?
+        // for linux, such error doesn't exists, so we always return 0 indicating that it is not a msgsize type error.
         return 0;
 #endif
     };
