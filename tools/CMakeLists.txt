@@ -10,7 +10,7 @@ message("QT location is ${QT_PATH}")
 if (WIN32)
     set(QT_LIB ${QT_PATH}/lib/Qt6Core.lib ${QT_PATH}/lib/Qt6Cored.lib ${QT_PATH}/lib/Qt6Widgets.lib ${QT_PATH}/lib/Qt6Widgetsd.lib ${QT_PATH}/lib/Qt6Gui.lib ${QT_PATH}/lib/Qt6Guid.lib)
 elseif (UNIX)
-    set(QT_LIB ${QT_PATH}/lib/libQt6Core.so ${QT_PATH}/lib/Qt6Cored.lib ${QT_PATH}/lib/libQt6Widgets.so ${QT_PATH}/lib/libQt6Widgetsd.so ${QT_PATH}/lib/libQt6Gui.so ${QT_PATH}/lib/libQt6Guid.so)
+    set(QT_LIB ${QT_PATH}/lib/libQt6Core.so ${QT_PATH}/lib/Qt6Cored.so ${QT_PATH}/lib/libQt6Widgets.so ${QT_PATH}/lib/libQt6Widgetsd.so ${QT_PATH}/lib/libQt6Gui.so ${QT_PATH}/lib/libQt6Guid.so)
 endif ()
 
 add_library(QtCommon INTERFACE)
