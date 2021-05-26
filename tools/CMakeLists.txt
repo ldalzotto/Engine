@@ -2,9 +2,16 @@ cmake_minimum_required(VERSION 3.12)
 
 enable_language(CXX)
 
-set(QT_PATH "E:/qt/6.0.2/msvc2019_64/")
+set(QT_PATH "/home/loic/Programs/qt/6.1.0/gcc_64/")
+# set(QT_PATH $ENV{QT_PATH})
 
-set(QT_LIB ${QT_PATH}lib/Qt6Core.lib ${QT_PATH}lib/Qt6Cored.lib ${QT_PATH}lib/Qt6Widgets.lib ${QT_PATH}lib/Qt6Widgetsd.lib ${QT_PATH}lib/Qt6Gui.lib ${QT_PATH}lib/Qt6Guid.lib)
+message("QT location is ${QT_PATH}")
+
+if (WIN32)
+    set(QT_LIB ${QT_PATH}/lib/Qt6Core.lib ${QT_PATH}/lib/Qt6Cored.lib ${QT_PATH}/lib/Qt6Widgets.lib ${QT_PATH}/lib/Qt6Widgetsd.lib ${QT_PATH}/lib/Qt6Gui.lib ${QT_PATH}/lib/Qt6Guid.lib)
+elseif (UNIX)
+    set(QT_LIB ${QT_PATH}/lib/libQt6Core.so ${QT_PATH}/lib/Qt6Cored.lib ${QT_PATH}/lib/libQt6Widgets.so ${QT_PATH}/lib/libQt6Widgetsd.so ${QT_PATH}/lib/libQt6Gui.so ${QT_PATH}/lib/libQt6Guid.so)
+endif ()
 
 add_library(QtCommon INTERFACE)
 target_include_directories(QtCommon INTERFACE "${QT_PATH}include")

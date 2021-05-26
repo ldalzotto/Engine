@@ -41,16 +41,20 @@ elseif (UNIX)
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libMachineIndependent.a")
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libOSDependent.a")
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libOGLCompiler.a")
-
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libGenericCodeGen.a")
-
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libSPIRV.a")
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libSPIRV-Tools-opt.a")
         target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/deb/libSPIRV-Tools.a")
-
-
-
     else ()
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libHLSL.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libglslang.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libMachineIndependent.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libOSDependent.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libOGLCompiler.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libGenericCodeGen.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libSPIRV.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libSPIRV-Tools-opt.a")
+        target_link_libraries(GLSLANG INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/lib/linux/rel/libSPIRV-Tools.a")
     endif ()
 endif ()
 
