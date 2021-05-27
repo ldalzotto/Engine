@@ -213,32 +213,52 @@ enum ThirdPartyType {
 };
 
 class Constants {
-    public static sqlite3_file_id = "H989a5y7u8/sqlite_26_05_2021_7z";
-    public static vulkan_file_id = "L8qfb6y9u2/vulkan_26_05_2021_7z";
-    public static imgui_file_id = "f0r1bfyfu7/imgui_26_05_2021_7z";
-    public static stb_image_file_id = "l0r6b3y8u6/stb_image_26_05_2021_7z";
+    public static vulkan_windows_file_id = "n8p8ieyau0/vulkan_windows_27_05_2021_7z";
+    public static vulkan_linux_file_id = "z399idycu1/vulkan_linux_07_05_2021_7z";
 
+    public static imgui_file_id = "Z3D1iay4u1/imgui_27_05_2021_7z";
+    public static stb_image_file_id = "l0r6b3y8u6/stb_image_26_05_2021_7z";
     public static sqlite3_source_id = "z7s7c5y1uc/sqlite_source_26_05_2021_7z";
     public static glslang_source_id = "l6E2c2y0ue/glslang_source_26_05_2021_7z";
 };
 
-async function third_party_source(p_third_party: ThirdPartyType, p_folders: Folders): Promise<boolean> {
+async function third_party_prebuilt(p_third_party: ThirdPartyType, p_folders: Folders): Promise<boolean> {
     let l_file_id: string = "";
-    switch (p_third_party) {
-        case ThirdPartyType.SQLITE3:
-            l_file_id = Constants.sqlite3_file_id;
+    switch (process.platform) {
+        case "win32":
+            switch (p_third_party) {
+                case ThirdPartyType.VULKAN:
+                    l_file_id = Constants.vulkan_windows_file_id;
+                    break;
+                case ThirdPartyType.STB_IMAGE:
+                    l_file_id = Constants.stb_image_file_id;
+                    break;
+                case ThirdPartyType.IMGUI:
+                    l_file_id = Constants.imgui_file_id;
+                    break;
+                default:
+                    console.log(`Third party ${p_third_party} not supported.`);
+                    return false;
+            }
             break;
-        case ThirdPartyType.VULKAN:
-            l_file_id = Constants.vulkan_file_id;
-            break;
-        case ThirdPartyType.STB_IMAGE:
-            l_file_id = Constants.stb_image_file_id;
-            break;
-        case ThirdPartyType.IMGUI:
-            l_file_id = Constants.imgui_file_id;
+        case "linux":
+            switch (p_third_party) {
+                case ThirdPartyType.VULKAN:
+                    l_file_id = Constants.vulkan_linux_file_id;
+                    break;
+                case ThirdPartyType.STB_IMAGE:
+                    l_file_id = Constants.stb_image_file_id;
+                    break;
+                case ThirdPartyType.IMGUI:
+                    l_file_id = Constants.imgui_file_id;
+                    break;
+                default:
+                    console.log(`Third party ${p_third_party} not supported.`);
+                    return false;
+            }
             break;
         default:
-            console.log(`Third party ${p_third_party} not supported.`);
+            console.error(`Platform ${process.platform} not supported.`);
             return false;
     }
 
@@ -285,26 +305,37 @@ async function third_party_compile(p_third_party: ThirdPartyType, p_cmake_config
     return true;
 };
 
-async function third_party(p_folders: Folders) {
+async function third_party(p_folders: Folders): Promise<boolean> {
     if (!await third_party_compile(ThirdPartyType.SQLITE3, [ConfigurationType.RELEASE], p_folders)) {
         return false;
     }
     if (!await third_party_compile(ThirdPartyType.GLSLANG, [ConfigurationType.DEBUG, ConfigurationType.RELEASE], p_folders)) {
         return false;
     }
+
     if (!environment_variable_assertion("VULKAN_SDK")) {
+        console.error("The Vulkan SDK installation cannot be detected. Please, install it from here https://vulkan.lunarg.com/ and make sure that the environment variable named \"VULKAN_SDK\" points to the installation root folder.");
         return false;
     }
-    if (!await third_party_source(ThirdPartyType.VULKAN, p_folders)) {
+
+    if (process.platform === "linux") {
+        if (!environment_variable_assertion("LD_LIBRARY_PATH")) {
+            console.error("The Vulkan SDK installation is not complete. Please, set the environment variable named \"LD_LIBRARY_PATH\" according to https://vulkan.lunarg.com/doc/view/1.1.126.0/linux/getting_started.html.");
+            return false;
+        }
+        if (!environment_variable_assertion("VK_LAYER_PATH")) {
+            console.error("The Vulkan SDK installation is not complete. Please, set the environment variable named \"VK_LAYER_PATH\" according to https://vulkan.lunarg.com/doc/view/1.1.126.0/linux/getting_started.html.");
+            return false;
+        }
+    }
+
+    if (!await third_party_prebuilt(ThirdPartyType.VULKAN, p_folders)) {
         return false;
     }
-    if (!await third_party_source(ThirdPartyType.STB_IMAGE, p_folders)) {
+    if (!await third_party_prebuilt(ThirdPartyType.STB_IMAGE, p_folders)) {
         return false;
     }
-    if (!await third_party_source(ThirdPartyType.IMGUI, p_folders)) {
-        return false;
-    }
-    if (!environment_variable_assertion("QT_SDK")) {
+    if (!await third_party_prebuilt(ThirdPartyType.IMGUI, p_folders)) {
         return false;
     }
 
@@ -312,8 +343,11 @@ async function third_party(p_folders: Folders) {
 };
 
 async function main() {
+
+    let l_install_folder_relative = process.argv[2];
+
     let l_folders: Folders = new Folders();
-    l_folders.root = __dirname;
+    l_folders.root = path.join(__dirname, "../", l_install_folder_relative);
     l_folders.tmp_folder_absolute = ".tmp";
     l_folders.tmp_file_name = "file";
     l_folders.third_party_folder_absolute = "ThirdParty";

@@ -7,7 +7,7 @@
 #else
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
-#include "vulkan/vulkan.h"
+#include "vulkan.h"
 
 using gc_t = VkDevice;
 using gcqueue_t = VkQueue;

@@ -1,9 +1,0 @@
-[
-  {
-    "file_id": "ThirdParty_git",
-    "relative_extract_path": "./ThirdParty",
-    "git": {
-      "commit_hash": "4a4300b6e6fe5b86a9fd21b468f125f9ff14c7f7"
-    }
-  }
-]
