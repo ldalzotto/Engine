@@ -18,7 +18,7 @@ try {
 
 try {
     child_process.execSync("tsc ./install.ts --outDir ./.gen --sourcemap", { stdio: 'inherit' });
-    child_process.execSync("node ./.gen/install.js ../ThirdParty2", { stdio: 'inherit' });
+    child_process.execSync("node ./.gen/install.js ../", { stdio: 'inherit' });
     fs.rmdirSync(path.join(__dirname, "./.gen"), { recursive: true });
 } catch (error) {
     console.error(error);

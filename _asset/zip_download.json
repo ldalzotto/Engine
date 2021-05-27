@@ -1,9 +1,0 @@
-[
-  {
-    "file_id": "asset_git",
-    "relative_extract_path": "./asset",
-    "git": {
-      "commit_hash": "cba1ca02e7c01b0f03e380c2848d78b0481042f6"
-    }
-  }
-]

@@ -178,29 +178,35 @@ namespace anonfile {
 
 class Folders {
     root: string;
-    tmp_folder_absolute: string;
+    tmp_folder_relative: string;
     tmp_file_name: string;
-    third_party_folder_absolute: string;
+    third_party_folder_relative: string;
+    asset_folder_relative: string;
 
     public initialize() {
-        File.create_dir_if_not_exists(path.join(this.root, this.tmp_folder_absolute));
+        File.create_dir_if_not_exists(path.join(this.root, this.tmp_folder_relative));
         File.create_dir_if_not_exists(this.get_third_party_file_path());
+        File.create_dir_if_not_exists(this.get_asset_file_path());
     };
 
     public clear() {
-        fs.rmSync(path.join(this.root, this.tmp_folder_absolute), { recursive: true });
+        fs.rmSync(path.join(this.root, this.tmp_folder_relative), { recursive: true });
     };
 
     public get_temp_file_path(): string {
-        return path.join(this.root, this.tmp_folder_absolute, this.tmp_file_name);
+        return path.join(this.root, this.tmp_folder_relative, this.tmp_file_name);
     };
 
     public get_temp_folder_path(): string {
-        return path.join(this.root, this.tmp_folder_absolute);
+        return path.join(this.root, this.tmp_folder_relative);
     };
 
     public get_third_party_file_path(): string {
-        return path.join(this.root, this.third_party_folder_absolute);
+        return path.join(this.root, this.third_party_folder_relative);
+    };
+
+    public get_asset_file_path(): string {
+        return path.join(this.root, this.asset_folder_relative);
     };
 };
 
@@ -213,6 +219,8 @@ enum ThirdPartyType {
 };
 
 class Constants {
+    public static asset_file_id = "d8J6i5y9ua/asset_27_05_2021_7z";
+
     public static vulkan_windows_file_id = "n8p8ieyau0/vulkan_windows_27_05_2021_7z";
     public static vulkan_linux_file_id = "z399idycu1/vulkan_linux_07_05_2021_7z";
 
@@ -342,18 +350,24 @@ async function third_party(p_folders: Folders): Promise<boolean> {
     return true;
 };
 
+async function asset(p_folders: Folders): Promise<boolean> {
+    return await anonfile.Commands.download_and_extract(Constants.asset_file_id, p_folders.get_temp_file_path(), p_folders.get_asset_file_path());
+};
+
 async function main() {
 
     let l_install_folder_relative = process.argv[2];
 
     let l_folders: Folders = new Folders();
     l_folders.root = path.join(__dirname, "../", l_install_folder_relative);
-    l_folders.tmp_folder_absolute = ".tmp";
+    l_folders.tmp_folder_relative = ".tmp";
     l_folders.tmp_file_name = "file";
-    l_folders.third_party_folder_absolute = "ThirdParty";
+    l_folders.third_party_folder_relative = "ThirdParty2/ThirdParty";
+    l_folders.asset_folder_relative = "_asset/asset";
     l_folders.initialize();
 
     await third_party(l_folders);
+    await asset(l_folders);
 
     l_folders.clear();
 
