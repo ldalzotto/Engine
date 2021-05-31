@@ -11,7 +11,7 @@ export enum ConfigurationType {
 };
 
 
-namespace File {
+export namespace File {
     export function create_dir_if_not_exists(p_path: string) {
         if (!fs.existsSync(p_path)) {
             fs.mkdirSync(p_path);
@@ -22,14 +22,35 @@ namespace File {
             fs.rmdirSync(p_path, { recursive: true });
         }
     };
+
+
+    export function foreach_files_in_directory_recursive(p_start_path: string, p_foreach_path: (string) => void) {
+        let l_dirents: fs.Dirent[] = [];
+        l_dirents = l_dirents.concat(fs.readdirSync(p_start_path, { withFileTypes: true }));
+
+        while (l_dirents.length > 0) {
+            let l_current_dirent = l_dirents[0];
+            let l_current_dirent_path = path.resolve(p_start_path, l_current_dirent.name);
+            if (l_current_dirent.isDirectory()) {
+                l_dirents.splice(0, 1);
+                l_dirents = l_dirents.concat(fs.readdirSync(l_current_dirent_path, { withFileTypes: true }).map(dirent => {
+                    dirent.name = l_current_dirent.name + "/" + dirent.name;
+                    return dirent;
+                }));
+            } else {
+                p_foreach_path(l_current_dirent_path);
+                l_dirents.splice(0, 1);
+            }
+        }
+    };
 };
 
-class HttpGetReturn {
+export class HttpGetReturn {
     success: boolean;
     value: string;
 };
 
-function http_get(p_url: string): Promise<HttpGetReturn> {
+export function http_get(p_url: string): Promise<HttpGetReturn> {
     return new Promise<HttpGetReturn>((resolve, reject) => {
         console.log(`http get : ${p_url}`);
         let l_return: HttpGetReturn = new HttpGetReturn();
@@ -55,7 +76,7 @@ function http_get(p_url: string): Promise<HttpGetReturn> {
     });
 };
 
-function http_get_file_sync(p_url: string, p_path: string): Promise<boolean> {
+export function http_get_file_sync(p_url: string, p_path: string): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         console.log(`http_file get : ${p_url}, to ${p_path}`);
 
@@ -77,7 +98,7 @@ function http_get_file_sync(p_url: string, p_path: string): Promise<boolean> {
     });
 };
 
-function environment_variable_assertion(p_name: string): boolean {
+export function environment_variable_assertion(p_name: string): boolean {
     console.log(`Checking prensence of environment variable : ${p_name}`);
     if (process.env[p_name] == undefined) {
         console.error(`ERROR : The environment variable ${p_name} must be defined !`);
@@ -86,7 +107,7 @@ function environment_variable_assertion(p_name: string): boolean {
     return true;
 };
 
-namespace ChildProcess {
+export namespace ChildProcess {
     export class Commands {
         public static execute(p_command: string): boolean {
             console.log(`ChildProcess : execute command ${p_command}`);
@@ -112,9 +133,25 @@ namespace ChildProcess {
     }
 };
 
-namespace cmake {
+export namespace cmake {
+
+    export class InstallFolder {
+        public path: string;
+
+        public get_bin_folder(): string {
+            return path.join(this.path, "bin");
+        };
+    };
+
+    export function get_executable_name_with_extension(p_name: string) {
+        if (process.platform == "win32") {
+            return p_name + ".exe";
+        }
+        return p_name;
+    };
+
     export class Commands {
-        public static config_and_install(p_command_folder: string, p_cmake_config_type: ConfigurationType) {
+        public static config_and_install(p_command_folder_absolute: string, p_source_folder_absolute: string, p_target_name: string, p_cmake_config_type: ConfigurationType): InstallFolder {
             let l_install_folder_relative: string = `./install/${ConfigurationType[p_cmake_config_type].toLowerCase()}`;
             let l_configuration_type: string = "";
             switch (p_cmake_config_type) {
@@ -126,17 +163,19 @@ namespace cmake {
                     break;
             }
 
-
-            ChildProcess.Commands.move(p_command_folder)
-            ChildProcess.Commands.execute(`cmake -DCMAKE_INSTALL_PREFIX=\"${l_install_folder_relative}\" .`);
-            ChildProcess.Commands.execute(`cmake --build . --config ${l_configuration_type} --target install`);
+            ChildProcess.Commands.move(p_command_folder_absolute)
+            ChildProcess.Commands.execute(`cmake -DCMAKE_INSTALL_PREFIX=\"${l_install_folder_relative}\" ${p_source_folder_absolute}`);
+            ChildProcess.Commands.execute(`cmake --build . --config ${l_configuration_type} --target ${p_target_name}`);
             ChildProcess.Commands.move(__dirname);
-            return l_install_folder_relative;
+
+            let l_folder: InstallFolder = new InstallFolder();
+            l_folder.path = path.join(p_command_folder_absolute, l_install_folder_relative);
+            return l_folder;
         };
     };
 };
 
-namespace szip {
+export namespace szip {
     export class Commands {
         public static unzip_to(p_zip_file_path: string, p_extract_path: string): boolean {
             console.log(`szip : unzip ${p_zip_file_path} to ${p_extract_path}`);
@@ -145,7 +184,7 @@ namespace szip {
     };
 };
 
-namespace anonfile {
+export namespace anonfile {
     export class Commands {
         public static async download_to(p_file_id: string, p_path: string): Promise<boolean> {
             console.log(`anonfile : retrieve url of ${p_file_id}`);
@@ -175,6 +214,9 @@ namespace anonfile {
         };
     };
 };
+
+
+
 
 class Folders {
     root: string;
@@ -304,10 +346,10 @@ async function third_party_compile(p_third_party: ThirdPartyType, p_cmake_config
     let l_sqlite_source_root_folder: string = path.join(p_folders.get_temp_folder_path(), l_source_tmp_relative_folder);
 
     for (let i = 0; i < p_cmake_config_types.length; i++) {
-        let l_install_folder_relative = cmake.Commands.config_and_install(l_sqlite_source_root_folder, p_cmake_config_types[i]);
+        let l_install_folder: cmake.InstallFolder = cmake.Commands.config_and_install(l_sqlite_source_root_folder, ".", "", p_cmake_config_types[i]);
         let l_copy_dir = path.join(p_folders.get_third_party_file_path(), l_third_party_relative_folder, ConfigurationType[p_cmake_config_types[i]].toString().toLowerCase());
         File.delete_dir_if_exists(l_copy_dir);
-        fs.renameSync(path.join(l_sqlite_source_root_folder, l_install_folder_relative), l_copy_dir);
+        fs.renameSync(l_install_folder.path, l_copy_dir);
     }
 
     return true;
@@ -331,6 +373,7 @@ async function third_party(p_folders: Folders): Promise<boolean> {
             console.error("The Vulkan SDK installation is not complete. Please, set the environment variable named \"LD_LIBRARY_PATH\" according to https://vulkan.lunarg.com/doc/view/1.1.126.0/linux/getting_started.html.");
             return false;
         }
+
         if (!environment_variable_assertion("VK_LAYER_PATH")) {
             console.error("The Vulkan SDK installation is not complete. Please, set the environment variable named \"VK_LAYER_PATH\" according to https://vulkan.lunarg.com/doc/view/1.1.126.0/linux/getting_started.html.");
             return false;
@@ -347,6 +390,11 @@ async function third_party(p_folders: Folders): Promise<boolean> {
         return false;
     }
 
+    if (!await environment_variable_assertion("QT_SDK")) {
+        console.error("The Qt SDK installation cannot be detected. Please, set the environment variable named \"QT_SDK\" to point to the folder of the installed Qt version.");
+        return false;
+    }
+
     return true;
 };
 
@@ -354,12 +402,9 @@ async function asset(p_folders: Folders): Promise<boolean> {
     return await anonfile.Commands.download_and_extract(Constants.asset_file_id, p_folders.get_temp_file_path(), p_folders.get_asset_file_path());
 };
 
-async function main() {
-
-    let l_install_folder_relative = process.argv[2];
-
+async function install(p_install_folder_relative: string) {
     let l_folders: Folders = new Folders();
-    l_folders.root = path.join(__dirname, "../", l_install_folder_relative);
+    l_folders.root = path.join(__dirname, "../", p_install_folder_relative);
     l_folders.tmp_folder_relative = ".tmp";
     l_folders.tmp_file_name = "file";
     l_folders.third_party_folder_relative = "ThirdParty2/ThirdParty";
@@ -370,7 +415,100 @@ async function main() {
     await asset(l_folders);
 
     l_folders.clear();
+};
 
+async function asset_compiler() {
+    let l_command_folder = path.join(__dirname, "../", ".asset");
+    File.create_dir_if_not_exists(l_command_folder);
+
+    let l_source_folder = path.join(__dirname, "../../");
+    let l_asset_folder = path.join(l_source_folder, "_asset/asset");
+    l_asset_folder = l_asset_folder.replace(/\\/g, '/');
+    l_asset_folder += "/";
+
+    let l_install_folder: cmake.InstallFolder = cmake.Commands.config_and_install(l_command_folder, l_source_folder, "install.AssetCompilerExe", ConfigurationType.RELEASE);
+    let l_asset_compiler_exe_binary_path: string = path.join(l_install_folder.get_bin_folder(), cmake.get_executable_name_with_extension("AssetCompilerExe"));
+    l_asset_compiler_exe_binary_path = l_asset_compiler_exe_binary_path.replace(/\\/g, '/');
+
+    let l_asset_config_path = path.resolve(l_asset_folder, "compile_conf.json");
+    l_asset_config_path = l_asset_config_path.replace(/\\/g, '/');
+
+    ChildProcess.Commands.execute(`${l_asset_compiler_exe_binary_path} ${l_asset_config_path} ${l_asset_folder}`);
+};
+
+async function asset_compiler_clean() {
+
+    let l_source_folder = path.join(__dirname, "../../");
+    let l_asset_folder = path.join(l_source_folder, "_asset/asset");
+
+    File.foreach_files_in_directory_recursive(l_asset_folder, (p_path: string) => {
+        if (p_path.endsWith(".db")) {
+            console.log(`file removed : ${p_path}`);
+            fs.rmSync(p_path);
+        }
+    });
+};
+
+async function test_all() {
+    let l_source_folder = path.join(__dirname, "../../");
+    let l_tmp_folder = path.join(__dirname, ".tmp");
+    File.create_dir_if_not_exists(l_source_folder);
+
+    let l_targets: string[] = ["install.Common2Test"];
+    for (let i = 0; i < l_targets.length; i++) {
+        let l_install_directory = cmake.Commands.config_and_install(l_tmp_folder, l_source_folder, l_targets[i], ConfigurationType.DEBUG);
+        ChildProcess.Commands.execute(path.resolve(l_install_directory.get_bin_folder(), cmake.get_executable_name_with_extension("Common2Test")));
+    }
+
+    fs.rmdirSync(l_tmp_folder, { recursive: true });
+};
+
+enum ExecutionType {
+    UNDEFINED,
+    INSTALL,
+    ASSET_COMPILER,
+    ASSET_COMPILER_CLEAN,
+    TEST_ALL
+};
+
+class ExecutionTypeConstants {
+    static INSTALL: string = "INSTALL";
+    static ASSET_COMPILER: string = "ASSET_COMPILER";
+    static ASSET_COMPILER_CLEAN: string = "ASSET_COMPILER_CLEAN";
+    static TEST_ALL: string = "TEST_ALL";
+
+    public static get_execution_type(p_str: string): ExecutionType {
+        if (p_str === this.INSTALL) {
+            return ExecutionType.INSTALL;
+        } else if (p_str === this.ASSET_COMPILER) {
+            return ExecutionType.ASSET_COMPILER;
+        }
+        else if (p_str === this.ASSET_COMPILER_CLEAN) {
+            return ExecutionType.ASSET_COMPILER_CLEAN;
+        }
+        else if (p_str === this.TEST_ALL) { return ExecutionType.TEST_ALL; }
+        return ExecutionType.UNDEFINED;
+    };
+};
+
+async function main() {
+
+    let l_execution_type: ExecutionType = ExecutionTypeConstants.get_execution_type(process.argv[2]);
+
+    switch (l_execution_type) {
+        case ExecutionType.INSTALL:
+            await install(process.argv[3]);
+            break;
+        case ExecutionType.ASSET_COMPILER:
+            await asset_compiler();
+            break;
+        case ExecutionType.ASSET_COMPILER_CLEAN:
+            await asset_compiler_clean();
+            break;
+        case ExecutionType.TEST_ALL:
+            // await test_all();
+            break;
+    }
 };
 
 process.on('unhandledRejection', (reason, p) => {

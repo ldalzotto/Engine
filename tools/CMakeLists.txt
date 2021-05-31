@@ -1,23 +1,15 @@
-cmake_minimum_required(VERSION 3.12)
 
-enable_language(CXX)
+include("../_cmake/functions.cmake")
 
-set(QT_PATH "/home/loic/Programs/qt/6.1.0/gcc_64/")
-# set(QT_PATH $ENV{QT_PATH})
-
-message("QT location is ${QT_PATH}")
-
-if (WIN32)
-    set(QT_LIB ${QT_PATH}/lib/Qt6Core.lib ${QT_PATH}/lib/Qt6Cored.lib ${QT_PATH}/lib/Qt6Widgets.lib ${QT_PATH}/lib/Qt6Widgetsd.lib ${QT_PATH}/lib/Qt6Gui.lib ${QT_PATH}/lib/Qt6Guid.lib)
-elseif (UNIX)
-    set(QT_LIB ${QT_PATH}/lib/libQt6Core.so ${QT_PATH}/lib/Qt6Cored.so ${QT_PATH}/lib/libQt6Widgets.so ${QT_PATH}/lib/libQt6Widgetsd.so ${QT_PATH}/lib/libQt6Gui.so ${QT_PATH}/lib/libQt6Guid.so)
-endif ()
+set(QT_PATH $ENV{QT_SDK})
+message(STATUS "qt_path: ${QT_PATH}")
 
 add_library(QtCommon INTERFACE)
-target_include_directories(QtCommon INTERFACE "${QT_PATH}include")
+target_include_directories(QtCommon INTERFACE "${QT_PATH}/include")
 target_include_directories(QtCommon INTERFACE ./QTCommon)
-target_link_libraries(QtCommon INTERFACE ${QT_LIB})
-
+target_link_name(QtCommon INTERFACE ${QT_PATH}/lib Qt6Core false ${PARAM_STATIC})
+target_link_name(QtCommon INTERFACE ${QT_PATH}/lib Qt6Widgets false ${PARAM_STATIC})
+target_link_name(QtCommon INTERFACE ${QT_PATH}/lib Qt6Gui false ${PARAM_STATIC})
 
 add_library(MaterialViewer INTERFACE)
 target_include_directories(MaterialViewer INTERFACE ./MaterialViewer)
@@ -51,3 +43,4 @@ target_compile_definitions(AssetCompilerEditorExec PUBLIC ASSET_FOLDER_ROOT="${A
 add_executable(AssetCompilerEditorTest ./AssetCompiler/test/assetcompiler_tool_test.cpp)
 target_link_libraries(AssetCompilerEditorTest PUBLIC AssetCompilerEditor)
 target_compile_definitions(AssetCompilerEditorTest PUBLIC ASSET_FOLDER_ROOT="${ASSET_FOLDER_VAR}/AssetCompilerTool")
+

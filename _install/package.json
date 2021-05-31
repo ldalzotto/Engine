@@ -1,0 +1,11 @@
+{
+    "devDependencies": {
+        "@types/node": "15.6.1"
+    },
+    "scripts": {
+        "compile_scripts": "tsc ./install.ts --outDir ./.gen --sourcemap",
+        "install_dependencies": "node ./.gen/install.js \"INSTALL\" ../",
+        "compile_assets": "node ./.gen/install.js \"ASSET_COMPILER\"",
+        "clean_assets": "node ./.gen/install.js \"ASSET_COMPILER_CLEAN\" "
+    }
+}
