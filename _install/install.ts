@@ -257,7 +257,8 @@ enum ThirdPartyType {
     VULKAN,
     IMGUI,
     STB_IMAGE,
-    GLSLANG
+    GLSLANG,
+    V8_HEADERS
 };
 
 class Constants {
@@ -270,6 +271,7 @@ class Constants {
     public static stb_image_file_id = "l0r6b3y8u6/stb_image_26_05_2021_7z";
     public static sqlite3_source_id = "z7s7c5y1uc/sqlite_source_26_05_2021_7z";
     public static glslang_source_id = "l6E2c2y0ue/glslang_source_26_05_2021_7z";
+    public static v8_headers_source_id = "BeF2sbz7ue/v8_headers_03_06_2021_7z";
 };
 
 async function third_party_prebuilt(p_third_party: ThirdPartyType, p_folders: Folders): Promise<boolean> {
@@ -286,6 +288,9 @@ async function third_party_prebuilt(p_third_party: ThirdPartyType, p_folders: Fo
                 case ThirdPartyType.IMGUI:
                     l_file_id = Constants.imgui_file_id;
                     break;
+                case ThirdPartyType.V8_HEADERS:
+                    l_file_id = Constants.v8_headers_source_id;
+                    break;
                 default:
                     console.log(`Third party ${p_third_party} not supported.`);
                     return false;
@@ -301,6 +306,9 @@ async function third_party_prebuilt(p_third_party: ThirdPartyType, p_folders: Fo
                     break;
                 case ThirdPartyType.IMGUI:
                     l_file_id = Constants.imgui_file_id;
+                    break;
+                case ThirdPartyType.V8_HEADERS:
+                    l_file_id = Constants.v8_headers_source_id;
                     break;
                 default:
                     console.log(`Third party ${p_third_party} not supported.`);

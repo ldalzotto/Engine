@@ -5,7 +5,6 @@ add_library(VULKAN INTERFACE)
 target_include_directories(VULKAN INTERFACE "./ThirdParty/vulkan/include")
 target_link_name(VULKAN INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/vulkan/lib" vulkan-1 false true)
 
-
 if (IS_DEBUG)
     set(GLSLANG_include_path "./ThirdParty/glslang/debug/include")
     set(GLSLANG_lib_path ${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/glslang/debug/lib)
@@ -38,3 +37,5 @@ add_library(IMGUI STATIC ./ThirdParty/imgui/imgui.cpp ./ThirdParty/imgui/imgui_d
 target_include_directories(IMGUI PUBLIC ./ThirdParty/imgui)
 target_link_libraries(IMGUI PUBLIC VULKAN)
 
+add_library(V8_HEADERS INTERFACE)
+target_include_directories(V8_HEADERS INTERFACE ./ThirdParty/v8_headers)
