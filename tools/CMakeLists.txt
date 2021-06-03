@@ -2,7 +2,6 @@
 include("../_cmake/functions.cmake")
 
 set(QT_PATH $ENV{QT_SDK})
-message(STATUS "qt_path: ${QT_PATH}")
 
 add_library(QtCommon INTERFACE)
 target_include_directories(QtCommon INTERFACE "${QT_PATH}/include")

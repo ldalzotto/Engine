@@ -8,13 +8,6 @@ project(EngineCPP VERSION 0.0.1)
 set (CMAKE_CXX_STANDARD 17)
 enable_language(CXX)
 
-
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#	message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
 endif ()
@@ -43,6 +36,7 @@ set(ASSET_FOLDER_VAR "${CMAKE_CURRENT_SOURCE_DIR}/_asset/asset")
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(exe)
+add_subdirectory(api)
 
 
 add_custom_target(

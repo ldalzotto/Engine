@@ -62,12 +62,32 @@ struct EngineModuleCore
         }
     };
 
+	template <class LoopFunc> inline int8 main_loop_forced_delta_non_blocking(const float32 p_delta, const LoopFunc& p_loop_func)
+	{
+        if(this->abort_condition)
+        {
+            return 0;
+        }
+        this->single_frame_forced_delta(p_delta, p_loop_func);
+        return 1;
+	};
+
     template <class LoopFunc> inline void main_loop_forced_delta_no_event_poll(const float32 p_delta, const LoopFunc& p_loop_func)
     {
         while (!this->abort_condition)
         {
             this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
         }
+    };
+
+    template <class LoopFunc> inline int8 main_loop_forced_delta_no_event_poll_non_blocking(const float32 p_delta, const LoopFunc& p_loop_func)
+    {
+        if (this->abort_condition)
+        {
+            return 0;
+        }
+        this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
+        return 1;
     };
 
     inline void close()
@@ -204,7 +224,7 @@ struct EngineStepFragments
     };
 
     // TODO -> the gui func must be removed
-    template<class GuiFunc>
+    template <class GuiFunc>
     inline static void d3renderer_imgui_draw_present(EngineModuleCore& p_core, GPUContext& p_gpu_context, D3Renderer& p_renderer, ImguiRenderer& p_imgui_renderer,
                                                      const RenderTargetInternal_Color_Depth& p_render_target, GPUPresent& p_present, const GuiFunc& p_gui_func)
     {

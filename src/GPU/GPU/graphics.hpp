@@ -110,16 +110,16 @@ struct ShaderParameterPool
         SliceN<VkDescriptorPoolSize, 2> l_types;
 
         VkDescriptorPoolSize& l_uniform_buffer_types = l_types.get(0);
-        l_uniform_buffer_types.descriptorCount = p_max_sets;
+        l_uniform_buffer_types.descriptorCount = (uint32)p_max_sets;
         l_uniform_buffer_types.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 
         VkDescriptorPoolSize& l_texture_parameter_types = l_types.get(1);
-        l_texture_parameter_types.descriptorCount = p_max_sets;
+        l_texture_parameter_types.descriptorCount = (uint32)p_max_sets;
         l_texture_parameter_types.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 
         VkDescriptorPoolCreateInfo l_descriptor_pool_create_info{};
         l_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        l_descriptor_pool_create_info.poolSizeCount = l_types.Size();
+        l_descriptor_pool_create_info.poolSizeCount = (uint32)l_types.Size();
         l_descriptor_pool_create_info.pPoolSizes = l_types.Memory;
         l_descriptor_pool_create_info.flags = VkDescriptorPoolCreateFlagBits::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         l_descriptor_pool_create_info.maxSets = (uint32_t)p_max_sets;
