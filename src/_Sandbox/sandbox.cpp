@@ -47,17 +47,18 @@ inline void resize_test()
     l_configuration.render_size = v2ui{400, 400};
     l_configuration.render_target_host_readable = 1;
 
-    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present l_engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(l_configuration);
+    Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present _l_engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(l_configuration);
+    iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present> l_engine = iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{_l_engine};
 
-    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    l_engine.single_frame_forced_delta_typed(0.1f, [](auto) {
     });
-    WindowNative::simulate_resize_appevent(g_app_windows.get(l_engine.window).handle, 500, 500);
-    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    WindowNative::simulate_resize_appevent(g_app_windows.get(l_engine.get_window()).handle, 500, 500);
+    l_engine.single_frame_forced_delta_typed(0.1f, [](auto) {
     });
-    assert_true(g_app_windows.get(l_engine.window).client_width == 500);
-    assert_true(g_app_windows.get(l_engine.window).client_height == 500);
-    l_engine.core.close();
-    l_engine.single_frame_forced_delta(0.1f, [](auto) {
+    assert_true(g_app_windows.get(l_engine.get_window()).client_width == 500);
+    assert_true(g_app_windows.get(l_engine.get_window()).client_height == 500);
+    l_engine.get_core().close();
+    l_engine.single_frame_forced_delta_typed(0.1f, [](auto) {
     });
 
     l_engine.free();
@@ -93,33 +94,15 @@ inline void engine_thread_test()
                     thiz->engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(
                         Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration{EngineModuleCore::RuntimeConfiguration{1000000 / 60}, thiz->database_slice, v2ui{50, 50}, 0});
 
-                    int8 l_running = 1;
-                    while (l_running)
-                    {
-                        switch (thiz->engine.main_loop_forced_delta(0.01f))
+                    iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{thiz->engine}.main_loop_forced_delta_typed(0.01f, [&](const float32 p_delta) {
+                        thiz->engine_synchronization.on_end_of_frame();
+                        thiz->shared.frame_count = FrameCount(thiz->engine);
+                        thiz->engine_synchronization.on_start_of_frame();
+                        if (thiz->engine_synchronization.ask_exit)
                         {
-                        case EngineLoopState::FRAME:
-                        {
-                            thiz->engine.frame_before();
-
-                            thiz->engine_synchronization.on_end_of_frame();
-                            thiz->shared.frame_count = FrameCount(thiz->engine);
-                            thiz->engine_synchronization.on_start_of_frame();
-                            if (thiz->engine_synchronization.ask_exit)
-                            {
-                                thiz->engine.core.close();
-                            }
-
-                            thiz->engine.frame_after();
+                            thiz->engine.core.close();
                         }
-                        break;
-                        case EngineLoopState::ABORTED:
-                            l_running = 0;
-                            break;
-                        default:
-                            break;
-                        }
-                    }
+                    });
 
                     thiz->engine.free();
                     thiz->shared.cleanup_called = 1;
@@ -292,24 +275,9 @@ struct D3RendererCubeSandboxEnvironmentV2
 
     inline void main(float32 p_forced_delta)
     {
-        int8 l_running = 1;
-        while (l_running)
-        {
-
-            switch (this->engine.main_loop_forced_delta(p_forced_delta))
-            {
-            case EngineLoopState::FRAME:
-                this->engine.frame_before();
-                _frame_function();
-                this->engine.frame_after();
-                break;
-            case EngineLoopState::ABORTED:
-                l_running = 0;
-                break;
-            default:
-                break;
-            }
-        }
+        iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{this->engine}.main_loop_forced_delta_typed(p_forced_delta, [&](const float32 p_delta) {
+            _frame_function();
+        });
     };
 
   private:
