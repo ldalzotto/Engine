@@ -46,37 +46,58 @@ struct MaterialViewerEngineUnit
             thiz->engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration{
                 EngineModuleCore::RuntimeConfiguration{1000000 / 60}, thiz->input.asset_database.slice, v2ui{thiz->input.render_size.x, thiz->input.render_size.y}, 0});
 
-            thiz->engine.main_loop([&](auto) {
-                thiz->thread_synchronization.on_end_of_frame();
-                thiz->thread_synchronization.on_start_of_frame();
-
-                float32 l_deltatime = DeltaTime(thiz->engine);
-                uimax l_frame_count = FrameCount(thiz->engine);
-                if (l_frame_count == 1)
+            int8 l_running = 1;
+            while (l_running)
+            {
+                switch (thiz->engine.main_loop())
                 {
-                    thiz->camera_node = CreateNode(thiz->engine, transform_const::ORIGIN);
-                    thiz->material_node = CreateNode(thiz->engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
-                    NodeAddCamera(thiz->engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
-                }
-                thiz->shared.acquire([&](SharedResources& p_shared) {
-                    if (p_shared.change_requested)
+                case EngineLoopState::FRAME:
+                {
+                    thiz->engine.frame_before();
+
                     {
-                        if (token_value(thiz->material_node_meshrenderer) != -1)
+                        thiz->thread_synchronization.on_end_of_frame();
+                        thiz->thread_synchronization.on_start_of_frame();
+
+                        float32 l_deltatime = DeltaTime(thiz->engine);
+                        uimax l_frame_count = FrameCount(thiz->engine);
+                        if (l_frame_count == 1)
                         {
-                            NodeRemoveMeshRenderer(thiz->engine, thiz->material_node);
+                            thiz->camera_node = CreateNode(thiz->engine, transform_const::ORIGIN);
+                            thiz->material_node = CreateNode(thiz->engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
+                            NodeAddCamera(thiz->engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
                         }
-                        thiz->material_node_meshrenderer = NodeAddMeshRenderer(thiz->engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
-                        p_shared.change_requested = 0;
+                        thiz->shared.acquire([&](SharedResources& p_shared) {
+                            if (p_shared.change_requested)
+                            {
+                                if (token_value(thiz->material_node_meshrenderer) != -1)
+                                {
+                                    NodeRemoveMeshRenderer(thiz->engine, thiz->material_node);
+                                }
+                                thiz->material_node_meshrenderer = NodeAddMeshRenderer(thiz->engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
+                                p_shared.change_requested = 0;
+                            }
+                        });
+
+                        NodeAddWorldRotation(thiz->engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+
+                        if (thiz->thread_synchronization.ask_exit)
+                        {
+                            thiz->engine.core.close();
+                        }
                     }
-                });
 
-                NodeAddWorldRotation(thiz->engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
-
-                if (thiz->thread_synchronization.ask_exit)
-                {
-                    thiz->engine.core.close();
+                    thiz->engine.frame_after();
                 }
-            });
+                break;
+                case EngineLoopState::IDLE:
+                    thiz->engine.core.engine_loop.block_until_next_update();
+                    break;
+                case EngineLoopState::ABORTED:
+                    l_running = 0;
+                    break;
+                }
+            }
 
             thiz->input.free();
             thiz->cleanup_resources();

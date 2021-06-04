@@ -1,5 +1,10 @@
 #pragma once
 
+/*
+    // TODO -> to avoid manually calling frame_before and frame_after, we can create an iEngine interface that will expose these functions
+    // TODO -> The iEngine interface will allow main_loop functions with templated UserFunctions.
+*/
+
 struct Engine_Scene_Collision
 {
     EngineModuleCore core;
@@ -36,10 +41,10 @@ struct Engine_Scene_Collision
     template <class LoopFunc> inline int8 main_loop_forced_delta_v2(const float32 p_delta, const LoopFunc& p_loop_func)
     {
         return this->core.main_loop_forced_delta_no_event_poll_non_blocking(p_delta, [&](const float32 p_delta) {
-          p_loop_func(p_delta);
-          this->scene.consume_component_events_stateful(OnComponentRemoved{this});
-          EngineStepFragments::collision_step(this->collision, this->collision_middleware, this->scene);
-          this->scene.step();
+            p_loop_func(p_delta);
+            this->scene.consume_component_events_stateful(OnComponentRemoved{this});
+            EngineStepFragments::collision_step(this->collision, this->collision_middleware, this->scene);
+            this->scene.step();
         });
     };
 
@@ -112,35 +117,37 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present
         return l_return;
     };
 
-    template <class LoopFunc> struct UpdateFunc
+    inline EngineLoopState main_loop()
     {
-        Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present* thiz;
-        const LoopFunc& loop_func;
-        inline void operator()(const float32 p_delta) const
-        {
-            thiz->core.abort_condition = EngineStepFragments::window_step(thiz->window, thiz->gpu_context, thiz->present);
-            loop_func(p_delta);
-            thiz->scene.consume_component_events_stateful(OnComponentRemoved{thiz});
-            EngineStepFragments::render_resource_step(thiz->renderer.d3_renderer, thiz->renderer.render_targets, thiz->gpu_context, thiz->database_connection, thiz->asset_database,
-                                                      thiz->renderer_resource_allocator, thiz->render_middleware, thiz->scene);
-            EngineStepFragments::d3renderer_draw_present(thiz->core, thiz->gpu_context, thiz->renderer.d3_renderer, thiz->present);
-            thiz->scene.step();
-        };
+        return this->core.main_loop_non_blocking_v2();
     };
 
-    template <class LoopFunc> inline void main_loop(const LoopFunc& p_loop_func)
+    inline EngineLoopState main_loop_forced_delta(const float32 p_delta)
     {
-        this->core.main_loop(UpdateFunc<LoopFunc>{this, p_loop_func});
+        return this->core.main_loop_forced_delta_v2(p_delta);
     };
 
-    template <class LoopFunc> inline int8 main_loop_forced_delta_v2(const float32 p_delta, const LoopFunc& p_loop_func)
+    inline void frame_before()
     {
-        return this->core.main_loop_forced_delta_non_blocking(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
+        this->core.abort_condition = EngineStepFragments::window_step(this->window, this->gpu_context, this->present);
+    };
+
+    inline void frame_after()
+    {
+        this->scene.consume_component_events_stateful(OnComponentRemoved{this});
+        EngineStepFragments::render_resource_step(this->renderer.d3_renderer, this->renderer.render_targets, this->gpu_context, this->database_connection, this->asset_database,
+                                                  this->renderer_resource_allocator, this->render_middleware, this->scene);
+        EngineStepFragments::d3renderer_draw_present(this->core, this->gpu_context, this->renderer.d3_renderer, this->present);
+        this->scene.step();
     };
 
     template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        this->core.single_frame_forced_delta(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
+        this->core.single_frame_forced_delta(p_delta, [&](const float32 p_delta) {
+            this->frame_before();
+            p_loop_func(p_delta);
+            this->frame_after();
+        });
     };
 
     inline void free()
@@ -239,16 +246,6 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer_Imgui_Window_Present
         };
     };
 
-    template <class LoopFunc, class GuiFunc> inline void main_loop(const LoopFunc& p_loop_func, const GuiFunc& p_gui_func)
-    {
-        this->core.main_loop(UpdateFunc<LoopFunc, GuiFunc>{this, p_loop_func, p_gui_func});
-    };
-
-    template <class LoopFunc, class GuiFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func, const GuiFunc& p_gui_func)
-    {
-        this->core.main_loop_forced_delta(p_delta, UpdateFunc<LoopFunc, GuiFunc>{this, p_loop_func, p_gui_func});
-    };
-
     template <class LoopFunc, class GuiFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func, const GuiFunc& p_gui_func)
     {
         this->core.single_frame_forced_delta(p_delta, UpdateFunc<LoopFunc, GuiFunc>{this, p_loop_func, p_gui_func});
@@ -338,11 +335,6 @@ struct Engine_Scene_GPU_AssetDatabase_D3Renderer
             EngineStepFragments::d3renderer_draw_headless(thiz->core, thiz->gpu_context, thiz->renderer.d3_renderer);
             thiz->scene.step();
         };
-    };
-
-    template <class LoopFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
-    {
-        this->core.main_loop_forced_delta_no_event_poll(p_delta, UpdateFunc<LoopFunc>{this, p_loop_func});
     };
 
     template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)

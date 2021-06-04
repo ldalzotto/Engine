@@ -20,6 +20,11 @@ struct EngineLoop
         return this->timebetweenupdates_mics - this->accumulatedelapsedtime_mics;
     };
 
+    inline void block_until_next_update() const
+    {
+        Thread::wait_for_end(Thread::get_current_thread(), (uimax)(this->get_remaining_time_for_update() * 0.0009999));
+    };
+
     inline int8 update(float32* out_delta)
     {
         time_t l_currentTime = clock_currenttime_mics();
@@ -54,7 +59,7 @@ struct EngineLoop
         int8 l_return = this->update(out_delta);
         if (!l_return)
         {
-            Thread::wait_for_end(Thread::get_current_thread(), (uimax)(this->get_remaining_time_for_update() * 0.0009999));
+            this->block_until_next_update();
         }
         return l_return;
     };

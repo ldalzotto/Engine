@@ -1,5 +1,13 @@
 #pragma once
 
+enum class EngineLoopState : int8
+{
+    UNDEFINED = 0,
+    ABORTED,
+    IDLE,
+    FRAME
+};
+
 struct EngineModuleCore
 {
     int8 abort_condition;
@@ -34,6 +42,20 @@ struct EngineModuleCore
         this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
     };
 
+
+    inline void single_frame_forced_delta_no_event_poll_v2(const float32 p_delta)
+    {
+        this->engine_loop.update_forced_delta(p_delta);
+        this->clock.newframe();
+        this->clock.newupdate(p_delta);
+    };
+
+    inline void single_frame_forced_delta_v2(const float32 p_delta)
+    {
+        AppNativeEvent::poll_events();
+        this->single_frame_forced_delta_no_event_poll_v2(p_delta);
+    };
+
     template <class LoopFunc> inline int8 single_frame(const LoopFunc& p_loop_func)
     {
         AppNativeEvent::poll_events();
@@ -46,38 +68,71 @@ struct EngineModuleCore
         return 0;
     };
 
-    template <class LoopFunc> inline void main_loop(const LoopFunc& p_loop_func)
+    template <class LoopFunc> inline int8 single_frame_non_blocking(const LoopFunc& p_loop_func)
     {
-        while (!this->abort_condition)
+        AppNativeEvent::poll_events();
+        float32 l_delta;
+        if (this->engine_loop.update(&l_delta))
         {
-            this->single_frame(p_loop_func);
-        }
+            this->single_frame_forced_delta(l_delta, p_loop_func);
+            return 1;
+        };
+        return 0;
     };
 
-    template <class LoopFunc> inline void main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
+    inline int8 single_frame_non_blocking_v2()
     {
-        while (!this->abort_condition)
+        AppNativeEvent::poll_events();
+        float32 l_delta;
+        if (this->engine_loop.update(&l_delta))
         {
-            this->single_frame_forced_delta(p_delta, p_loop_func);
-        }
+            this->single_frame_forced_delta_v2(l_delta);
+            return 1;
+        };
+        return 0;
     };
 
-	template <class LoopFunc> inline int8 main_loop_forced_delta_non_blocking(const float32 p_delta, const LoopFunc& p_loop_func)
-	{
-        if(this->abort_condition)
+    template <class LoopFunc> inline int8 main_loop_non_blocking(const LoopFunc& p_loop_func)
+    {
+        if (this->abort_condition)
+        {
+            return 0;
+        }
+        this->single_frame_non_blocking(p_loop_func);
+        return 1;
+    };
+
+    inline EngineLoopState main_loop_non_blocking_v2()
+    {
+        if (this->abort_condition)
+        {
+            return EngineLoopState::ABORTED;
+        }
+        if (this->single_frame_non_blocking_v2())
+        {
+            return EngineLoopState::FRAME;
+        }
+        return EngineLoopState::IDLE;
+    };
+
+    template <class LoopFunc> inline int8 main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
+    {
+        if (this->abort_condition)
         {
             return 0;
         }
         this->single_frame_forced_delta(p_delta, p_loop_func);
         return 1;
-	};
+    };
 
-    template <class LoopFunc> inline void main_loop_forced_delta_no_event_poll(const float32 p_delta, const LoopFunc& p_loop_func)
+    inline EngineLoopState main_loop_forced_delta_v2(const float32 p_delta)
     {
-        while (!this->abort_condition)
+        if (this->abort_condition)
         {
-            this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
+            return EngineLoopState::ABORTED;
         }
+        this->single_frame_forced_delta_v2(p_delta);
+        return EngineLoopState::FRAME;
     };
 
     template <class LoopFunc> inline int8 main_loop_forced_delta_no_event_poll_non_blocking(const float32 p_delta, const LoopFunc& p_loop_func)

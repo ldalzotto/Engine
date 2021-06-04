@@ -96,7 +96,12 @@ inline void engine_thread_test()
                     int8 l_running = 1;
                     while (l_running)
                     {
-                        l_running = thiz->engine.main_loop_forced_delta_v2(0.01f, [&](auto) {
+                        switch (thiz->engine.main_loop_forced_delta(0.01f))
+                        {
+                        case EngineLoopState::FRAME:
+                        {
+                            thiz->engine.frame_before();
+
                             thiz->engine_synchronization.on_end_of_frame();
                             thiz->shared.frame_count = FrameCount(thiz->engine);
                             thiz->engine_synchronization.on_start_of_frame();
@@ -104,7 +109,16 @@ inline void engine_thread_test()
                             {
                                 thiz->engine.core.close();
                             }
-                        });
+
+                            thiz->engine.frame_after();
+                        }
+                        break;
+                        case EngineLoopState::ABORTED:
+                            l_running = 0;
+                            break;
+                        default:
+                            break;
+                        }
                     }
 
                     thiz->engine.free();
@@ -281,71 +295,87 @@ struct D3RendererCubeSandboxEnvironmentV2
         int8 l_running = 1;
         while (l_running)
         {
-            l_running = this->engine.main_loop_forced_delta_v2(p_forced_delta, [&](const float32 p_delta) {
-                uimax l_frame_count = FrameCount(this->engine);
-                if (l_frame_count == 1)
-                {
 
-                    quat l_rot = m33f::lookat(v3f{7.0f, 7.0f, 7.0f}, v3f{0.0f, 0.0f, 0.0f}, v3f_const::UP).to_rotation();
-                    this->camera_node = CreateNode(this->engine, transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE.vec3});
-                    NodeAddCamera(this->engine, camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
-
-                    {
-                        this->l_square_root_node = CreateNode(this->engine, transform_const::ORIGIN);
-
-                        Token<Node> l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-
-                        l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
-                        NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
-                    }
-                    return;
-                }
-
-                if (l_frame_count == 60)
-                {
-                    RemoveNode(this->engine, this->camera_node);
-                    RemoveNode(this->engine, this->l_square_root_node);
-                    this->engine.core.close();
-                }
-
-                if (l_frame_count == 21 || l_frame_count == 41)
-                {
-                    String l_image_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("d3renderer_cube/frame/frame_"));
-                    ToString::auimax_append(FrameCount(this->engine) - 1, l_image_path);
-                    l_image_path.append(slice_int8_build_rawstr(".jpg"));
-
-                    SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
-
-#if 0
-                  SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
-#endif
-
-                    l_image_path.free();
-                }
-                quat l_delta_rotation = quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * DeltaTime(this->engine));
-                NodeAddWorldRotation(this->engine, this->l_square_root_node, l_delta_rotation);
-            });
+            switch (this->engine.main_loop_forced_delta(p_forced_delta))
+            {
+            case EngineLoopState::FRAME:
+                this->engine.frame_before();
+                _frame_function();
+                this->engine.frame_after();
+                break;
+            case EngineLoopState::ABORTED:
+                l_running = 0;
+                break;
+            default:
+                break;
+            }
         }
     };
+
+  private:
+    inline void _frame_function()
+    {
+        uimax l_frame_count = FrameCount(this->engine);
+        if (l_frame_count == 1)
+        {
+            quat l_rot = m33f::lookat(v3f{7.0f, 7.0f, 7.0f}, v3f{0.0f, 0.0f, 0.0f}, v3f_const::UP).to_rotation();
+            this->camera_node = CreateNode(this->engine, transform{v3f{7.0f, 7.0f, 7.0f}, l_rot, v3f_const::ONE.vec3});
+            NodeAddCamera(this->engine, camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
+
+            {
+                this->l_square_root_node = CreateNode(this->engine, transform_const::ORIGIN);
+
+                Token<Node> l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{-2.0f, 2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+
+                l_node = CreateNode(this->engine, transform{v3f{-2.0f, -2.0f, -2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                NodeAddMeshRenderer(this->engine, l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
+            }
+            return;
+        }
+
+        if (l_frame_count == 60)
+        {
+            RemoveNode(this->engine, this->camera_node);
+            RemoveNode(this->engine, this->l_square_root_node);
+            this->engine.core.close();
+        }
+
+        if (l_frame_count == 21 || l_frame_count == 41)
+        {
+            String l_image_path = String::allocate_elements_2(slice_int8_build_rawstr(ASSET_FOLDER_PATH), slice_int8_build_rawstr("d3renderer_cube/frame/frame_"));
+            ToString::auimax_append(FrameCount(this->engine) - 1, l_image_path);
+            l_image_path.append(slice_int8_build_rawstr(".jpg"));
+
+            SandboxTestUtil::render_texture_compare(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
+
+#if 0
+            SandboxTestUtil::render_texture_screenshot(this->engine.gpu_context, this->engine.renderer.d3_renderer, l_image_path.to_slice_with_null_termination());
+#endif
+
+            l_image_path.free();
+        }
+        quat l_delta_rotation = quat::rotate_around(v3f_const::UP, 45.0f * Math_const::DEG_TO_RAD * DeltaTime(this->engine));
+        NodeAddWorldRotation(this->engine, this->l_square_root_node, l_delta_rotation);
+    }
 };
 
 inline void d3renderer_cube()
