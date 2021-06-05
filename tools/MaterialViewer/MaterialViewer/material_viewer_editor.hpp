@@ -46,31 +46,32 @@ struct MaterialViewerEngineUnit
             thiz->engine = Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::allocate(Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration{
                 EngineModuleCore::RuntimeConfiguration{1000000 / 60}, thiz->input.asset_database.slice, v2ui{thiz->input.render_size.x, thiz->input.render_size.y}, 0});
 
-            iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{thiz->engine}.main_loop_blocking_typed([&](const float32 p_delta) {
+            iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present> l_engine = iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{thiz->engine};
+            l_engine.main_loop_blocking_typed([&](const float32 p_delta) {
                 thiz->thread_synchronization.on_end_of_frame();
                 thiz->thread_synchronization.on_start_of_frame();
 
-                float32 l_deltatime = DeltaTime(thiz->engine);
-                uimax l_frame_count = FrameCount(thiz->engine);
+                float32 l_deltatime = l_engine.deltatime();
+                uimax l_frame_count = l_engine.frame_count();
                 if (l_frame_count == 1)
                 {
-                    thiz->camera_node = CreateNode(thiz->engine, transform_const::ORIGIN);
-                    thiz->material_node = CreateNode(thiz->engine, transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
-                    NodeAddCamera(thiz->engine, thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
+                    thiz->camera_node = l_engine.create_node(transform_const::ORIGIN);
+                    thiz->material_node = l_engine.create_node(transform{v3f{0.0f, 0.0f, 5.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
+                    l_engine.node_add_camera(thiz->camera_node, CameraComponent::Asset{1.0f, 30.0f, 45.0f});
                 }
                 thiz->shared.acquire([&](SharedResources& p_shared) {
                     if (p_shared.change_requested)
                     {
                         if (token_value(thiz->material_node_meshrenderer) != -1)
                         {
-                            NodeRemoveMeshRenderer(thiz->engine, thiz->material_node);
+                            l_engine.node_remove_meshrenderer(thiz->material_node);
                         }
-                        thiz->material_node_meshrenderer = NodeAddMeshRenderer(thiz->engine, thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
+                        thiz->material_node_meshrenderer = l_engine.node_add_meshrenderer(thiz->material_node, p_shared.material_hash, p_shared.mesh_hash);
                         p_shared.change_requested = 0;
                     }
                 });
 
-                NodeAddWorldRotation(thiz->engine, thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
+                l_engine.node_add_worldrotation(thiz->material_node, quat::rotate_around(v3f_const::UP, 3 * l_deltatime));
 
                 if (thiz->thread_synchronization.ask_exit)
                 {
@@ -155,8 +156,9 @@ struct MaterialViewerEngineUnit
   private:
     inline void cleanup_resources()
     {
-        RemoveNode(this->engine, this->camera_node);
-        RemoveNode(this->engine, this->material_node);
+        iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present> l_engine = iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{this->engine};
+        l_engine.remove_node(this->camera_node);
+        l_engine.remove_node(this->material_node);
         this->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
     };
 };
