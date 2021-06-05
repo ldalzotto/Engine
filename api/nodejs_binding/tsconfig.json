@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "outDir": "./.generated/",
+        "watch": true,
+        "sourceMap": true
+    },
+    "include": ["./src/**.*"]
+}

@@ -5,6 +5,7 @@
 #include "AssetCompiler/asset_compiler.hpp"
 #include "QTCommon/qt_utility.hpp"
 
+// TODO -> remove thread ?
 struct MaterialViewerEngineUnit
 {
     int8 is_running;

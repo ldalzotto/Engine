@@ -28,121 +28,52 @@ struct EngineModuleCore
         return l_engine_core;
     };
 
-    template <class LoopFunc> inline void single_frame_forced_delta_no_event_poll(const float32 p_delta, const LoopFunc& p_loop_func)
-    {
-        this->engine_loop.update_forced_delta(p_delta);
-        this->clock.newframe();
-        this->clock.newupdate(p_delta);
-        p_loop_func.operator()(p_delta);
-    };
-
-    template <class LoopFunc> inline void single_frame_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
-    {
-        AppNativeEvent::poll_events();
-        this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
-    };
-
-
-    inline void single_frame_forced_delta_no_event_poll_v2(const float32 p_delta)
+    inline void single_frame_forced_delta_no_event_poll(const float32 p_delta)
     {
         this->engine_loop.update_forced_delta(p_delta);
         this->clock.newframe();
         this->clock.newupdate(p_delta);
     };
 
-    inline void single_frame_forced_delta_v2(const float32 p_delta)
+    inline void single_frame_forced_delta(const float32 p_delta)
     {
         AppNativeEvent::poll_events();
-        this->single_frame_forced_delta_no_event_poll_v2(p_delta);
+        this->single_frame_forced_delta_no_event_poll(p_delta);
     };
 
-    template <class LoopFunc> inline int8 single_frame(const LoopFunc& p_loop_func)
-    {
-        AppNativeEvent::poll_events();
-        float32 l_delta;
-        if (this->engine_loop.update_thread_block(&l_delta))
-        {
-            this->single_frame_forced_delta(l_delta, p_loop_func);
-            return 1;
-        };
-        return 0;
-    };
-
-    template <class LoopFunc> inline int8 single_frame_non_blocking(const LoopFunc& p_loop_func)
+    inline int8 single_frame_non_blocking()
     {
         AppNativeEvent::poll_events();
         float32 l_delta;
         if (this->engine_loop.update(&l_delta))
         {
-            this->single_frame_forced_delta(l_delta, p_loop_func);
+            this->single_frame_forced_delta(l_delta);
             return 1;
         };
         return 0;
     };
 
-    inline int8 single_frame_non_blocking_v2()
-    {
-        AppNativeEvent::poll_events();
-        float32 l_delta;
-        if (this->engine_loop.update(&l_delta))
-        {
-            this->single_frame_forced_delta_v2(l_delta);
-            return 1;
-        };
-        return 0;
-    };
-
-    template <class LoopFunc> inline int8 main_loop_non_blocking(const LoopFunc& p_loop_func)
-    {
-        if (this->abort_condition)
-        {
-            return 0;
-        }
-        this->single_frame_non_blocking(p_loop_func);
-        return 1;
-    };
-
-    inline EngineLoopState main_loop_non_blocking_v2()
+    inline EngineLoopState main_loop_non_blocking()
     {
         if (this->abort_condition)
         {
             return EngineLoopState::ABORTED;
         }
-        if (this->single_frame_non_blocking_v2())
+        if (this->single_frame_non_blocking())
         {
             return EngineLoopState::FRAME;
         }
         return EngineLoopState::IDLE;
     };
 
-    template <class LoopFunc> inline int8 main_loop_forced_delta(const float32 p_delta, const LoopFunc& p_loop_func)
-    {
-        if (this->abort_condition)
-        {
-            return 0;
-        }
-        this->single_frame_forced_delta(p_delta, p_loop_func);
-        return 1;
-    };
-
-    inline EngineLoopState main_loop_forced_delta_v2(const float32 p_delta)
+    inline EngineLoopState main_loop_forced_delta(const float32 p_delta)
     {
         if (this->abort_condition)
         {
             return EngineLoopState::ABORTED;
         }
-        this->single_frame_forced_delta_v2(p_delta);
+        this->single_frame_forced_delta(p_delta);
         return EngineLoopState::FRAME;
-    };
-
-    template <class LoopFunc> inline int8 main_loop_forced_delta_no_event_poll_non_blocking(const float32 p_delta, const LoopFunc& p_loop_func)
-    {
-        if (this->abort_condition)
-        {
-            return 0;
-        }
-        this->single_frame_forced_delta_no_event_poll(p_delta, p_loop_func);
-        return 1;
     };
 
     inline void close()

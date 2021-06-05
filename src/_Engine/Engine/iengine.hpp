@@ -54,12 +54,17 @@ template <class _Engine> struct iEngine
         this->engine.frame_after();
     };
 
+    inline EngineLoopState main_loop_forced_delta(const float32 p_delta)
+    {
+        return this->get_core().main_loop_forced_delta(p_delta);
+    };
+
     template <class LoopFunc> inline void main_loop_forced_delta_typed(const float32 p_delta, const LoopFunc& p_loop_func)
     {
         int8 l_running = 1;
         while (l_running)
         {
-            switch (this->get_core().main_loop_forced_delta_v2(p_delta))
+            switch (this->main_loop_forced_delta(p_delta))
             {
             case EngineLoopState::FRAME:
                 this->frame_before();
@@ -75,12 +80,17 @@ template <class _Engine> struct iEngine
         }
     };
 
+    inline EngineLoopState main_loop_non_blocking()
+    {
+        return this->get_core().main_loop_non_blocking();
+    };
+
     template <class LoopFunc> inline void main_loop_blocking_typed(const LoopFunc& p_loop_func)
     {
         int8 l_running = 1;
         while (l_running)
         {
-            switch (this->get_core().main_loop_non_blocking_v2())
+            switch (this->main_loop_non_blocking())
             {
             case EngineLoopState::FRAME:
             {
@@ -101,7 +111,7 @@ template <class _Engine> struct iEngine
 
     template <class LoopFunc> inline void single_frame_forced_delta_typed(const float32 p_delta, const LoopFunc& p_loop_func)
     {
-        this->get_core().single_frame_forced_delta_v2(p_delta);
+        this->get_core().single_frame_forced_delta(p_delta);
         this->frame_before();
         p_loop_func(p_delta);
         this->frame_after();
@@ -131,6 +141,12 @@ template <class _Engine> struct iEngine
     {
         Scene& l_scene = this->get_scene();
         l_scene.remove_node(l_scene.get_node(p_node));
+    };
+
+    inline v3f node_get_localposition(const Token<Node> p_node)
+    {
+        Scene& l_scene = this->get_scene();
+        return l_scene.tree.get_localposition(l_scene.get_node(p_node));
     };
 
     inline void node_add_worldrotation(const Token<Node> p_node, const quat& p_delta_rotation)
