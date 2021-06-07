@@ -1,10 +1,20 @@
+import * as os from "os";
+
 export function assert_true(p_condition: boolean) {
     if (!p_condition) {
         process.abort();
     }
 }
 
-import * as os from "os";
+export class MathConst {
+    public static FLOAT_TOLERENCE: number = 0.0001;
+}
+
+export class MathC {
+    public static equals_float(p_left: number, p_right: number) {
+        return Math.abs(p_right - p_left) <= MathConst.FLOAT_TOLERENCE;
+    }
+};
 
 export class ByteConst {
     public static is_little_endian: boolean = (os.endianness() == "LE");
@@ -28,6 +38,26 @@ export class Slice {
 
     public size(): number {
         return this.end - this.begin;
+    };
+
+    public slide_rv(p_element_offset: number): Slice {
+        let l_slice = new Slice();
+        l_slice.memory = this.memory;
+        l_slice.begin = this.begin + p_element_offset;
+        l_slice.end = this.end;
+        assert_true(l_slice.begin <= this.end);
+        return l_slice;
+    };
+
+    public compare(p_other: Slice): boolean {
+        let l_size = this.size();
+        for (let i = 0; i < l_size; i++) {
+
+            if (this.memory[this.begin + i] != p_other.memory[p_other.begin + i]) {
+                return false;
+            }
+        }
+        return true;
     };
 
     public set_buffer(p_value: Slice, p_element_offset: number = 0) {
@@ -138,6 +168,22 @@ export class Vector {
         while (this.span.size() < p_new_size) {
             this.span.resize(this.span.size() == 0 ? 1 : (this.span.size() * 2));
         }
+    };
+};
+
+export class Token<T> {
+    tok: ArrayBuffer;
+
+    static allocate_empty<T>(): Token<T> {
+        return {tok: new ArrayBuffer(8)};
+    };
+
+    static build<T>(p_array_buffer: ArrayBuffer): Token<T> {
+        return {tok: p_array_buffer};
+    };
+
+    static allocate<T>(p_array_buffer: ArrayBuffer): Token<T> {
+        return {tok: p_array_buffer.slice(0)};
     };
 };
 

@@ -3,7 +3,8 @@
         "allowJs": true,
         "outDir": "./.generated/",
         "watch": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "rootDirs": ["./src", "./test"]
     },
-    "include": ["./src/**.*"]
+    "include": ["./src/**.*", "./test/**.*"]
 }

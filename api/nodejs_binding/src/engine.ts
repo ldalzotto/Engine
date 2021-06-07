@@ -1,5 +1,5 @@
-import * as buf from "./buffer_lib"
-import {BinaryDeserializer, BinarySerializer} from "./buffer_lib";
+import {BinaryDeserializer, BinarySerializer, ByteConst, MathC, Slice, Span, Token, Vector} from "./buffer_lib";
+import * as path from "path"
 
 type ArrayBufferOrFunction = ArrayBuffer | ((any: any) => any);
 
@@ -11,12 +11,11 @@ interface IEngineSharedLibrary {
     EntryPoint(...p_args: ArrayBufferOrFunction[]): ArrayBuffer;
 };
 
-// let engine: IEngineSharedLibrary = require("E:/GameProjects/Engine/_install/build/Release/NodeJsBinding") as IEngineSharedLibrary;
-let engine: IEngineSharedLibrary = require("../../Engine/_install/build/Debug/NodeJsBinding") as IEngineSharedLibrary;
-engine.LoadDynamicLib("E:/GameProjects/Engine/cmake-build-debug/api/EngineFull.dll");
+export let engine: IEngineSharedLibrary = require("../../../../_install/build/Debug/NodeJsBinding") as IEngineSharedLibrary;
+engine.LoadDynamicLib("../../../../cmake-build-debug/api/EngineFull.dll");
 
 
-enum EngineFunctionsKey {
+export enum EngineFunctionsKey {
     SpawnEngine = 0,
     DestroyEngine,
     MainLoopNonBlocking,
@@ -32,37 +31,21 @@ enum EngineFunctionsKey {
     Node_AddMeshRenderer
 };
 
-enum EngineLoopState {
+export enum EngineLoopState {
     UNDEFINED = 0,
     ABORTED,
     IDLE,
     FRAME
 };
 
-class EngineFuncKey {
-    tok: buf.Span;
+export class EngineFuncKey {
+    tok: Span;
 
     static allocate(p_type: EngineFunctionsKey): EngineFuncKey {
         let l_return = new EngineFuncKey();
-        l_return.tok = buf.Span.allocate(buf.ByteConst.INT8);
+        l_return.tok = Span.allocate(ByteConst.INT8);
         l_return.tok.to_slice().set_int8(p_type);
         return l_return;
-    };
-};
-
-export class Token<T> {
-    tok: ArrayBuffer;
-
-    static allocate_empty<T>(): Token<T> {
-        return {tok: new ArrayBuffer(8)};
-    };
-
-    static build<T>(p_array_buffer: ArrayBuffer): Token<T> {
-        return {tok: p_array_buffer};
-    };
-
-    static allocate<T>(p_array_buffer: ArrayBuffer): Token<T> {
-        return {tok: p_array_buffer.slice(0)};
     };
 };
 
@@ -80,18 +63,23 @@ export class v3f {
         return l_return;
     };
 
-    public serialize(in_out_vector: buf.Vector) {
+    public serialize(in_out_vector: Vector) {
         BinarySerializer.float32(in_out_vector, this.x);
         BinarySerializer.float32(in_out_vector, this.y);
         BinarySerializer.float32(in_out_vector, this.z);
     };
 
-    public static deserialize(in_slice: buf.Slice): v3f {
+    public static deserialize(in_slice: Slice): v3f {
         let l_return: v3f = new v3f();
         l_return.x = BinaryDeserializer.float32(in_slice);
         l_return.y = BinaryDeserializer.float32(in_slice);
         l_return.z = BinaryDeserializer.float32(in_slice);
         return l_return;
+    };
+
+    public equals(p_other: v3f): boolean {
+        return MathC.equals_float(this.x, p_other.x) &&
+            MathC.equals_float(this.y, p_other.y) && MathC.equals_float(this.z, p_other.z);
     };
 };
 
@@ -119,7 +107,7 @@ export class quat {
         return quat.build(this.x * p_number, this.y * p_number, this.z * p_number, this.w * p_number);
     };
 
-    public serialize(in_out_vector: buf.Vector) {
+    public serialize(in_out_vector: Vector) {
         BinarySerializer.float32(in_out_vector, this.x);
         BinarySerializer.float32(in_out_vector, this.y);
         BinarySerializer.float32(in_out_vector, this.z);
@@ -141,7 +129,7 @@ export class transform {
         return l_return;
     };
 
-    public serialize(in_out_vector: buf.Vector) {
+    public serialize(in_out_vector: Vector) {
         this.position.serialize(in_out_vector);
         this.rotation.serialize(in_out_vector);
         this.scale.serialize(in_out_vector);
@@ -161,7 +149,7 @@ export class CameraComponent {
         return l_return;
     };
 
-    public serialize(in_out_vector: buf.Vector) {
+    public serialize(in_out_vector: Vector) {
         BinarySerializer.float32(in_out_vector, this.near);
         BinarySerializer.float32(in_out_vector, this.far);
         BinarySerializer.float32(in_out_vector, this.fov);
@@ -171,123 +159,123 @@ export class CameraComponent {
 export interface MeshRendererComponent {
 };
 
-class Engine {
+export class Engine {
 };
 
-class Node {
+export class Node {
 };
 
-class MeshRenderer {
+export class MeshRenderer {
 };
 
-class EngineFunctions {
+export class EngineFunctions {
 
     public static SpawnEngine(p_database_path: string): Token<Engine> {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.SpawnEngine).tok.to_slice());
-        buf.BinarySerializer.slice(l_parameters, buf.Span.from_string(p_database_path).to_slice());
+        BinarySerializer.slice(l_parameters, Span.from_string(p_database_path).to_slice());
         let l_return = engine.EntryPoint(l_parameters.span.memory);
 
         return Token.allocate<Engine>(l_return);
     };
 
     public static DestroyEngine(p_engine: Token<Engine>) {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.DestroyEngine).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         engine.EntryPoint(l_parameters.span.memory);
     };
 
     public static MainLoopNonBlocking(p_engine: Token<Engine>): EngineLoopState {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.MainLoopNonBlocking).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         let l_return = engine.EntryPoint(l_parameters.span.memory);
-        return BinaryDeserializer.int8(buf.Slice.from_memory(l_return)) as EngineLoopState;
+        return BinaryDeserializer.int8(Slice.from_memory(l_return)) as EngineLoopState;
     };
 
     public static FrameBefore(p_engine: Token<Engine>) {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.FrameBefore).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         engine.EntryPoint(l_parameters.span.memory);
     };
 
     public static FrameAfter(p_engine: Token<Engine>) {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.FrameAfter).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         engine.EntryPoint(l_parameters.span.memory);
     };
 
     public static DeltaTime(p_engine: Token<Engine>): number {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.DeltaTime).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         let l_return = engine.EntryPoint(l_parameters.span.memory);
-        return BinaryDeserializer.float32(buf.Slice.from_memory(l_return));
+        return BinaryDeserializer.float32(Slice.from_memory(l_return));
     };
 
     public static FrameCount(p_engine: Token<Engine>): number {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.FrameCount).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         let l_return = engine.EntryPoint(l_parameters.span.memory);
-        return BinaryDeserializer.int64(buf.Slice.from_memory(l_return));
+        return BinaryDeserializer.int64(Slice.from_memory(l_return));
     };
 
     public static Node_CreateRoot(p_engine: Token<Engine>, p_transform: transform): Token<Node> {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_CreateRoot).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
         p_transform.serialize(l_parameters);
         let l_return = engine.EntryPoint(l_parameters.span.memory);
         return Token.allocate<Node>(l_return);
     };
 
     public static Node_Remove(p_engine: Token<Engine>, p_node: Token<Node>) {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_Remove).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
-        l_parameters.push_back(buf.Slice.from_memory(p_node.tok));
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_node.tok));
         engine.EntryPoint(l_parameters.span.memory);
     };
 
     public static Node_GetLocalPosition(p_engine: Token<Engine>, p_node: Token<Node>): v3f {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_GetLocalPosition).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
-        l_parameters.push_back(buf.Slice.from_memory(p_node.tok))
-        let l_return = buf.Slice.from_memory(engine.EntryPoint(l_parameters.span.memory));
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_node.tok))
+        let l_return = Slice.from_memory(engine.EntryPoint(l_parameters.span.memory));
         return v3f.deserialize(l_return);
     };
 
     public static Node_AddWorldRotation(p_engine: Token<Engine>, p_node: Token<Node>, p_delta_rotation: quat) {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_AddWorldRotation).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
-        l_parameters.push_back(buf.Slice.from_memory(p_node.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_node.tok))
         p_delta_rotation.serialize(l_parameters);
-        buf.Slice.from_memory(engine.EntryPoint(l_parameters.span.memory));
+        Slice.from_memory(engine.EntryPoint(l_parameters.span.memory));
     };
 
     public static Node_AddCamera(p_engine: Token<Engine>, p_node: Token<Node>, p_camera: CameraComponent): Token<CameraComponent> {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_AddCamera).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
-        l_parameters.push_back(buf.Slice.from_memory(p_node.tok))
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_node.tok))
         p_camera.serialize(l_parameters);
         let l_return = engine.EntryPoint(l_parameters.span.memory);
         return Token.allocate<CameraComponent>(l_return);
     };
 
     public static Node_AddMeshRenderer(p_engine: Token<Engine>, p_node: Token<Node>, p_material: string, p_mesh: string): Token<MeshRenderer> {
-        let l_parameters: buf.Vector = buf.Vector.allocate(0);
+        let l_parameters: Vector = Vector.allocate(0);
         l_parameters.push_back(EngineFuncKey.allocate(EngineFunctionsKey.Node_AddMeshRenderer).tok.to_slice());
-        l_parameters.push_back(buf.Slice.from_memory(p_engine.tok))
-        l_parameters.push_back(buf.Slice.from_memory(p_node.tok))
-        BinarySerializer.slice(l_parameters, buf.Span.from_string(p_material).to_slice());
-        BinarySerializer.slice(l_parameters, buf.Span.from_string(p_mesh).to_slice());
+        l_parameters.push_back(Slice.from_memory(p_engine.tok))
+        l_parameters.push_back(Slice.from_memory(p_node.tok))
+        BinarySerializer.slice(l_parameters, Span.from_string(p_material).to_slice());
+        BinarySerializer.slice(l_parameters, Span.from_string(p_mesh).to_slice());
         let l_return = engine.EntryPoint(l_parameters.span.memory);
         return Token.allocate<MeshRenderer>(l_return);
     };
@@ -296,7 +284,7 @@ class EngineFunctions {
 
 /*
 console.log(process.pid);
-let l_engine_token = EngineFunctions.SpawnEngine("E:/GameProjects/Engine/_asset/asset/MaterialViewer_Package/asset.db");
+let l_engine_token = EngineFunctions.SpawnEngine(path.join(__dirname, "../../../_asset/asset/MaterialViewer_Package/asset.db"));
 
 let l_camera_node: Token<Node> = new Token<Node>();
 let l_object_node: Token<Node> = new Token<Node>();
@@ -331,5 +319,4 @@ let l_main_loop = setInterval(() => {
             break;
     }
 });
-
 */

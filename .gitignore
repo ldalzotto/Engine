@@ -27,6 +27,9 @@ Assets/**/*.mtl
 Assets/**/*.blend
 Assets/**/*.blend1
 
+**/*.generated
+**/*.gen
+
 # User-specific files
 *.rsuser
 *.suo
