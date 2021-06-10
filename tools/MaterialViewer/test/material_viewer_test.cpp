@@ -1,18 +1,20 @@
 
-#include "MaterialViewer/material_viewer_editor.hpp"
+#include "MaterialViewer/material_viewer_editor_v2.hpp"
 
 struct qt_test
 {
-    QApplication app;
-    QMainWindow* main_window;
+    _GUIApplication* app;
+    _GUIMainWindow* main_window;
 
     inline static qt_test allocate(int argc, char* argv[])
     {
-        return qt_test{QApplication(argc, argv), NULL};
+        return qt_test{_GUIApplication::allocate(argc, argv), NULL};
     };
 
-    inline int start(QWidget* p_central_widget)
+    inline int start(_GUIWidget* p_central_widget)
     {
+
+        this->app->exec();
         return qt_app_start(this->app, p_central_widget, &this->main_window);
     };
 
