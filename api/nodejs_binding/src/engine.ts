@@ -1,19 +1,7 @@
 import {BinaryDeserializer, BinarySerializer, ByteConst, MathC, Slice, Span, Token, Vector} from "./buffer_lib";
-import * as path from "path"
+import {IEngineSharedLibrary, load_shared_library} from "./shared_lib_interface";
 
-type ArrayBufferOrFunction = ArrayBuffer | ((any: any) => any);
-
-interface IEngineSharedLibrary {
-    Finalize(): void;
-
-    LoadDynamicLib(p_path: string): void;
-
-    EntryPoint(...p_args: ArrayBufferOrFunction[]): ArrayBuffer;
-};
-
-export let engine: IEngineSharedLibrary = require("../../../../_install/build/Debug/NodeJsBinding") as IEngineSharedLibrary;
-engine.LoadDynamicLib("../../../../cmake-build-debug/api/EngineFull.dll");
-
+export let engine: IEngineSharedLibrary = load_shared_library("../../../../cmake-build-debug/api/EngineFull.dll");
 
 export enum EngineFunctionsKey {
     SpawnEngine = 0,

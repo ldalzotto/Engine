@@ -49,6 +49,11 @@ export class Slice {
         return l_slice;
     };
 
+    public slide(p_element_offset: number) {
+        this.begin = this.begin + p_element_offset;
+        assert_true(this.begin <= this.end);
+    };
+
     public compare(p_other: Slice): boolean {
         let l_size = this.size();
         for (let i = 0; i < l_size; i++) {
@@ -144,7 +149,41 @@ export class Span {
             this.end += l_size_delta;
         }
     };
+};
 
+// TODO -> write test for this
+export class VaryingSlice {
+
+    public static ChunkSize: number = ByteConst.INT64 * 2;
+
+    memory: Slice;
+    chunks: Slice;
+
+    public size(): number {
+        return this.chunks.size() / VaryingSlice.ChunkSize;
+    };
+
+    public to_array_of_array(): Array<Slice> {
+        let l_return = new Array<Slice>();
+        for (let i = 0; i < this.size(); i++) {
+            let l_chunk_slice = this.get(i);
+            let l_size = BinaryDeserializer.int64(l_chunk_slice);
+            let l_capacity = BinaryDeserializer.int64(l_chunk_slice);
+            l_chunk_slice.end = l_chunk_slice.begin + l_size;
+            l_return.push(l_chunk_slice);
+        }
+        return l_return;
+    };
+
+    public get(p_index: number): Slice {
+        let l_return: Slice = new Slice();
+        l_return.memory = this.memory.memory;
+
+        l_return.begin = this.memory.begin + this.chunks.get_int64(VaryingSlice.ChunkSize * p_index);
+        l_return.end = l_return.begin + this.chunks.get_int64((VaryingSlice.ChunkSize * p_index) + ByteConst.INT64);
+
+        return l_return;
+    };
 };
 
 export class Vector {
@@ -175,15 +214,15 @@ export class Token<T> {
     tok: ArrayBuffer;
 
     static allocate_empty<T>(): Token<T> {
-        return {tok: new ArrayBuffer(8)};
+        return { tok: new ArrayBuffer(8) };
     };
 
     static build<T>(p_array_buffer: ArrayBuffer): Token<T> {
-        return {tok: p_array_buffer};
+        return { tok: p_array_buffer };
     };
 
     static allocate<T>(p_array_buffer: ArrayBuffer): Token<T> {
-        return {tok: p_array_buffer.slice(0)};
+        return { tok: p_array_buffer.slice(0) };
     };
 };
 
@@ -213,6 +252,11 @@ export class BinaryDeserializer {
         return l_return;
     };
 
+    public static string(in_out_buffer: Slice): string {
+        let l_return: string = new TextDecoder().decode(new Int8Array(in_out_buffer.memory, in_out_buffer.begin, in_out_buffer.size()));
+        in_out_buffer.begin += l_return.length;
+        return l_return;
+    };
 
     public static slice(in_out_buffer: Slice): Slice {
         let l_return: Slice = new Slice();
@@ -220,9 +264,16 @@ export class BinaryDeserializer {
         l_return.memory = in_out_buffer.memory;
         l_return.begin = in_out_buffer.begin;
         l_return.end = l_return.begin + l_size;
+        in_out_buffer.slide(l_size);
         return l_return;
     };
 
+    public static varyingslice(in_out_buffer: Slice): VaryingSlice {
+        let l_return: VaryingSlice = new VaryingSlice();
+        l_return.memory = this.slice(in_out_buffer);
+        l_return.chunks = this.slice(in_out_buffer);
+        return l_return;
+    };
 };
 
 export class BinarySerializer {

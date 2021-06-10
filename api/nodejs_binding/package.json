@@ -6,6 +6,7 @@
     "start": "node ./.generated/engine.js",
     "buffer_lib_test": "node ./.generated/test/buffer_lib_test.js",
     "engine_test": "node ./.generated/test/engine_test.js",
+    "asset_compiler_test": "node ./.generated/test/asset_compiler_test.js",
     "test_all": "npm run buffer_lib_test && npm run engine_test"
   },
   "dependencies": {},
