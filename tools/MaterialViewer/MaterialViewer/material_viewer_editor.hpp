@@ -24,7 +24,7 @@ struct MaterialViewerEngineUnit
     Mutex<SharedResources> shared;
 
     Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
-    thread_t thread;
+    thread_native thread;
     EngineThreadSync thread_synchronization;
 
     struct Input
@@ -98,7 +98,7 @@ struct MaterialViewerEngineUnit
 
     inline void set_sefault_values()
     {
-        this->thread = NULL;
+        this->thread.ptr = NULL;
         this->thread_synchronization.reset();
         this->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
         this->camera_node = token_build_default<Node>();

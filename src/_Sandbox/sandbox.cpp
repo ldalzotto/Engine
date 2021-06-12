@@ -52,7 +52,7 @@ inline void resize_test()
 
     l_engine.single_frame_forced_delta_typed(0.1f, [](auto) {
     });
-    WindowNative::simulate_resize_appevent(g_app_windows.get(l_engine.get_window()).handle, 500, 500);
+    window_native_simulate_resize_appevent(g_app_windows.get(l_engine.get_window()).handle, 500, 500);
     l_engine.single_frame_forced_delta_typed(0.1f, [](auto) {
     });
     assert_true(g_app_windows.get(l_engine.get_window()).client_width == 500);
@@ -82,7 +82,7 @@ inline void engine_thread_test()
             EngineThreadSync engine_synchronization;
 
             Slice<int8> database_slice;
-            thread_t thread;
+            thread_native thread;
 
             struct Exec
             {

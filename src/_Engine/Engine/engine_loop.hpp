@@ -12,7 +12,7 @@ struct EngineLoop
 
     inline static EngineLoop allocate_default(const time_t p_timebetweenupdates_mics)
     {
-        return EngineLoop{p_timebetweenupdates_mics, 0, clock_currenttime_mics()};
+        return EngineLoop{p_timebetweenupdates_mics, 0, clock_native_currenttime_mics()};
     };
 
     inline time_t get_remaining_time_for_update() const
@@ -27,7 +27,7 @@ struct EngineLoop
 
     inline int8 update(float32* out_delta)
     {
-        time_t l_currentTime = clock_currenttime_mics();
+        time_t l_currentTime = clock_native_currenttime_mics();
         time_t l_elapsed = l_currentTime - this->previousUpdateTime_mics;
 
         if (l_elapsed > (time_t)(this->timebetweenupdates_mics) * EngineLoop::MAX_UPDATE_CALL_PER_FRAME)
@@ -66,7 +66,7 @@ struct EngineLoop
 
     inline int8 update_forced_delta(const float32 p_delta)
     {
-        time_t l_currentTime = clock_currenttime_mics();
+        time_t l_currentTime = clock_native_currenttime_mics();
         this->previousUpdateTime_mics = l_currentTime;
         this->accumulatedelapsedtime_mics += (time_t)p_delta;
         return 1;

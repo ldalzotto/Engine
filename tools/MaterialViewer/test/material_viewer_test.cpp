@@ -141,12 +141,12 @@ inline void material_viewer_close_material_window_before_app(qt_test& qt_app)
                 l_material_viewer_editor.material_viewer_engine_unit.engine.core.close();
                 // WindowNative::simulate_close_appevent(g_app_windows.get(l_unit.engine.window).handle);
             });
-            l_elapsed_time_before_close_app_last_frame = clock_currenttime_mics();
+            l_elapsed_time_before_close_app_last_frame = clock_native_currenttime_mics();
         }
         else if (l_frame_count >= 4)
         {
-            l_elapsed_time_before_close_app += (clock_currenttime_mics() - l_elapsed_time_before_close_app_last_frame);
-            l_elapsed_time_before_close_app_last_frame = clock_currenttime_mics();
+            l_elapsed_time_before_close_app += (clock_native_currenttime_mics() - l_elapsed_time_before_close_app_last_frame);
+            l_elapsed_time_before_close_app_last_frame = clock_native_currenttime_mics();
             if (l_elapsed_time_before_close_app >= (1000.0f / 60.0f))
             {
                 l_material_viewer_editor.free();

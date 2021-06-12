@@ -207,7 +207,7 @@ inline int8 AssetCompiler_compile_and_push_to_database_single_file(ShaderCompile
             {
                 p_asset_database.insert_or_update_asset_blob(p_database_connection, p_relative_asset_path, l_compiled_asset.compiled_data.slice);
                 p_asset_metadata_database.insert_or_update_metadata(p_database_connection, p_relative_asset_path, AssetType_getName(l_compiled_asset.type), l_asset_file.get_modification_ts(),
-                                                                    clock_currenttime_mics());
+                                                                    clock_native_currenttime_mics());
 
                 l_compiled_asset.free();
 

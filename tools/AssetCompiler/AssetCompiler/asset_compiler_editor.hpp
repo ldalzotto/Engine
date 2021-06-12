@@ -16,7 +16,7 @@ struct AssetSingleCompilationToken
 
 struct AssetCompilationThread
 {
-    thread_t thread;
+    thread_native thread;
 
     struct Exec
     {

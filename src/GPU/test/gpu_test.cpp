@@ -1237,7 +1237,7 @@ inline void gpu_present()
     }
 
     // resize
-    WindowNative::simulate_resize_appevent(l_window.handle, 200, 200);
+    window_native_simulate_resize_appevent(l_window.handle, 200, 200);
     l_window.consume_resize_event();
 
     v3ui l_size_before = v3ui{l_gpu_present.device.surface_capacilities.currentExtent.width, l_gpu_present.device.surface_capacilities.currentExtent.height, 1};

@@ -12,7 +12,7 @@ struct GPUPresentDevice
     gcqueue_t present_queue;
     VkPresentModeKHR present_mode;
 
-    inline static GPUPresentDevice allocate(const GPUInstance& p_instance, const WindowHandle p_window_handle)
+    inline static GPUPresentDevice allocate(const GPUInstance& p_instance, const window_native p_window_handle)
     {
         GPUPresentDevice l_present_device;
         l_present_device.graphics_card = p_instance.graphics_card;
@@ -21,7 +21,7 @@ struct GPUPresentDevice
 #ifdef _WIN32
         VkWin32SurfaceCreateInfoKHR l_win32_surface_create{};
         l_win32_surface_create.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        l_win32_surface_create.hwnd = (HWND)p_window_handle;
+        l_win32_surface_create.hwnd = (HWND)p_window_handle.ptr;
         l_win32_surface_create.hinstance = GetModuleHandle(NULL);
         vk_handle_result(vkCreateWin32SurfaceKHR(p_instance.instance, &l_win32_surface_create, NULL, &l_present_device.surface));
 #else
@@ -297,7 +297,7 @@ struct GPUPresent
     uint32 current_swapchain_image_index;
     GPUPresent_2DQuad d2_quad;
 
-    inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const WindowHandle p_window_handle,
+    inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const window_native p_window_handle,
                                       const v3ui p_window_size, Token<TextureGPU> p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         GPUPresent l_gpu_present;
