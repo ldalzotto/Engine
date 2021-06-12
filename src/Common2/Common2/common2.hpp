@@ -18,6 +18,19 @@
 
 #endif
 
+#ifndef __LIB
+#define __LIB 0
+#endif
+
+// GLOBAL_STATIC is a shared variable across static lib
+#if __LIB == 1
+#define GLOBAL_STATIC extern
+#define GLOBAL_STATIC_INIT(code)
+#else
+#define GLOBAL_STATIC
+#define GLOBAL_STATIC_INIT(code) = code
+#endif
+
 #ifndef __SQLITE_ENABLED
 #define __SQLITE_ENABLED 1
 #endif
@@ -41,6 +54,7 @@
 #include "./Functional/assert.hpp"
 
 #include "./Clock/clock.hpp"
+#include "./Interface/Native/mutex.hpp"
 #include "./Thread/mutex.hpp"
 #include "./Thread/barrier.hpp"
 
@@ -49,6 +63,7 @@
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
 
+#include "./Interface/Native/thread.hpp"
 #include "./Thread/thread.hpp"
 
 #include "./Functional/encode.hpp"
@@ -83,6 +98,7 @@
 #include "./Functional/string_functions.hpp"
 #include "./Functional/path.hpp"
 
+#include "./Interface/Native/file.hpp"
 #include "./File/file.hpp"
 #include "./File/shared_lib_loader.hpp"
 
@@ -96,11 +112,15 @@
 #endif
 
 #if __NATIVE_WINDOW_ENABLED
+#include "./Interface/Native/event_loop.hpp"
+#include "./Interface/Native/window.hpp"
+
 #include "./AppNativeEvent/app_native_event.hpp"
 #include "./Window/window.hpp"
 #endif
 
 #if __SOCKET_ENABLED
+#include "./Interface/Native/socket.hpp"
 #include "./Socket/socket_v2.hpp"
 #endif
 

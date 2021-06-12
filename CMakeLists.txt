@@ -32,7 +32,6 @@ endif ()
 
 set(ASSET_FOLDER_VAR "${CMAKE_CURRENT_SOURCE_DIR}/_asset/asset")
 
-
 add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(exe)

@@ -1,88 +1,7 @@
 #pragma once
 
-using thread_t
-#ifdef _WIN32
-    = HANDLE;
-#elif __linux__
-    = pthread_t;
-#endif // _WIN32
-
-struct ThreadNative
-{
-
-    template <class ThreadCtx> struct s_main
-    {
 #if _WIN32
-        inline static DWORD WINAPI main(LPVOID lpParam)
-        {
-            ThreadCtx* thiz = (ThreadCtx*)lpParam;
-            return thiz->operator()();
-        };
-#else
-        inline static void* main(void* lpParam)
-        {
-            ThreadCtx* thiz = (ThreadCtx*)lpParam;
-            int8 l_return = thiz->operator()();
-            Span<int8> l_return_heap = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb(&l_return, 1));
-            pthread_exit(l_return_heap.Memory);
-        };
-#endif
-    };
 
-    template <class ThreadCtx> inline static thread_t spawn_thread(ThreadCtx& p_thread_ctx);
-    inline static thread_t get_current_thread();
-    inline static int8 wait_for_end(const thread_t p_thread, const uimax p_time_in_ms);
-    inline static void sleep(const thread_t p_thread, const uimax p_time_in_ms);
-    inline static void terminate(const thread_t p_thread);
-    inline static void kill(const thread_t p_thread);
-};
-
-#if _WIN32
-template <class ThreadCtx> inline thread_t ThreadNative::spawn_thread(ThreadCtx& p_thread_ctx)
-{
-    DWORD l_id;
-    thread_t l_thread = (thread_t)CreateThread(NULL, 0, s_main<ThreadCtx>::main, (LPVOID)&p_thread_ctx, 0, &l_id);
-
-#if __DEBUG
-    assert_true(l_thread != NULL);
-#endif
-    return l_thread;
-};
-
-inline thread_t ThreadNative::get_current_thread()
-{
-    return GetCurrentThread();
-};
-
-inline void ThreadNative::sleep(const thread_t p_thread, const uimax p_time_in_ms){
-    // TODO
-};
-
-inline int8 ThreadNative::wait_for_end(const thread_t p_thread, const uimax p_time_in_ms)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        WaitForSingleObject(p_thread, (DWORD)p_time_in_ms)
-#if __DEBUG
-        != WAIT_FAILED)
-#endif
-        ;
-
-    DWORD l_exit_code;
-    assert_true(GetExitCodeThread(p_thread, &l_exit_code));
-    return (int8)l_exit_code;
-};
-
-inline void ThreadNative::terminate(const thread_t p_thread)
-{
-    TerminateThread(p_thread, 0);
-};
-
-inline void ThreadNative::kill(const thread_t p_thread)
-{
-    ThreadNative::terminate(p_thread);
-};
 
 #else
 template <class ThreadCtx> inline thread_t ThreadNative::spawn_thread(ThreadCtx& p_thread_ctx)
@@ -136,46 +55,65 @@ inline void ThreadNative::kill(const thread_t p_thread)
 struct Thread
 {
 
-    template <class ThreadCtx> inline static thread_t spawn_thread(ThreadCtx& p_thread_ctx)
+    template <class ThreadCtx> struct s_main
     {
-        thread_t l_thread = ThreadNative::spawn_thread(p_thread_ctx);
-#if __MEMLEAK
-        push_ptr_to_tracked((int8*)l_thread);
+#if _WIN32
+        inline static DWORD WINAPI main(LPVOID lpParam)
+        {
+            ThreadCtx* thiz = (ThreadCtx*)lpParam;
+            return thiz->operator()();
+        };
+#else
+        inline static void* main(void* lpParam)
+        {
+            ThreadCtx* thiz = (ThreadCtx*)lpParam;
+            int8 l_return = thiz->operator()();
+            Span<int8> l_return_heap = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb(&l_return, 1));
+            pthread_exit(l_return_heap.Memory);
+        };
 #endif
+    };
 
+
+    template <class ThreadCtx> inline static thread_native spawn_thread(ThreadCtx& p_thread_ctx)
+    {
+        thread_native l_thread = thread_native_spawn_thread(&s_main<ThreadCtx>::main, &p_thread_ctx);
+#if __MEMLEAK
+        push_ptr_to_tracked(l_thread.ptr);
+#endif
         return l_thread;
     };
 
-    inline static thread_t get_current_thread()
+    inline static thread_native get_current_thread()
     {
-        return ThreadNative::get_current_thread();
+        return thread_native_get_current_thread();
     };
 
-    inline static int8 wait_for_end(const thread_t p_thread, const uimax p_time_in_ms)
+    inline static int8 wait_for_end(const thread_native p_thread, const uimax p_time_in_ms)
     {
-        return ThreadNative::wait_for_end(p_thread, p_time_in_ms);
+        return thread_native_wait_for_end(p_thread, p_time_in_ms);
     };
 
-    inline static int8 sleep(const thread_t p_thread, const uimax p_time_in_ms)
+    inline static int8 sleep(const thread_native p_thread, const uimax p_time_in_ms)
     {
-        ThreadNative::sleep(p_thread, p_time_in_ms);
+        thread_native_sleep(p_thread, p_time_in_ms);
     };
 
-    inline static void wait_for_end_and_terminate(const thread_t p_thread, const uimax p_max_time_in_ms)
+    inline static void wait_for_end_and_terminate(const thread_native p_thread, const uimax p_max_time_in_ms)
     {
         int8 l_exit_code = Thread::wait_for_end(p_thread, p_max_time_in_ms);
         assert_true(l_exit_code == 0);
 #if __MEMLEAK
-        remove_ptr_to_tracked((int8*)p_thread);
+        remove_ptr_to_tracked(p_thread.ptr);
 #endif
-        ThreadNative::terminate(p_thread);
+        thread_native_terminate(p_thread);
     };
 
-    inline static void kill(const thread_t p_thread)
+    inline static void kill(const thread_native p_thread)
     {
 #if __MEMLEAK
-        remove_ptr_to_tracked((int8*)p_thread);
+        remove_ptr_to_tracked(p_thread.ptr);
 #endif
-        ThreadNative::kill(p_thread);
+        thread_native_kill(p_thread);
     };
 };

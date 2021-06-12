@@ -7,9 +7,6 @@
 
 typedef int8* ptr_counter_t[MEM_LEAK_MAX_POINTER_COUNTER];
 
-// Not using mutex but a hash based nested table ?
-// -> NO, because some resource may be allocated from one thread and dealocated a different one
-Mutex<ptr_counter_t> ptr_counter = Mutex<ptr_counter_t>::allocate();
 
 #if _WIN32
 typedef LPVOID backtrace_t[MEM_LEAK_MAX_BACKTRACE];
@@ -19,12 +16,10 @@ typedef void* backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 #include <execinfo.h>
 #endif
 
-backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] = {};
-
-struct MemleaKNative
-{
-    inline void capture_backtrace(const uimax p_ptr_index);
-};
+// Not using mutex but a hash based nested table ?
+// -> NO, because some resource may be allocated from one thread and dealocated a different one
+GLOBAL_STATIC Mutex<ptr_counter_t> ptr_counter GLOBAL_STATIC_INIT(Mutex<ptr_counter_t>::allocate());
+GLOBAL_STATIC backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] GLOBAL_STATIC_INIT({});
 
 #if _WIN32
 inline void capture_backtrace(const uimax p_ptr_index)

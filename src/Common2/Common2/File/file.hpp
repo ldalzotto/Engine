@@ -5,12 +5,7 @@ struct FileHandle
 #if __MEMLEAK
     int8* memleak_ptr;
 #endif
-#if _WIN32
-    using Handle = HANDLE;
-#else
-    using Handle = int;
-#endif
-    Handle handle;
+    file_native handle;
 };
 
 struct FileNative
@@ -24,16 +19,16 @@ struct FileNative
         if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
         {
             String l_file_path_null_terminated = String::allocate_elements(p_path);
-            l_handle.handle = create_file_unchecked(l_file_path_null_terminated.to_slice());
+            l_handle.handle = file_native_create_file_unchecked(l_file_path_null_terminated.to_slice());
             l_file_path_null_terminated.free();
         }
         else
         {
-            l_handle.handle = create_file_unchecked(p_path);
+            l_handle.handle = file_native_create_file_unchecked(p_path);
         }
 
 #if __MEMLEAK
-        if (FileNative::handle_is_valid(l_handle))
+        if (file_native_handle_is_valid(l_handle.handle))
         {
             l_handle.memleak_ptr = heap_malloc(1);
         }
@@ -49,16 +44,16 @@ struct FileNative
         if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
         {
             String l_file_path_null_terminated = String::allocate_elements(p_path);
-            l_handle.handle = open_file_unchecked(l_file_path_null_terminated.to_slice());
+            l_handle.handle = file_native_open_file_unchecked(l_file_path_null_terminated.to_slice());
             l_file_path_null_terminated.free();
         }
         else
         {
-            l_handle.handle = open_file_unchecked(p_path);
+            l_handle.handle = file_native_open_file_unchecked(p_path);
         }
 
 #if __MEMLEAK
-        if (FileNative::handle_is_valid(l_handle))
+        if (file_native_handle_is_valid(l_handle.handle))
         {
             l_handle.memleak_ptr = heap_malloc(1);
         }
@@ -69,17 +64,15 @@ struct FileNative
     inline static void close_file(FileHandle& p_file_handle)
     {
 #if __MEMLEAK
-        if (FileNative::handle_is_valid(p_file_handle))
+        if (file_native_handle_is_valid(p_file_handle.handle))
         {
             heap_free(p_file_handle.memleak_ptr);
         }
 #endif
 
-        close_file_unchecked(p_file_handle);
+        file_native_close_file_unchecked(p_file_handle.handle);
         p_file_handle = FileHandle{0};
     };
-
-    static void set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer);
 
     inline static void delete_file(const Slice<int8>& p_path)
     {
@@ -88,256 +81,15 @@ struct FileNative
         if (p_path.get(p_path.Size - 1) != '\0' && p_path.Begin[p_path.Size] != '\0')
         {
             String l_file_path_null_terminated = String::allocate_elements(p_path);
-            delete_file_unchecked(l_file_path_null_terminated.to_slice());
+            file_native_delete_file_unchecked(l_file_path_null_terminated.to_slice());
             l_file_path_null_terminated.free();
         }
         else
         {
-            delete_file_unchecked(p_path);
+            file_native_delete_file_unchecked(p_path);
         }
     };
-
-    static uimax get_file_size(const FileHandle& p_file_handle);
-
-    static uimax get_modification_ts(const FileHandle& p_file_handle);
-
-    static void read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer);
-
-    inline static void write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer);
-
-    static int8 handle_is_valid(const FileHandle& p_file_handle);
-
-  private:
-    static FileHandle::Handle create_file_unchecked(const Slice<int8>& p_path);
-    static FileHandle::Handle open_file_unchecked(const Slice<int8>& p_path);
-    static void close_file_unchecked(const FileHandle& p_file_handle);
-    static void delete_file_unchecked(const Slice<int8>& p_path);
 };
-
-#if _WIN32
-
-inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        SetFilePointer(p_file_handle.handle, (LONG)p_pointer, 0, FILE_BEGIN)
-#if __DEBUG
-        != INVALID_SET_FILE_POINTER)
-#endif
-        ;
-};
-
-inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
-{
-    DWORD l_file_size_high;
-    DWORD l_return = GetFileSize(p_file_handle.handle, &l_file_size_high);
-#if __DEBUG
-    assert_true(l_return != INVALID_FILE_SIZE);
-#endif
-    return dword_lowhigh_to_uimax(l_return, l_file_size_high);
-};
-
-inline uimax FileNative::get_modification_ts(const FileHandle& p_file_handle)
-{
-    FILETIME l_creation_time, l_last_access_time, l_last_write_time;
-    BOOL l_filetime_return = GetFileTime(p_file_handle.handle, &l_creation_time, &l_last_access_time, &l_last_write_time);
-#if __DEBUG
-    assert_true(l_filetime_return);
-#endif
-    uimax l_ct = FILETIME_to_mics(l_creation_time);
-    uimax l_at = FILETIME_to_mics(l_last_access_time);
-    uimax l_wt = FILETIME_to_mics(l_last_write_time);
-
-    uimax l_return = l_ct;
-    if (l_at >= l_return)
-    {
-        l_return = l_at;
-    }
-    if (l_wt >= l_return)
-    {
-        l_return = l_wt;
-    }
-    return l_return;
-};
-
-inline void FileNative::read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        ReadFile(p_file_handle.handle, in_out_buffer->Begin, (DWORD)in_out_buffer->Size, NULL, NULL)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-inline void FileNative::write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        WriteFile(p_file_handle.handle, p_buffer.Begin, (DWORD)p_buffer.Size, NULL, NULL)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
-{
-    return p_file_handle.handle != INVALID_HANDLE_VALUE;
-};
-
-
-inline FileHandle::Handle FileNative::create_file_unchecked(const Slice<int8>& p_path)
-{
-    return CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-};
-
-inline FileHandle::Handle FileNative::open_file_unchecked(const Slice<int8>& p_path)
-{
-    return CreateFile(p_path.Begin, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-};
-
-inline void FileNative::close_file_unchecked(const FileHandle& p_file_handle)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        CloseHandle(p_file_handle.handle)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-inline void FileNative::delete_file_unchecked(const Slice<int8>& p_path)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        DeleteFile(p_path.Begin)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-#else
-
-#include <fcntl.h>
-#include <sys/stat.h>
-
-inline void FileNative::set_file_pointer(const FileHandle& p_file_handle, uimax p_pointer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        lseek(p_file_handle.handle, p_pointer, SEEK_SET)
-#if __DEBUG
-        == 0)
-#endif
-        ;
-};
-
-inline uimax FileNative::get_file_size(const FileHandle& p_file_handle)
-{
-    uint32 l_old_seek = lseek(p_file_handle.handle, 0, SEEK_CUR);
-    uint32 l_size = lseek(p_file_handle.handle, 0, SEEK_END);
-    lseek(p_file_handle.handle, l_old_seek, SEEK_SET);
-#if __DEBUG
-    assert_true(l_size != -1);
-#endif
-    return l_size;
-};
-
-inline uimax FileNative::get_modification_ts(const FileHandle& p_file_handle)
-{
-    struct stat l_stat;
-    int l_ftat_return = fstat(p_file_handle.handle, &l_stat);
-#if __DEBUG
-    assert_true(l_ftat_return == 0);
-#endif
-
-    uimax l_ct = l_stat.st_atime;
-    uimax l_at = l_stat.st_mtime;
-    uimax l_wt = l_stat.st_ctime;
-
-    uimax l_return = l_ct;
-    if (l_at >= l_return)
-    {
-        l_return = l_at;
-    }
-    if (l_wt >= l_return)
-    {
-        l_return = l_wt;
-    }
-    return l_return;
-};
-
-inline void FileNative::read_buffer(const FileHandle& p_file_handle, Slice<int8>* in_out_buffer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        read(p_file_handle.handle, in_out_buffer->Begin, in_out_buffer->Size)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-inline void FileNative::write_buffer(const FileHandle& p_file_handle, const uimax p_offset, const Slice<int8>& p_buffer)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        write(p_file_handle.handle, p_buffer.Begin, p_buffer.Size)
-#if __DEBUG
-    )
-#endif
-        ;
-};
-
-inline int8 FileNative::handle_is_valid(const FileHandle& p_file_handle)
-{
-    return p_file_handle.handle != -1;
-};
-
-inline FileHandle::Handle FileNative::create_file_unchecked(const Slice<int8>& p_path)
-{
-    return open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
-};
-inline FileHandle::Handle FileNative::open_file_unchecked(const Slice<int8>& p_path)
-{
-    return open(p_path.Begin, O_RDWR | O_CREAT, S_IRWXU);
-};
-inline void FileNative::close_file_unchecked(const FileHandle& p_file_handle)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        close(p_file_handle.handle)
-#if __DEBUG
-        == 0)
-#endif
-        ;
-};
-inline void FileNative::delete_file_unchecked(const Slice<int8>& p_path)
-{
-#if __DEBUG
-    assert_true(
-#endif
-        remove(p_path.Begin)
-#if __DEBUG
-        == 0)
-#endif
-        ;
-};
-
-#endif
 
 struct File
 {
@@ -399,28 +151,28 @@ struct File
 
     inline uimax get_size()
     {
-        return FileNative::get_file_size(this->native_handle);
+        return file_native_get_file_size(this->native_handle.handle);
     };
 
     inline uimax get_modification_ts()
     {
-        return FileNative::get_modification_ts(this->native_handle);
+        return file_native_get_modification_ts(this->native_handle.handle);
     };
 
     inline void read_file(Slice<int8>* in_out_buffer) const
     {
-        FileNative::set_file_pointer(this->native_handle, 0);
-        uimax l_file_size = FileNative::get_file_size(this->native_handle);
+        file_native_set_file_pointer(this->native_handle.handle, 0);
+        uimax l_file_size = file_native_get_file_size(this->native_handle.handle);
 #if __DEBUG
         assert_true(l_file_size <= in_out_buffer->Size);
 #endif
         in_out_buffer->Size = l_file_size;
-        FileNative::read_buffer(this->native_handle, in_out_buffer);
+        file_native_read_buffer(this->native_handle.handle, in_out_buffer);
     };
 
     inline Span<int8> read_file_allocate() const
     {
-        uimax l_file_size = FileNative::get_file_size(this->native_handle);
+        uimax l_file_size = file_native_get_file_size(this->native_handle.handle);
         Span<int8> l_buffer = Span<int8>::allocate(l_file_size);
         this->read_file(&l_buffer.slice);
         return l_buffer;
@@ -428,13 +180,13 @@ struct File
 
     inline void write_file(const Slice<int8>& p_buffer)
     {
-        FileNative::set_file_pointer(this->native_handle, 0);
-        FileNative::write_buffer(this->native_handle, 0, p_buffer);
+        file_native_set_file_pointer(this->native_handle.handle, 0);
+        file_native_write_buffer(this->native_handle.handle, 0, p_buffer);
     };
 
     inline int8 is_valid()
     {
-        return FileNative::handle_is_valid(this->native_handle);
+        return file_native_handle_is_valid(this->native_handle.handle);
     };
 
   private:

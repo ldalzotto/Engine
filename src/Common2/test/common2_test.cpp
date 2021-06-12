@@ -1855,7 +1855,7 @@ inline void thread_test()
         };
     } my_thread;
     my_thread.input = s_my_thread::Input{0, 5};
-    thread_t l_t = Thread::spawn_thread(my_thread);
+    thread_native l_t = Thread::spawn_thread(my_thread);
     Thread::wait_for_end_and_terminate(l_t, -1);
     assert_true(my_thread.input.arg_1 == 1);
 };
@@ -1917,11 +1917,11 @@ inline void barrier_test()
 
     thread_1 l_t1 = thread_1{&l_order_result, &l_barrier_two_step};
     l_t1.exec = thread_1::Exec{&l_t1};
-    thread_t l_tt1 = Thread::spawn_thread(l_t1.exec);
+    thread_native l_tt1 = Thread::spawn_thread(l_t1.exec);
 
     thread_2 l_t2 = thread_2{&l_order_result, &l_barrier_two_step};
     l_t2.exec = thread_2::Exec{&l_t2};
-    thread_t l_tt2 = Thread::spawn_thread(l_t2.exec);
+    thread_native l_tt2 = Thread::spawn_thread(l_t2.exec);
 
     Thread::wait_for_end_and_terminate(l_tt1, -1);
     Thread::wait_for_end_and_terminate(l_tt2, -1);
@@ -1976,7 +1976,7 @@ inline void native_window()
 
     {
         uint32 l_native_width, l_native_height;
-        WindowNative::get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
+        window_native_get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
         assert_true(l_native_width == l_allocated_window.client_width);
         assert_true(l_native_height == l_allocated_window.client_height);
 
@@ -1986,7 +1986,7 @@ inline void native_window()
 
     EWindow l_old_window = l_allocated_window;
 
-    WindowNative::simulate_resize_appevent(l_allocated_window.handle, 400, 400);
+    window_native_simulate_resize_appevent(l_allocated_window.handle, 400, 400);
 
     assert_true(l_allocated_window.resize_event.ask);
     assert_true(l_allocated_window.resize_event.new_frame_width == 400);
@@ -2000,14 +2000,14 @@ inline void native_window()
 
     {
         uint32 l_native_width, l_native_height;
-        WindowNative::get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
+        window_native_get_window_client_dimensions(l_allocated_window.handle, &l_native_width, &l_native_height);
         assert_true(l_native_width == l_allocated_window.client_width);
         assert_true(l_native_height == l_allocated_window.client_height);
     }
 
     assert_true(!l_allocated_window.is_closing);
 
-    WindowNative::simulate_close_appevent(l_allocated_window.handle);
+    window_native_simulate_close_appevent(l_allocated_window.handle);
     assert_true(l_allocated_window.is_closing);
 
     WindowAllocator::get_window(l_window).close();
@@ -2038,7 +2038,7 @@ inline void socket_server_client_allocation_destruction_v2()
         while (!l_accept_found)
         {
             l_server.step();
-            if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
+            if (l_server.accept_return.acceped_socket.is_valid())
             {
                 l_accept_found = 1;
             }
@@ -2047,7 +2047,7 @@ inline void socket_server_client_allocation_destruction_v2()
         l_client.close();
 
         l_server.step();
-        assert_true(l_server.accept_return.acceped_socket == INVALID_SOCKET);
+        assert_true(!l_server.accept_return.acceped_socket.is_valid());
 
         l_server.close();
     }
@@ -2069,7 +2069,7 @@ inline void socket_server_client_send_receive_test_v2()
     while (!l_accept_found)
     {
         l_server.step();
-        if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
+        if (l_server.accept_return.acceped_socket.is_valid())
         {
             l_client_server_connection = SocketClientNonBlocking::allocate_from_native(l_server.accept_return.acceped_socket);
             l_accept_found = 1;
@@ -2164,7 +2164,7 @@ inline void socket_server_buffer_too_small()
     while (!l_accept_found)
     {
         l_server.step();
-        if (l_server.accept_return.acceped_socket != INVALID_SOCKET)
+        if (l_server.accept_return.acceped_socket.is_valid())
         {
             l_client_server_connection = SocketClientNonBlocking::allocate_from_native(l_server.accept_return.acceped_socket);
             l_accept_found = 1;
