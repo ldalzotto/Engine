@@ -8,3 +8,5 @@
 #include "./window.hpp"
 #include "./file.hpp"
 #include "./socket.hpp"
+#include "./backtrace.hpp"
+#include "./shared_lib.hpp"

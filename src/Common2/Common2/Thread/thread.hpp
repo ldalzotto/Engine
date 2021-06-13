@@ -58,7 +58,7 @@ struct Thread
     template <class ThreadCtx> struct s_main
     {
 #if _WIN32
-        inline static DWORD WINAPI main(LPVOID lpParam)
+        inline static int8 __stdcall main(void* lpParam)
         {
             ThreadCtx* thiz = (ThreadCtx*)lpParam;
             return thiz->operator()();

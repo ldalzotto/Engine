@@ -35,19 +35,9 @@
 #define __SQLITE_ENABLED 1
 #endif
 
-#ifndef __NATIVE_WINDOW_ENABLED
-#define __NATIVE_WINDOW_ENABLED 1
-#endif
-
-#ifndef __SOCKET_ENABLED
-#define __SOCKET_ENABLED 0
-#endif
-
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
-
-#include "./Include/platform_include.hpp"
 
 #include "./Functional/equality.hpp"
 
@@ -60,6 +50,7 @@
 #include "./Thread/barrier.hpp"
 
 #include "./Memory/token.hpp"
+#include "./_external/Syscall/Interface/backtrace.hpp"
 #include "./Memory/memory.hpp"
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
@@ -101,6 +92,7 @@
 
 #include "./_external/Syscall/Interface/file.hpp"
 #include "./File/file.hpp"
+#include "./_external/Syscall/Interface/shared_lib.hpp"
 #include "./File/shared_lib_loader.hpp"
 
 #include "./Serialization/json.hpp"
