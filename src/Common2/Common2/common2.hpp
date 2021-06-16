@@ -39,24 +39,22 @@
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
 
+#include "./_external/Syscall/syscall_interface.hpp"
+
 #include "./Functional/equality.hpp"
 
 #include "./Functional/assert.hpp"
 
-#include "./_external/Syscall/Interface/clock.hpp"
-#include "./Clock/clock.hpp"
-#include "./_external/Syscall/Interface/mutex.hpp"
 #include "./Thread/mutex.hpp"
 #include "./Thread/barrier.hpp"
 
 #include "./Memory/token.hpp"
-#include "./_external/Syscall/Interface/backtrace.hpp"
 #include "./Memory/memory.hpp"
 #include "./Memory/slice.hpp"
 #include "./Memory/span.hpp"
 
-#include "./_external/Syscall/Interface/thread.hpp"
 #include "./Thread/thread.hpp"
+#include "./Clock/clock.hpp"
 
 #include "./Functional/encode.hpp"
 #include "./Functional/hash.hpp"
@@ -90,9 +88,7 @@
 #include "./Functional/string_functions.hpp"
 #include "./Functional/path.hpp"
 
-#include "./_external/Syscall/Interface/file.hpp"
 #include "./File/file.hpp"
-#include "./_external/Syscall/Interface/shared_lib.hpp"
 #include "./File/shared_lib_loader.hpp"
 
 #include "./Serialization/json.hpp"
@@ -104,20 +100,9 @@
 #include "./Database/database.hpp"
 #endif
 
-#include "./_external/Syscall/Interface/event_loop.hpp"
-#include "./_external/Syscall/Interface/window.hpp"
-
 #include "./AppNativeEvent/app_native_event.hpp"
 #include "./Window/window.hpp"
 
-#include "./_external/Syscall/Interface/socket.hpp"
 #include "./Socket/socket_v2.hpp"
 
 #undef __SQLITE_ENABLED
-#undef __NATIVE_WINDOW_ENABLED
-
-
-
-#ifdef Always
-#undef Always
-#endif

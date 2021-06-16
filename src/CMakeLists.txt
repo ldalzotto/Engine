@@ -3,15 +3,15 @@ find_package(X11 REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG 1)
 find_package(Threads REQUIRED)
 
-add_library(Common2_interface INTERFACE)
-target_include_directories(Common2_interface INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
-target_link_libraries(Common2_interface INTERFACE SQLite)
-target_link_libraries(Common2_interface INTERFACE ${X11_LIBRARIES})
-target_link_libraries(Common2_interface INTERFACE Threads::Threads)
-target_link_libraries(Common2_interface INTERFACE ${CMAKE_DL_LIBS})
+add_library(Common2 INTERFACE)
+target_include_directories(Common2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Common2)
+target_link_libraries(Common2 INTERFACE SQLite)
+target_link_libraries(Common2 INTERFACE ${X11_LIBRARIES})
+target_link_libraries(Common2 INTERFACE Threads::Threads)
+target_link_libraries(Common2 INTERFACE ${CMAKE_DL_LIBS})
 
-add_library(Common2 STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Common2/Common2/_external/Syscall/Implementation/syscall.cpp)
-target_link_libraries(Common2 Common2_interface)
+# add_library(Common2 STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Common2/Common2/_external/Syscall/Implementation/syscall.cpp)
+# target_link_libraries(Common2 Common2_interface)
 
 
 add_library(AssetDatabase INTERFACE)

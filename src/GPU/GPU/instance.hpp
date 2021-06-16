@@ -166,11 +166,7 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
         case GPUExtension::WINDOW_PRESENT:
             l_window_present_enabled = 1;
             l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
-#ifdef _WIN32
-            l_extensions.push_back_element(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#else
-            l_extensions.push_back_element(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#endif
+            l_extensions.push_back_array(gpu_get_platform_surface_extensions());
             break;
         }
     }

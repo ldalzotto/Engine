@@ -170,3 +170,6 @@ int main(int argc, char* argv[])
     memleak_ckeck();
     return 0;
 };
+
+#include "Common2/common2_external_implementation.hpp"
+#include "GPU/gpu_external_implementation.hpp"

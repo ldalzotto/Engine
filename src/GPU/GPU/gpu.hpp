@@ -1,13 +1,18 @@
 #pragma once
 
-// #include "Common2/common2.hpp"
 #include "Math2/math.hpp"
+
+#if 0
 #ifdef _WIN32
 #define VK_USE_PLATFORM_WIN32_KHR
 #else
 #define VK_USE_PLATFORM_XLIB_KHR
 #endif
 #include "vulkan.h"
+#endif
+#include "vk_platform.h"
+#include "vulkan_core.h"
+#include "./_external/gpu_platform_interface.hpp"
 
 using gc_t = VkDevice;
 using gcqueue_t = VkQueue;

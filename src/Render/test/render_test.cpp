@@ -385,3 +385,7 @@ int main()
 
     memleak_ckeck();
 };
+
+
+#include "Common2/common2_external_implementation.hpp"
+#include "GPU/gpu_external_implementation.hpp"

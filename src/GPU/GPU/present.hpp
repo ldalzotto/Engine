@@ -17,20 +17,7 @@ struct GPUPresentDevice
         GPUPresentDevice l_present_device;
         l_present_device.graphics_card = p_instance.graphics_card;
         l_present_device.device = p_instance.logical_device;
-
-#ifdef _WIN32
-        VkWin32SurfaceCreateInfoKHR l_win32_surface_create{};
-        l_win32_surface_create.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        l_win32_surface_create.hwnd = (HWND)p_window_handle.ptr;
-        l_win32_surface_create.hinstance = GetModuleHandle(NULL);
-        vk_handle_result(vkCreateWin32SurfaceKHR(p_instance.instance, &l_win32_surface_create, NULL, &l_present_device.surface));
-#else
-        VkXlibSurfaceCreateInfoKHR l_xlib_surface_create{};
-        l_xlib_surface_create.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-        l_xlib_surface_create.window = (Window)p_window_handle;
-        l_xlib_surface_create.dpy = g_display_info.display;
-        vk_handle_result(vkCreateXlibSurfaceKHR(p_instance.instance, &l_xlib_surface_create, NULL, &l_present_device.surface));
-#endif
+        l_present_device.surface = gpu_create_surface(p_instance.instance, p_window_handle);
 
         l_present_device.recalculate_surface_capabilities();
         // vk_handle_result(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_instance.graphics_card.device, l_present_device.surface, &l_present_device.surface_capacilities));

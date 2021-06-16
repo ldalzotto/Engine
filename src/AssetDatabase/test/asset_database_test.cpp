@@ -67,3 +67,5 @@ int main()
     asset_blob_insert_read_write();
     asset_dependencies_blob_read_write();
 }
+
+#include "Common2/common2_external_implementation.hpp"

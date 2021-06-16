@@ -2249,3 +2249,5 @@ int main(int argc, int8** argv)
 
     memleak_ckeck();
 }
+
+#include "Common2/common2_external_implementation.hpp"
