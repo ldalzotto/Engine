@@ -354,7 +354,7 @@ async function third_party_compile(p_third_party: ThirdPartyType, p_cmake_config
     let l_sqlite_source_root_folder: string = path.join(p_folders.get_temp_folder_path(), l_source_tmp_relative_folder);
 
     for (let i = 0; i < p_cmake_config_types.length; i++) {
-        let l_install_folder: cmake.InstallFolder = cmake.Commands.config_and_install(l_sqlite_source_root_folder, ".", "", p_cmake_config_types[i]);
+        let l_install_folder: cmake.InstallFolder = cmake.Commands.config_and_install(l_sqlite_source_root_folder, ".", "install", p_cmake_config_types[i]);
         let l_copy_dir = path.join(p_folders.get_third_party_file_path(), l_third_party_relative_folder, ConfigurationType[p_cmake_config_types[i]].toString().toLowerCase());
         File.delete_dir_if_exists(l_copy_dir);
         fs.renameSync(l_install_folder.path, l_copy_dir);

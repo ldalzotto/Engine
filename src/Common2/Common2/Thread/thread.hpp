@@ -16,8 +16,7 @@ struct Thread
         {
             ThreadCtx* thiz = (ThreadCtx*)lpParam;
             int8 l_return = thiz->operator()();
-            Span<int8> l_return_heap = Span<int8>::allocate_slice(Slice<int8>::build_memory_elementnb(&l_return, 1));
-            pthread_exit(l_return_heap.Memory);
+            thread_native_on_main_function_finished(l_return);
         };
 #endif
     };
@@ -25,7 +24,7 @@ struct Thread
 
     template <class ThreadCtx> inline static thread_native spawn_thread(ThreadCtx& p_thread_ctx)
     {
-        thread_native l_thread = thread_native_spawn_thread(&s_main<ThreadCtx>::main, &p_thread_ctx);
+        thread_native l_thread = thread_native_spawn_thread((void*)&s_main<ThreadCtx>::main, (void*)&p_thread_ctx);
 #if __MEMLEAK
         push_ptr_to_tracked(l_thread.ptr);
 #endif

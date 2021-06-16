@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
+#define APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS 0
+#endif
+
 enum class AppEventType
 {
     WINDOW_CLOSE = 0,
@@ -26,7 +30,20 @@ struct AppEventQueueListener
     void (*func)(window_native, AppEventType*);
 };
 
-GLOBAL_STATIC Vector<AppEventQueueListener> g_appevent_listeners;
+Vector<AppEventQueueListener> g_appevent_listeners;
+
+#if APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
+// to trigger resize events
+struct AppWindowDimensionsBuffer
+{
+    window_native window;
+    // We store last window dimensions to trigger resize events.
+    uint32 last_client_width;
+    uint32 last_client_height;
+};
+
+Vector<AppWindowDimensionsBuffer> g_appevent_windowdimensions;
+#endif
 
 namespace AppNativeEvent
 {
@@ -34,6 +51,9 @@ inline void initialize()
 {
     app_native_loop_initialize();
     g_appevent_listeners = Vector<AppEventQueueListener>::allocate(0);
+#if APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
+    g_appevent_windowdimensions = Vector<AppWindowDimensionsBuffer>::allocate(0);
+#endif
 };
 inline void finalize()
 {
@@ -41,6 +61,13 @@ inline void finalize()
     assert_true(g_appevent_listeners.empty());
 #endif
     g_appevent_listeners.free();
+
+#if APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
+#if __DEBUG
+    assert_true(g_appevent_windowdimensions.empty());
+#endif
+    g_appevent_windowdimensions.free();
+#endif
 
     app_native_loop_finalize();
 };
@@ -53,11 +80,10 @@ inline void add_appevent_listener(const AppEventQueueListener& p_listener)
 {
     g_appevent_listeners.push_back_element(p_listener);
 
-#if __linux__
-    Window l_root_window;
-    int32 l_x, l_y;
-    uint32 l_width, l_height, l_border_width, l_depth;
-    xlib_status_handle(XGetGeometry(g_display_info.display, (Window)p_listener.window, &l_root_window, &l_x, &l_y, &l_width, &l_height, &l_border_width, &l_depth));
+#if APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
+    window_native l_root_window = p_listener.window;
+    uint32 l_width, l_height;
+    window_native_get_window_client_dimensions(l_root_window, &l_width, &l_height);
     g_appevent_windowdimensions.push_back_element(AppWindowDimensionsBuffer{p_listener.window, l_width, l_height});
 #endif
 };
@@ -73,10 +99,10 @@ inline void remove_appevent_listener(const window_native p_window)
         }
     }
 
-#if __linux__
+#if APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS
     for (loop(i, 0, g_appevent_windowdimensions.Size))
     {
-        if (g_appevent_windowdimensions.get(i).window == p_window)
+        if (g_appevent_windowdimensions.get(i).window.ptr == p_window.ptr)
         {
             g_appevent_windowdimensions.erase_element_at_always(i);
             break;
@@ -85,7 +111,6 @@ inline void remove_appevent_listener(const window_native p_window)
 #endif
 };
 
-inline void _test_wait_for_resize_event(const window_native p_window, const int32 p_width, const int32 p_height);
 }; // namespace AppNativeEvent
 
 inline void AppEvent_Broadcast(window_native p_window, AppEventType* p_app_event)

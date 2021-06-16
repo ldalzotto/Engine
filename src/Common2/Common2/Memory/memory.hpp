@@ -12,8 +12,8 @@ typedef void* backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 
 // Not using mutex but a hash based nested table ?
 // -> NO, because some resource may be allocated from one thread and dealocated a different one
-GLOBAL_STATIC Mutex<ptr_counter_t> ptr_counter GLOBAL_STATIC_INIT(Mutex<ptr_counter_t>::allocate());
-GLOBAL_STATIC backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] GLOBAL_STATIC_INIT({});
+inline Mutex<ptr_counter_t> ptr_counter = Mutex<ptr_counter_t>::allocate();
+inline backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] = {};
 
 inline int8* push_ptr_to_tracked(int8* p_ptr)
 {

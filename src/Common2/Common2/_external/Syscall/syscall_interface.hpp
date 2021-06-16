@@ -1,9 +1,20 @@
 #pragma once
 
+#if _WIN32
+
+#define APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS 0
+#define __mutex_native_v2_size sizeof(char*)
+
+#elif __linux__
+
+#define APP_NATIVE_EVENT_STORE_WINDOW_DIMENSIONS 1
+#define __mutex_native_v2_size sizeof(pthread_mutex_t)
+
+#endif
+
 // Forward declaration
 
-template<class ElementType>
-struct Slice;
+template <class ElementType> struct Slice;
 
 // Clock - BEGIN
 
@@ -13,20 +24,25 @@ time_t clock_native_currenttime_mics();
 
 // Mutex - BEGIN
 
-struct mutex_native {
-    void* ptr;
+struct mutex_native
+{
+    union {
+        int8 memory[__mutex_native_v2_size];
+        int8* ptr;
+    };
 };
 
 mutex_native mutex_native_allocate();
-void mutex_native_lock(const mutex_native p_mutex);
-void mutex_native_unlock(const mutex_native p_mutex);
+void mutex_native_lock(const mutex_native& p_mutex);
+void mutex_native_unlock(const mutex_native& p_mutex);
 void mutex_native_free(mutex_native& p_mutex);
 
 // Mutex - END
 
 // Thread - BEGIN
 
-struct thread_native{
+struct thread_native
+{
     int8* ptr;
 };
 
@@ -36,7 +52,7 @@ int8 thread_native_wait_for_end(const thread_native p_thread, const uimax p_time
 void thread_native_sleep(const thread_native p_thread, const uimax p_time_in_ms);
 void thread_native_terminate(const thread_native p_thread);
 void thread_native_kill(const thread_native p_thread);
-
+void thread_native_on_main_function_finished(const int8 p_return);
 
 // Thread - END
 
@@ -53,7 +69,6 @@ struct file_native
     uimax ptr;
 };
 
-
 file_native file_native_create_file_unchecked(const Slice<int8>& p_path);
 file_native file_native_open_file_unchecked(const Slice<int8>& p_path);
 void file_native_close_file_unchecked(file_native p_file_handle);
@@ -69,10 +84,12 @@ int8 file_native_handle_is_valid(file_native p_file_handle);
 
 // SharedLib - BEGIN
 
-struct shared_lib{
+struct shared_lib
+{
     int8* ptr;
 };
-struct shared_lib_proc_address{
+struct shared_lib_proc_address
+{
     int8* ptr;
 };
 
@@ -91,7 +108,8 @@ void app_native_loop_pool_events();
 
 // Window - BEGIN
 
-struct window_native{
+struct window_native
+{
     int8* ptr;
 };
 
@@ -104,7 +122,6 @@ void window_native_simulate_resize_appevent(const window_native p_window, const 
 void window_native_simulate_close_appevent(const window_native p_window);
 
 // Window - END
-
 
 // Socket - BEGIN
 
@@ -132,7 +149,6 @@ struct socket_addrinfo
     };
 };
 
-
 void socket_context_startup();
 void socket_context_cleanup();
 
@@ -158,6 +174,5 @@ void socket_native_close(socket_native p_socket);
 int8 socket_native_is_error_is_blocking_type(const int32 p_error);
 // If the socket returns an error that tells that there is still data to receive
 int8 socket_native_is_error_is_msgsize_type(const int32 p_error);
-
 
 // Socket - END
