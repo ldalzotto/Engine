@@ -6,6 +6,7 @@
         "compile_scripts": "tsc ./install.ts --outDir ./.gen --sourcemap",
         "install_dependencies": "node ./.gen/install.js \"INSTALL\" ../",
         "compile_assets": "node ./.gen/install.js \"ASSET_COMPILER\"",
-        "clean_assets": "node ./.gen/install.js \"ASSET_COMPILER_CLEAN\" "
+        "clean_assets": "node ./.gen/install.js \"ASSET_COMPILER_CLEAN\" ",
+        "full_install": "npm run compile_scripts && npm run install_dependencies && npm run clean_assets && npm run compile_assets"
     }
 }

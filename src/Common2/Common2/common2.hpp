@@ -31,16 +31,12 @@
 #define GLOBAL_STATIC_INIT(code) = code
 #endif
 
-#ifndef __SQLITE_ENABLED
-#define __SQLITE_ENABLED 1
-#endif
-
-
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
 
 #include "./_external/Syscall/syscall_interface.hpp"
+#include "./_external/Database/database_interface.hpp"
 
 #include "./Functional/equality.hpp"
 
@@ -96,14 +92,9 @@
 #include "./Serialization/binary.hpp"
 #include "./Serialization/types.hpp"
 
-#if __SQLITE_ENABLED
-#include "sqlite3.h"
 #include "./Database/database.hpp"
-#endif
 
 #include "./AppNativeEvent/app_native_event.hpp"
 #include "./Window/window.hpp"
 
 #include "./Socket/socket_v2.hpp"
-
-#undef __SQLITE_ENABLED
