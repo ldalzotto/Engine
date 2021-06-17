@@ -175,3 +175,4 @@ int main(int argc, char* argv[])
 }
 
 #include "Common2/common2_external_implementation.hpp"
+#include "GPU/gpu_external_implementation.hpp"

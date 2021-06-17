@@ -13,11 +13,6 @@ struct GraphicsCard
     uint32 get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const;
 };
 
-enum class GPUExtension
-{
-    WINDOW_PRESENT = 0
-};
-
 /*
     The GPUInstance is the root of all GPU related operations.
     When instanciated, it detects compatible GraphicsCard devices.
@@ -35,64 +30,6 @@ struct GPUInstance
     void free();
 };
 
-namespace vk
-{
-inline Span<VkLayerProperties> enumerateInstanceLayerProperties()
-{
-    uint32_t l_size;
-    vk_handle_result(vkEnumerateInstanceLayerProperties(&l_size, NULL));
-    Span<VkLayerProperties> l_array = Span<VkLayerProperties>::allocate(l_size);
-    vk_handle_result(vkEnumerateInstanceLayerProperties((uint32_t*)&l_array.Capacity, l_array.Memory));
-    return l_array;
-};
-
-inline Span<VkPhysicalDevice> enumeratePhysicalDevices(const gpuinstance_t p_instance)
-{
-    uint32_t l_size;
-    vk_handle_result(vkEnumeratePhysicalDevices(p_instance, &l_size, NULL));
-    Span<VkPhysicalDevice> l_array = Span<VkPhysicalDevice>::allocate(l_size);
-    vk_handle_result(vkEnumeratePhysicalDevices(p_instance, (uint32_t*)&l_array.Capacity, l_array.Memory));
-    return l_array;
-};
-
-inline Span<VkQueueFamilyProperties> getPhysicalDeviceQueueFamilyProperties(const VkPhysicalDevice p_physical_device)
-{
-    uint32_t l_size;
-    vkGetPhysicalDeviceQueueFamilyProperties(p_physical_device, &l_size, NULL);
-    Span<VkQueueFamilyProperties> l_array = Span<VkQueueFamilyProperties>::allocate(l_size);
-    vkGetPhysicalDeviceQueueFamilyProperties(p_physical_device, (uint32_t*)&l_array.Capacity, l_array.Memory);
-    return l_array;
-};
-
-inline Span<VkPresentModeKHR> getPhysicalDeviceSurfacePresentModesKHR(const VkPhysicalDevice p_physical_device, const VkSurfaceKHR p_surface)
-{
-    uint32_t l_size;
-    vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, &l_size, NULL));
-    Span<VkPresentModeKHR> l_array = Span<VkPresentModeKHR>::allocate(l_size);
-    vk_handle_result(vkGetPhysicalDeviceSurfacePresentModesKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
-    return l_array;
-};
-
-inline Span<VkSurfaceFormatKHR> getPhysicalDeviceSurfaceFormatsKHR(const VkPhysicalDevice p_physical_device, const VkSurfaceKHR p_surface)
-{
-    uint32_t l_size;
-    vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, &l_size, NULL));
-    Span<VkSurfaceFormatKHR> l_array = Span<VkSurfaceFormatKHR>::allocate(l_size);
-    vk_handle_result(vkGetPhysicalDeviceSurfaceFormatsKHR(p_physical_device, p_surface, (uint32_t*)&l_array.Capacity, l_array.Memory));
-    return l_array;
-};
-
-inline Span<VkImage> getSwapchainImagesKHR(const VkDevice p_device, const VkSwapchainKHR p_swap_chain)
-{
-    uint32_t l_size;
-    vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, &l_size, NULL));
-    Span<VkImage> l_array = Span<VkImage>::allocate(l_size);
-    vk_handle_result(vkGetSwapchainImagesKHR(p_device, p_swap_chain, (uint32_t*)&l_array.Capacity, l_array.Memory));
-    return l_array;
-};
-
-}; // namespace vk
-
 inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_memory_requirements, const VkMemoryPropertyFlags p_properties) const
 {
     uint32 l_type_bits = p_memory_requirements.memoryTypeBits;
@@ -100,11 +37,9 @@ inline uint32 GraphicsCard::get_memory_type_index(const VkMemoryRequirements& p_
     {
         if ((l_type_bits & 1) == 1)
         {
-
             if ((this->device_memory_properties.memoryTypes[i].propertyFlags & p_properties) == p_properties)
             {
                 return i;
-                // return this->device_memory_properties.memoryTypes[i].heapIndex;
             };
         }
         l_type_bits >>= 1;
@@ -116,88 +51,20 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
 {
     GPUInstance l_gpu;
 
-    VkApplicationInfo l_app_info{};
-    l_app_info.pApplicationName = "vk";
-
-    VkInstanceCreateInfo l_instance_create_info{};
-    l_instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    l_instance_create_info.pApplicationInfo = &l_app_info;
+    SliceN<gpu::LayerConstString, 1> l_validation_layers;
+    VectorSlice<gpu::LayerConstString> l_validation_layers_vslice = VectorSlice<gpu::LayerConstString>::build(slice_from_slicen(&l_validation_layers), 0);
 
 #if __DEBUG
-
-    const int8* l_validation_layers_str[1] = {"VK_LAYER_KHRONOS_validation"};
-    // l_validation_layers_str[0] = "VK_LAYER_KHRONOS_validation";
-    Slice<const int8*> l_validation_layers = Slice<const int8*>::build_memory_elementnb(l_validation_layers_str, 1);
-
-    Span<VkLayerProperties> l_available_layers = vk::enumerateInstanceLayerProperties();
-    for (loop(i, 0, l_validation_layers.Size))
-    {
-        int8 l_layer_match = 0;
-        for (loop(j, 0, l_available_layers.Capacity))
-        {
-            if (slice_int8_build_rawstr(l_validation_layers.get(i)).compare(slice_int8_build_rawstr(l_available_layers.get(j).layerName)))
-            {
-                l_layer_match = 1;
-                break;
-            }
-        }
-        if (!l_layer_match)
-        {
-            printf("validation layers requested, but not available!");
-            abort();
-        }
-    }
-
-    l_instance_create_info.enabledLayerCount = (uint32)l_validation_layers.Size;
-    l_instance_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
-
-#else
-    l_instance_create_info.enabledLayerCount = 0;
+    gpu::layer_push_debug_layers(l_validation_layers_vslice);
 #endif
 
-    int8 l_window_present_enabled = 0;
-
-    Vector<int8*> l_extensions = Vector<int8*>::allocate(0);
-
-    for (loop(i, 0, p_required_instance_extensions.Size))
-    {
-        switch (p_required_instance_extensions.get(i))
-        {
-        case GPUExtension::WINDOW_PRESENT:
-            l_window_present_enabled = 1;
-            l_extensions.push_back_element(VK_KHR_SURFACE_EXTENSION_NAME);
-            l_extensions.push_back_array(gpu_get_platform_surface_extensions());
-            break;
-        }
-    }
+    gpu::ApplicationInfo l_application_info;
+    l_application_info.enabled_layer_names = l_validation_layers_vslice.to_slice();
+    l_application_info.enabled_extensions = p_required_instance_extensions;
+    l_gpu.instance = (gpuinstance_t)gpu::create_instance(l_application_info).tok;
 
 #if __DEBUG
-    l_extensions.push_back_element(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-#endif
-
-    l_instance_create_info.enabledExtensionCount = (uint32)l_extensions.Size;
-    l_instance_create_info.ppEnabledExtensionNames = l_extensions.get_memory();
-
-    vk_handle_result(vkCreateInstance(&l_instance_create_info, NULL, &l_gpu.instance));
-
-    l_extensions.free();
-
-#if __DEBUG
-    l_available_layers.free();
-#endif
-
-#if __DEBUG
-    VkDebugUtilsMessengerCreateInfoEXT l_createinfo = {};
-    l_createinfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    l_createinfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    l_createinfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    l_createinfo.pfnUserCallback = debugCallback;
-
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(l_gpu.instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != NULL)
-    {
-        func(l_gpu.instance, &l_createinfo, NULL, &l_gpu.debugger);
-    }
+    l_gpu.debugger = (gpuinstance_debugger_t)gpu::initialize_debug_callback(gpu::Instance{(token_t)l_gpu.instance}).tok;
 #endif
 
     Span<VkPhysicalDevice> l_physical_devices = vk::enumeratePhysicalDevices(l_gpu.instance);
@@ -258,16 +125,25 @@ inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_i
     l_device_create_info.queueCreateInfoCount = 1;
 
 #if __DEBUG
-
-    l_device_create_info.enabledLayerCount = (uint32)l_validation_layers.Size;
-    l_device_create_info.ppEnabledLayerNames = l_validation_layers.Begin;
+    l_device_create_info.enabledLayerCount = (uint32)l_validation_layers_vslice.to_slice().Size;
+    l_device_create_info.ppEnabledLayerNames = (const char* const*)&l_validation_layers_vslice.Memory.Begin;
 #endif
 
-    int8* l_swap_chain_extension = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    int8 l_window_present_enabled = 0;
+    for (loop(i, 0, p_required_instance_extensions.Size))
+    {
+        if (p_required_instance_extensions.get(0) == GPUExtension::WINDOW_PRESENT)
+        {
+            l_window_present_enabled = 1;
+            break;
+        }
+    }
+
+    SliceN<int8*, 1> l_swap_chain_extension = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     if (l_window_present_enabled)
     {
         l_device_create_info.enabledExtensionCount = 1;
-        l_device_create_info.ppEnabledExtensionNames = &l_swap_chain_extension;
+        l_device_create_info.ppEnabledExtensionNames = (const char* const*)&l_swap_chain_extension.Memory;
     }
 
     vk_handle_result(vkCreateDevice(l_gpu.graphics_card.device, &l_device_create_info, NULL, &l_gpu.logical_device));
