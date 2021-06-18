@@ -314,7 +314,7 @@ struct GPUPresent
             p_graphics_binder.graphics_allocator.heap.textures_gpu.get(p_graphics_binder.graphics_allocator.heap.shader_texture_gpu_parameters.get(this->swap_chain.shader_parameter_texture).texture)
                 .Image);
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
-                                                           l_presented_image, l_presented_image.format.imageUsage, ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+                                                           iImage<ImageGPU>{l_presented_image}, l_presented_image.format.imageUsage, ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
 
         vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, (VkSemaphore)this->swap_chain.swap_chain_next_image_semaphore.semaphore.tok, VK_NULL_HANDLE,
                                                &this->current_swapchain_image_index));
@@ -329,7 +329,7 @@ struct GPUPresent
         p_graphics_binder.end_render_pass();
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
-                                                           l_presented_image, ImageUsageFlag::SHADER_TEXTURE_PARAMETER, l_presented_image.format.imageUsage);
+                                                           iImage<ImageGPU>{l_presented_image}, ImageUsageFlag::SHADER_TEXTURE_PARAMETER, l_presented_image.format.imageUsage);
     };
 
     inline void present(const Semafore& p_awaited_semaphore)

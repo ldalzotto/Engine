@@ -786,7 +786,7 @@ template <class _ShaderUniformBufferParameter> struct iShaderUniformBufferParame
         vk_handle_result(vkAllocateDescriptorSets(p_graphics_device.device, &l_allocate_info, &l_shader_unifor_buffer_parameter.get_descriptor_set()));
 
         VkDescriptorBufferInfo l_descriptor_buffer_info;
-        l_descriptor_buffer_info.buffer = p_buffer_memory.get_buffer();
+        l_descriptor_buffer_info.buffer = (VkBuffer)token_value(p_buffer_memory.get_buffer());
         l_descriptor_buffer_info.offset = 0;
         l_descriptor_buffer_info.range = p_buffer_memory.get_size();
 

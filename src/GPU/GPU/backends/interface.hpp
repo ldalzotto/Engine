@@ -5,6 +5,17 @@ enum class GPUExtension
     WINDOW_PRESENT = 0
 };
 
+using BufferUsageFlag_t = uint8;
+enum class BufferUsageFlag : BufferUsageFlag_t
+{
+    UNDEFINED = 0,
+    TRANSFER_READ = 1,
+    TRANSFER_WRITE = 2,
+    UNIFORM = 16,
+    INDEX = 64,
+    VERTEX = 128
+};
+
 #define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
     struct _##p_name                                                                                                                                                                                   \
     {                                                                                                                                                                                                  \
@@ -28,6 +39,7 @@ GPU_DECLARE_TOKEN(DeviceMemory);
 GPU_DECLARE_TOKEN(Semaphore);
 GPU_DECLARE_TOKEN(CommandBuffer);
 GPU_DECLARE_TOKEN(CommandPool);
+GPU_DECLARE_TOKEN(Buffer);
 
 struct ApplicationInfo
 {
@@ -61,7 +73,6 @@ struct QueueFamily
         return l_return;
     };
 };
-
 
 struct HeapIndex
 {
@@ -158,6 +169,11 @@ void command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queu
 CommandPool command_pool_allocate(const LogicalDevice p_logical_device, const QueueFamily p_queue_family);
 void command_pool_destroy(const LogicalDevice p_logical_device, CommandPool p_pool);
 CommandBuffer command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool);
+
+Buffer buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size, const BufferUsageFlag p_usage_flag);
+void buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer);
+MemoryRequirements buffer_get_memory_requirements(const LogicalDevice p_logical_device, const Buffer p_buffer);
+void buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer p_buffer, const DeviceMemory p_memory, const uimax p_offset);
 } // namespace gpu
 
 #undef GPU_DECLARE_TOKEN

@@ -126,19 +126,20 @@ struct GraphicsBinder
     inline void bind_index_buffer_gpu(const BufferGPU& p_index_buffer_gpu, const BufferIndexType p_index_type)
     {
         VkDeviceSize l_offset = 0;
-        vkCmdBindIndexBuffer((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, p_index_buffer_gpu.buffer, l_offset, (VkIndexType)p_index_type);
+        vkCmdBindIndexBuffer((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, (VkBuffer)token_value(p_index_buffer_gpu.buffer), l_offset,
+                             (VkIndexType)p_index_type);
     };
 
     inline void bind_vertex_buffer_gpu(const BufferGPU& p_vertex_buffer_gpu)
     {
         VkDeviceSize l_offset = 0;
-        vkCmdBindVertexBuffers((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, 0, 1, &p_vertex_buffer_gpu.buffer, &l_offset);
+        vkCmdBindVertexBuffers((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, 0, 1, (VkBuffer*)&p_vertex_buffer_gpu.buffer.tok, &l_offset);
     };
 
     inline void bind_vertex_buffer_host(const BufferHost& p_vertex_buffer_host)
     {
         VkDeviceSize l_offset = 0;
-        vkCmdBindVertexBuffers((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, 0, 1, &p_vertex_buffer_host.buffer, &l_offset);
+        vkCmdBindVertexBuffers((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, 0, 1, (VkBuffer const*)&p_vertex_buffer_host.buffer.tok, &l_offset);
     };
 
     inline void draw(const uimax p_vertex_count)
@@ -226,8 +227,8 @@ struct GraphicsBinder
                     p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX_FRAGMENT);
 #endif
 
-        vkCmdBindDescriptorSets((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number, 1,
-                                &p_descriptor_set, 0, NULL);
+        vkCmdBindDescriptorSets((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                p_shader_layout.layout, p_set_number, 1, &p_descriptor_set, 0, NULL);
     };
 
     inline void _cmd_bind_shader_texture_gpu_parameter(const ShaderLayout& p_shader_layout, const ShaderTextureGPUParameter& p_shader_parameter, const uint32 p_set_number)
@@ -236,7 +237,7 @@ struct GraphicsBinder
         assert_true(p_shader_layout.shader_layout_parameter_types.get(p_set_number) == ShaderLayoutParameterType::TEXTURE_FRAGMENT);
 #endif
 
-        vkCmdBindDescriptorSets((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, p_shader_layout.layout, p_set_number, 1,
-                                &p_shader_parameter.descriptor_set, 0, NULL);
+        vkCmdBindDescriptorSets((VkCommandBuffer)this->graphics_allocator.graphics_device.command_buffer.command_buffer.tok, VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                p_shader_layout.layout, p_set_number, 1, &p_shader_parameter.descriptor_set, 0, NULL);
     };
 };

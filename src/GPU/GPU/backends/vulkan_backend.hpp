@@ -517,3 +517,36 @@ gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice
     vk_handle_result(vkAllocateCommandBuffers((VkDevice)p_logical_device.tok, &l_command_buffer_allocate_info, (VkCommandBuffer*)&l_command_buffer.tok));
     return l_command_buffer;
 };
+
+gpu::Buffer gpu::buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size, const BufferUsageFlag p_usage_flag)
+{
+    gpu::Buffer l_buffer;
+    VkBufferCreateInfo l_buffercreate_info{};
+    l_buffercreate_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flag;
+    l_buffercreate_info.size = p_size;
+
+    vk_handle_result(vkCreateBuffer((VkDevice)p_logical_device.tok, &l_buffercreate_info, NULL, (VkBuffer*)&l_buffer.tok));
+    return l_buffer;
+};
+
+void gpu::buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer)
+{
+    vkDestroyBuffer((VkDevice)token_value(p_logical_device), (VkBuffer)token_value(p_buffer), NULL);
+};
+
+gpu::MemoryRequirements gpu::buffer_get_memory_requirements(const LogicalDevice p_logical_device, const Buffer p_buffer)
+{
+    VkMemoryRequirements l_requirements;
+    vkGetBufferMemoryRequirements((VkDevice)token_value(p_logical_device), (VkBuffer)token_value(p_buffer), &l_requirements);
+    gpu::MemoryRequirements l_gpu_requirements;
+    l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
+    l_gpu_requirements.size = l_requirements.size;
+    l_gpu_requirements.alignment = l_requirements.alignment;
+    return l_gpu_requirements;
+};
+
+void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer p_buffer, const DeviceMemory p_memory, const uimax p_offset)
+{
+    vkBindBufferMemory((VkDevice)token_value(p_logical_device), (VkBuffer)token_value(p_buffer), (VkDeviceMemory)token_value(p_memory), p_offset);
+};
