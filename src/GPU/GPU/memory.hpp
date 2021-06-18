@@ -201,8 +201,6 @@ enum class BufferIndexType
     UINT32 = VkIndexType::VK_INDEX_TYPE_UINT32
 };
 
-typedef VkFlags BufferUsageFlags;
-
 struct MappedHostMemory
 {
     Slice<int8> memory;
@@ -264,7 +262,7 @@ struct BufferHost
     gpu::Buffer buffer;
     uimax size;
 
-    inline static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const BufferUsageFlag p_usage_flags)
+    inline static BufferHost allocate(TransferDevice& p_transfer_device, const uimax p_buffer_size, const gpu::BufferUsageFlag p_usage_flags)
     {
         BufferHost l_buffer_host;
 
@@ -344,7 +342,7 @@ struct BufferGPU
     gpu::Buffer buffer;
     uimax size;
 
-    inline static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const BufferUsageFlag p_usage_flags)
+    inline static BufferGPU allocate(TransferDevice& p_transfer_device, const uimax p_size, const gpu::BufferUsageFlag p_usage_flags)
     {
         BufferGPU l_buffer_gpu;
 
@@ -374,39 +372,27 @@ struct BufferGPU
     };
 };
 
-enum class ImageUsageFlag
-{
-    UNDEFINED = 0,
-    TRANSFER_READ = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-    TRANSFER_WRITE = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-    SHADER_COLOR_ATTACHMENT = VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-    SHADER_DEPTH_ATTACHMENT = VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-    SHADER_TEXTURE_PARAMETER = VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT
-};
-
-typedef uint8 ImageUsageFlags;
-
 /*
     mipLevels and arrayLayers are not supported yet. They should always be equals to 1.
 */
 struct ImageFormat
 {
-    VkImageAspectFlags imageAspect;
-    VkImageType imageType;
-    ImageUsageFlag imageUsage;
-    VkFormat format;
+    gpu::ImageAspectFlag imageAspect;
+    gpu::ImageType imageType;
+    gpu::ImageUsageFlag imageUsage;
+    gpu::ImageFormatFlag format;
     v3ui extent;
     uint32 mipLevels;
     uint32 arrayLayers;
     VkSampleCountFlagBits samples;
 
-    inline static ImageFormat build_color_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+    inline static ImageFormat build_color_2d(const v3ui& p_extend, const gpu::ImageUsageFlag p_usage)
     {
         ImageFormat l_color_imageformat;
-        l_color_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+        l_color_imageformat.imageAspect = gpu::ImageAspectFlag::COLOR;
         l_color_imageformat.arrayLayers = 1;
-        l_color_imageformat.format = VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
-        l_color_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+        l_color_imageformat.format = gpu::ImageFormatFlag::R8G8B8A8_SRGB;
+        l_color_imageformat.imageType = gpu::ImageType::_2D;
         l_color_imageformat.mipLevels = 1;
         l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
         l_color_imageformat.extent = p_extend;
@@ -414,13 +400,13 @@ struct ImageFormat
         return l_color_imageformat;
     };
 
-    inline static ImageFormat build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+    inline static ImageFormat build_depth_2d(const v3ui& p_extend, const gpu::ImageUsageFlag p_usage)
     {
         ImageFormat l_depth_imageformat;
-        l_depth_imageformat.imageAspect = VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
+        l_depth_imageformat.imageAspect = gpu::ImageAspectFlag::DEPTH;
         l_depth_imageformat.arrayLayers = 1;
-        l_depth_imageformat.format = VkFormat::VK_FORMAT_D16_UNORM;
-        l_depth_imageformat.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+        l_depth_imageformat.format = gpu::ImageFormatFlag::D16_UNORM;
+        l_depth_imageformat.imageType = gpu::ImageType::_2D;
         l_depth_imageformat.mipLevels = 1;
         l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
         l_depth_imageformat.extent = p_extend;
@@ -460,8 +446,8 @@ struct ImageHost
 
         VkImageCreateInfo l_image_create_info{};
         l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        l_image_create_info.imageType = p_image_format.imageType;
-        l_image_create_info.format = p_image_format.format;
+        l_image_create_info.imageType = (VkImageType)p_image_format.imageType;
+        l_image_create_info.format = (VkFormat)p_image_format.format;
         l_image_create_info.extent = VkExtent3D{(uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z};
         l_image_create_info.mipLevels = p_image_format.mipLevels;
         l_image_create_info.arrayLayers = p_image_format.arrayLayers;
@@ -549,8 +535,8 @@ struct ImageGPU
 
         VkImageCreateInfo l_image_create_info{};
         l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        l_image_create_info.imageType = p_image_format.imageType;
-        l_image_create_info.format = p_image_format.format;
+        l_image_create_info.imageType = (VkImageType)p_image_format.imageType;
+        l_image_create_info.format = (VkFormat)p_image_format.format;
         l_image_create_info.extent = VkExtent3D{(uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z};
         l_image_create_info.mipLevels = p_image_format.mipLevels;
         l_image_create_info.arrayLayers = p_image_format.arrayLayers;
@@ -666,32 +652,32 @@ struct ImageLayoutTransitionBarriers
         return l_barriers;
     };
 
-    inline ImageLayoutTransitionBarrierConfiguration get_barrier(const ImageUsageFlag p_left, const ImageUsageFlag p_right) const
+    inline ImageLayoutTransitionBarrierConfiguration get_barrier(const gpu::ImageUsageFlag p_left, const gpu::ImageUsageFlag p_right) const
     {
         return this->barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * this->get_index_from_imageusage(p_left)) + this->get_index_from_imageusage(p_right));
     };
 
-    inline static VkImageLayout get_imagelayout_from_imageusage(const ImageUsageFlag p_flag)
+    inline static VkImageLayout get_imagelayout_from_imageusage(const gpu::ImageUsageFlag p_flag)
     {
         // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
+        if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         }
 
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_READ)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_WRITE)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         }
@@ -705,17 +691,17 @@ struct ImageLayoutTransitionBarriers
     };
 
   private:
-    inline uint8 get_index_from_imageusage(const ImageUsageFlag p_flag) const
+    inline uint8 get_index_from_imageusage(const gpu::ImageUsageFlag p_flag) const
     {
-        if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
+        if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT)
         {
             return 3;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)
         {
             return 4;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER)
         {
             return 5;
         }
@@ -724,11 +710,11 @@ struct ImageLayoutTransitionBarriers
           This is very importtant to have the Transfer conditions after the other because a usage can be (SOMETHING | TRANSFER).
           In that case, we want to return the index linked to "SOMETHING" usage.
         */
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_READ)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_READ)
         {
             return 1;
         }
-        else if ((ImageUsageFlags)p_flag & (ImageUsageFlags)ImageUsageFlag::TRANSFER_WRITE)
+        else if ((gpu::ImageUsageFlag_t)p_flag & (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_WRITE)
         {
             return 2;
         }
@@ -775,14 +761,14 @@ struct BufferAllocator
         this->device.free();
     };
 
-    inline Token<BufferHost> allocate_bufferhost(const Slice<int8>& p_value, const BufferUsageFlag p_usage_flags)
+    inline Token<BufferHost> allocate_bufferhost(const Slice<int8>& p_value, const gpu::BufferUsageFlag p_usage_flags)
     {
         BufferHost l_buffer = BufferHost::allocate(this->device, p_value.Size, p_usage_flags);
         l_buffer.push(p_value);
         return this->host_buffers.alloc_element(l_buffer);
     };
 
-    inline Token<BufferHost> allocate_bufferhost_empty(const uimax p_size, const BufferUsageFlag p_usage_flags)
+    inline Token<BufferHost> allocate_bufferhost_empty(const uimax p_size, const gpu::BufferUsageFlag p_usage_flags)
     {
         return this->host_buffers.alloc_element(BufferHost::allocate(this->device, p_size, p_usage_flags));
     };
@@ -794,7 +780,7 @@ struct BufferAllocator
         this->host_buffers.release_element(p_buffer_host);
     };
 
-    inline Token<BufferGPU> allocate_buffergpu(const uimax p_size, const BufferUsageFlag p_usage_flags)
+    inline Token<BufferGPU> allocate_buffergpu(const uimax p_size, const gpu::BufferUsageFlag p_usage_flags)
     {
         return this->gpu_buffers.alloc_element(BufferGPU::allocate(this->device, p_size, p_usage_flags));
     };
@@ -1071,8 +1057,8 @@ struct BufferCommandUtils
                        VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
 
         {
-            BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, ImageUsageFlag::TRANSFER_READ, p_source.get_image_format().imageUsage);
-            BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, ImageUsageFlag::TRANSFER_WRITE, p_target.get_image_format().imageUsage);
+            BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_source, gpu::ImageUsageFlag::TRANSFER_READ, p_source.get_image_format().imageUsage);
+            BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_target, gpu::ImageUsageFlag::TRANSFER_WRITE, p_target.get_image_format().imageUsage);
         }
     };
 
@@ -1082,15 +1068,15 @@ struct BufferCommandUtils
         assert_true(p_host.size <= p_gpu.size);
 #endif
 
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, gpu::ImageUsageFlag::TRANSFER_WRITE);
 
         VkBufferImageCopy l_buffer_image_copy{};
-        l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
+        l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
         vkCmdCopyBufferToImage((VkCommandBuffer)p_command_buffer.command_buffer.tok, (VkBuffer)token_value(p_host.buffer), p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
 
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, gpu::ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
     };
 
     inline static void cmd_copy_image_gpu_to_buffer_host(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const ImageGPU& p_gpu, const BufferHost& p_host)
@@ -1099,20 +1085,20 @@ struct BufferCommandUtils
         assert_true(p_gpu.size <= p_host.size);
 #endif
 
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_READ);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, gpu::ImageUsageFlag::TRANSFER_READ);
 
         VkBufferImageCopy l_buffer_image_copy{};
-        l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
+        l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
         vkCmdCopyImageToBuffer((VkCommandBuffer)p_command_buffer.command_buffer.tok, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, (VkBuffer)token_value(p_host.buffer), 1, &l_buffer_image_copy);
 
-        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
+        BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, gpu::ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
     };
 
     template <class _Image>
     inline static void cmd_image_layout_transition_v2(const CommandBuffer& p_command_buffer, const ImageLayoutTransitionBarriers& p_barriers, const iImage<_Image> p_image,
-                                                      const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage)
+                                                      const gpu::ImageUsageFlag p_source_image_usage, const gpu::ImageUsageFlag p_target_image_usage)
     {
         VkImageMemoryBarrier l_image_memory_barrier{};
         l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1122,8 +1108,8 @@ struct BufferCommandUtils
         l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         l_image_memory_barrier.image = p_image.get_image();
 
-        l_image_memory_barrier.subresourceRange =
-            VkImageSubresourceRange{p_image.get_image_format().imageAspect, 0, (uint32_t)p_image.get_image_format().arrayLayers, 0, (uint32_t)p_image.get_image_format().arrayLayers};
+        l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{(VkImageAspectFlags)p_image.get_image_format().imageAspect, 0, (uint32_t)p_image.get_image_format().arrayLayers, 0,
+                                                                          (uint32_t)p_image.get_image_format().arrayLayers};
 
         ImageLayoutTransitionBarrierConfiguration l_layout_barrier = p_barriers.get_barrier(p_source_image_usage, p_target_image_usage);
 
@@ -1171,7 +1157,7 @@ struct BufferStep
                 Token<ImageHost> l_image_token = p_buffer_events.image_host_allocate_events.get(i).image;
                 ImageHost& l_image = p_buffer_allocator.host_images.get(l_image_token);
                 BufferCommandUtils::cmd_image_layout_transition_v2(p_buffer_allocator.device.command_buffer, p_buffer_allocator.image_layout_barriers, iImage<ImageHost>{l_image},
-                                                                   ImageUsageFlag::UNDEFINED, l_image.format.imageUsage);
+                    gpu::ImageUsageFlag::UNDEFINED, l_image.format.imageUsage);
             }
             p_buffer_events.image_host_allocate_events.clear();
         }
@@ -1185,8 +1171,8 @@ struct BufferStep
             {
                 Token<ImageGPU> l_image_token = p_buffer_events.image_gpu_allocate_events.get(i).image;
                 ImageGPU& l_image = p_buffer_allocator.gpu_images.get(l_image_token);
-                BufferCommandUtils::cmd_image_layout_transition_v2(p_buffer_allocator.device.command_buffer, p_buffer_allocator.image_layout_barriers, iImage<ImageGPU>{l_image} , ImageUsageFlag::UNDEFINED,
-                                                                   l_image.format.imageUsage);
+                BufferCommandUtils::cmd_image_layout_transition_v2(p_buffer_allocator.device.command_buffer, p_buffer_allocator.image_layout_barriers, iImage<ImageGPU>{l_image},
+                    gpu::ImageUsageFlag::UNDEFINED, l_image.format.imageUsage);
             }
             p_buffer_events.image_gpu_allocate_events.clear();
         }
@@ -1342,7 +1328,7 @@ struct BufferReadWrite
 {
     inline static void write_to_buffergpu(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<BufferGPU> p_buffer_gpu, const Slice<int8>& p_value)
     {
-        Token<BufferHost> l_staging_buffer = p_buffer_allocator.allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
+        Token<BufferHost> l_staging_buffer = p_buffer_allocator.allocate_bufferhost(p_value, gpu::BufferUsageFlag::TRANSFER_READ);
         p_buffer_events.write_buffer_host_to_buffer_gpu_events.push_back_element(BufferEvents::WriteBufferHostToBufferGPU{l_staging_buffer, 1, p_buffer_gpu});
     };
 
@@ -1357,7 +1343,7 @@ struct BufferReadWrite
 
     inline static Token<BufferHost> read_from_buffergpu(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<BufferGPU> p_buffer_gpu_token, const BufferGPU& p_buffer_gpu)
     {
-        Token<BufferHost> l_staging_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_buffer_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
+        Token<BufferHost> l_staging_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_buffer_gpu.size, gpu::BufferUsageFlag::TRANSFER_WRITE);
         p_buffer_events.write_buffer_gpu_to_buffer_host_events.push_back_element(BufferEvents::WriteBufferGPUToBufferHost{p_buffer_gpu_token, l_staging_buffer});
         return l_staging_buffer;
     };
@@ -1365,14 +1351,14 @@ struct BufferReadWrite
     inline static void write_to_imagegpu(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<ImageGPU> p_image_gpu_token, const ImageGPU& p_image_gpu,
                                          const Slice<int8>& p_value)
     {
-        Token<BufferHost> l_stagin_buffer = p_buffer_allocator.allocate_bufferhost(p_value, BufferUsageFlag::TRANSFER_READ);
+        Token<BufferHost> l_stagin_buffer = p_buffer_allocator.allocate_bufferhost(p_value, gpu::BufferUsageFlag::TRANSFER_READ);
         p_buffer_events.write_buffer_host_to_image_gpu_events.push_back_element(BufferEvents::WriteBufferHostToImageGPU{l_stagin_buffer, 1, p_image_gpu_token});
     };
 
     inline static Token<BufferHost> read_from_imagegpu_to_buffer(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Token<ImageGPU> p_image_gpu_token,
                                                                  const ImageGPU& p_image_gpu)
     {
-        Token<BufferHost> l_stagin_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_image_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
+        Token<BufferHost> l_stagin_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_image_gpu.size, gpu::BufferUsageFlag::TRANSFER_WRITE);
         p_buffer_events.write_image_gpu_to_buffer_host_events.push_back_element(BufferEvents::WriteImageGPUToBufferHost{p_image_gpu_token, l_stagin_buffer});
         return l_stagin_buffer;
     };

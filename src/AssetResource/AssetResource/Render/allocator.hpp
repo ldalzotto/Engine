@@ -229,7 +229,7 @@ struct TextureResourceUnit
         inline void operator()(TextureResource& p_resource, const TextureResource::Asset::Value& p_value) const
         {
             p_resource.resource = ShaderParameterBufferAllocationFunctions::allocate_texture_gpu_for_shaderparameter(gpu_context.graphics_allocator, gpu_context.buffer_memory,
-                                                                                                                     ImageFormat::build_color_2d(p_value.size, ImageUsageFlag::UNDEFINED));
+                                                                                                                     ImageFormat::build_color_2d(p_value.size, gpu::ImageUsageFlag::UNDEFINED));
             TextureGPU& l_texture_gpu = gpu_context.graphics_allocator.heap.textures_gpu.get(p_resource.resource);
             BufferReadWrite::write_to_imagegpu(gpu_context.buffer_memory.allocator, gpu_context.buffer_memory.events, l_texture_gpu.Image,
                                                gpu_context.buffer_memory.allocator.gpu_images.get(l_texture_gpu.Image), p_value.pixels);

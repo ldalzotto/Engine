@@ -14,7 +14,7 @@ RENDERDOC_API_1_1_0* rdoc_api = NULL;
 
 inline void bufferstep_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
     Renderer_3D l_renderer = Renderer_3D::allocate(l_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}});
     D3Renderer& l_d3_renderer = l_renderer.d3_renderer;
 
@@ -62,7 +62,7 @@ inline void bufferstep_test()
 
 inline void shader_linkto_material_allocation_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
     Renderer_3D l_renderer = Renderer_3D::allocate(l_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}});
     D3Renderer& l_d3_renderer = l_renderer.d3_renderer;
 
@@ -94,7 +94,7 @@ inline void shader_linkto_material_allocation_test()
 
 inline void draw_test()
 {
-    GPUContext l_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+    GPUContext l_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
     Renderer_3D l_renderer = Renderer_3D::allocate(l_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}, 1});
     D3Renderer& l_d3_renderer = l_renderer.d3_renderer;
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();

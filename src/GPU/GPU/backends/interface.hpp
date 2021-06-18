@@ -1,5 +1,16 @@
 #pragma once
 
+
+#define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
+    struct _##p_name                                                                                                                                                                                   \
+    {                                                                                                                                                                                                  \
+    };                                                                                                                                                                                                 \
+    using p_name = Token<_##p_name>
+
+namespace gpu
+{
+
+
 enum class GPUExtension
 {
     WINDOW_PRESENT = 0
@@ -16,14 +27,40 @@ enum class BufferUsageFlag : BufferUsageFlag_t
     VERTEX = 128
 };
 
-#define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
-    struct _##p_name                                                                                                                                                                                   \
-    {                                                                                                                                                                                                  \
-    };                                                                                                                                                                                                 \
-    using p_name = Token<_##p_name>
-
-namespace gpu
+using ImageUsageFlag_t = uint8;
+enum class ImageUsageFlag : ImageUsageFlag_t
 {
+    UNDEFINED = 0,
+    TRANSFER_READ = 1,
+    TRANSFER_WRITE = 2,
+    SHADER_TEXTURE_PARAMETER = 4,
+    SHADER_COLOR_ATTACHMENT = 16,
+    SHADER_DEPTH_ATTACHMENT = 32
+};
+
+using ImageType_t = uint8;
+enum class ImageType : ImageType_t
+{
+    _1D = 0,
+    _2D = 1,
+    _3D = 2
+};
+
+using ImageAspectFlag_t = uint8;
+enum class ImageAspectFlag : ImageAspectFlag_t
+{
+    UNDEFINED = 0,
+    COLOR = 1,
+    DEPTH = 2
+};
+
+using ImageFormatFlag_t = uint8;
+enum class ImageFormatFlag : ImageFormatFlag_t
+{
+    UNDEFINED = 0,
+    R8G8B8A8_SRGB = 43,
+    D16_UNORM = 124
+};
 
 using LayerConstString = SliceN<int8, 50>;
 
@@ -40,6 +77,7 @@ GPU_DECLARE_TOKEN(Semaphore);
 GPU_DECLARE_TOKEN(CommandBuffer);
 GPU_DECLARE_TOKEN(CommandPool);
 GPU_DECLARE_TOKEN(Buffer);
+GPU_DECLARE_TOKEN(Image);
 
 struct ApplicationInfo
 {

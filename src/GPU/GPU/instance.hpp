@@ -26,7 +26,7 @@ struct GPUInstance
     GraphicsCard graphics_card;
     gpu::LogicalDevice logical_device;
 
-    static GPUInstance allocate(const Slice<GPUExtension>& p_required_extensions);
+    static GPUInstance allocate(const Slice<gpu::GPUExtension>& p_required_extensions);
     void free();
 };
 
@@ -35,7 +35,7 @@ inline gpu::PhysicalDeviceMemoryIndex GraphicsCard::get_memory_type_index(const 
     return gpu::physical_device_get_memorytype_index(this->device_memory_properties, p_memory_type_required, p_memory_type);
 };
 
-inline GPUInstance GPUInstance::allocate(const Slice<GPUExtension>& p_required_instance_extensions)
+inline GPUInstance GPUInstance::allocate(const Slice<gpu::GPUExtension>& p_required_instance_extensions)
 {
     GPUInstance l_gpu;
 

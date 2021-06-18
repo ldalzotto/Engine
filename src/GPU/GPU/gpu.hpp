@@ -24,7 +24,7 @@ struct GPUContext
     Semafore buffer_end_semaphore;
     Semafore graphics_end_semaphore;
 
-    inline static GPUContext allocate(const Slice<GPUExtension>& p_gpu_extensions)
+    inline static GPUContext allocate(const Slice<gpu::GPUExtension>& p_gpu_extensions)
     {
         GPUContext l_context;
         l_context.instance = GPUInstance::allocate(p_gpu_extensions);

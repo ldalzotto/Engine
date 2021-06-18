@@ -490,12 +490,12 @@ struct D3RendererAllocatorComposition
         Mesh l_mesh;
         Slice<int8> l_initial_vertices_binary = p_initial_vertices.build_asint8();
         l_mesh.vertices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_vertices_binary.Size,
-                                                                              (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+                                                                              (gpu::BufferUsageFlag)((gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::VERTEX | (gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.vertices_buffer, l_initial_vertices_binary);
 
         Slice<int8> l_initial_indices_binary = p_initial_indices.build_asint8();
         l_mesh.indices_buffer = p_buffer_memory.allocator.allocate_buffergpu(l_initial_indices_binary.Size,
-                                                                             (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+                                                                             (gpu::BufferUsageFlag)((gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::INDEX | (gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.indices_buffer, l_initial_indices_binary);
 
         l_mesh.indices_count = p_initial_indices.Size;
@@ -536,7 +536,7 @@ struct D3RendererAllocatorComposition
         RenderableObject l_renderable_object;
         l_renderable_object.mesh = p_mesh;
 
-        Token<BufferHost> l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
+        Token<BufferHost> l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), gpu::BufferUsageFlag::UNIFORM);
         l_renderable_object.model =
             p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, l_buffer, p_buffer_memory.allocator.host_buffers.get(l_buffer));
 

@@ -244,14 +244,15 @@ struct TextureGPU
         l_imageview_create_info.image = l_image_gpu.image;
         switch (p_image_format.imageType)
         {
-        case VkImageType::VK_IMAGE_TYPE_2D:
+        case gpu::ImageType::_2D:
             l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
             break;
         default:
             abort();
         }
-        l_imageview_create_info.format = p_image_format.format;
-        l_imageview_create_info.subresourceRange = VkImageSubresourceRange{p_image_format.imageAspect, 0, (uint32_t)p_image_format.mipLevels, 0, (uint32_t)p_image_format.arrayLayers};
+        l_imageview_create_info.format = (VkFormat)p_image_format.format;
+        l_imageview_create_info.subresourceRange =
+            VkImageSubresourceRange{(VkImageAspectFlags)p_image_format.imageAspect, 0, (uint32_t)p_image_format.mipLevels, 0, (uint32_t)p_image_format.arrayLayers};
 
         vk_handle_result(vkCreateImageView((VkDevice)p_buffer_memory.allocator.device.device.tok, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
 
@@ -330,7 +331,7 @@ struct RenderPass
             {
                 VkAttachmentDescription l_attachment_description;
                 l_attachment_description = VkAttachmentDescription{};
-                l_attachment_description.format = p_image_format.format;
+                l_attachment_description.format = (VkFormat)p_image_format.format;
                 l_attachment_description.samples = p_image_format.samples;
                 l_attachment_description.loadOp = (VkAttachmentLoadOp)p_clear_op;
                 l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
@@ -379,7 +380,7 @@ struct RenderPass
                 l_attachment_description =
                     AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
                 l_color_attachment_reference.attachment = (uint32)i;
-                l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
+                l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
                 l_color_attachments_ref_count += 1;
             }
             break;
@@ -983,15 +984,15 @@ struct GraphicsAllocator2
         l_imageview_create_info.image = p_image_gpu.image;
         switch (p_image_gpu.format.imageType)
         {
-        case VkImageType::VK_IMAGE_TYPE_2D:
+        case gpu::ImageType::_2D:
             l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
             break;
         default:
             abort();
         }
 
-        l_imageview_create_info.format = p_image_gpu.format.format;
-        l_imageview_create_info.subresourceRange = VkImageSubresourceRange{p_image_gpu.format.imageAspect, 0, (uint32_t)p_image_gpu.format.mipLevels, 0, (uint32_t)p_image_gpu.format.arrayLayers};
+        l_imageview_create_info.format = (VkFormat)p_image_gpu.format.format;
+        l_imageview_create_info.subresourceRange = VkImageSubresourceRange{(VkImageAspectFlags)p_image_gpu.format.imageAspect, 0, (uint32_t)p_image_gpu.format.mipLevels, 0, (uint32_t)p_image_gpu.format.arrayLayers};
 
         vk_handle_result(vkCreateImageView((VkDevice)p_transfer_device.device.tok, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
 

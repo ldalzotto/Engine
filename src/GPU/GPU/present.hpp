@@ -96,14 +96,14 @@ struct GPUPresent_2DQuad
         Slice<_vertex> l_2D_quad_vertices = slice_from_slicen(&l_2D_quad_vertices_arr);
 
         GPUPresent_2DQuad l_return;
-        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(l_2D_quad_vertices.build_asint8().Size,
-                                                                                 (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::VERTEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(
+            l_2D_quad_vertices.build_asint8().Size, (gpu::BufferUsageFlag)((gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::VERTEX | (gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_vertices, l_2D_quad_vertices.build_asint8());
 
         SliceN<uint32, 6> l_indices_arr{0, 1, 2, 0, 3, 1};
         Slice<uint32> l_indices = slice_from_slicen(&l_indices_arr);
         l_return.d2_quad_indices_image_indices = p_buffer_memory.allocator.allocate_buffergpu(
-            l_indices.build_asint8().Size, (BufferUsageFlag)((BufferUsageFlags)BufferUsageFlag::INDEX | (BufferUsageFlags)BufferUsageFlag::TRANSFER_WRITE));
+            l_indices.build_asint8().Size, (gpu::BufferUsageFlag)((gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::INDEX | (gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::TRANSFER_WRITE));
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_indices_image_indices, l_indices.build_asint8());
 
         return l_return;
@@ -230,8 +230,8 @@ struct SwapChain
 
         for (loop(i, 0, l_images.Capacity))
         {
-            ImageFormat l_image_format = ImageFormat::build_color_2d(v3ui{l_swapchain_create.imageExtent.width, l_swapchain_create.imageExtent.height, 1}, ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
-            l_image_format.format = l_swapchain_create.imageFormat;
+            ImageFormat l_image_format = ImageFormat::build_color_2d(v3ui{l_swapchain_create.imageExtent.width, l_swapchain_create.imageExtent.height, 1}, gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
+            l_image_format.format = (gpu::ImageFormatFlag)l_swapchain_create.imageFormat;
             p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
 
             SliceN<AttachmentType, 1> l_attachment_types = {AttachmentType::KHR};
@@ -314,7 +314,7 @@ struct GPUPresent
             p_graphics_binder.graphics_allocator.heap.textures_gpu.get(p_graphics_binder.graphics_allocator.heap.shader_texture_gpu_parameters.get(this->swap_chain.shader_parameter_texture).texture)
                 .Image);
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
-                                                           iImage<ImageGPU>{l_presented_image}, l_presented_image.format.imageUsage, ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+                                                           iImage<ImageGPU>{l_presented_image}, l_presented_image.format.imageUsage, gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
 
         vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, (VkSemaphore)this->swap_chain.swap_chain_next_image_semaphore.semaphore.tok, VK_NULL_HANDLE,
                                                &this->current_swapchain_image_index));
@@ -329,7 +329,7 @@ struct GPUPresent
         p_graphics_binder.end_render_pass();
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
-                                                           iImage<ImageGPU>{l_presented_image}, ImageUsageFlag::SHADER_TEXTURE_PARAMETER, l_presented_image.format.imageUsage);
+                                                           iImage<ImageGPU>{l_presented_image}, gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER, l_presented_image.format.imageUsage);
     };
 
     inline void present(const Semafore& p_awaited_semaphore)

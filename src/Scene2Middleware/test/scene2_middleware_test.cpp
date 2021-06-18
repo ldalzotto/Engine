@@ -39,7 +39,7 @@ struct Scene2MiddlewareContext
     {
         Scene l_scene = Scene::allocate_default();
         Collision2 l_collision = Collision2::allocate();
-        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
         Renderer_3D l_renderer = Renderer_3D::allocate(l_gpu_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}, 1});
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
         DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
@@ -71,7 +71,7 @@ struct Scene2MiddlewareContext
     {
         Scene l_scene = Scene::allocate_default();
         Collision2 l_collision = Collision2{};
-        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
+        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
         Renderer_3D l_renderer = Renderer_3D::allocate(l_gpu_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}, 1});
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));
         DatabaseConnection l_database_connection = DatabaseConnection::allocate(l_asset_database_path.to_slice());
