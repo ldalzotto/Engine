@@ -210,6 +210,11 @@ gpu::Instance gpu::create_instance(const ApplicationInfo& p_application_info)
     return l_instance;
 };
 
+void gpu::instance_destroy(Instance p_instance)
+{
+    vkDestroyInstance((VkInstance)p_instance.tok, NULL);
+};
+
 gpu::Debugger gpu::initialize_debug_callback(Instance p_instance)
 {
     VkDebugUtilsMessengerCreateInfoEXT l_createinfo = {};
@@ -225,6 +230,17 @@ gpu::Debugger gpu::initialize_debug_callback(Instance p_instance)
         func((VkInstance)p_instance.tok, &l_createinfo, NULL, (VkDebugUtilsMessengerEXT*)&l_debugger.tok);
     }
     return l_debugger;
+};
+
+void gpu::debugger_finalize(Debugger p_debugger, Instance p_instance)
+{
+#if __DEBUG
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr((VkInstance)p_instance.tok, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != NULL)
+    {
+        func((VkInstance)p_instance.tok, (VkDebugUtilsMessengerEXT)p_debugger.tok, NULL);
+    }
+#endif
 };
 
 gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
@@ -293,4 +309,73 @@ gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
 
     l_physical_devices.free();
     return l_picked_device;
+};
+
+gpu::PhysicalDeviceMemoryIndex gpu::physical_device_get_memorytype_index(const PhysicalDeviceMemoryProperties& p_memory_properties, const MemoryTypeFlag p_required_memory_type,
+                                                                         const MemoryTypeFlag p_memory_type)
+{
+    MemoryTypeFlag_t l_type_bits = (MemoryTypeFlag_t)p_required_memory_type;
+    for (int8 i = 0; i < p_memory_properties.memory_types_size; i++)
+    {
+        if ((l_type_bits & 1) == 1)
+        {
+            if (((gpu::MemoryTypeFlag_t)(p_memory_properties.memory_types.get(i).type) & (gpu::MemoryTypeFlag_t)p_memory_type) == (gpu::MemoryTypeFlag_t)p_memory_type)
+            {
+                gpu::PhysicalDeviceMemoryIndex l_return;
+                l_return.index = i;
+                return l_return;
+            };
+        }
+        l_type_bits >>= 1;
+    }
+    gpu::PhysicalDeviceMemoryIndex l_return;
+    l_return.index = -1;
+    return l_return;
+};
+
+gpu::LogicalDevice gpu::logical_device_create(PhysicalDevice p_physical_device, const Slice<LayerConstString>& p_validation_layers, const Slice<GPUExtension>& p_gpu_extensions,
+                                              const QueueFamily& p_queue)
+{
+    VkDeviceQueueCreateInfo l_devicequeue_create_info{};
+    l_devicequeue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    l_devicequeue_create_info.queueFamilyIndex = p_queue.family;
+    l_devicequeue_create_info.queueCount = 1;
+    const float32 l_priority = 1.0f;
+    l_devicequeue_create_info.pQueuePriorities = &l_priority;
+
+    VkDeviceCreateInfo l_device_create_info{};
+    l_device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    l_device_create_info.pQueueCreateInfos = &l_devicequeue_create_info;
+    l_device_create_info.queueCreateInfoCount = 1;
+
+#if __DEBUG
+    l_device_create_info.enabledLayerCount = (uint32)p_validation_layers.Size;
+    l_device_create_info.ppEnabledLayerNames = (const char* const*)&p_validation_layers.Begin;
+#endif
+
+    int8 l_window_present_enabled = 0;
+    for (loop(i, 0, p_gpu_extensions.Size))
+    {
+        if (p_gpu_extensions.get(0) == GPUExtension::WINDOW_PRESENT)
+        {
+            l_window_present_enabled = 1;
+            break;
+        }
+    }
+
+    SliceN<int8*, 1> l_swap_chain_extension = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    if (l_window_present_enabled)
+    {
+        l_device_create_info.enabledExtensionCount = 1;
+        l_device_create_info.ppEnabledExtensionNames = (const char* const*)&l_swap_chain_extension.Memory;
+    }
+
+    gpu::LogicalDevice l_logical_device;
+    vk_handle_result(vkCreateDevice((VkPhysicalDevice)p_physical_device.tok, &l_device_create_info, NULL, (VkDevice*)&l_logical_device.tok));
+    return l_logical_device;
+};
+
+void gpu::logical_device_destroy(LogicalDevice p_logical_device)
+{
+    vkDestroyDevice((VkDevice)p_logical_device.tok, NULL);
 };

@@ -130,7 +130,7 @@ struct TransferDeviceHeap
         this->gpu_heaps.free();
     };
 
-    inline int8 allocate_element(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device, const VkMemoryRequirements& p_requirements, const VkMemoryPropertyFlags p_memory_property_flags,
+    inline int8 allocate_element(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device, const VkMemoryRequirements& p_requirements, const gpu::MemoryTypeFlag p_memory_type,
                                  TransferDeviceHeapToken* out_token)
     {
         // We make sure that memory have an allocated heap size of max(p_requirements.size, p_requirements.alignment)
@@ -140,7 +140,7 @@ struct TransferDeviceHeap
             l_aligned_size = p_requirements.alignment;
         };
 
-        uint32 l_memory_type_index = p_graphics_card.get_memory_type_index(p_requirements, p_memory_property_flags);
+        uint32 l_memory_type_index = p_graphics_card.get_memory_type_index((gpu::MemoryTypeFlag)p_requirements.memoryTypeBits, p_memory_type).index;
         out_token->heap_index = p_graphics_card.device_memory_properties.memory_types.get(l_memory_type_index).heap_index.index;
         return this->gpu_heaps.get(out_token->heap_index).allocate_element(l_aligned_size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
     };
@@ -182,7 +182,7 @@ struct TransferDevice
     {
         TransferDevice l_transfer_device;
         l_transfer_device.graphics_card = p_instance.graphics_card;
-        l_transfer_device.device = p_instance.logical_device;
+        l_transfer_device.device = (gc_t)p_instance.logical_device.tok;
 
         vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family.family, 0, &l_transfer_device.transfer_queue);
 
@@ -296,8 +296,7 @@ struct BufferHost
         VkMemoryRequirements l_requirements;
         vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_host.buffer, &l_requirements);
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &l_buffer_host.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_buffer_host.heap_token);
         // p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_buffer_host.heap_token);
         l_buffer_host.memory.map(p_transfer_device, l_buffer_host.heap_token);
         l_buffer_host.bind(p_transfer_device);
@@ -386,8 +385,7 @@ struct BufferGPU
         VkMemoryRequirements l_requirements;
         vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_gpu.buffer, &l_requirements);
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                &l_buffer_gpu.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL, &l_buffer_gpu.heap_token);
         // p_transfer_device.heap.allocate_gpu_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_buffer_gpu.heap_token);
         l_buffer_gpu.bind(p_transfer_device);
 
@@ -501,8 +499,7 @@ struct ImageHost
         VkMemoryRequirements l_requirements;
         vkGetImageMemoryRequirements(p_transfer_device.device, l_image_host.image, &l_requirements);
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-                                                &l_image_host.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_image_host.heap_token);
         // p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_image_host.heap_token);
         l_image_host.memory.map(p_transfer_device, l_image_host.heap_token);
 
@@ -588,8 +585,7 @@ struct ImageGPU
 
         l_image_gpu.size = l_requirements.size;
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                                &l_image_gpu.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL, &l_image_gpu.heap_token);
 
         l_image_gpu.bind(p_transfer_device);
 

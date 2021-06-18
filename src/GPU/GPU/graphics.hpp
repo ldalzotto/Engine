@@ -192,7 +192,7 @@ struct GraphicsDevice
     {
         GraphicsDevice l_graphics_device;
         l_graphics_device.graphics_card = p_instance.graphics_card;
-        l_graphics_device.device = p_instance.logical_device;
+        l_graphics_device.device = (gc_t)p_instance.logical_device.tok;
 
         vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family.family, 0, &l_graphics_device.graphics_queue);
 

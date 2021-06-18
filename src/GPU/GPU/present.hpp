@@ -16,7 +16,7 @@ struct GPUPresentDevice
     {
         GPUPresentDevice l_present_device;
         l_present_device.graphics_card = p_instance.graphics_card;
-        l_present_device.device = p_instance.logical_device;
+        l_present_device.device = (gc_t)p_instance.logical_device.tok;
         l_present_device.surface = (gcsurface_t)gpu_create_surface(p_instance.instance, p_window_handle).tok;
 
         l_present_device.recalculate_surface_capabilities();

@@ -24,6 +24,7 @@ GPU_DECLARE_TOKEN(Instance);
 GPU_DECLARE_TOKEN(Surface);
 GPU_DECLARE_TOKEN(Debugger);
 GPU_DECLARE_TOKEN(PhysicalDevice);
+GPU_DECLARE_TOKEN(LogicalDevice);
 
 struct ApplicationInfo
 {
@@ -32,7 +33,9 @@ struct ApplicationInfo
 };
 
 Instance create_instance(const ApplicationInfo& p_application_info);
+void instance_destroy(Instance p_instance);
 Debugger initialize_debug_callback(Instance p_instance);
+void debugger_finalize(Debugger p_debugger, Instance p_instance);
 
 using MemoryTypeFlag_t = int8;
 enum class MemoryTypeFlag : MemoryTypeFlag_t
@@ -40,7 +43,7 @@ enum class MemoryTypeFlag : MemoryTypeFlag_t
     UNkNOWN = 0,
     DEVICE_LOCAL = 1,
     HOST_VISIBLE = 2,
-	HOST_COHERENT = 4,
+    HOST_COHERENT = 4,
     HOST_CACHED = 8
 };
 
@@ -100,7 +103,8 @@ struct physical_device_pick_Return
     QueueFamily graphics_queue_family;
     PhysicalDeviceMemoryProperties physical_memory_properties;
 
-    inline static physical_device_pick_Return build_default(){
+    inline static physical_device_pick_Return build_default()
+    {
         physical_device_pick_Return l_return;
         l_return.physical_device = token_build_default<_PhysicalDevice>();
         l_return.transfer_queue_family = QueueFamily::build_default();
@@ -111,6 +115,23 @@ struct physical_device_pick_Return
 };
 
 gpu::physical_device_pick_Return physical_device_pick(Instance p_instance);
+
+struct PhysicalDeviceMemoryIndex
+{
+    uint32 index;
+};
+
+struct MemoryRequirements
+{
+    uimax size;
+    uimax alignment;
+    MemoryTypeFlag memory_type;
+};
+
+PhysicalDeviceMemoryIndex physical_device_get_memorytype_index(const PhysicalDeviceMemoryProperties& p_memory_properties, const MemoryTypeFlag p_required_memory_type, const MemoryTypeFlag p_memory_type);
+
+gpu::LogicalDevice logical_device_create(PhysicalDevice p_physical_device, const Slice<LayerConstString>& p_validation_layers, const Slice<GPUExtension>& p_gpu_extensions, const QueueFamily& p_queue);
+void logical_device_destroy(LogicalDevice p_logical_device);
 
 } // namespace gpu
 

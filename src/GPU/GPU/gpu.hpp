@@ -30,8 +30,8 @@ struct GPUContext
         l_context.instance = GPUInstance::allocate(p_gpu_extensions);
         l_context.buffer_memory = BufferMemory::allocate(l_context.instance);
         l_context.graphics_allocator = GraphicsAllocator2::allocate_default(l_context.instance);
-        l_context.buffer_end_semaphore = Semafore::allocate(l_context.instance.logical_device);
-        l_context.graphics_end_semaphore = Semafore::allocate(l_context.instance.logical_device);
+        l_context.buffer_end_semaphore = Semafore::allocate((gc_t)l_context.instance.logical_device.tok);
+        l_context.graphics_end_semaphore = Semafore::allocate((gc_t)l_context.instance.logical_device.tok);
         return l_context;
     };
 
@@ -39,8 +39,8 @@ struct GPUContext
     {
         this->buffer_step_force_execution();
 
-        this->buffer_end_semaphore.free(this->instance.logical_device);
-        this->graphics_end_semaphore.free(this->instance.logical_device);
+        this->buffer_end_semaphore.free((gc_t)this->instance.logical_device.tok);
+        this->graphics_end_semaphore.free((gc_t)this->instance.logical_device.tok);
         this->graphics_allocator.free();
         this->buffer_memory.free();
         this->instance.free();

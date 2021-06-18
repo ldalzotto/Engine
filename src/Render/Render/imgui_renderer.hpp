@@ -62,7 +62,7 @@ struct ImguiRenderer
         ImGui_ImplVulkan_InitInfo l_imgui_info{};
         l_imgui_info.Instance = (VkInstance)p_gpu_context.instance.instance.tok;
         l_imgui_info.PhysicalDevice = (VkPhysicalDevice)p_gpu_context.instance.graphics_card.device.tok;
-        l_imgui_info.Device = p_gpu_context.instance.logical_device;
+        l_imgui_info.Device = (gc_t)p_gpu_context.instance.logical_device.tok;
         l_imgui_info.QueueFamily = p_gpu_context.instance.graphics_card.graphics_queue_family.family;
         l_imgui_info.Queue = p_gpu_context.graphics_allocator.graphics_device.graphics_queue;
         l_imgui_info.DescriptorPool = p_gpu_context.graphics_allocator.graphics_device.shaderparameter_pool.descriptor_pool;
