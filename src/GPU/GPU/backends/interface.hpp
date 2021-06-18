@@ -25,6 +25,9 @@ GPU_DECLARE_TOKEN(Debugger);
 GPU_DECLARE_TOKEN(PhysicalDevice);
 GPU_DECLARE_TOKEN(LogicalDevice);
 GPU_DECLARE_TOKEN(DeviceMemory);
+GPU_DECLARE_TOKEN(Semaphore);
+GPU_DECLARE_TOKEN(CommandBuffer);
+GPU_DECLARE_TOKEN(CommandPool);
 
 struct ApplicationInfo
 {
@@ -58,6 +61,7 @@ struct QueueFamily
         return l_return;
     };
 };
+
 
 struct HeapIndex
 {
@@ -133,11 +137,27 @@ PhysicalDeviceMemoryIndex physical_device_get_memorytype_index(const PhysicalDev
 
 gpu::LogicalDevice logical_device_create(PhysicalDevice p_physical_device, const Slice<LayerConstString>& p_validation_layers, const Slice<GPUExtension>& p_gpu_extensions, const QueueFamily& p_queue);
 void logical_device_destroy(LogicalDevice p_logical_device);
+Queue logical_device_get_queue(const LogicalDevice p_logical_device, const QueueFamily p_queue_family);
 
 DeviceMemory allocate_memory(const LogicalDevice p_device, const uimax p_allocation_size, const PhysicalDeviceMemoryIndex p_memory_index);
 void free_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory);
 int8* map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size);
 
+Semaphore semaphore_allocate(const LogicalDevice p_device);
+void semaphore_destroy(const LogicalDevice p_device, const Semaphore p_semaphore);
+
+void queue_wait_idle(Queue p_queue);
+
+void command_buffer_begin(CommandBuffer p_command_buffer);
+void command_buffer_end(CommandBuffer p_command_buffer);
+void command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue);
+void command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore);
+void command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore);
+void command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, Semaphore p_notify_semaphore);
+
+CommandPool command_pool_allocate(const LogicalDevice p_logical_device, const QueueFamily p_queue_family);
+void command_pool_destroy(const LogicalDevice p_logical_device, CommandPool p_pool);
+CommandBuffer command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool);
 } // namespace gpu
 
 #undef GPU_DECLARE_TOKEN

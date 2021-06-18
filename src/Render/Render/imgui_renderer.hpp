@@ -95,7 +95,7 @@ struct ImguiRenderer
     {
         if (!this->fonts_initialized)
         {
-            ImGui_ImplVulkan_CreateFontsTexture(p_buffer_memory.allocator.device.command_buffer.command_buffer);
+            ImGui_ImplVulkan_CreateFontsTexture((VkCommandBuffer)p_buffer_memory.allocator.device.command_buffer.command_buffer.tok);
             this->fonts_initialized = 1;
         }
     };
@@ -118,7 +118,7 @@ struct ImguiRenderer
         ImDrawData* l_draw_data = ImGui::GetDrawData();
 
         p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->graphics_pass), this->clear_values.slice);
-        ImGui_ImplVulkan_RenderDrawData(l_draw_data, p_graphics_binder.graphics_allocator.graphics_device.command_buffer.command_buffer);
+        ImGui_ImplVulkan_RenderDrawData(l_draw_data, (VkCommandBuffer)p_graphics_binder.graphics_allocator.graphics_device.command_buffer.command_buffer.tok);
         p_graphics_binder.end_render_pass();
     };
 };

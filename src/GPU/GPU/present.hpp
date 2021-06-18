@@ -167,7 +167,7 @@ struct SwapChain
     inline static void allocate_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, GraphicsAllocator2& p_graphics_allocator,
                                                                const Token<TextureGPU> p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
-        p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(p_present_device.device);
+        p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(gpu::LogicalDevice{(token_t)p_present_device.device});
 
         SliceN<ShaderLayoutParameterType, 1> l_shader_parameter_layout_input_arr{ShaderLayoutParameterType::TEXTURE_FRAGMENT};
         Span<ShaderLayoutParameterType> l_shader_parameter_layout = Span<ShaderLayoutParameterType>::allocate_slice(slice_from_slicen(&l_shader_parameter_layout_input_arr));
@@ -185,7 +185,7 @@ struct SwapChain
 
     inline static void free_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator)
     {
-        p_swap_chain.swap_chain_next_image_semaphore.free(p_present_device.device);
+        p_swap_chain.swap_chain_next_image_semaphore.free(gpu::LogicalDevice{(token_t)p_present_device.device});
 
         p_graphics_allocator.free_shadertexturegpu_parameter(p_buffer_memory.allocator.device, p_swap_chain.shader_parameter_texture,
                                                              p_graphics_allocator.heap.shader_texture_gpu_parameters.get(p_swap_chain.shader_parameter_texture));
@@ -316,7 +316,7 @@ struct GPUPresent
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
                                                            l_presented_image, l_presented_image.format.imageUsage, ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
 
-        vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, this->swap_chain.swap_chain_next_image_semaphore.semaphore, VK_NULL_HANDLE,
+        vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, (VkSemaphore)this->swap_chain.swap_chain_next_image_semaphore.semaphore.tok, VK_NULL_HANDLE,
                                                &this->current_swapchain_image_index));
 
         SliceN<v4f, 1> l_renderpass_clear_arr{v4f{1.0f, 0, 0, 0}};

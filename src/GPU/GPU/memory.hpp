@@ -164,8 +164,8 @@ struct TransferDeviceHeap
 struct TransferDevice
 {
     GraphicsCard graphics_card;
-    gc_t device;
-    gcqueue_t transfer_queue;
+    gpu::LogicalDevice device;
+    gpu::Queue transfer_queue;
 
     TransferDeviceHeap heap;
     CommandPool command_pool;
@@ -175,13 +175,13 @@ struct TransferDevice
     {
         TransferDevice l_transfer_device;
         l_transfer_device.graphics_card = p_instance.graphics_card;
-        l_transfer_device.device = (gc_t)p_instance.logical_device.tok;
+        l_transfer_device.device = p_instance.logical_device;
 
-        vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family.family, 0, &l_transfer_device.transfer_queue);
+        l_transfer_device.transfer_queue = gpu::logical_device_get_queue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family);
 
-        l_transfer_device.heap = TransferDeviceHeap::allocate_default(p_instance.graphics_card, gpu::LogicalDevice{(token_t)l_transfer_device.device});
+        l_transfer_device.heap = TransferDeviceHeap::allocate_default(p_instance.graphics_card, l_transfer_device.device);
 
-        l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family.family);
+        l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family);
         l_transfer_device.command_buffer = l_transfer_device.command_pool.allocate_command_buffer(l_transfer_device.device, l_transfer_device.transfer_queue);
 
         return l_transfer_device;
@@ -189,7 +189,7 @@ struct TransferDevice
 
     inline void free()
     {
-        this->heap.free(gpu::LogicalDevice{(token_t)this->device});
+        this->heap.free(this->device);
         this->command_pool.free_command_buffer(this->device, this->command_buffer);
         this->command_pool.free(this->device);
     };
@@ -251,6 +251,7 @@ struct MappedHostMemory
 template <class _Buffer> struct iBuffer
 {
     const _Buffer& buffer;
+
     inline VkBuffer get_buffer() const
     {
         return this->buffer.buffer;
@@ -284,17 +285,16 @@ struct BufferHost
         l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flags;
         l_buffercreate_info.size = p_buffer_size;
 
-        vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_host.buffer));
+        vk_handle_result(vkCreateBuffer((VkDevice)p_transfer_device.device.tok, &l_buffercreate_info, NULL, &l_buffer_host.buffer));
 
         VkMemoryRequirements l_requirements;
-        vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_host.buffer, &l_requirements);
+        vkGetBufferMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_buffer_host.buffer, &l_requirements);
         gpu::MemoryRequirements l_gpu_requirements;
         l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
         l_gpu_requirements.size = l_requirements.size;
         l_gpu_requirements.alignment = l_requirements.alignment;
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, gpu::LogicalDevice{(token_t)p_transfer_device.device}, l_gpu_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE,
-                                                &l_buffer_host.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_buffer_host.heap_token);
         // p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_buffer_host.heap_token);
         l_buffer_host.memory.map(p_transfer_device, l_buffer_host.heap_token);
         l_buffer_host.bind(p_transfer_device);
@@ -311,7 +311,7 @@ struct BufferHost
 
         p_transfer_device.heap.release_element(this->heap_token);
         // p_transfer_device.heap.release_host_write_element(this->heap_token);
-        vkDestroyBuffer(p_transfer_device.device, this->buffer, NULL);
+        vkDestroyBuffer((VkDevice)p_transfer_device.device.tok, this->buffer, NULL);
         this->buffer = NULL;
     };
 
@@ -344,7 +344,7 @@ struct BufferHost
 #endif
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
         // SliceOffset<int8> l_memory = p_transfer_device.heap.get_host_write_gcmemory_and_offset(this->heap_token);
-        vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        vkBindBufferMemory((VkDevice)p_transfer_device.device.tok, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
     };
 
     inline void map(TransferDevice& p_transfer_device)
@@ -378,18 +378,17 @@ struct BufferGPU
         l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flags;
         l_buffercreate_info.size = p_size;
 
-        vk_handle_result(vkCreateBuffer(p_transfer_device.device, &l_buffercreate_info, NULL, &l_buffer_gpu.buffer));
+        vk_handle_result(vkCreateBuffer((VkDevice)p_transfer_device.device.tok, &l_buffercreate_info, NULL, &l_buffer_gpu.buffer));
 
         VkMemoryRequirements l_requirements;
-        vkGetBufferMemoryRequirements(p_transfer_device.device, l_buffer_gpu.buffer, &l_requirements);
+        vkGetBufferMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_buffer_gpu.buffer, &l_requirements);
 
         gpu::MemoryRequirements l_gpu_requirements;
         l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
         l_gpu_requirements.size = l_requirements.size;
         l_gpu_requirements.alignment = l_requirements.alignment;
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, gpu::LogicalDevice{(token_t)p_transfer_device.device}, l_gpu_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL,
-                                                &l_buffer_gpu.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL, &l_buffer_gpu.heap_token);
         // p_transfer_device.heap.allocate_gpu_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_buffer_gpu.heap_token);
         l_buffer_gpu.bind(p_transfer_device);
 
@@ -400,7 +399,7 @@ struct BufferGPU
     {
         p_transfer_device.heap.release_element(this->heap_token);
         // p_transfer_device.heap.release_gpu_write_element(this->heap_token);
-        vkDestroyBuffer(p_transfer_device.device, this->buffer, NULL);
+        vkDestroyBuffer((VkDevice)p_transfer_device.device.tok, this->buffer, NULL);
         this->buffer = NULL;
     };
 
@@ -409,7 +408,7 @@ struct BufferGPU
     {
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
         // SliceOffset<int8> l_memory = p_transfer_device.heap.get_gpu_write_gcmemory_and_offset(this->heap_token);
-        vkBindBufferMemory(p_transfer_device.device, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        vkBindBufferMemory((VkDevice)p_transfer_device.device.tok, this->buffer, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
     };
 };
 
@@ -498,17 +497,17 @@ struct ImageHost
         l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
         l_image_create_info.initialLayout = p_initial_layout;
 
-        vk_handle_result(vkCreateImage(p_transfer_device.device, &l_image_create_info, NULL, &l_image_host.image));
+        vk_handle_result(vkCreateImage((VkDevice)p_transfer_device.device.tok, &l_image_create_info, NULL, &l_image_host.image));
 
         VkMemoryRequirements l_requirements;
-        vkGetImageMemoryRequirements(p_transfer_device.device, l_image_host.image, &l_requirements);
+        vkGetImageMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_image_host.image, &l_requirements);
 
         gpu::MemoryRequirements l_gpu_requirements;
         l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
         l_gpu_requirements.size = l_requirements.size;
         l_gpu_requirements.alignment = l_requirements.alignment;
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, gpu::LogicalDevice{(token_t)p_transfer_device.device}, l_gpu_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_image_host.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_image_host.heap_token);
         // p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_image_host.heap_token);
         l_image_host.memory.map(p_transfer_device, l_image_host.heap_token);
 
@@ -525,7 +524,7 @@ struct ImageHost
             this->unmap(p_transfer_device);
         };
 
-        vkDestroyImage(p_transfer_device.device, this->image, NULL);
+        vkDestroyImage((VkDevice)p_transfer_device.device.tok, this->image, NULL);
         p_transfer_device.heap.release_element(this->heap_token);
         // p_transfer_device.heap.release_host_write_element(this->heap_token);
     };
@@ -558,7 +557,7 @@ struct ImageHost
 #endif
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
         // SliceOffset<int8> l_memory = p_transfer_device.heap.get_host_write_gcmemory_and_offset(this->heap_token);
-        vkBindImageMemory(p_transfer_device.device, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        vkBindImageMemory((VkDevice)p_transfer_device.device.tok, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
     };
 };
 
@@ -587,10 +586,10 @@ struct ImageGPU
         l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
         l_image_create_info.initialLayout = p_initial_layout;
 
-        vk_handle_result(vkCreateImage(p_transfer_device.device, &l_image_create_info, NULL, &l_image_gpu.image));
+        vk_handle_result(vkCreateImage((VkDevice)p_transfer_device.device.tok, &l_image_create_info, NULL, &l_image_gpu.image));
 
         VkMemoryRequirements l_requirements;
-        vkGetImageMemoryRequirements(p_transfer_device.device, l_image_gpu.image, &l_requirements);
+        vkGetImageMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_image_gpu.image, &l_requirements);
 
         gpu::MemoryRequirements l_gpu_requirements;
         l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
@@ -599,8 +598,7 @@ struct ImageGPU
 
         l_image_gpu.size = l_requirements.size;
 
-        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, gpu::LogicalDevice{(token_t)p_transfer_device.device}, l_gpu_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL,
-                                                &l_image_gpu.heap_token);
+        p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL, &l_image_gpu.heap_token);
 
         l_image_gpu.bind(p_transfer_device);
 
@@ -609,7 +607,7 @@ struct ImageGPU
 
     inline void free(TransferDevice& p_transfer_device)
     {
-        vkDestroyImage(p_transfer_device.device, this->image, NULL);
+        vkDestroyImage((VkDevice)p_transfer_device.device.tok, this->image, NULL);
         p_transfer_device.heap.release_element(this->heap_token);
     };
 
@@ -617,7 +615,7 @@ struct ImageGPU
     inline void bind(TransferDevice& p_transfer_device)
     {
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
-        vkBindImageMemory(p_transfer_device.device, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        vkBindImageMemory((VkDevice)p_transfer_device.device.tok, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
     };
 };
 
@@ -1117,7 +1115,7 @@ struct BufferCommandUtils
         l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
-        vkCmdCopyBufferToImage(p_command_buffer.command_buffer, p_host.buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
+        vkCmdCopyBufferToImage((VkCommandBuffer)p_command_buffer.command_buffer.tok, p_host.buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
     };
@@ -1134,7 +1132,7 @@ struct BufferCommandUtils
         l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
-        vkCmdCopyImageToBuffer(p_command_buffer.command_buffer, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, p_host.buffer, 1, &l_buffer_image_copy);
+        vkCmdCopyImageToBuffer((VkCommandBuffer)p_command_buffer.command_buffer.tok, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, p_host.buffer, 1, &l_buffer_image_copy);
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, p_gpu, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
     };
@@ -1159,7 +1157,7 @@ struct BufferCommandUtils
         l_image_memory_barrier.srcAccessMask = l_layout_barrier.src_access_mask;
         l_image_memory_barrier.dstAccessMask = l_layout_barrier.dst_access_mask;
 
-        vkCmdPipelineBarrier(p_command_buffer.command_buffer, l_layout_barrier.src_stage, l_layout_barrier.dst_stage, 0, 0, NULL, 0, NULL, 1, &l_image_memory_barrier);
+        vkCmdPipelineBarrier((VkCommandBuffer)p_command_buffer.command_buffer.tok, l_layout_barrier.src_stage, l_layout_barrier.dst_stage, 0, 0, NULL, 0, NULL, 1, &l_image_memory_barrier);
     };
 
   private:
@@ -1171,7 +1169,7 @@ struct BufferCommandUtils
 
         VkBufferCopy l_buffer_copy{};
         l_buffer_copy.size = p_source_size;
-        vkCmdCopyBuffer(p_command_buffer.command_buffer, p_source_buffer, p_target_buffer, 1, &l_buffer_copy);
+        vkCmdCopyBuffer((VkCommandBuffer)p_command_buffer.command_buffer.tok, p_source_buffer, p_target_buffer, 1, &l_buffer_copy);
     };
 };
 
