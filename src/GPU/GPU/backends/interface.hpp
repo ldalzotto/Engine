@@ -18,13 +18,13 @@ using LayerConstString = SliceN<int8, 50>;
 
 void layer_push_debug_layers(VectorSlice<LayerConstString>& p_layers);
 
-GPU_DECLARE_TOKEN(Device);
 GPU_DECLARE_TOKEN(Queue);
 GPU_DECLARE_TOKEN(Instance);
 GPU_DECLARE_TOKEN(Surface);
 GPU_DECLARE_TOKEN(Debugger);
 GPU_DECLARE_TOKEN(PhysicalDevice);
 GPU_DECLARE_TOKEN(LogicalDevice);
+GPU_DECLARE_TOKEN(DeviceMemory);
 
 struct ApplicationInfo
 {
@@ -128,10 +128,15 @@ struct MemoryRequirements
     MemoryTypeFlag memory_type;
 };
 
-PhysicalDeviceMemoryIndex physical_device_get_memorytype_index(const PhysicalDeviceMemoryProperties& p_memory_properties, const MemoryTypeFlag p_required_memory_type, const MemoryTypeFlag p_memory_type);
+PhysicalDeviceMemoryIndex physical_device_get_memorytype_index(const PhysicalDeviceMemoryProperties& p_memory_properties, const MemoryTypeFlag p_required_memory_type,
+                                                               const MemoryTypeFlag p_memory_type);
 
 gpu::LogicalDevice logical_device_create(PhysicalDevice p_physical_device, const Slice<LayerConstString>& p_validation_layers, const Slice<GPUExtension>& p_gpu_extensions, const QueueFamily& p_queue);
 void logical_device_destroy(LogicalDevice p_logical_device);
+
+DeviceMemory allocate_memory(const LogicalDevice p_device, const uimax p_allocation_size, const PhysicalDeviceMemoryIndex p_memory_index);
+void free_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory);
+int8* map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size);
 
 } // namespace gpu
 

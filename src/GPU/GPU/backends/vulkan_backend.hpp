@@ -379,3 +379,27 @@ void gpu::logical_device_destroy(LogicalDevice p_logical_device)
 {
     vkDestroyDevice((VkDevice)p_logical_device.tok, NULL);
 };
+
+gpu::DeviceMemory gpu::allocate_memory(const LogicalDevice p_device, const uimax p_allocation_size, const PhysicalDeviceMemoryIndex p_memory_index)
+{
+    VkMemoryAllocateInfo l_memoryallocate_info{};
+    l_memoryallocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    l_memoryallocate_info.allocationSize = p_allocation_size;
+    l_memoryallocate_info.memoryTypeIndex = p_memory_index.index;
+
+    DeviceMemory l_device_memory;
+    vkAllocateMemory((VkDevice)p_device.tok, &l_memoryallocate_info, NULL, (VkDeviceMemory*)&l_device_memory.tok);
+    return l_device_memory;
+};
+
+void gpu::free_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory)
+{
+    vkFreeMemory((VkDevice)p_device.tok, (VkDeviceMemory)p_device_memory.tok, NULL);
+};
+
+int8* gpu::map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size)
+{
+    int8* l_mapped_memory;
+    vk_handle_result(vkMapMemory((VkDevice)p_device.tok, (VkDeviceMemory)p_device_memory.tok, p_offset, p_size, 0, (void**)&l_mapped_memory));
+    return l_mapped_memory;
+};
