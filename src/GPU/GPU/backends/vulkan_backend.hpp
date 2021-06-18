@@ -226,3 +226,71 @@ gpu::Debugger gpu::initialize_debug_callback(Instance p_instance)
     }
     return l_debugger;
 };
+
+gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
+{
+    gpu::physical_device_pick_Return l_picked_device = gpu::physical_device_pick_Return::build_default();
+
+    Span<VkPhysicalDevice> l_physical_devices = vk::enumeratePhysicalDevices((VkInstance)p_instance.tok);
+
+    for (loop(i, 0, l_physical_devices.Capacity))
+    {
+        VkPhysicalDevice& l_physical_device = l_physical_devices.get(i);
+        VkPhysicalDeviceProperties l_physical_device_properties;
+        vkGetPhysicalDeviceProperties(l_physical_device, &l_physical_device_properties);
+        if (l_physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
+            Span<VkQueueFamilyProperties> l_queueFamilies = vk::getPhysicalDeviceQueueFamilyProperties(l_physical_device);
+            uint8 l_queueus_found = 0;
+
+            for (loop(j, 0, l_queueFamilies.Capacity))
+            {
+                if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT)
+                {
+                    l_picked_device.transfer_queue_family.family = (uint32)j;
+                    l_queueus_found += 1;
+                    if (l_queueus_found == 2)
+                    {
+                        break;
+                    }
+                }
+
+                if (l_queueFamilies.get(j).queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT)
+                {
+                    l_picked_device.graphics_queue_family.family = (uint32)j;
+                    l_queueus_found += 1;
+                    if (l_queueus_found == 2)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            l_queueFamilies.free();
+
+            l_picked_device.physical_device.tok = (token_t)l_physical_device;
+            VkPhysicalDeviceMemoryProperties l_memory_properties;
+            vkGetPhysicalDeviceMemoryProperties(l_physical_device, &l_memory_properties);
+
+            l_picked_device.physical_memory_properties.memory_types_size = l_memory_properties.memoryTypeCount;
+            for (loop(k, 0, l_memory_properties.memoryTypeCount))
+            {
+                gpu::MemoryType& l_memory_type = l_picked_device.physical_memory_properties.memory_types.get(k);
+                l_memory_type.heap_index.index = l_memory_properties.memoryTypes[k].heapIndex;
+                l_memory_type.type = (gpu::MemoryTypeFlag)l_memory_properties.memoryTypes[k].propertyFlags;
+            }
+
+            l_picked_device.physical_memory_properties.memory_heaps_size = l_memory_properties.memoryHeapCount;
+            for (loop(k, 0, l_memory_properties.memoryHeapCount))
+            {
+                gpu::MemoryHeap& l_memory_heap = l_picked_device.physical_memory_properties.memory_heaps.get(k);
+                l_memory_heap.size = l_memory_properties.memoryHeaps[k].size;
+            }
+
+            break;
+        }
+    }
+
+    l_physical_devices.free();
+    return l_picked_device;
+};

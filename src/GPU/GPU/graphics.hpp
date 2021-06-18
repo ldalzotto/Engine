@@ -194,9 +194,9 @@ struct GraphicsDevice
         l_graphics_device.graphics_card = p_instance.graphics_card;
         l_graphics_device.device = p_instance.logical_device;
 
-        vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family, 0, &l_graphics_device.graphics_queue);
+        vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family.family, 0, &l_graphics_device.graphics_queue);
 
-        l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family);
+        l_graphics_device.command_pool = CommandPool::allocate(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family.family);
         l_graphics_device.command_buffer = l_graphics_device.command_pool.allocate_command_buffer(l_graphics_device.device, l_graphics_device.graphics_queue);
 
         l_graphics_device.shaderparameter_pool = ShaderParameterPool::allocate(l_graphics_device.device, 10000);

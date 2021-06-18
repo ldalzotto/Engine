@@ -96,18 +96,19 @@ struct TransferDeviceHeap
 
     inline static TransferDeviceHeap allocate_default(const GraphicsCard& p_graphics_card, const gc_t p_transfer_device)
     {
-        TransferDeviceHeap l_heap = TransferDeviceHeap{Span<HeapPagedGPU>::allocate(p_graphics_card.device_memory_properties.memoryHeapCount)};
-        for (loop(i, 0, p_graphics_card.device_memory_properties.memoryHeapCount))
+        TransferDeviceHeap l_heap;
+        l_heap.gpu_heaps = Span<HeapPagedGPU>::allocate(p_graphics_card.device_memory_properties.memory_heaps_size);
+        for (loop(i, 0, p_graphics_card.device_memory_properties.memory_heaps_size))
         {
             int8 l_is_memory_mapped = 0;
-            for (loop(j, 0, p_graphics_card.device_memory_properties.memoryTypeCount))
+            for (loop(j, 0, p_graphics_card.device_memory_properties.memory_types_size))
             {
-                const VkMemoryType* l_memory_type = &p_graphics_card.device_memory_properties.memoryTypes[j];
-                if (l_memory_type->heapIndex == i)
+                const gpu::MemoryType& l_memory_type = p_graphics_card.device_memory_properties.memory_types.get(j);
+                if (l_memory_type.heap_index.index == i)
                 {
-                    if ((l_memory_type->propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) ||
-                        (l_memory_type->propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) ||
-                        (l_memory_type->propertyFlags & VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+                    if (((gpu::MemoryTypeFlag_t)l_memory_type.type & (gpu::MemoryTypeFlag_t)gpu::MemoryTypeFlag::HOST_VISIBLE) ||
+                        ((gpu::MemoryTypeFlag_t)l_memory_type.type & (gpu::MemoryTypeFlag_t)gpu::MemoryTypeFlag::HOST_COHERENT) ||
+                        ((gpu::MemoryTypeFlag_t)l_memory_type.type & (gpu::MemoryTypeFlag_t)gpu::MemoryTypeFlag::HOST_VISIBLE))
                     {
                         l_is_memory_mapped = 1;
                         break;
@@ -140,7 +141,7 @@ struct TransferDeviceHeap
         };
 
         uint32 l_memory_type_index = p_graphics_card.get_memory_type_index(p_requirements, p_memory_property_flags);
-        out_token->heap_index = p_graphics_card.device_memory_properties.memoryTypes[l_memory_type_index].heapIndex;
+        out_token->heap_index = p_graphics_card.device_memory_properties.memory_types.get(l_memory_type_index).heap_index.index;
         return this->gpu_heaps.get(out_token->heap_index).allocate_element(l_aligned_size, p_requirements.alignment, p_transfer_device, l_memory_type_index, &out_token->heap_paged_token);
     };
 
@@ -183,11 +184,11 @@ struct TransferDevice
         l_transfer_device.graphics_card = p_instance.graphics_card;
         l_transfer_device.device = p_instance.logical_device;
 
-        vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family, 0, &l_transfer_device.transfer_queue);
+        vkGetDeviceQueue(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family.family, 0, &l_transfer_device.transfer_queue);
 
         l_transfer_device.heap = TransferDeviceHeap::allocate_default(p_instance.graphics_card, l_transfer_device.device);
 
-        l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family);
+        l_transfer_device.command_pool = CommandPool::allocate(l_transfer_device.device, p_instance.graphics_card.transfer_queue_family.family);
         l_transfer_device.command_buffer = l_transfer_device.command_pool.allocate_command_buffer(l_transfer_device.device, l_transfer_device.transfer_queue);
 
         return l_transfer_device;
