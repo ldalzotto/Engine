@@ -372,54 +372,11 @@ struct BufferGPU
     };
 };
 
-/*
-    mipLevels and arrayLayers are not supported yet. They should always be equals to 1.
-*/
-struct ImageFormat
-{
-    ImageAspectFlag imageAspect;
-    ImageType imageType;
-    ImageUsageFlag imageUsage;
-    ImageFormatFlag format;
-    v3ui extent;
-    uint32 mipLevels;
-    uint32 arrayLayers;
-    VkSampleCountFlagBits samples;
-
-    inline static ImageFormat build_color_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
-    {
-        ImageFormat l_color_imageformat;
-        l_color_imageformat.imageAspect = ImageAspectFlag::COLOR;
-        l_color_imageformat.arrayLayers = 1;
-        l_color_imageformat.format = ImageFormatFlag::R8G8B8A8_SRGB;
-        l_color_imageformat.imageType = ImageType::_2D;
-        l_color_imageformat.mipLevels = 1;
-        l_color_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-        l_color_imageformat.extent = p_extend;
-        l_color_imageformat.imageUsage = p_usage;
-        return l_color_imageformat;
-    };
-
-    inline static ImageFormat build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
-    {
-        ImageFormat l_depth_imageformat;
-        l_depth_imageformat.imageAspect = ImageAspectFlag::DEPTH;
-        l_depth_imageformat.arrayLayers = 1;
-        l_depth_imageformat.format = ImageFormatFlag::D16_UNORM;
-        l_depth_imageformat.imageType = ImageType::_2D;
-        l_depth_imageformat.mipLevels = 1;
-        l_depth_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
-        l_depth_imageformat.extent = p_extend;
-        l_depth_imageformat.imageUsage = p_usage;
-        return l_depth_imageformat;
-    };
-};
-
 template <class _Image> struct iImage
 {
     _Image& image;
 
-    inline const VkImage get_image() const
+    inline const gpu::Image get_image() const
     {
         return this->image.image;
     };
@@ -434,37 +391,19 @@ struct ImageHost
 {
     MappedHostMemory memory;
     TransferDeviceHeapToken heap_token;
-    VkImage image;
+    gpu::Image image;
     ImageFormat format;
 
-    inline static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout)
+    inline static ImageHost allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format)
     {
         ImageHost l_image_host;
         l_image_host.memory = MappedHostMemory::build_default();
         l_image_host.format = p_image_format;
         // l_image_host.target_image_layout = ImageUsageUtils::get_target_imagelayout_from_usage(l_image_host.format.imageUsage);
 
-        VkImageCreateInfo l_image_create_info{};
-        l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        l_image_create_info.imageType = (VkImageType)p_image_format.imageType;
-        l_image_create_info.format = (VkFormat)p_image_format.format;
-        l_image_create_info.extent = VkExtent3D{(uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z};
-        l_image_create_info.mipLevels = p_image_format.mipLevels;
-        l_image_create_info.arrayLayers = p_image_format.arrayLayers;
-        l_image_create_info.samples = p_image_format.samples;
-        l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR; // This is mandatory for host readable image
-        l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
-        l_image_create_info.initialLayout = p_initial_layout;
+        l_image_host.image = gpu::image_allocate(p_transfer_device.device, p_image_format);
 
-        vk_handle_result(vkCreateImage((VkDevice)p_transfer_device.device.tok, &l_image_create_info, NULL, &l_image_host.image));
-
-        VkMemoryRequirements l_requirements;
-        vkGetImageMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_image_host.image, &l_requirements);
-
-        gpu::MemoryRequirements l_gpu_requirements;
-        l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
-        l_gpu_requirements.size = l_requirements.size;
-        l_gpu_requirements.alignment = l_requirements.alignment;
+        gpu::MemoryRequirements l_gpu_requirements = gpu::image_get_memory_requirements(p_transfer_device.device, l_image_host.image);
 
         p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::HOST_VISIBLE, &l_image_host.heap_token);
         // p_transfer_device.heap.allocate_host_write_element(p_transfer_device.device, l_requirements.size, l_requirements.alignment, &l_image_host.heap_token);
@@ -483,7 +422,7 @@ struct ImageHost
             this->unmap(p_transfer_device);
         };
 
-        vkDestroyImage((VkDevice)p_transfer_device.device.tok, this->image, NULL);
+        gpu::image_destroy(p_transfer_device.device, this->image);
         p_transfer_device.heap.release_element(this->heap_token);
         // p_transfer_device.heap.release_host_write_element(this->heap_token);
     };
@@ -516,46 +455,27 @@ struct ImageHost
 #endif
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
         // SliceOffset<int8> l_memory = p_transfer_device.heap.get_host_write_gcmemory_and_offset(this->heap_token);
-        vkBindImageMemory((VkDevice)p_transfer_device.device.tok, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        gpu::image_bind_memory(p_transfer_device.device, this->image, token_build<gpu::_DeviceMemory>((token_t)l_memory.Memory), l_memory.Offset);
     };
 };
 
 struct ImageGPU
 {
     TransferDeviceHeapToken heap_token;
-    VkImage image;
+    gpu::Image image;
     ImageFormat format;
     uimax size;
 
-    inline static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format, const VkImageLayout p_initial_layout)
+    inline static ImageGPU allocate(TransferDevice& p_transfer_device, const ImageFormat& p_image_format)
     {
         ImageGPU l_image_gpu;
         l_image_gpu.format = p_image_format;
         // l_image_gpu.target_image_layout = ImageUsageUtils::get_target_imagelayout_from_usage(l_image_gpu.format.imageUsage);
 
-        VkImageCreateInfo l_image_create_info{};
-        l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        l_image_create_info.imageType = (VkImageType)p_image_format.imageType;
-        l_image_create_info.format = (VkFormat)p_image_format.format;
-        l_image_create_info.extent = VkExtent3D{(uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z};
-        l_image_create_info.mipLevels = p_image_format.mipLevels;
-        l_image_create_info.arrayLayers = p_image_format.arrayLayers;
-        l_image_create_info.samples = p_image_format.samples;
-        l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_OPTIMAL;
-        l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
-        l_image_create_info.initialLayout = p_initial_layout;
+        l_image_gpu.image = gpu::image_allocate(p_transfer_device.device, p_image_format);
 
-        vk_handle_result(vkCreateImage((VkDevice)p_transfer_device.device.tok, &l_image_create_info, NULL, &l_image_gpu.image));
-
-        VkMemoryRequirements l_requirements;
-        vkGetImageMemoryRequirements((VkDevice)p_transfer_device.device.tok, l_image_gpu.image, &l_requirements);
-
-        gpu::MemoryRequirements l_gpu_requirements;
-        l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
-        l_gpu_requirements.size = l_requirements.size;
-        l_gpu_requirements.alignment = l_requirements.alignment;
-
-        l_image_gpu.size = l_requirements.size;
+        gpu::MemoryRequirements l_gpu_requirements = gpu::image_get_memory_requirements(p_transfer_device.device, l_image_gpu.image);
+        l_image_gpu.size = l_gpu_requirements.size;
 
         p_transfer_device.heap.allocate_element(p_transfer_device.graphics_card, p_transfer_device.device, l_gpu_requirements, gpu::MemoryTypeFlag::DEVICE_LOCAL, &l_image_gpu.heap_token);
 
@@ -566,7 +486,7 @@ struct ImageGPU
 
     inline void free(TransferDevice& p_transfer_device)
     {
-        vkDestroyImage((VkDevice)p_transfer_device.device.tok, this->image, NULL);
+        gpu::image_destroy(p_transfer_device.device, this->image);
         p_transfer_device.heap.release_element(this->heap_token);
     };
 
@@ -574,23 +494,22 @@ struct ImageGPU
     inline void bind(TransferDevice& p_transfer_device)
     {
         SliceOffset<int8> l_memory = p_transfer_device.heap.get_element_gcmemory_and_offset(this->heap_token);
-        vkBindImageMemory((VkDevice)p_transfer_device.device.tok, this->image, (VkDeviceMemory)l_memory.Memory, l_memory.Offset);
+        gpu::image_bind_memory(p_transfer_device.device, this->image, token_build<gpu::_DeviceMemory>((token_t)l_memory.Memory), l_memory.Offset);
     };
 };
 
 struct ImageLayoutTransitionBarrierConfiguration
 {
-    VkAccessFlags src_access_mask;
-    VkPipelineStageFlags src_stage;
+    GPUAccessFlag src_access_mask;
+    GPUPipelineStageFlag src_stage;
 
-    VkAccessFlags dst_access_mask;
-    VkPipelineStageFlags dst_stage;
+    GPUAccessFlag dst_access_mask;
+    GPUPipelineStageFlag dst_stage;
 };
 
 namespace ImageLayoutTransitionBarriers_const
 {
 static uint8 ImageUsageCount = 6;
-
 };
 
 struct ImageLayoutTransitionBarriers
@@ -599,52 +518,55 @@ struct ImageLayoutTransitionBarriers
 
     inline static ImageLayoutTransitionBarriers allocate()
     {
-        const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_dst = ImageLayoutTransitionBarrierConfiguration{
-            VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT};
-        const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src = ImageLayoutTransitionBarrierConfiguration{
-            VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT};
+        const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_dst =
+            ImageLayoutTransitionBarrierConfiguration{GPUAccessFlag::UNKNOWN, GPUPipelineStageFlag::TOP_OF_PIPE, GPUAccessFlag::TRANSFER_WRITE, GPUPipelineStageFlag::TRANSFER};
+        const ImageLayoutTransitionBarrierConfiguration undefined_to_transfert_src =
+            ImageLayoutTransitionBarrierConfiguration{GPUAccessFlag::UNKNOWN, GPUPipelineStageFlag::TOP_OF_PIPE, GPUAccessFlag::TRANSFER_READ, GPUPipelineStageFlag::TRANSFER};
         const ImageLayoutTransitionBarrierConfiguration transfer_src_to_shader_readonly =
-            ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                                      VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+            ImageLayoutTransitionBarrierConfiguration{GPUAccessFlag::TRANSFER_READ, GPUPipelineStageFlag::TRANSFER, GPUAccessFlag::SHADER_READ, GPUPipelineStageFlag::FRAGMENT_SHADER};
         const ImageLayoutTransitionBarrierConfiguration transfer_dst_to_shader_readonly =
-            ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                                      VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
-        const ImageLayoutTransitionBarrierConfiguration undefined_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
-            VkAccessFlags(0), VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
-        const ImageLayoutTransitionBarrierConfiguration colorattachement_to_shader_readonly =
-            ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                                      VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
-        const ImageLayoutTransitionBarrierConfiguration shader_readonly_to_colorattachement =
-            ImageLayoutTransitionBarrierConfiguration{VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                                      VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+            ImageLayoutTransitionBarrierConfiguration{GPUAccessFlag::TRANSFER_WRITE, GPUPipelineStageFlag::TRANSFER, GPUAccessFlag::SHADER_READ, GPUPipelineStageFlag::FRAGMENT_SHADER};
+        const ImageLayoutTransitionBarrierConfiguration undefined_to_shader_readonly =
+            ImageLayoutTransitionBarrierConfiguration{GPUAccessFlag::UNKNOWN, GPUPipelineStageFlag::TOP_OF_PIPE, GPUAccessFlag::SHADER_READ, GPUPipelineStageFlag::FRAGMENT_SHADER};
+        const ImageLayoutTransitionBarrierConfiguration colorattachement_to_shader_readonly = ImageLayoutTransitionBarrierConfiguration{
+            GPUAccessFlag::COLOR_ATTACHMENT_WRITE, GPUPipelineStageFlag::COLOR_ATTACHMENT_OUTPUT, GPUAccessFlag::SHADER_READ, GPUPipelineStageFlag::FRAGMENT_SHADER};
+        const ImageLayoutTransitionBarrierConfiguration shader_readonly_to_colorattachement = ImageLayoutTransitionBarrierConfiguration{
+            GPUAccessFlag::SHADER_READ, GPUPipelineStageFlag::FRAGMENT_SHADER, GPUAccessFlag::COLOR_ATTACHMENT_WRITE, GPUPipelineStageFlag::COLOR_ATTACHMENT_OUTPUT};
 
         ImageLayoutTransitionBarriers l_barriers = ImageLayoutTransitionBarriers{
             Span<ImageLayoutTransitionBarrierConfiguration>::callocate(ImageLayoutTransitionBarriers_const::ImageUsageCount * ImageLayoutTransitionBarriers_const::ImageUsageCount)};
+
+        // Undefined to *
         l_barriers.barriers.get(1) = undefined_to_transfert_src;
         l_barriers.barriers.get(2) = undefined_to_transfert_dst;
         l_barriers.barriers.get(3) = undefined_to_shader_readonly;
         l_barriers.barriers.get(4) = undefined_to_shader_readonly;
         l_barriers.barriers.get(5) = undefined_to_shader_readonly;
 
+        // Transfer_src to *
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 1) = undefined_to_transfert_src;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 2) = undefined_to_transfert_dst;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 3) = transfer_src_to_shader_readonly;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 4) = transfer_src_to_shader_readonly;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 1) + 5) = transfer_src_to_shader_readonly;
 
+        // Transfer_dst to *
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 1) = undefined_to_transfert_dst;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 2) = undefined_to_transfert_src;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 3) = transfer_dst_to_shader_readonly;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 4) = transfer_dst_to_shader_readonly;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 2) + 5) = transfer_dst_to_shader_readonly;
 
+        // color_attachment to *
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 1) = undefined_to_transfert_src;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 2) = undefined_to_transfert_dst;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 3) + 5) = colorattachement_to_shader_readonly;
 
+        // depth_attachment to *
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 1) = undefined_to_transfert_src;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 4) + 2) = undefined_to_transfert_dst;
 
+        // shader_readonly to *
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 1) = undefined_to_transfert_src;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 2) = undefined_to_transfert_dst;
         l_barriers.barriers.get(((ImageLayoutTransitionBarriers_const::ImageUsageCount - 1) * 5) + 3) = shader_readonly_to_colorattachement;
@@ -660,24 +582,24 @@ struct ImageLayoutTransitionBarriers
     inline static VkImageLayout get_imagelayout_from_imageusage(const ImageUsageFlag p_flag)
     {
         // VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-        if ((p_flag & ImageUsageFlag::SHADER_COLOR_ATTACHMENT) != ImageUsageFlag::UNDEFINED)
+        if ((p_flag & ImageUsageFlag::SHADER_COLOR_ATTACHMENT) != ImageUsageFlag::UNKNOWN)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         }
-        else if ((p_flag & ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) != ImageUsageFlag::UNKNOWN)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         }
-        else if ((p_flag & ImageUsageFlag::SHADER_TEXTURE_PARAMETER) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::SHADER_TEXTURE_PARAMETER) != ImageUsageFlag::UNKNOWN)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         }
 
-        else if ((p_flag & ImageUsageFlag::TRANSFER_READ) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::TRANSFER_READ) != ImageUsageFlag::UNKNOWN)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         }
-        else if ((p_flag & ImageUsageFlag::TRANSFER_WRITE) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::TRANSFER_WRITE) != ImageUsageFlag::UNKNOWN)
         {
             return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         }
@@ -693,15 +615,15 @@ struct ImageLayoutTransitionBarriers
   private:
     inline uint8 get_index_from_imageusage(const ImageUsageFlag p_flag) const
     {
-        if ((p_flag & ImageUsageFlag::SHADER_COLOR_ATTACHMENT) != ImageUsageFlag::UNDEFINED)
+        if ((p_flag & ImageUsageFlag::SHADER_COLOR_ATTACHMENT) != ImageUsageFlag::UNKNOWN)
         {
             return 3;
         }
-        else if ((p_flag & ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::SHADER_DEPTH_ATTACHMENT) != ImageUsageFlag::UNKNOWN)
         {
             return 4;
         }
-        else if ((p_flag & ImageUsageFlag::SHADER_TEXTURE_PARAMETER) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::SHADER_TEXTURE_PARAMETER) != ImageUsageFlag::UNKNOWN)
         {
             return 5;
         }
@@ -710,11 +632,11 @@ struct ImageLayoutTransitionBarriers
           This is very importtant to have the Transfer conditions after the other because a usage can be (SOMETHING | TRANSFER).
           In that case, we want to return the index linked to "SOMETHING" usage.
         */
-        else if ((p_flag & ImageUsageFlag::TRANSFER_READ) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::TRANSFER_READ) != ImageUsageFlag::UNKNOWN)
         {
             return 1;
         }
-        else if ((p_flag & ImageUsageFlag::TRANSFER_WRITE) != ImageUsageFlag::UNDEFINED)
+        else if ((p_flag & ImageUsageFlag::TRANSFER_WRITE) != ImageUsageFlag::UNKNOWN)
         {
             return 2;
         }
@@ -794,14 +716,14 @@ struct BufferAllocator
 
     inline Token<ImageHost> allocate_imagehost(const Slice<int8>& p_value, const ImageFormat& p_image_format)
     {
-        ImageHost l_image_host = ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED);
+        ImageHost l_image_host = ImageHost::allocate(this->device, p_image_format);
         l_image_host.push(p_value);
         return this->host_images.alloc_element(l_image_host);
     };
 
     inline Token<ImageHost> allocate_imagehost_empty(const ImageFormat& p_image_format)
     {
-        return this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+        return this->host_images.alloc_element(ImageHost::allocate(this->device, p_image_format));
     };
 
     inline void free_imagehost(const Token<ImageHost> p_image_host)
@@ -813,7 +735,7 @@ struct BufferAllocator
 
     inline Token<ImageGPU> allocate_imagegpu(const ImageFormat& p_image_format)
     {
-        return this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED));
+        return this->gpu_images.alloc_element(ImageGPU::allocate(this->device, p_image_format));
     };
 
     inline void free_imagegpu(const Token<ImageGPU> p_image_gpu)
@@ -1074,7 +996,8 @@ struct BufferCommandUtils
         l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
-        vkCmdCopyBufferToImage((VkCommandBuffer)p_command_buffer.command_buffer.tok, (VkBuffer)token_value(p_host.buffer), p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
+        vkCmdCopyBufferToImage((VkCommandBuffer)token_value(p_command_buffer.command_buffer), (VkBuffer)token_value(p_host.buffer), (VkImage)token_value(p_gpu.image),
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_buffer_image_copy);
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
     };
@@ -1091,7 +1014,8 @@ struct BufferCommandUtils
         l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_gpu.format.imageAspect, 0, 0, (uint32_t)p_gpu.format.arrayLayers};
         l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_gpu.format.extent.x, (uint32_t)p_gpu.format.extent.y, (uint32_t)p_gpu.format.extent.z};
 
-        vkCmdCopyImageToBuffer((VkCommandBuffer)p_command_buffer.command_buffer.tok, p_gpu.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, (VkBuffer)token_value(p_host.buffer), 1, &l_buffer_image_copy);
+        vkCmdCopyImageToBuffer((VkCommandBuffer)token_value(p_command_buffer.command_buffer), (VkImage)token_value(p_gpu.image), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               (VkBuffer)token_value(p_host.buffer), 1, &l_buffer_image_copy);
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
     };
@@ -1106,17 +1030,18 @@ struct BufferCommandUtils
         l_image_memory_barrier.newLayout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_target_image_usage);
         l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        l_image_memory_barrier.image = p_image.get_image();
+        l_image_memory_barrier.image = (VkImage)token_value(p_image.get_image());
 
         l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{(VkImageAspectFlags)p_image.get_image_format().imageAspect, 0, (uint32_t)p_image.get_image_format().arrayLayers, 0,
                                                                           (uint32_t)p_image.get_image_format().arrayLayers};
 
         ImageLayoutTransitionBarrierConfiguration l_layout_barrier = p_barriers.get_barrier(p_source_image_usage, p_target_image_usage);
 
-        l_image_memory_barrier.srcAccessMask = l_layout_barrier.src_access_mask;
-        l_image_memory_barrier.dstAccessMask = l_layout_barrier.dst_access_mask;
+        l_image_memory_barrier.srcAccessMask = (VkAccessFlags)l_layout_barrier.src_access_mask;
+        l_image_memory_barrier.dstAccessMask = (VkAccessFlags)l_layout_barrier.dst_access_mask;
 
-        vkCmdPipelineBarrier((VkCommandBuffer)p_command_buffer.command_buffer.tok, l_layout_barrier.src_stage, l_layout_barrier.dst_stage, 0, 0, NULL, 0, NULL, 1, &l_image_memory_barrier);
+        vkCmdPipelineBarrier((VkCommandBuffer)p_command_buffer.command_buffer.tok, (VkPipelineStageFlagBits)l_layout_barrier.src_stage, (VkPipelineStageFlagBits)l_layout_barrier.dst_stage, 0, 0, NULL,
+                             0, NULL, 1, &l_image_memory_barrier);
     };
 
   private:
@@ -1157,7 +1082,7 @@ struct BufferStep
                 Token<ImageHost> l_image_token = p_buffer_events.image_host_allocate_events.get(i).image;
                 ImageHost& l_image = p_buffer_allocator.host_images.get(l_image_token);
                 BufferCommandUtils::cmd_image_layout_transition_v2(p_buffer_allocator.device.command_buffer, p_buffer_allocator.image_layout_barriers, iImage<ImageHost>{l_image},
-                                                                   ImageUsageFlag::UNDEFINED, l_image.format.imageUsage);
+                                                                   ImageUsageFlag::UNKNOWN, l_image.format.imageUsage);
             }
             p_buffer_events.image_host_allocate_events.clear();
         }
@@ -1172,7 +1097,7 @@ struct BufferStep
                 Token<ImageGPU> l_image_token = p_buffer_events.image_gpu_allocate_events.get(i).image;
                 ImageGPU& l_image = p_buffer_allocator.gpu_images.get(l_image_token);
                 BufferCommandUtils::cmd_image_layout_transition_v2(p_buffer_allocator.device.command_buffer, p_buffer_allocator.image_layout_barriers, iImage<ImageGPU>{l_image},
-                                                                   ImageUsageFlag::UNDEFINED, l_image.format.imageUsage);
+                                                                   ImageUsageFlag::UNKNOWN, l_image.format.imageUsage);
             }
             p_buffer_events.image_gpu_allocate_events.clear();
         }

@@ -550,3 +550,44 @@ void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer 
 {
     vkBindBufferMemory((VkDevice)token_value(p_logical_device), (VkBuffer)token_value(p_buffer), (VkDeviceMemory)token_value(p_memory), p_offset);
 };
+
+gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format)
+{
+    VkImageCreateInfo l_image_create_info{};
+    l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    l_image_create_info.imageType = (VkImageType)p_image_format.imageType;
+    l_image_create_info.format = (VkFormat)p_image_format.format;
+    l_image_create_info.extent = VkExtent3D{(uint32_t)p_image_format.extent.x, (uint32_t)p_image_format.extent.y, (uint32_t)p_image_format.extent.z};
+    l_image_create_info.mipLevels = p_image_format.mipLevels;
+    l_image_create_info.arrayLayers = p_image_format.arrayLayers;
+    l_image_create_info.samples = (VkSampleCountFlagBits)p_image_format.samples;
+    l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR; // This is mandatory for host readable image
+    l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
+    l_image_create_info.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+
+    gpu::Image l_image;
+    vk_handle_result(vkCreateImage((VkDevice)token_value(p_logical_device), &l_image_create_info, NULL, (VkImage*)&l_image.tok));
+    return l_image;
+};
+
+void gpu::image_destroy(const LogicalDevice p_logical_device, const Image p_image)
+{
+    vkDestroyImage((VkDevice)token_value(p_logical_device), (VkImage)token_value(p_image), NULL);
+};
+
+gpu::MemoryRequirements gpu::image_get_memory_requirements(const LogicalDevice p_logical_device, const Image p_image)
+{
+    VkMemoryRequirements l_requirements;
+    vkGetImageMemoryRequirements((VkDevice)token_value(p_logical_device), (VkImage)token_value(p_image), &l_requirements);
+
+    gpu::MemoryRequirements l_gpu_requirements;
+    l_gpu_requirements.memory_type = (gpu::MemoryTypeFlag)l_requirements.memoryTypeBits;
+    l_gpu_requirements.size = l_requirements.size;
+    l_gpu_requirements.alignment = l_requirements.alignment;
+    return l_gpu_requirements;
+};
+
+void gpu::image_bind_memory(const LogicalDevice p_logical_device, const Image p_image, const DeviceMemory p_memory, const uimax p_offset)
+{
+    vkBindImageMemory((VkDevice)token_value(p_logical_device), (VkImage)token_value(p_image), (VkDeviceMemory)token_value(p_memory), p_offset);
+};

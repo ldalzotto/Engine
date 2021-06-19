@@ -8,7 +8,7 @@ enum class GPUExtension
 using BufferUsageFlag_t = uint8;
 enum class BufferUsageFlag : BufferUsageFlag_t
 {
-    UNDEFINED = 0,
+    UNKNOWN = 0,
     TRANSFER_READ = 1,
     TRANSFER_WRITE = 2,
     UNIFORM = 16,
@@ -21,7 +21,7 @@ declare_binary_operations(BufferUsageFlag);
 using ImageUsageFlag_t = uint8;
 enum class ImageUsageFlag : ImageUsageFlag_t
 {
-    UNDEFINED = 0,
+    UNKNOWN = 0,
     TRANSFER_READ = 1,
     TRANSFER_WRITE = 2,
     SHADER_TEXTURE_PARAMETER = 4,
@@ -42,7 +42,7 @@ enum class ImageType : ImageType_t
 using ImageAspectFlag_t = uint8;
 enum class ImageAspectFlag : ImageAspectFlag_t
 {
-    UNDEFINED = 0,
+    UNKNOWN = 0,
     COLOR = 1,
     DEPTH = 2
 };
@@ -50,12 +50,83 @@ enum class ImageAspectFlag : ImageAspectFlag_t
 using ImageFormatFlag_t = uint8;
 enum class ImageFormatFlag : ImageFormatFlag_t
 {
-    UNDEFINED = 0,
+    UNKNOWN = 0,
     R8G8B8A8_SRGB = 43,
     D16_UNORM = 124
 };
 
 declare_binary_operations(ImageFormatFlag);
+
+using ImageSampleCountFlag_t = uint8;
+enum class ImageSampleCountFlag : ImageSampleCountFlag_t
+{
+    UNKNOWN = 0,
+    _1 = 1
+};
+
+using GPUPipelineStageFlag_t = uint16;
+enum class GPUPipelineStageFlag : GPUPipelineStageFlag_t
+{
+    UNKNOWN = 0,
+    TOP_OF_PIPE = 1,
+    FRAGMENT_SHADER = 128,
+    COLOR_ATTACHMENT_OUTPUT = 1024,
+    TRANSFER = 4096
+};
+
+using GPUAccessFlag_t = uint16;
+enum class GPUAccessFlag : GPUAccessFlag_t
+{
+    UNKNOWN = 0,
+    SHADER_READ = 32,
+    COLOR_ATTACHMENT_WRITE = 256,
+    TRANSFER_READ = 2048,
+    TRANSFER_WRITE = 4096
+};
+
+
+/*
+    mipLevels and arrayLayers are not supported yet. They should always be equals to 1.
+*/
+struct ImageFormat
+{
+    ImageAspectFlag imageAspect;
+    ImageType imageType;
+    ImageUsageFlag imageUsage;
+    ImageFormatFlag format;
+    v3ui extent;
+    uint32 mipLevels;
+    uint32 arrayLayers;
+    ImageSampleCountFlag samples;
+
+    inline static ImageFormat build_color_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+    {
+        ImageFormat l_color_imageformat;
+        l_color_imageformat.imageAspect = ImageAspectFlag::COLOR;
+        l_color_imageformat.arrayLayers = 1;
+        l_color_imageformat.format = ImageFormatFlag::R8G8B8A8_SRGB;
+        l_color_imageformat.imageType = ImageType::_2D;
+        l_color_imageformat.mipLevels = 1;
+        l_color_imageformat.samples = ImageSampleCountFlag::_1;
+        l_color_imageformat.extent = p_extend;
+        l_color_imageformat.imageUsage = p_usage;
+        return l_color_imageformat;
+    };
+
+    inline static ImageFormat build_depth_2d(const v3ui& p_extend, const ImageUsageFlag p_usage)
+    {
+        ImageFormat l_depth_imageformat;
+        l_depth_imageformat.imageAspect = ImageAspectFlag::DEPTH;
+        l_depth_imageformat.arrayLayers = 1;
+        l_depth_imageformat.format = ImageFormatFlag::D16_UNORM;
+        l_depth_imageformat.imageType = ImageType::_2D;
+        l_depth_imageformat.mipLevels = 1;
+        l_depth_imageformat.samples = ImageSampleCountFlag::_1;
+        l_depth_imageformat.extent = p_extend;
+        l_depth_imageformat.imageUsage = p_usage;
+        return l_depth_imageformat;
+    };
+};
 
 #define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
     struct _##p_name                                                                                                                                                                                   \
@@ -216,6 +287,11 @@ Buffer buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size,
 void buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer);
 MemoryRequirements buffer_get_memory_requirements(const LogicalDevice p_logical_device, const Buffer p_buffer);
 void buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer p_buffer, const DeviceMemory p_memory, const uimax p_offset);
+
+Image image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format);
+void image_destroy(const LogicalDevice p_logical_device, const Image p_image);
+MemoryRequirements image_get_memory_requirements(const LogicalDevice p_logical_device, const Image p_image);
+void image_bind_memory(const LogicalDevice p_logical_device, const Image p_image, const DeviceMemory p_memory, const uimax p_offset);
 } // namespace gpu
 
 #undef GPU_DECLARE_TOKEN
