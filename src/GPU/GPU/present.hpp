@@ -96,14 +96,12 @@ struct GPUPresent_2DQuad
         Slice<_vertex> l_2D_quad_vertices = slice_from_slicen(&l_2D_quad_vertices_arr);
 
         GPUPresent_2DQuad l_return;
-        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(
-            l_2D_quad_vertices.build_asint8().Size, BufferUsageFlag::VERTEX | BufferUsageFlag::TRANSFER_WRITE);
+        l_return.d2_quad_vertices = p_buffer_memory.allocator.allocate_buffergpu(l_2D_quad_vertices.build_asint8().Size, BufferUsageFlag::VERTEX | BufferUsageFlag::TRANSFER_WRITE);
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_vertices, l_2D_quad_vertices.build_asint8());
 
         SliceN<uint32, 6> l_indices_arr{0, 1, 2, 0, 3, 1};
         Slice<uint32> l_indices = slice_from_slicen(&l_indices_arr);
-        l_return.d2_quad_indices_image_indices = p_buffer_memory.allocator.allocate_buffergpu(
-            l_indices.build_asint8().Size, BufferUsageFlag::INDEX | BufferUsageFlag::TRANSFER_WRITE);
+        l_return.d2_quad_indices_image_indices = p_buffer_memory.allocator.allocate_buffergpu(l_indices.build_asint8().Size, BufferUsageFlag::INDEX | BufferUsageFlag::TRANSFER_WRITE);
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_return.d2_quad_indices_image_indices, l_indices.build_asint8());
 
         return l_return;
@@ -232,7 +230,8 @@ struct SwapChain
         {
             ImageFormat l_image_format = ImageFormat::build_color_2d(v3ui{l_swapchain_create.imageExtent.width, l_swapchain_create.imageExtent.height, 1}, ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
             l_image_format.format = (ImageFormatFlag)l_swapchain_create.imageFormat;
-            p_swap_chain.swap_chain_images.get(i) = p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, l_images.get(i), l_image_format, 0});
+            p_swap_chain.swap_chain_images.get(i) =
+                p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, token_build<gpu::_Image>((token_t)l_images.get(i)), l_image_format, 0});
 
             SliceN<AttachmentType, 1> l_attachment_types = {AttachmentType::KHR};
             SliceN<Token<ImageGPU>, 1> l_attachment_images = {p_swap_chain.swap_chain_images.get(i)};

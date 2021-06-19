@@ -490,6 +490,64 @@ void gpu::command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer,
     vk_handle_result(vkQueueSubmit((VkQueue)p_queue.tok, 1, &l_wait_for_end_submit, NULL));
 };
 
+void gpu::command_copy_buffer(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
+{
+    VkBufferCopy l_buffer_copy{};
+    l_buffer_copy.size = p_source_size;
+    vkCmdCopyBuffer((VkCommandBuffer)token_value(p_command_buffer), (VkBuffer)token_value(p_source), (VkBuffer)token_value(p_target), 1, &l_buffer_copy);
+};
+
+void gpu::command_copy_buffer_to_image(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target, const ImageFormat& p_target_format)
+{
+    VkBufferImageCopy l_buffer_image_copy{};
+    l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_target_format.imageAspect, 0, 0, (uint32_t)p_target_format.arrayLayers};
+    l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_target_format.extent.x, (uint32_t)p_target_format.extent.y, (uint32_t)p_target_format.extent.z};
+
+    vkCmdCopyBufferToImage((VkCommandBuffer)token_value(p_command_buffer), (VkBuffer)token_value(p_source), (VkImage)token_value(p_target), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                           &l_buffer_image_copy);
+};
+
+void gpu::command_copy_image_to_buffer(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target)
+{
+    VkBufferImageCopy l_buffer_image_copy{};
+    l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_source_format.imageAspect, 0, 0, (uint32_t)p_source_format.arrayLayers};
+    l_buffer_image_copy.imageExtent = VkExtent3D{(uint32_t)p_source_format.extent.x, (uint32_t)p_source_format.extent.y, (uint32_t)p_source_format.extent.z};
+
+    vkCmdCopyImageToBuffer((VkCommandBuffer)token_value(p_command_buffer), (VkImage)token_value(p_source), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, (VkBuffer)token_value(p_target), 1,
+                           &l_buffer_image_copy);
+};
+
+void gpu::command_copy_image(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format)
+{
+    VkImageCopy l_region = {VkImageSubresourceLayers{(VkImageAspectFlags)p_source_format.imageAspect, 0, 0, (uint32_t)p_source_format.arrayLayers}, VkOffset3D{0, 0, 0},
+                            VkImageSubresourceLayers{(VkImageAspectFlags)p_target_format.imageAspect, 0, 0, (uint32_t)p_target_format.arrayLayers}, VkOffset3D{0, 0, 0},
+                            VkExtent3D{(uint32_t)p_source_format.extent.x, (uint32_t)p_source_format.extent.y, (uint32_t)p_source_format.extent.z}};
+
+    vkCmdCopyImage((VkCommandBuffer)token_value(p_command_buffer), (VkImage)token_value(p_source), VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, (VkImage)token_value(p_target),
+                   VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
+};
+
+void gpu::command_image_layout_transition(CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
+                                          const ImageLayoutFlag p_source_layout, const GPUAccessFlag p_source_access, const GPUPipelineStageFlag p_target_stage, const ImageLayoutFlag p_target_layout,
+                                          const GPUAccessFlag p_target_access)
+{
+    VkImageMemoryBarrier l_image_memory_barrier{};
+    l_image_memory_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    l_image_memory_barrier.oldLayout = (VkImageLayout)p_source_layout;
+    l_image_memory_barrier.newLayout = (VkImageLayout)p_target_layout;
+    l_image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    l_image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    l_image_memory_barrier.image = (VkImage)token_value(p_image);
+
+    l_image_memory_barrier.subresourceRange = VkImageSubresourceRange{(VkImageAspectFlags)p_image_format.imageAspect, 0, (uint32_t)p_image_format.arrayLayers, 0, (uint32_t)p_image_format.arrayLayers};
+
+    l_image_memory_barrier.srcAccessMask = (VkAccessFlags)p_source_access;
+    l_image_memory_barrier.dstAccessMask = (VkAccessFlags)p_target_access;
+
+    vkCmdPipelineBarrier((VkCommandBuffer)token_value(p_command_buffer), (VkPipelineStageFlagBits)p_source_stage, (VkPipelineStageFlagBits)p_target_stage, 0, 0, NULL, 0, NULL, 1,
+                         &l_image_memory_barrier);
+};
+
 gpu::CommandPool gpu::command_pool_allocate(const LogicalDevice p_logical_device, const QueueFamily p_queue_family)
 {
     gpu::CommandPool l_command_pool;
@@ -551,7 +609,7 @@ void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer 
     vkBindBufferMemory((VkDevice)token_value(p_logical_device), (VkBuffer)token_value(p_buffer), (VkDeviceMemory)token_value(p_memory), p_offset);
 };
 
-gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format)
+gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format, const ImageTilingFlag p_image_tiling)
 {
     VkImageCreateInfo l_image_create_info{};
     l_image_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -561,7 +619,7 @@ gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const Image
     l_image_create_info.mipLevels = p_image_format.mipLevels;
     l_image_create_info.arrayLayers = p_image_format.arrayLayers;
     l_image_create_info.samples = (VkSampleCountFlagBits)p_image_format.samples;
-    l_image_create_info.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR; // This is mandatory for host readable image
+    l_image_create_info.tiling = (VkImageTiling)p_image_tiling;
     l_image_create_info.usage = (VkImageUsageFlags)p_image_format.imageUsage;
     l_image_create_info.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 

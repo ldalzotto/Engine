@@ -241,7 +241,7 @@ struct TextureGPU
 
         VkImageViewCreateInfo l_imageview_create_info{};
         l_imageview_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        l_imageview_create_info.image = l_image_gpu.image;
+        l_imageview_create_info.image = (VkImage)token_value(l_image_gpu.image);
         switch (p_image_format.imageType)
         {
         case ImageType::_2D:
@@ -332,7 +332,7 @@ struct RenderPass
                 VkAttachmentDescription l_attachment_description;
                 l_attachment_description = VkAttachmentDescription{};
                 l_attachment_description.format = (VkFormat)p_image_format.format;
-                l_attachment_description.samples = p_image_format.samples;
+                l_attachment_description.samples = (VkSampleCountFlagBits)p_image_format.samples;
                 l_attachment_description.loadOp = (VkAttachmentLoadOp)p_clear_op;
                 l_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
                 l_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -353,7 +353,7 @@ struct RenderPass
             {
                 VkAttachmentDescription& l_attachment_description = local_attachment_descriptions.get(i);
                 VkAttachmentReference& l_color_attachment_reference = local_color_attachment_references.get(l_color_attachments_ref_count);
-                VkImageLayout l_image_layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
+                VkImageLayout l_image_layout = (VkImageLayout)ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
                 l_attachment_description = AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, l_image_layout, l_image_layout);
                 l_color_attachment_reference.attachment = (uint32)i;
                 l_color_attachment_reference.layout = l_attachment_description.finalLayout;
@@ -363,7 +363,7 @@ struct RenderPass
             case AttachmentType::DEPTH:
             {
                 VkAttachmentDescription& l_attachment_description = local_attachment_descriptions.get(i);
-                VkImageLayout l_image_layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
+                VkImageLayout l_image_layout = (VkImageLayout)ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(l_attachment.image_format.imageUsage);
                 l_attachment_description = AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, l_image_layout, l_image_layout);
 
                 l_depth_attachment_reference = VkAttachmentReference{};
@@ -380,7 +380,7 @@ struct RenderPass
                 l_attachment_description =
                     AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
                 l_color_attachment_reference.attachment = (uint32)i;
-                l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
+                l_color_attachment_reference.layout = (VkImageLayout)ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
                 l_color_attachments_ref_count += 1;
             }
             break;
@@ -981,7 +981,7 @@ struct GraphicsAllocator2
 
         VkImageViewCreateInfo l_imageview_create_info{};
         l_imageview_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        l_imageview_create_info.image = p_image_gpu.image;
+        l_imageview_create_info.image = (VkImage)token_value(p_image_gpu.image);
         switch (p_image_gpu.format.imageType)
         {
         case ImageType::_2D:
@@ -992,7 +992,8 @@ struct GraphicsAllocator2
         }
 
         l_imageview_create_info.format = (VkFormat)p_image_gpu.format.format;
-        l_imageview_create_info.subresourceRange = VkImageSubresourceRange{(VkImageAspectFlags)p_image_gpu.format.imageAspect, 0, (uint32_t)p_image_gpu.format.mipLevels, 0, (uint32_t)p_image_gpu.format.arrayLayers};
+        l_imageview_create_info.subresourceRange =
+            VkImageSubresourceRange{(VkImageAspectFlags)p_image_gpu.format.imageAspect, 0, (uint32_t)p_image_gpu.format.mipLevels, 0, (uint32_t)p_image_gpu.format.arrayLayers};
 
         vk_handle_result(vkCreateImageView((VkDevice)p_transfer_device.device.tok, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
 

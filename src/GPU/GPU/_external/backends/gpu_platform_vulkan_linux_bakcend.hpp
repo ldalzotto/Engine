@@ -2,9 +2,9 @@
 
 #include "vulkan_xlib.h"
 
-SliceN<int8*, 1> _g_platform_surface_extensions = {VK_KHR_XLIB_SURFACE_EXTENSION_NAME};
+SliceN<gpu::LayerConstString, 1> _g_platform_surface_extensions = {VK_KHR_XLIB_SURFACE_EXTENSION_NAME};
 
-inline Slice<int8*> gpu_get_platform_surface_extensions(){
+inline Slice<gpu::LayerConstString> gpu_get_platform_surface_extensions(){
     return slice_from_slicen(&_g_platform_surface_extensions);
 };
 

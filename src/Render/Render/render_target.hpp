@@ -18,7 +18,7 @@ struct RenderTargetInternal_Color_Depth
         RenderTargetInternal_Color_Depth l_return;
         l_return.dimensions = p_allocate_info.render_target_dimensions;
 
-        ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
+        ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNKNOWN;
         if (p_allocate_info.attachment_host_read)
         {
             l_additional_attachment_usage_flags = l_additional_attachment_usage_flags | ImageUsageFlag::TRANSFER_READ;

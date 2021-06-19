@@ -5,7 +5,7 @@ enum class GPUExtension
     WINDOW_PRESENT = 0
 };
 
-using BufferUsageFlag_t = uint8;
+using BufferUsageFlag_t = uint32;
 enum class BufferUsageFlag : BufferUsageFlag_t
 {
     UNKNOWN = 0,
@@ -18,7 +18,7 @@ enum class BufferUsageFlag : BufferUsageFlag_t
 
 declare_binary_operations(BufferUsageFlag);
 
-using ImageUsageFlag_t = uint8;
+using ImageUsageFlag_t = uint32;
 enum class ImageUsageFlag : ImageUsageFlag_t
 {
     UNKNOWN = 0,
@@ -31,7 +31,7 @@ enum class ImageUsageFlag : ImageUsageFlag_t
 
 declare_binary_operations(ImageUsageFlag);
 
-using ImageType_t = uint8;
+using ImageType_t = uint32;
 enum class ImageType : ImageType_t
 {
     _1D = 0,
@@ -39,7 +39,7 @@ enum class ImageType : ImageType_t
     _3D = 2
 };
 
-using ImageAspectFlag_t = uint8;
+using ImageAspectFlag_t = uint32;
 enum class ImageAspectFlag : ImageAspectFlag_t
 {
     UNKNOWN = 0,
@@ -47,21 +47,33 @@ enum class ImageAspectFlag : ImageAspectFlag_t
     DEPTH = 2
 };
 
-using ImageFormatFlag_t = uint8;
+using ImageFormatFlag_t = uint32;
 enum class ImageFormatFlag : ImageFormatFlag_t
 {
     UNKNOWN = 0,
+    R8G8B8_SRGB = 29,
     R8G8B8A8_SRGB = 43,
     D16_UNORM = 124
 };
 
 declare_binary_operations(ImageFormatFlag);
 
-using ImageSampleCountFlag_t = uint8;
+using ImageSampleCountFlag_t = uint32;
 enum class ImageSampleCountFlag : ImageSampleCountFlag_t
 {
     UNKNOWN = 0,
     _1 = 1
+};
+
+using ImageLayoutFlag_t = uint32;
+enum class ImageLayoutFlag : ImageLayoutFlag_t
+{
+    UNKNOWN = 0,
+    COLOR_ATTACHMENT = 2,
+    DEPTH_STENCIL_ATTACHMENT = 3,
+    SHADER_READ_ONLY = 5,
+    TRANSFER_SRC = 6,
+    TRANSFER_DST = 7
 };
 
 using GPUPipelineStageFlag_t = uint16;
@@ -74,7 +86,7 @@ enum class GPUPipelineStageFlag : GPUPipelineStageFlag_t
     TRANSFER = 4096
 };
 
-using GPUAccessFlag_t = uint16;
+using GPUAccessFlag_t = uint32;
 enum class GPUAccessFlag : GPUAccessFlag_t
 {
     UNKNOWN = 0,
@@ -83,7 +95,6 @@ enum class GPUAccessFlag : GPUAccessFlag_t
     TRANSFER_READ = 2048,
     TRANSFER_WRITE = 4096
 };
-
 
 /*
     mipLevels and arrayLayers are not supported yet. They should always be equals to 1.
@@ -165,7 +176,7 @@ void instance_destroy(Instance p_instance);
 Debugger initialize_debug_callback(Instance p_instance);
 void debugger_finalize(Debugger p_debugger, Instance p_instance);
 
-using MemoryTypeFlag_t = int8;
+using MemoryTypeFlag_t = uint32;
 enum class MemoryTypeFlag : MemoryTypeFlag_t
 {
     UNkNOWN = 0,
@@ -278,6 +289,13 @@ void command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue);
 void command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore);
 void command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore);
 void command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, Semaphore p_notify_semaphore);
+void command_copy_buffer(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size);
+void command_copy_buffer_to_image(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target, const ImageFormat& p_target_format);
+void command_copy_image_to_buffer(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target);
+void command_copy_image(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format);
+void command_image_layout_transition(CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
+                                     const ImageLayoutFlag p_source_layout, const GPUAccessFlag p_source_access, const GPUPipelineStageFlag p_target_stage, const ImageLayoutFlag p_target_layout,
+                                     const GPUAccessFlag p_target_access);
 
 CommandPool command_pool_allocate(const LogicalDevice p_logical_device, const QueueFamily p_queue_family);
 void command_pool_destroy(const LogicalDevice p_logical_device, CommandPool p_pool);
@@ -288,7 +306,14 @@ void buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer)
 MemoryRequirements buffer_get_memory_requirements(const LogicalDevice p_logical_device, const Buffer p_buffer);
 void buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer p_buffer, const DeviceMemory p_memory, const uimax p_offset);
 
-Image image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format);
+using ImageTilingFlag_t = int8;
+enum class ImageTilingFlag : ImageTilingFlag_t
+{
+    OPTIMAL = 0,
+    LINEAR = 1
+};
+
+Image image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format, const ImageTilingFlag p_image_tiling);
 void image_destroy(const LogicalDevice p_logical_device, const Image p_image);
 MemoryRequirements image_get_memory_requirements(const LogicalDevice p_logical_device, const Image p_image);
 void image_bind_memory(const LogicalDevice p_logical_device, const Image p_image, const DeviceMemory p_memory, const uimax p_offset);

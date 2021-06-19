@@ -111,7 +111,7 @@ inline void gpu_image_allocation()
     l_imageformat.format = ImageFormatFlag::R8G8B8A8_SRGB;
     l_imageformat.imageType = ImageType::_2D;
     l_imageformat.mipLevels = 1;
-    l_imageformat.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+    l_imageformat.samples = ImageSampleCountFlag::_1;
     l_imageformat.extent = v3ui{16, 16, 1};
 
     // allocating and releasing a ImageHost
