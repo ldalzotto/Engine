@@ -1,16 +1,5 @@
 #pragma once
 
-
-#define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
-    struct _##p_name                                                                                                                                                                                   \
-    {                                                                                                                                                                                                  \
-    };                                                                                                                                                                                                 \
-    using p_name = Token<_##p_name>
-
-namespace gpu
-{
-
-
 enum class GPUExtension
 {
     WINDOW_PRESENT = 0
@@ -27,6 +16,8 @@ enum class BufferUsageFlag : BufferUsageFlag_t
     VERTEX = 128
 };
 
+declare_binary_operations(BufferUsageFlag);
+
 using ImageUsageFlag_t = uint8;
 enum class ImageUsageFlag : ImageUsageFlag_t
 {
@@ -37,6 +28,8 @@ enum class ImageUsageFlag : ImageUsageFlag_t
     SHADER_COLOR_ATTACHMENT = 16,
     SHADER_DEPTH_ATTACHMENT = 32
 };
+
+declare_binary_operations(ImageUsageFlag);
 
 using ImageType_t = uint8;
 enum class ImageType : ImageType_t
@@ -61,6 +54,17 @@ enum class ImageFormatFlag : ImageFormatFlag_t
     R8G8B8A8_SRGB = 43,
     D16_UNORM = 124
 };
+
+declare_binary_operations(ImageFormatFlag);
+
+#define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \
+    struct _##p_name                                                                                                                                                                                   \
+    {                                                                                                                                                                                                  \
+    };                                                                                                                                                                                                 \
+    using p_name = Token<_##p_name>
+
+namespace gpu
+{
 
 using LayerConstString = SliceN<int8, 50>;
 

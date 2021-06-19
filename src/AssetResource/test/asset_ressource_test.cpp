@@ -71,7 +71,7 @@ struct AssetResourceTestContext
 
     inline static AssetResourceTestContext allocate()
     {
-        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
+        GPUContext l_gpu_ctx = GPUContext::allocate(Slice<GPUExtension>::build_default());
         RenderTargetInternal_Color_Depth l_render_target = RenderTargetInternal_Color_Depth::allocate(l_gpu_ctx, RenderTargetInternal_Color_Depth::AllocateInfo{v3ui{8, 8, 1}, 0});
         D3Renderer l_renderer = D3Renderer::allocate(l_gpu_ctx, l_render_target);
         String l_asset_database_path = asset_database_test_initialize(slice_int8_build_rawstr("asset.db"));

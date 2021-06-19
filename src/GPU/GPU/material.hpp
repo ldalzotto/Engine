@@ -5,7 +5,7 @@ namespace ShaderParameterBufferAllocationFunctions
 inline static Token<TextureGPU> allocate_texture_gpu_for_shaderparameter(GraphicsAllocator2& p_graphics_allocator, BufferMemory& p_buffer_memory, const ImageFormat& p_base_image_format)
 {
     ImageFormat l_format = p_base_image_format;
-    l_format.imageUsage = (gpu::ImageUsageFlag)((gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_WRITE | (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+    l_format.imageUsage = ImageUsageFlag::TRANSFER_WRITE | ImageUsageFlag::SHADER_TEXTURE_PARAMETER;
     Token<TextureGPU> l_texture_gpu_token = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(p_buffer_memory, p_graphics_allocator, l_format);
     return l_texture_gpu_token;
 };
@@ -120,7 +120,7 @@ struct Material
 
     inline void add_and_allocate_buffer_host_parameter(GraphicsAllocator2& p_graphics_allocator, BufferAllocator& p_buffer_allocator, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
     {
-        Token<BufferHost> l_buffer = p_buffer_allocator.allocate_bufferhost(p_memory, gpu::BufferUsageFlag::UNIFORM);
+        Token<BufferHost> l_buffer = p_buffer_allocator.allocate_bufferhost(p_memory, BufferUsageFlag::UNIFORM);
         this->add_buffer_host_parameter(p_graphics_allocator, p_shader_layout, l_buffer, p_buffer_allocator.host_buffers.get(l_buffer));
     };
 
@@ -165,8 +165,7 @@ struct Material
 
     inline void add_and_allocate_buffer_gpu_parameter(GraphicsAllocator2& p_graphics_allocator, BufferMemory& p_buffer_memory, const ShaderLayout& p_shader_layout, const Slice<int8>& p_memory)
     {
-        Token<BufferGPU> l_buffer_gpu =
-            p_buffer_memory.allocator.allocate_buffergpu(p_memory.Size, (gpu::BufferUsageFlag)((gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::TRANSFER_WRITE | (gpu::BufferUsageFlag_t)gpu::BufferUsageFlag::UNIFORM));
+        Token<BufferGPU> l_buffer_gpu = p_buffer_memory.allocator.allocate_buffergpu(p_memory.Size, BufferUsageFlag::TRANSFER_WRITE | BufferUsageFlag::UNIFORM);
         BufferReadWrite::write_to_buffergpu(p_buffer_memory.allocator, p_buffer_memory.events, l_buffer_gpu, p_memory);
 
         this->add_buffer_gpu_parameter(p_graphics_allocator, p_shader_layout, l_buffer_gpu, p_buffer_memory.allocator.gpu_buffers.get(l_buffer_gpu));

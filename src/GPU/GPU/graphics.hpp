@@ -244,7 +244,7 @@ struct TextureGPU
         l_imageview_create_info.image = l_image_gpu.image;
         switch (p_image_format.imageType)
         {
-        case gpu::ImageType::_2D:
+        case ImageType::_2D:
             l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
             break;
         default:
@@ -380,7 +380,7 @@ struct RenderPass
                 l_attachment_description =
                     AttachmentDescription::build(l_attachment.image_format, l_attachment.clear_op, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
                 l_color_attachment_reference.attachment = (uint32)i;
-                l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
+                l_color_attachment_reference.layout = ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(ImageUsageFlag::SHADER_COLOR_ATTACHMENT);
                 l_color_attachments_ref_count += 1;
             }
             break;
@@ -984,7 +984,7 @@ struct GraphicsAllocator2
         l_imageview_create_info.image = p_image_gpu.image;
         switch (p_image_gpu.format.imageType)
         {
-        case gpu::ImageType::_2D:
+        case ImageType::_2D:
             l_imageview_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
             break;
         default:

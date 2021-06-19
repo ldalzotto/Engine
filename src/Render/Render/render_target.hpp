@@ -18,25 +18,20 @@ struct RenderTargetInternal_Color_Depth
         RenderTargetInternal_Color_Depth l_return;
         l_return.dimensions = p_allocate_info.render_target_dimensions;
 
-        gpu::ImageUsageFlag l_additional_attachment_usage_flags = gpu::ImageUsageFlag::UNDEFINED;
+        ImageUsageFlag l_additional_attachment_usage_flags = ImageUsageFlag::UNDEFINED;
         if (p_allocate_info.attachment_host_read)
         {
-            l_additional_attachment_usage_flags = (gpu::ImageUsageFlag)((gpu::ImageUsageFlag_t)l_additional_attachment_usage_flags | (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::TRANSFER_READ);
+            l_additional_attachment_usage_flags = l_additional_attachment_usage_flags | ImageUsageFlag::TRANSFER_READ;
         }
         if (p_allocate_info.color_attachment_sample)
         {
-            l_additional_attachment_usage_flags =
-                (gpu::ImageUsageFlag)((gpu::ImageUsageFlag_t)l_additional_attachment_usage_flags | (gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
+            l_additional_attachment_usage_flags = l_additional_attachment_usage_flags | ImageUsageFlag::SHADER_TEXTURE_PARAMETER;
         }
 
-        ImageFormat l_color_attachment_format =
-            ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions,
-                                        (gpu::ImageUsageFlag)((gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_COLOR_ATTACHMENT | (gpu::ImageUsageFlag_t)l_additional_attachment_usage_flags));
+        ImageFormat l_color_attachment_format = ImageFormat::build_color_2d(p_allocate_info.render_target_dimensions, ImageUsageFlag::SHADER_COLOR_ATTACHMENT | l_additional_attachment_usage_flags);
         l_return.color = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_color_attachment_format);
 
-        ImageFormat l_depth_attachment_format =
-            ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions,
-                                        (gpu::ImageUsageFlag)((gpu::ImageUsageFlag_t)gpu::ImageUsageFlag::SHADER_DEPTH_ATTACHMENT | (gpu::ImageUsageFlag_t)l_additional_attachment_usage_flags));
+        ImageFormat l_depth_attachment_format = ImageFormat::build_depth_2d(p_allocate_info.render_target_dimensions, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT | l_additional_attachment_usage_flags);
         l_return.depth = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_depth_attachment_format);
 
         return l_return;

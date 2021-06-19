@@ -34,6 +34,7 @@
 #include "./Types/types.hpp"
 #include "./Macros/macros.hpp"
 #include "./Memory/limits.hpp"
+#include "./Functional/binary_operators.hpp"
 
 #include "./_external/Syscall/syscall_interface.hpp"
 #include "./_external/Database/database_interface.hpp"

@@ -86,13 +86,13 @@ struct EngineAllocationFragments
 {
     inline static GPUContext gpucontext_allocate()
     {
-        SliceN<gpu::GPUExtension, 1> tmp_gpu_extensions{gpu::GPUExtension::WINDOW_PRESENT};
+        SliceN<GPUExtension, 1> tmp_gpu_extensions{GPUExtension::WINDOW_PRESENT};
         return GPUContext::allocate(slice_from_slicen(&tmp_gpu_extensions));
     };
 
     inline static GPUContext gpucontext_allocate_headless()
     {
-        return GPUContext::allocate(Slice<gpu::GPUExtension>::build_default());
+        return GPUContext::allocate(Slice<GPUExtension>::build_default());
     };
 
     inline static Renderer_3D d3renderer_allocate(GPUContext& p_gpu_context, const v2ui& p_render_size, const int8 p_render_target_host_readable)
