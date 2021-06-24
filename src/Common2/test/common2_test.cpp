@@ -1112,6 +1112,27 @@ inline void nntree_test()
     }
 
     l_tree.free();
+    l_tree = NNTree<uimax>::allocate_default();
+    // TODO traverse_to_bottom_distinct test
+    {
+        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
+        SliceN<Token<NNTree<uimax>::Node>, 1> l_first_wave_parent = {l_0};
+        Token<NNTree<uimax>::Node> l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
+        Token<NNTree<uimax>::Node> l_2 = l_tree.push_value(3, slice_from_slicen(&l_first_wave_parent));
+        Token<NNTree<uimax>::Node> l_3 = l_tree.push_value(4, slice_from_slicen(&l_first_wave_parent));
+        SliceN<Token<NNTree<uimax>::Node>, 3> l_second_wave_parent = {l_1, l_2, l_3};
+        Token<NNTree<uimax>::Node> l_4 = l_tree.push_value(5, slice_from_slicen(&l_second_wave_parent));
+        Token<NNTree<uimax>::Node> l_5 = l_tree.push_value(6, slice_from_slicen(&l_second_wave_parent));
+        SliceN<Token<NNTree<uimax>::Node>, 3> l_third_wave_parent = {l_4, l_5};
+        Token<NNTree<uimax>::Node> l_6 = l_tree.push_value(7, slice_from_slicen(&l_third_wave_parent));
+
+        uimax l_sum = 0;
+        l_tree.traverse_to_bottom_distinct(l_tree.get(l_0), [&](const NNTree<uimax>::Resolve& p_node) {
+            l_sum += *p_node.Element;
+        });
+        assert_true(l_sum == (1 + 2 + 3 + 4 + 5 + 6 + 7));
+    }
+    l_tree.free();
 };
 
 inline void assert_heap_integrity(Heap* p_heap)
