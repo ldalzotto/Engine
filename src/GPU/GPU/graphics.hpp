@@ -192,7 +192,7 @@ struct GraphicsDevice
     {
         GraphicsDevice l_graphics_device;
         l_graphics_device.graphics_card = p_instance.graphics_card;
-        l_graphics_device.device = (gc_t)p_instance.logical_device.tok;
+        l_graphics_device.device = (gc_t)token_value(p_instance.logical_device);
 
         vkGetDeviceQueue(l_graphics_device.device, p_instance.graphics_card.graphics_queue_family.family, 0, &l_graphics_device.graphics_queue);
 
@@ -254,14 +254,14 @@ struct TextureGPU
         l_imageview_create_info.subresourceRange =
             VkImageSubresourceRange{(VkImageAspectFlags)p_image_format.imageAspect, 0, (uint32_t)p_image_format.mipLevels, 0, (uint32_t)p_image_format.arrayLayers};
 
-        vk_handle_result(vkCreateImageView((VkDevice)p_buffer_memory.allocator.device.device.tok, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
+        vk_handle_result(vkCreateImageView((VkDevice)token_value(p_buffer_memory.allocator.device.device), &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
 
         return l_texture_gpu;
     };
 
     inline void free(BufferMemory& p_buffer_memory)
     {
-        vkDestroyImageView((VkDevice)p_buffer_memory.allocator.device.device.tok, this->ImageView, NULL);
+        vkDestroyImageView((VkDevice)token_value(p_buffer_memory.allocator.device.device), this->ImageView, NULL);
         BufferAllocatorComposition::free_image_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, this->Image);
     };
 };
@@ -454,7 +454,7 @@ struct GraphicsPass
 
         GraphicsPass l_graphics_pass;
 
-        vk_handle_result(vkCreateFramebuffer((VkDevice)p_transfer_device.device.tok, &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
+        vk_handle_result(vkCreateFramebuffer((VkDevice)token_value(p_transfer_device.device), &l_framebuffer_create, NULL, &l_graphics_pass.frame_buffer));
 
         l_graphics_pass.attachment_textures = p_allocated_attachment_textures;
         l_graphics_pass.render_pass = p_render_pass;
@@ -995,7 +995,7 @@ struct GraphicsAllocator2
         l_imageview_create_info.subresourceRange =
             VkImageSubresourceRange{(VkImageAspectFlags)p_image_gpu.format.imageAspect, 0, (uint32_t)p_image_gpu.format.mipLevels, 0, (uint32_t)p_image_gpu.format.arrayLayers};
 
-        vk_handle_result(vkCreateImageView((VkDevice)p_transfer_device.device.tok, &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
+        vk_handle_result(vkCreateImageView((VkDevice)token_value(p_transfer_device.device), &l_imageview_create_info, NULL, &l_texture_gpu.ImageView));
 
         return this->heap.textures_gpu.alloc_element(l_texture_gpu);
     };
@@ -1003,7 +1003,7 @@ struct GraphicsAllocator2
     inline void texturegpu_free(const TransferDevice& p_transfer_device, const Token<TextureGPU> p_texture_gpu)
     {
         TextureGPU& l_texture_gpu = this->heap.textures_gpu.get(p_texture_gpu);
-        vkDestroyImageView((VkDevice)p_transfer_device.device.tok, l_texture_gpu.ImageView, NULL);
+        vkDestroyImageView((VkDevice)token_value(p_transfer_device.device), l_texture_gpu.ImageView, NULL);
 
         this->heap.textures_gpu.release_element(p_texture_gpu);
     };

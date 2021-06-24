@@ -153,7 +153,7 @@ struct TransferDeviceHeap
     inline SliceOffset<int8> get_element_gcmemory_and_offset(const TransferDeviceHeapToken& p_token)
     {
         HeapPagedGPU& l_heap = this->gpu_heaps.get(p_token.heap_index.index);
-        return SliceOffset<int8>::build_from_sliceindex((int8*)l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).gpu_memory.tok, *l_heap.heap.get_sliceindex_only(p_token.heap_paged_token));
+        return SliceOffset<int8>::build_from_sliceindex((int8*)token_value(l_heap.gpu_memories.get(p_token.heap_paged_token.PageIndex).gpu_memory), *l_heap.heap.get_sliceindex_only(p_token.heap_paged_token));
     };
 };
 

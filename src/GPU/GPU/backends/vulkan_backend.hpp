@@ -203,14 +203,13 @@ gpu::Instance gpu::create_instance(const ApplicationInfo& p_application_info)
 
     l_extensions.free();
 
-    gpu::Instance l_instance;
-    l_instance.tok = (uimax)l_vkinstance;
+    gpu::Instance l_instance = token_build<gpu::_Instance>((uimax)l_vkinstance);
     return l_instance;
 };
 
 void gpu::instance_destroy(Instance p_instance)
 {
-    vkDestroyInstance((VkInstance)p_instance.tok, NULL);
+    vkDestroyInstance((VkInstance)token_value(p_instance), NULL);
 };
 
 gpu::Debugger gpu::initialize_debug_callback(Instance p_instance)
@@ -222,10 +221,12 @@ gpu::Debugger gpu::initialize_debug_callback(Instance p_instance)
     l_createinfo.pfnUserCallback = debugCallback;
 
     gpu::Debugger l_debugger;
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr((VkInstance)p_instance.tok, "vkCreateDebugUtilsMessengerEXT");
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr((VkInstance)token_value(p_instance), "vkCreateDebugUtilsMessengerEXT");
     if (func != NULL)
     {
-        func((VkInstance)p_instance.tok, &l_createinfo, NULL, (VkDebugUtilsMessengerEXT*)&l_debugger.tok);
+        VkDebugUtilsMessengerEXT l_debug;
+        func((VkInstance)token_value(p_instance), &l_createinfo, NULL, (VkDebugUtilsMessengerEXT*)&l_debug);
+        l_debugger = token_build<gpu::_Debugger>((token_t)l_debug);
     }
     return l_debugger;
 };
@@ -245,7 +246,7 @@ gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
 {
     gpu::physical_device_pick_Return l_picked_device = gpu::physical_device_pick_Return::build_default();
 
-    Span<VkPhysicalDevice> l_physical_devices = vk::enumeratePhysicalDevices((VkInstance)p_instance.tok);
+    Span<VkPhysicalDevice> l_physical_devices = vk::enumeratePhysicalDevices((VkInstance)token_value(p_instance));
 
     for (loop(i, 0, l_physical_devices.Capacity))
     {
@@ -282,7 +283,7 @@ gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
 
             l_queueFamilies.free();
 
-            l_picked_device.physical_device.tok = (token_t)l_physical_device;
+            l_picked_device.physical_device = token_build<gpu::_PhysicalDevice>((token_t)l_physical_device);
             VkPhysicalDeviceMemoryProperties l_memory_properties;
             vkGetPhysicalDeviceMemoryProperties(l_physical_device, &l_memory_properties);
 
@@ -369,19 +370,19 @@ gpu::LogicalDevice gpu::logical_device_create(PhysicalDevice p_physical_device, 
     }
 
     gpu::LogicalDevice l_logical_device;
-    vk_handle_result(vkCreateDevice((VkPhysicalDevice)p_physical_device.tok, &l_device_create_info, NULL, (VkDevice*)&l_logical_device.tok));
+    vk_handle_result(vkCreateDevice((VkPhysicalDevice)token_value(p_physical_device), &l_device_create_info, NULL, (VkDevice*)token_ptr(l_logical_device)));
     return l_logical_device;
 };
 
 void gpu::logical_device_destroy(LogicalDevice p_logical_device)
 {
-    vkDestroyDevice((VkDevice)p_logical_device.tok, NULL);
+    vkDestroyDevice((VkDevice)token_value(p_logical_device), NULL);
 };
 
 gpu::Queue gpu::logical_device_get_queue(const LogicalDevice p_logical_device, const QueueFamily p_queue_family)
 {
     Queue l_queue;
-    vkGetDeviceQueue((VkDevice)p_logical_device.tok, p_queue_family.family, 0, (VkQueue*)&l_queue.tok);
+    vkGetDeviceQueue((VkDevice)token_value(p_logical_device), p_queue_family.family, 0, (VkQueue*)token_ptr(l_queue));
     return l_queue;
 };
 
@@ -393,19 +394,19 @@ gpu::DeviceMemory gpu::allocate_memory(const LogicalDevice p_device, const uimax
     l_memoryallocate_info.memoryTypeIndex = p_memory_index.index;
 
     DeviceMemory l_device_memory;
-    vkAllocateMemory((VkDevice)p_device.tok, &l_memoryallocate_info, NULL, (VkDeviceMemory*)&l_device_memory.tok);
+    vkAllocateMemory((VkDevice)token_value(p_device), &l_memoryallocate_info, NULL, (VkDeviceMemory*)token_ptr(l_device_memory));
     return l_device_memory;
 };
 
 void gpu::free_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory)
 {
-    vkFreeMemory((VkDevice)p_device.tok, (VkDeviceMemory)p_device_memory.tok, NULL);
+    vkFreeMemory((VkDevice)token_value(p_device), (VkDeviceMemory)token_value(p_device_memory), NULL);
 };
 
 int8* gpu::map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size)
 {
     int8* l_mapped_memory;
-    vk_handle_result(vkMapMemory((VkDevice)p_device.tok, (VkDeviceMemory)p_device_memory.tok, p_offset, p_size, 0, (void**)&l_mapped_memory));
+    vk_handle_result(vkMapMemory((VkDevice)token_value(p_device), (VkDeviceMemory)token_value(p_device_memory), p_offset, p_size, 0, (void**)&l_mapped_memory));
     return l_mapped_memory;
 };
 
@@ -414,32 +415,31 @@ gpu::Semaphore gpu::semaphore_allocate(const LogicalDevice p_device)
     VkSemaphoreCreateInfo l_semaphore_create_info{};
     l_semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     VkSemaphore l_vk_semaphore;
-    vk_handle_result(vkCreateSemaphore((VkDevice)p_device.tok, &l_semaphore_create_info, NULL, &l_vk_semaphore));
-    gpu::Semaphore l_semaphore;
-    l_semaphore.tok = (token_t)l_vk_semaphore;
+    vk_handle_result(vkCreateSemaphore((VkDevice)token_value(p_device), &l_semaphore_create_info, NULL, &l_vk_semaphore));
+    gpu::Semaphore l_semaphore = token_build<gpu::_Semaphore>((token_t)l_vk_semaphore);
     return l_semaphore;
 };
 
 void gpu::semaphore_destroy(const LogicalDevice p_device, const Semaphore p_semaphore)
 {
-    vkDestroySemaphore((VkDevice)p_device.tok, (VkSemaphore)p_semaphore.tok, NULL);
+    vkDestroySemaphore((VkDevice)token_value(p_device), (VkSemaphore)token_value(p_semaphore), NULL);
 };
 
 void gpu::queue_wait_idle(Queue p_queue)
 {
-    vk_handle_result(vkQueueWaitIdle((VkQueue)p_queue.tok));
+    vk_handle_result(vkQueueWaitIdle((VkQueue)token_value(p_queue)));
 };
 
 void gpu::command_buffer_begin(CommandBuffer p_command_buffer)
 {
     VkCommandBufferBeginInfo l_command_buffer_begin_info{};
     l_command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    vk_handle_result(vkBeginCommandBuffer((VkCommandBuffer)p_command_buffer.tok, &l_command_buffer_begin_info));
+    vk_handle_result(vkBeginCommandBuffer((VkCommandBuffer)token_value(p_command_buffer), &l_command_buffer_begin_info));
 };
 
 void gpu::command_buffer_end(CommandBuffer p_command_buffer)
 {
-    vk_handle_result(vkEndCommandBuffer((VkCommandBuffer)p_command_buffer.tok));
+    vk_handle_result(vkEndCommandBuffer((VkCommandBuffer)token_value(p_command_buffer)));
 };
 
 void gpu::command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue)
@@ -447,8 +447,8 @@ void gpu::command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue)
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     l_wait_for_end_submit.commandBufferCount = 1;
-    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)&p_command_buffer.tok;
-    vk_handle_result(vkQueueSubmit((VkQueue)p_queue.tok, 1, &l_wait_for_end_submit, NULL));
+    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)token_ptr(p_command_buffer);
+    vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
 };
 
 void gpu::command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
@@ -456,10 +456,10 @@ void gpu::command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     l_wait_for_end_submit.commandBufferCount = 1;
-    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)&p_command_buffer.tok;
+    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)token_ptr(p_command_buffer);
     l_wait_for_end_submit.signalSemaphoreCount = 1;
-    l_wait_for_end_submit.pSignalSemaphores = (VkSemaphore*)&p_notified_semaphore.tok;
-    vk_handle_result(vkQueueSubmit((VkQueue)p_queue.tok, 1, &l_wait_for_end_submit, NULL));
+    l_wait_for_end_submit.pSignalSemaphores = (VkSemaphore*)token_ptr(p_notified_semaphore);
+    vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
 };
 
 void gpu::command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore)
@@ -467,12 +467,12 @@ void gpu::command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_qu
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     l_wait_for_end_submit.commandBufferCount = 1;
-    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)&p_command_buffer.tok;
+    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)token_ptr(p_command_buffer);
     l_wait_for_end_submit.waitSemaphoreCount = 1;
-    l_wait_for_end_submit.pWaitSemaphores = (VkSemaphore*)&p_after_semaphore.tok;
+    l_wait_for_end_submit.pWaitSemaphores = (VkSemaphore*)token_ptr(p_after_semaphore);
     VkPipelineStageFlags l_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
     l_wait_for_end_submit.pWaitDstStageMask = &l_stage;
-    vk_handle_result(vkQueueSubmit((VkQueue)p_queue.tok, 1, &l_wait_for_end_submit, NULL));
+    vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
 };
 
 void gpu::command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, Semaphore p_notify_semaphore)
@@ -480,14 +480,14 @@ void gpu::command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer,
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     l_wait_for_end_submit.commandBufferCount = 1;
-    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)&p_command_buffer.tok;
+    l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)token_ptr(p_command_buffer);
     l_wait_for_end_submit.waitSemaphoreCount = 1;
-    l_wait_for_end_submit.pWaitSemaphores = (VkSemaphore*)&p_after_semaphore.tok;
+    l_wait_for_end_submit.pWaitSemaphores = (VkSemaphore*)token_ptr(p_after_semaphore);
     l_wait_for_end_submit.signalSemaphoreCount = 1;
-    l_wait_for_end_submit.pSignalSemaphores = (VkSemaphore*)&p_notify_semaphore.tok;
+    l_wait_for_end_submit.pSignalSemaphores = (VkSemaphore*)token_ptr(p_notify_semaphore);
     VkPipelineStageFlags l_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
     l_wait_for_end_submit.pWaitDstStageMask = &l_stage;
-    vk_handle_result(vkQueueSubmit((VkQueue)p_queue.tok, 1, &l_wait_for_end_submit, NULL));
+    vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
 };
 
 void gpu::command_copy_buffer(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
@@ -555,13 +555,13 @@ gpu::CommandPool gpu::command_pool_allocate(const LogicalDevice p_logical_device
     l_command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     l_command_pool_create_info.queueFamilyIndex = p_queue_family.family;
     l_command_pool_create_info.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    vk_handle_result(vkCreateCommandPool((VkDevice)p_logical_device.tok, &l_command_pool_create_info, NULL, (VkCommandPool*)&l_command_pool.tok));
+    vk_handle_result(vkCreateCommandPool((VkDevice)token_value(p_logical_device), &l_command_pool_create_info, NULL, (VkCommandPool*)token_ptr(l_command_pool)));
     return l_command_pool;
 };
 
 void gpu::command_pool_destroy(const LogicalDevice p_logical_device, CommandPool p_pool)
 {
-    vkDestroyCommandPool((VkDevice)p_logical_device.tok, (VkCommandPool)p_pool.tok, NULL);
+    vkDestroyCommandPool((VkDevice)token_value(p_logical_device), (VkCommandPool)token_value(p_pool), NULL);
 };
 
 gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool)
@@ -569,10 +569,10 @@ gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice
     gpu::CommandBuffer l_command_buffer;
     VkCommandBufferAllocateInfo l_command_buffer_allocate_info{};
     l_command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    l_command_buffer_allocate_info.commandPool = (VkCommandPool)p_command_pool.tok;
+    l_command_buffer_allocate_info.commandPool = (VkCommandPool)token_value(p_command_pool);
     l_command_buffer_allocate_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     l_command_buffer_allocate_info.commandBufferCount = 1;
-    vk_handle_result(vkAllocateCommandBuffers((VkDevice)p_logical_device.tok, &l_command_buffer_allocate_info, (VkCommandBuffer*)&l_command_buffer.tok));
+    vk_handle_result(vkAllocateCommandBuffers((VkDevice)token_value(p_logical_device), &l_command_buffer_allocate_info, (VkCommandBuffer*)token_ptr(l_command_buffer)));
     return l_command_buffer;
 };
 
@@ -584,7 +584,7 @@ gpu::Buffer gpu::buffer_allocate(const LogicalDevice p_logical_device, const uim
     l_buffercreate_info.usage = (VkBufferUsageFlags)p_usage_flag;
     l_buffercreate_info.size = p_size;
 
-    vk_handle_result(vkCreateBuffer((VkDevice)p_logical_device.tok, &l_buffercreate_info, NULL, (VkBuffer*)&l_buffer.tok));
+    vk_handle_result(vkCreateBuffer((VkDevice)token_value(p_logical_device), &l_buffercreate_info, NULL, (VkBuffer*)token_ptr(l_buffer)));
     return l_buffer;
 };
 
@@ -624,7 +624,7 @@ gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const Image
     l_image_create_info.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 
     gpu::Image l_image;
-    vk_handle_result(vkCreateImage((VkDevice)token_value(p_logical_device), &l_image_create_info, NULL, (VkImage*)&l_image.tok));
+    vk_handle_result(vkCreateImage((VkDevice)token_value(p_logical_device), &l_image_create_info, NULL, (VkImage*)token_ptr(l_image)));
     return l_image;
 };
 

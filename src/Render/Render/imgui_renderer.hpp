@@ -60,9 +60,9 @@ struct ImguiRenderer
         ImGui::StyleColorsClassic();
 
         ImGui_ImplVulkan_InitInfo l_imgui_info{};
-        l_imgui_info.Instance = (VkInstance)p_gpu_context.instance.instance.tok;
-        l_imgui_info.PhysicalDevice = (VkPhysicalDevice)p_gpu_context.instance.graphics_card.device.tok;
-        l_imgui_info.Device = (gc_t)p_gpu_context.instance.logical_device.tok;
+        l_imgui_info.Instance = (VkInstance)token_value(p_gpu_context.instance.instance);
+        l_imgui_info.PhysicalDevice = (VkPhysicalDevice)token_value(p_gpu_context.instance.graphics_card.device);
+        l_imgui_info.Device = (gc_t)token_value(p_gpu_context.instance.logical_device);
         l_imgui_info.QueueFamily = p_gpu_context.instance.graphics_card.graphics_queue_family.family;
         l_imgui_info.Queue = p_gpu_context.graphics_allocator.graphics_device.graphics_queue;
         l_imgui_info.DescriptorPool = p_gpu_context.graphics_allocator.graphics_device.shaderparameter_pool.descriptor_pool;
@@ -95,7 +95,7 @@ struct ImguiRenderer
     {
         if (!this->fonts_initialized)
         {
-            ImGui_ImplVulkan_CreateFontsTexture((VkCommandBuffer)p_buffer_memory.allocator.device.command_buffer.command_buffer.tok);
+            ImGui_ImplVulkan_CreateFontsTexture((VkCommandBuffer)token_value(p_buffer_memory.allocator.device.command_buffer.command_buffer));
             this->fonts_initialized = 1;
         }
     };
@@ -118,7 +118,7 @@ struct ImguiRenderer
         ImDrawData* l_draw_data = ImGui::GetDrawData();
 
         p_graphics_binder.begin_render_pass(p_graphics_binder.graphics_allocator.heap.graphics_pass.get(this->graphics_pass), this->clear_values.slice);
-        ImGui_ImplVulkan_RenderDrawData(l_draw_data, (VkCommandBuffer)p_graphics_binder.graphics_allocator.graphics_device.command_buffer.command_buffer.tok);
+        ImGui_ImplVulkan_RenderDrawData(l_draw_data, (VkCommandBuffer)token_value(p_graphics_binder.graphics_allocator.graphics_device.command_buffer.command_buffer));
         p_graphics_binder.end_render_pass();
     };
 };

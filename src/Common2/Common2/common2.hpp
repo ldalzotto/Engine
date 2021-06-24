@@ -99,3 +99,5 @@
 #include "./Window/window.hpp"
 
 #include "./Socket/socket_v2.hpp"
+
+#include "./Pattern/command_buffer.hpp"

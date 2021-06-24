@@ -16,22 +16,22 @@ struct GPUPresentDevice
     {
         GPUPresentDevice l_present_device;
         l_present_device.graphics_card = p_instance.graphics_card;
-        l_present_device.device = (gc_t)p_instance.logical_device.tok;
-        l_present_device.surface = (gcsurface_t)gpu_create_surface(p_instance.instance, p_window_handle).tok;
+        l_present_device.device = (gc_t)token_value(p_instance.logical_device);
+        l_present_device.surface = (gcsurface_t)token_value(gpu_create_surface(p_instance.instance, p_window_handle));
 
         l_present_device.recalculate_surface_capabilities();
         // vk_handle_result(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(p_instance.graphics_card.device, l_present_device.surface, &l_present_device.surface_capacilities));
 
         VkPhysicalDeviceProperties l_physical_device_properties;
-        vkGetPhysicalDeviceProperties((VkPhysicalDevice)p_instance.graphics_card.device.tok, &l_physical_device_properties);
+        vkGetPhysicalDeviceProperties((VkPhysicalDevice)token_value(p_instance.graphics_card.device), &l_physical_device_properties);
 
         uint32 l_present_queue_family_index = -1;
-        Span<VkQueueFamilyProperties> l_queueFamilies = vk::getPhysicalDeviceQueueFamilyProperties((VkPhysicalDevice)p_instance.graphics_card.device.tok);
+        Span<VkQueueFamilyProperties> l_queueFamilies = vk::getPhysicalDeviceQueueFamilyProperties((VkPhysicalDevice)token_value(p_instance.graphics_card.device));
 
         for (loop(j, 0, l_queueFamilies.Capacity))
         {
             uint32 l_is_supported = 0;
-            vk_handle_result(vkGetPhysicalDeviceSurfaceSupportKHR((VkPhysicalDevice)p_instance.graphics_card.device.tok, (uint32)j, l_present_device.surface, &l_is_supported));
+            vk_handle_result(vkGetPhysicalDeviceSurfaceSupportKHR((VkPhysicalDevice)token_value(p_instance.graphics_card.device), (uint32)j, l_present_device.surface, &l_is_supported));
             if (l_is_supported)
             {
                 l_present_queue_family_index = (uint32)j;
@@ -48,7 +48,7 @@ struct GPUPresentDevice
 
         l_present_device.present_mode = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
-        Span<VkSurfaceFormatKHR> l_surface_formats = vk::getPhysicalDeviceSurfaceFormatsKHR((VkPhysicalDevice)p_instance.graphics_card.device.tok, l_present_device.surface);
+        Span<VkSurfaceFormatKHR> l_surface_formats = vk::getPhysicalDeviceSurfaceFormatsKHR((VkPhysicalDevice)token_value(p_instance.graphics_card.device), l_present_device.surface);
         for (loop(i, 0, l_surface_formats.Capacity))
         {
             VkSurfaceFormatKHR& l_surface_format = l_surface_formats.get(i);
@@ -65,12 +65,12 @@ struct GPUPresentDevice
 
     inline void free(const GPUInstance& p_instance)
     {
-        vkDestroySurfaceKHR((VkInstance)p_instance.instance.tok, this->surface, NULL);
+        vkDestroySurfaceKHR((VkInstance)token_value(p_instance.instance), this->surface, NULL);
     };
 
     inline void recalculate_surface_capabilities()
     {
-        vk_handle_result(vkGetPhysicalDeviceSurfaceCapabilitiesKHR((VkPhysicalDevice)this->graphics_card.device.tok, this->surface, &this->surface_capacilities));
+        vk_handle_result(vkGetPhysicalDeviceSurfaceCapabilitiesKHR((VkPhysicalDevice)token_value(this->graphics_card.device), this->surface, &this->surface_capacilities));
     };
 };
 
@@ -315,7 +315,7 @@ struct GPUPresent
         BufferCommandUtils::cmd_image_layout_transition_v2(p_graphics_binder.graphics_allocator.graphics_device.command_buffer, p_graphics_binder.buffer_allocator.image_layout_barriers,
                                                            iImage<ImageGPU>{l_presented_image}, l_presented_image.format.imageUsage, ImageUsageFlag::SHADER_TEXTURE_PARAMETER);
 
-        vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, (VkSemaphore)this->swap_chain.swap_chain_next_image_semaphore.semaphore.tok, VK_NULL_HANDLE,
+        vk_handle_result(vkAcquireNextImageKHR(this->device.device, this->swap_chain.swap_chain, 0, (VkSemaphore)token_value(this->swap_chain.swap_chain_next_image_semaphore.semaphore), VK_NULL_HANDLE,
                                                &this->current_swapchain_image_index));
 
         SliceN<v4f, 1> l_renderpass_clear_arr{v4f{1.0f, 0, 0, 0}};

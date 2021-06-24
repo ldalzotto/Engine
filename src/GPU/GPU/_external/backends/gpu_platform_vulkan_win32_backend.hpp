@@ -17,9 +17,8 @@ inline gpu::Surface gpu_create_surface(gpu::Instance p_instance, const window_na
     l_win32_surface_create.hinstance = GetModuleHandle(NULL);
 
     gcsurface_t l_vksurface;
-    vk_handle_result(vkCreateWin32SurfaceKHR((VkInstance)p_instance.tok, &l_win32_surface_create, NULL, &l_vksurface));
+    vk_handle_result(vkCreateWin32SurfaceKHR((VkInstance)token_value(p_instance), &l_win32_surface_create, NULL, &l_vksurface));
 
-    gpu::Surface l_surface;
-    l_surface.tok = (uimax)l_vksurface;
+    gpu::Surface l_surface = token_build<gpu::_Surface>((token_t)l_vksurface);
     return l_surface;
 };

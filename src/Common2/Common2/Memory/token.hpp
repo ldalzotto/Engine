@@ -39,6 +39,16 @@ template <class ElementType> inline token_t token_value(const Token<ElementType>
     return p_token.tok;
 };
 
+template <class ElementType> inline token_t* token_ptr(Token<ElementType>& p_token)
+{
+    return &p_token.tok;
+};
+
+template <class ElementType> inline const token_t* token_ptr(const Token<ElementType>& p_token)
+{
+    return &p_token.tok;
+};
+
 template <class ElementType> inline Token<ElementType> token_build_default()
 {
     return Token<ElementType>{(token_t)-1};
@@ -58,8 +68,7 @@ inline int8 token_equals(const token_t p_left, const token_t p_right)
     return p_left == p_right;
 }
 
-template <class CastedType>
-inline token_t token_build_from(const token_t p_token)
+template <class CastedType> inline token_t token_build_from(const token_t p_token)
 {
     return p_token;
 };
@@ -69,18 +78,24 @@ inline token_t token_value(const token_t p_token)
     return p_token;
 };
 
-template <class ElementType>
-inline token_t token_build_default()
+inline token_t* token_ptr(token_t& p_token)
+{
+    return &p_token;
+};
+
+inline const token_t* token_ptr(const token_t& p_token)
+{
+    return &p_token;
+};
+
+template <class ElementType> inline token_t token_build_default()
 {
     return (token_t)-1;
 };
 
-template <class ElementType>
-inline token_t token_build(const token_t p_token)
+template <class ElementType> inline token_t token_build(const token_t p_token)
 {
     return p_token;
 };
 
 #endif
-
-
