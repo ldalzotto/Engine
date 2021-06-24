@@ -113,7 +113,7 @@ struct SceneTree
 
     inline void add_child(const NodeEntry& p_parent, const NodeEntry& p_child)
     {
-        if (this->node_tree.add_child(p_parent, p_child))
+        if (this->node_tree.add_child_silent(p_parent, p_child))
         {
             this->mark_node_for_recalculation_recursive(p_child);
         }

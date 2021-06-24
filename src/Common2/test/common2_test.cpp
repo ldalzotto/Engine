@@ -1048,7 +1048,7 @@ inline void ntree_test()
         Token<uimax> l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
         Token<uimax> l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
 
-        assert_true(l_uimax_tree.add_child(l_3_node, l_2_2_node));
+        assert_true(l_uimax_tree.add_child_silent(l_3_node, l_2_2_node));
 
         Slice<Token<NTreeNode>> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>(l_2_node));
         assert_true(l_2_node_childs.Size == 1);
@@ -1062,6 +1062,56 @@ inline void ntree_test()
     }
 
     l_uimax_tree.free();
+};
+
+inline void nntree_test()
+{
+    NNTree<uimax> l_tree = NNTree<uimax>::allocate_default();
+
+    // Testing child add
+    // Multiple parent childs
+    // Removing a node recursively
+    {
+        Token<uimax> l_0 = l_tree.push_root_value(1);
+
+        assert_true(token_value(l_0) == 0);
+        assert_true(*l_tree.get(l_0).Element == 1);
+        assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 0);
+        assert_true(l_tree.get_parents(l_tree.get(l_0)).Size == 0);
+
+        // Adding child nodes to the root node
+        SliceN<Token<uimax>, 1> l_parents = {l_0};
+        Token<uimax> l_0_1 = l_tree.push_value(2, slice_from_slicen(&l_parents));
+        Token<uimax> l_0_2 = l_tree.push_value(3, slice_from_slicen(&l_parents));
+
+        assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 2);
+        assert_true(l_tree.get_parents(l_tree.get(l_0_1)).Size == 1);
+        assert_true(*l_tree.get(l_0_1).Element == 2);
+        assert_true(l_tree.get_parents(l_tree.get(l_0_2)).Size == 1);
+        assert_true(*l_tree.get(l_0_2).Element == 3);
+
+        // We add a node whose parents are all already created nodes
+        SliceN<Token<uimax>, 3> l_parents_2 = {l_0_1, l_0_2, l_0};
+        Token<uimax> l_0_0_1 = l_tree.push_value(4, slice_from_slicen(&l_parents_2));
+
+        assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 3);
+        assert_true(l_tree.get_childs(l_tree.get(l_0_1)).Size == 1);
+        assert_true(l_tree.get_childs(l_tree.get(l_0_2)).Size == 1);
+
+        assert_true(l_tree.get_parents(l_tree.get(l_0_0_1)).Size == 3);
+        assert_true(*l_tree.get(l_0_0_1).Element == 4);
+
+        SliceN<Token<uimax>, 1> l_parent_3 = {l_0_1};
+        Token<uimax> l_0_0_2 = l_tree.push_value(5, slice_from_slicen(&l_parent_3));
+        l_tree.remove_node_recursively(l_0_1);
+
+        assert_true(l_tree.is_node_free(l_0_0_2));
+        assert_true(l_tree.is_node_free(l_0_1));
+        assert_true(l_tree.get_parents(l_tree.get(l_0_0_1)).Size == 2);
+        assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 2);
+    }
+
+    l_tree.free();
 };
 
 inline void assert_heap_integrity(Heap* p_heap)
@@ -2229,6 +2279,7 @@ int main(int argc, int8** argv)
     poolofvector_test();
     pool_hashed_counted_test();
     ntree_test();
+    nntree_test();
     sort_test();
     heap_test();
     heappaged_test();
