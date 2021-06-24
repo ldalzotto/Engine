@@ -34,21 +34,21 @@ struct SceneAsset
         this->node_to_components.free();
     };
 
-    inline Token<transform> add_node_without_parent(const transform& p_node_local_transform)
+    inline Token<NTree<transform>::Node> add_node_without_parent(const transform& p_node_local_transform)
     {
-        Token<transform> l_node = this->nodes.push_root_value(p_node_local_transform);
+        Token<NTree<transform>::Node> l_node = this->nodes.push_root_value(p_node_local_transform);
         this->node_to_components.push_back_element_empty();
         return l_node;
     };
 
-    inline Token<transform> add_node(const transform& p_node_local_transform, const Token<transform> p_parent)
+    inline Token<NTree<transform>::Node> add_node(const transform& p_node_local_transform, const Token<NTree<transform>::Node> p_parent)
     {
-        Token<transform> l_node = this->nodes.push_value(p_node_local_transform, p_parent);
+        Token<NTree<transform>::Node> l_node = this->nodes.push_value(p_node_local_transform, p_parent);
         this->node_to_components.push_back_element_empty();
         return l_node;
     };
 
-    inline void add_component(const Token<transform> p_node, const component_t p_component_type, const Slice<int8>& p_component_value_memory)
+    inline void add_component(const Token<NTree<transform>::Node> p_node, const component_t p_component_type, const Slice<int8>& p_component_value_memory)
     {
         this->component_assets.push_back_empty(sizeof(SceneAssetComponent::type) + sizeof(SceneAssetComponent::value_size) + p_component_value_memory.Size);
         Slice<int8> l_element = this->component_assets.get_last_element();
@@ -62,7 +62,7 @@ struct SceneAsset
         this->node_to_components.element_push_back_element(token_value(p_node), token_build<SliceIndex>(this->component_assets.get_size() - 1));
     };
 
-    template <class ComponentType> inline void add_component_typed(const Token<transform> p_node, const ComponentType& p_component)
+    template <class ComponentType> inline void add_component_typed(const Token<NTree<transform>::Node> p_node, const ComponentType& p_component)
     {
         this->add_component(p_node, ComponentType::Type, Slice<ComponentType>::build_asint8_memory_singleelement(&p_component));
     };
@@ -96,7 +96,7 @@ struct SceneAsset
     {
         Span<Token<Node>> l_allocated_nodes = Span<Token<Node>>::allocate(this->nodes.Indices.get_size());
         {
-            this->nodes.traverse3(token_build<NTreeNode>(0), [&](const NTree<transform>::Resolve& p_node) {
+            this->nodes.traverse3(token_build<NTree<transform>::Node>(0), [&](const NTree<transform>::Resolve& p_node) {
                 Token<Node> l_parent;
                 if (p_node.has_parent())
                 {
@@ -125,7 +125,7 @@ struct SceneAsset
     struct AddComponentAssetToSceneAsset
     {
         SceneAsset* thiz;
-        Token<transform> p_scene_asset_node;
+        Token<NTree<transform>::Node> p_scene_asset_node;
 
         template <class ComponentType> inline void add(const ComponentType& p_component) const
         {
@@ -143,11 +143,11 @@ struct SceneAsset
     template <class ComponentResourceDeconstrcutorFunc>
     inline void scene_copied_to(Scene* p_scene, const Token<Node> p_start_node_included, const ComponentResourceDeconstrcutorFunc& p_component_resrouce_deconstructor)
     {
-        Span<Token<transform>> l_allocated_nodes = Span<Token<transform>>::allocate(p_scene->tree.node_tree.Indices.get_size());
+        Span<Token<NTree<transform>::Node>> l_allocated_nodes = Span<Token<NTree<transform>::Node>>::allocate(p_scene->tree.node_tree.Indices.get_size());
 
         {
-            NodeEntry l_node = p_scene->tree.node_tree.get(p_start_node_included);
-            Token<transform> l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
+            NodeEntry l_node = p_scene->tree.get_node(p_start_node_included);
+            Token<NTree<transform>::Node> l_allocated_node = this->add_node_without_parent(l_node.Element->local_transform);
             l_allocated_nodes.get(token_value(l_node.Node->index)) = l_allocated_node;
             Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>(l_node.Node->index));
             for (loop(i, 0, l_components.Size))
@@ -156,8 +156,8 @@ struct SceneAsset
             }
         }
 
-        p_scene->tree.node_tree.traverse3_excluded(token_build_from<NTreeNode>(p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
-            Token<transform> l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(token_value(p_node.Node->parent)));
+        p_scene->tree.node_tree.traverse3_excluded(token_build_from<NTree<Node>::Node>(p_start_node_included), [&](const NTree<Node>::Resolve& p_node) {
+            Token<NTree<transform>::Node> l_allocated_node = this->add_node(p_node.Element->local_transform, l_allocated_nodes.get(token_value(p_node.Node->parent)));
             l_allocated_nodes.get(token_value(p_node.Node->index)) = l_allocated_node;
 
             Slice<NodeComponent> l_components = p_scene->get_node_components(token_build_from<Node>(p_node.Node->index));
@@ -205,12 +205,12 @@ struct SceneJSON_TO_SceneAsset
         struct Stack
         {
             Vector<JSONDeserializer> node_object_iterator;
-            Vector<Token<transform>> allocated_nodes;
+            Vector<Token<NTree<transform>::Node>> allocated_nodes;
             Vector<JSONDeserializer> node_childs_serializers;
 
             inline static Stack allocate_default()
             {
-                return Stack{Vector<JSONDeserializer>::allocate(0), Vector<Token<transform>>::allocate(0), Vector<JSONDeserializer>::allocate(0)};
+                return Stack{Vector<JSONDeserializer>::allocate(0), Vector<Token<NTree<transform>::Node>>::allocate(0), Vector<JSONDeserializer>::allocate(0)};
             };
 
             inline void free()
@@ -220,7 +220,7 @@ struct SceneJSON_TO_SceneAsset
                 this->node_childs_serializers.free();
             };
 
-            inline void push_stack(const Token<transform> p_allocated_node, const JSONDeserializer& p_node_object_iterator)
+            inline void push_stack(const Token<NTree<transform>::Node> p_allocated_node, const JSONDeserializer& p_node_object_iterator)
             {
                 this->node_object_iterator.push_back_element(p_node_object_iterator);
                 this->allocated_nodes.push_back_element(p_allocated_node);
@@ -239,7 +239,7 @@ struct SceneJSON_TO_SceneAsset
                 return this->node_object_iterator.get(this->node_object_iterator.Size - 1);
             };
 
-            inline Token<transform> get_allocated_node()
+            inline Token<NTree<transform>::Node> get_allocated_node()
             {
                 return this->allocated_nodes.get(this->allocated_nodes.Size - 1);
             };
@@ -256,13 +256,13 @@ struct SceneJSON_TO_SceneAsset
         {
 
             transform l_transform;
-            Token<transform> l_allocated_node;
+            Token<NTree<transform>::Node> l_allocated_node;
 
             // A temporary iterator to work within the loop
             JSONDeserializer l_object_iterator = JSONDeserializer::allocate_default();
 
             l_transform = deserialize_node_transform(l_object, l_object_iterator);
-            l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, token_build<transform>(0));
+            l_allocated_node = in_out_SceneAssetTree->add_node(l_transform, token_build<NTree<transform>::Node>(0));
             deserialize_components<ComponentDeserializationFunc>(l_object, l_object_iterator, l_allocated_node, in_out_SceneAssetTree);
 
             l_object.next_array(SceneSerialization_const::node_childs_field, &l_object_iterator);
@@ -313,7 +313,7 @@ struct SceneJSON_TO_SceneAsset
     };
 
     template <class ComponentDeserializationFunc>
-    inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token<transform> p_node_token, SceneAsset* in_in_out_SceneAssetTreeout_scene)
+    inline static void deserialize_components(JSONDeserializer& p_node, JSONDeserializer& p_tmp_iterator, const Token<NTree<transform>::Node> p_node_token, SceneAsset* in_in_out_SceneAssetTreeout_scene)
     {
         p_node.next_array(SceneSerialization_const::node_components_field, &p_tmp_iterator);
         JSONDeserializer l_array = JSONDeserializer::allocate_default();

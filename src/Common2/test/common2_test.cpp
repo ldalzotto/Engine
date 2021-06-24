@@ -959,15 +959,15 @@ inline void ntree_test()
 {
     NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
 
-    Token<uimax> l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
+    Token<NTree<uimax>::Node> l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
     l_uimax_tree.push_value(cast(uimax, 1), l_root);
-    Token<uimax> l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-    Token<uimax> l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+    Token<NTree<uimax>::Node> l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
+    Token<NTree<uimax>::Node> l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
 
     l_uimax_tree.push_value(cast(uimax, 4), l_2_node);
     l_uimax_tree.push_value(cast(uimax, 5), l_2_node);
 
-    Token<uimax> l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
+    Token<NTree<uimax>::Node> l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
 
     {
         assert_true(l_uimax_tree.Memory.get_size() == 7);
@@ -981,11 +981,11 @@ inline void ntree_test()
             assert_true(token_value(l_root_element.Node->index) == (token_t)0);
             assert_true(token_value(l_root_element.Node->childs) != (token_t)-1);
 
-            Slice<Token<NTreeNode>> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
+            Slice<Token<NTree<uimax>::Node>> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
             assert_true(l_childs_indices.Size == 3);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(token_build_from<uimax>(l_childs_indices.get(i))) == i + 1);
+                assert_true(l_uimax_tree.get_value(l_childs_indices.get(i)) == i + 1);
             }
         }
 
@@ -997,11 +997,11 @@ inline void ntree_test()
             assert_true(token_value(l_2_element.Node->index) == (token_t)2);
             assert_true(token_value(l_2_element.Node->childs) != (token_t)-1);
 
-            Slice<Token<NTreeNode>> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
+            Slice<Token<NTree<uimax>::Node>> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
             assert_true(l_childs_indices.Size == 2);
             for (loop(i, 0, l_childs_indices.Size))
             {
-                assert_true(l_uimax_tree.get_value(token_build_from<uimax>(l_childs_indices.get(i))) == i + 4);
+                assert_true(l_uimax_tree.get_value(l_childs_indices.get(i)) == i + 4);
             }
         }
     }
@@ -1010,7 +1010,7 @@ inline void ntree_test()
     {
         uimax l_counter = 0;
 
-        l_uimax_tree.traverse3(token_build<NTreeNode>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+        l_uimax_tree.traverse3(token_build<NTree<uimax>::Node>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
             l_counter += 1;
             *(p_node.Element) += 1;
         });
@@ -1025,15 +1025,15 @@ inline void ntree_test()
 
     // removal test
     {
-        l_uimax_tree.remove_node_recursively(token_build_from<NTreeNode>(l_2_node));
+        l_uimax_tree.remove_node_recursively(l_2_node);
 
         NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
-        Slice<Token<NTreeNode>> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
+        Slice<Token<NTree<uimax>::Node>> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
         assert_true(l_root_node_childs.Size == 2);
 
         {
             uimax l_counter = 0;
-            l_uimax_tree.traverse3(token_build<NTreeNode>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
+            l_uimax_tree.traverse3(token_build<NTree<uimax>::Node>(0), [&l_counter](const NTree<uimax>::Resolve& p_node) {
                 l_counter += 1;
                 *p_node.Element += 1;
             });
@@ -1045,16 +1045,16 @@ inline void ntree_test()
     // add_child
     {
         l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-        Token<uimax> l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
-        Token<uimax> l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        Token<NTree<uimax>::Node> l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        Token<NTree<uimax>::Node> l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
 
         assert_true(l_uimax_tree.add_child_silent(l_3_node, l_2_2_node));
 
-        Slice<Token<NTreeNode>> l_2_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>(l_2_node));
+        Slice<Token<NTree<uimax>::Node>> l_2_node_childs = l_uimax_tree.get_childs_from_node(l_2_node);
         assert_true(l_2_node_childs.Size == 1);
         assert_true(token_value(l_2_node_childs.get(0)) == token_value(l_2_1_node));
 
-        Slice<Token<NTreeNode>> l_3_node_childs = l_uimax_tree.get_childs_from_node(token_build_from<NTreeNode>(l_3_node));
+        Slice<Token<NTree<uimax>::Node>> l_3_node_childs = l_uimax_tree.get_childs_from_node(l_3_node);
         assert_true(l_3_node_childs.Size == 2);
         assert_true(token_value(l_3_node_childs.get(1)) == token_value(l_2_2_node));
 
@@ -1072,7 +1072,7 @@ inline void nntree_test()
     // Multiple parent childs
     // Removing a node recursively
     {
-        Token<uimax> l_0 = l_tree.push_root_value(1);
+        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
 
         assert_true(token_value(l_0) == 0);
         assert_true(*l_tree.get(l_0).Element == 1);
@@ -1080,9 +1080,9 @@ inline void nntree_test()
         assert_true(l_tree.get_parents(l_tree.get(l_0)).Size == 0);
 
         // Adding child nodes to the root node
-        SliceN<Token<uimax>, 1> l_parents = {l_0};
-        Token<uimax> l_0_1 = l_tree.push_value(2, slice_from_slicen(&l_parents));
-        Token<uimax> l_0_2 = l_tree.push_value(3, slice_from_slicen(&l_parents));
+        SliceN<Token<NNTree<uimax>::Node>, 1> l_parents = {l_0};
+        Token<NNTree<uimax>::Node> l_0_1 = l_tree.push_value(2, slice_from_slicen(&l_parents));
+        Token<NNTree<uimax>::Node> l_0_2 = l_tree.push_value(3, slice_from_slicen(&l_parents));
 
         assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 2);
         assert_true(l_tree.get_parents(l_tree.get(l_0_1)).Size == 1);
@@ -1091,8 +1091,8 @@ inline void nntree_test()
         assert_true(*l_tree.get(l_0_2).Element == 3);
 
         // We add a node whose parents are all already created nodes
-        SliceN<Token<uimax>, 3> l_parents_2 = {l_0_1, l_0_2, l_0};
-        Token<uimax> l_0_0_1 = l_tree.push_value(4, slice_from_slicen(&l_parents_2));
+        SliceN<Token<NNTree<uimax>::Node>, 3> l_parents_2 = {l_0_1, l_0_2, l_0};
+        Token<NNTree<uimax>::Node> l_0_0_1 = l_tree.push_value(4, slice_from_slicen(&l_parents_2));
 
         assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 3);
         assert_true(l_tree.get_childs(l_tree.get(l_0_1)).Size == 1);
@@ -1101,8 +1101,8 @@ inline void nntree_test()
         assert_true(l_tree.get_parents(l_tree.get(l_0_0_1)).Size == 3);
         assert_true(*l_tree.get(l_0_0_1).Element == 4);
 
-        SliceN<Token<uimax>, 1> l_parent_3 = {l_0_1};
-        Token<uimax> l_0_0_2 = l_tree.push_value(5, slice_from_slicen(&l_parent_3));
+        SliceN<Token<NNTree<uimax>::Node>, 1> l_parent_3 = {l_0_1};
+        Token<NNTree<uimax>::Node> l_0_0_2 = l_tree.push_value(5, slice_from_slicen(&l_parent_3));
         l_tree.remove_node_recursively(l_0_1);
 
         assert_true(l_tree.is_node_free(l_0_0_2));

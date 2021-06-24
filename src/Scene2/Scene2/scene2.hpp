@@ -98,7 +98,7 @@ struct SceneTree
     };
     inline NodeEntry get_node(const Token<Node> p_node)
     {
-        return this->node_tree.get(p_node);
+        return this->node_tree.get(token_build_from<NTree<Node>::Node>(p_node));
     };
     inline NodeEntry get_node_parent(const NodeEntry& p_node)
     {
@@ -107,7 +107,7 @@ struct SceneTree
 
     inline Slice<Token<Node>> get_node_childs(const NodeEntry& p_node)
     {
-        Slice<Token<NTreeNode>> l_childs = this->node_tree.get_childs(p_node.Node->childs);
+        Slice<Token<NTree<Node>::Node>> l_childs = this->node_tree.get_childs(p_node.Node->childs);
         return sliceoftoken_cast(Node, l_childs);
     };
 
@@ -243,7 +243,7 @@ struct SceneTree
     inline void clear_nodes_state()
     {
         // TODO -> can't we iterate on the pool tree pool vector instead of traversing ?
-        this->node_tree.traverse3(token_build<NTreeNode>(0), [](const NodeEntry& p_node) {
+        this->node_tree.traverse3(token_build<NTree<Node>::Node>(0), [](const NodeEntry& p_node) {
             p_node.Element->state.haschanged_thisframe = false;
         });
     };
@@ -251,17 +251,17 @@ struct SceneTree
   private:
     inline Token<Node> allocate_node(const transform& p_initial_local_transform, const Token<Node> p_parent)
     {
-        Token<Node> l_node = this->node_tree.push_value(Node::build(Node::State::build(1, 1), p_initial_local_transform), p_parent);
-        return l_node;
+        Token<NTree<Node>::Node> l_node = this->node_tree.push_value(Node::build(Node::State::build(1, 1), p_initial_local_transform), token_build_from<NTree<Node>::Node>(p_parent));
+        return token_build_from<Node>(l_node);
     };
     inline Token<Node> allocate_root_node()
     {
-        Token<Node> l_node = this->node_tree.push_root_value(Node::build(Node::State::build(1, 1), transform_const::ORIGIN));
-        return l_node;
+        Token<NTree<Node>::Node> l_node = this->node_tree.push_root_value(Node::build(Node::State::build(1, 1), transform_const::ORIGIN));
+        return token_build_from<Node>(l_node);
     };
     inline void mark_node_for_recalculation_recursive(const NodeEntry& p_node)
     {
-        this->node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [](const NodeEntry& p_node) {
+        this->node_tree.traverse3(token_build_from<NTree<Node>::Node>(p_node.Node->index), [](const NodeEntry& p_node) {
             p_node.Element->mark_for_recaluclation();
         });
     };
@@ -431,7 +431,7 @@ struct Scene
         this->tree.node_tree.make_node_orphan(l_node_copy);
         this->scene_events.orphan_nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_node.Node->index));
 
-        this->tree.node_tree.traverse3(token_build_from<NTreeNode>(p_node.Node->index), [this](const NodeEntry& p_tree_node) {
+        this->tree.node_tree.traverse3(p_node.Node->index, [this](const NodeEntry& p_tree_node) {
             Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
             for (loop(i, 0, l_node_component_tokens.Size))
             {
