@@ -21,17 +21,30 @@
 #include "./command_buffer.hpp"
 #include "./instance.hpp"
 #include "./memory.hpp"
+
+// TODO -> the TMP_GPU_GRAPHICS_ENABLED preprocessing variable enable or disable all gpu graphics related stuff
+// This variable must be removed when graphics will have been abstracted on the gpu_interface
+#if GPU_BACKEND_SOFTWARE
+#define TMP_GPU_GRAPHICS_ENABLED 0
+#else
+#define TMP_GPU_GRAPHICS_ENABLED 1
+#endif
+#if TMP_GPU_GRAPHICS_ENABLED
+
 #include "./graphics.hpp"
 #include "./material.hpp"
 #include "./graphics_binder.hpp"
 #include "./present.hpp"
 
+#endif
+
 struct GPUContext
 {
     GPUInstance instance;
     BufferMemory buffer_memory;
+#if TMP_GPU_GRAPHICS_ENABLED
     GraphicsAllocator2 graphics_allocator;
-
+#endif
     Semafore buffer_end_semaphore;
     gpu::CommandBufferSubmit buffer_command_submit;
     Semafore graphics_end_semaphore;
@@ -41,7 +54,9 @@ struct GPUContext
         GPUContext l_context;
         l_context.instance = GPUInstance::allocate(p_gpu_extensions);
         l_context.buffer_memory = BufferMemory::allocate(l_context.instance);
+#if TMP_GPU_GRAPHICS_ENABLED
         l_context.graphics_allocator = GraphicsAllocator2::allocate_default(l_context.instance);
+#endif
         l_context.buffer_end_semaphore = Semafore::allocate(l_context.instance.logical_device);
         l_context.graphics_end_semaphore = Semafore::allocate(l_context.instance.logical_device);
         return l_context;
@@ -53,7 +68,9 @@ struct GPUContext
 
         this->buffer_end_semaphore.free(this->instance.logical_device);
         this->graphics_end_semaphore.free(this->instance.logical_device);
+#if TMP_GPU_GRAPHICS_ENABLED
         this->graphics_allocator.free();
+#endif
         this->buffer_memory.free();
         this->instance.free();
     };
@@ -80,6 +97,7 @@ struct GPUContext
         this->buffer_memory.allocator.device.command_buffer.wait_for_completion();
     };
 
+#if TMP_GPU_GRAPHICS_ENABLED
     inline GraphicsBinder build_graphics_binder()
     {
         GraphicsBinder l_binder = GraphicsBinder::build(this->buffer_memory.allocator, this->graphics_allocator);
@@ -104,6 +122,7 @@ struct GPUContext
         this->graphics_allocator.graphics_device.command_buffer.wait_for_completion();
         this->buffer_command_submit = token_build_default<gpu::_CommandBufferSubmit>();
     };
+#endif
 };
 
 // The buffer step can be broken down into multiple parts if for some reason, we want to execute an additional operation on the transfer command buffer.

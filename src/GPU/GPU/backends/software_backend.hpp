@@ -2,6 +2,10 @@
 
 #include "GPU_Software/gpu_software.hpp"
 
+void gpu::layer_push_debug_layers(VectorSlice<LayerConstString>& p_layers){
+    // nothing
+};
+
 gpu::Instance gpu::create_instance(const ApplicationInfo& p_application_info)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)heap_malloc(sizeof(gpu_software::Instance));
@@ -32,12 +36,12 @@ gpu::physical_device_pick_Return gpu::physical_device_pick(Instance p_instance)
 
     MemoryHeap l_memory_heap;
     l_memory_heap.size = 0;
-    l_memory_heap.type = MemoryTypeFlag::DEVICE_LOCAL;
+    l_memory_heap.type = MemoryTypeFlag::HOST_VISIBLE;
     l_return.physical_memory_properties.memory_heaps = SliceN<MemoryHeap, PhysicalDeviceMemoryProperties::stack_size>{l_memory_heap};
     l_return.physical_memory_properties.memory_heaps_size = 1;
 
     MemoryType l_device_host_memory_type;
-    l_device_host_memory_type.type = MemoryTypeFlag::DEVICE_LOCAL;
+    l_device_host_memory_type.type = MemoryTypeFlag::HOST_VISIBLE;
     l_device_host_memory_type.heap_index = {0};
     l_return.physical_memory_properties.memory_types = SliceN<MemoryType, PhysicalDeviceMemoryProperties::stack_size>{l_device_host_memory_type};
     l_return.physical_memory_properties.memory_types_size = 1;
@@ -106,13 +110,13 @@ void gpu::command_buffer_end(LogicalDevice p_device, CommandBuffer p_command_buf
 gpu::CommandBufferSubmit gpu::command_buffer_submit(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer));
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer)));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer));
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer)));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
@@ -120,18 +124,18 @@ gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
 
-    l_instance->command_buffer_submit_wait_for(
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
         token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)});
+        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)}));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
                                                                      CommandBufferSubmit p_after_command_buffer, Semaphore p_notify_semaphore)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    l_instance->command_buffer_submit_wait_for(
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
         token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)});
+        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)}));
 };
 
 void gpu::command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
@@ -236,6 +240,13 @@ gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice
     return token_build_from<gpu::_CommandBuffer>(l_command_buffer);
 };
 
+void gpu::command_pool_destroy_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool, CommandBuffer p_command_buffer)
+{
+    gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
+    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    l_instance->command_pool.free_command_buffer(l_command_buffer);
+};
+
 gpu::Buffer gpu::buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size, const BufferUsageFlag p_usage_flag)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
@@ -257,8 +268,8 @@ gpu::MemoryRequirements gpu::buffer_get_memory_requirements(const LogicalDevice 
     Token<gpu_software::Buffer> l_buffer = token_build_from<gpu_software::Buffer>(p_buffer);
     MemoryRequirements l_requirements;
     l_requirements.size = l_instance->buffers.get(l_buffer).size;
-    l_requirements.alignment = 0;
-    l_requirements.memory_type = MemoryTypeFlag::DEVICE_LOCAL;
+    l_requirements.alignment = 1;
+    l_requirements.memory_type = MemoryTypeFlag::HOST_VISIBLE;
     return l_requirements;
 };
 
@@ -294,8 +305,8 @@ gpu::MemoryRequirements gpu::image_get_memory_requirements(const LogicalDevice p
     gpu_software::Image& l_image = l_instance->images.get(l_image_token);
     gpu::MemoryRequirements l_requirements;
     l_requirements.size = l_image.format.x * l_image.format.y * l_image.format.z;
-    l_requirements.alignment = 0;
-    l_requirements.memory_type = MemoryTypeFlag::DEVICE_LOCAL;
+    l_requirements.alignment = 1;
+    l_requirements.memory_type = MemoryTypeFlag::HOST_VISIBLE;
     return l_requirements;
 };
 

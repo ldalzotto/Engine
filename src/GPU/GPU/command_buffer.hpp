@@ -128,7 +128,6 @@ struct CommandPool
         l_command_buffer.queue = p_queue;
         l_command_buffer.device_used = p_device;
 
-        // vkDestroySemaphore()
         // This is to avoid errors if we try to submit the command buffer if there is no previous recording.
         l_command_buffer.begin();
         l_command_buffer.end();
@@ -143,6 +142,6 @@ struct CommandPool
 #if __DEBUG
         assert_true(p_command_buffer.debug_state == CommandBuffer::DebugState::WAITING);
 #endif
-        //  vkDestroySemaphore(p_device, p_command_buffer.semaphore, NULL);
+        gpu::command_pool_destroy_command_buffer(p_device, this->pool, p_command_buffer.command_buffer);
     };
 };

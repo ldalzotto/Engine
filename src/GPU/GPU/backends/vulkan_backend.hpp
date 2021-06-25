@@ -583,6 +583,10 @@ gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice
     return l_command_buffer;
 };
 
+void gpu::command_pool_destroy_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool, CommandBuffer p_command_buffer){
+    // nothing
+};
+
 gpu::Buffer gpu::buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size, const BufferUsageFlag p_usage_flag)
 {
     gpu::Buffer l_buffer;

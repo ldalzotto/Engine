@@ -1,7 +1,8 @@
 
 #include "GPU/gpu.hpp"
+#if TMP_GPU_GRAPHICS_ENABLED
 #include "AssetCompiler/asset_compiler.hpp"
-
+#endif
 // #define RENDER_DOC_DEBUG
 
 #ifdef RENDER_DOC_DEBUG
@@ -180,6 +181,7 @@ inline void gpu_image_allocation()
     l_gpu_context.free();
 };
 
+#if TMP_GPU_GRAPHICS_ENABLED
 /*
     Creates a GraphicsPass that only clear input attachments.
     We check that the attachment has well been cleared with the input color.
@@ -194,8 +196,7 @@ inline void gpu_renderpass_clear()
     rdoc_api->StartFrameCapture(l_gpu_context.buffer_memory.allocator.device.device, NULL);
 #endif
     Token<TextureGPU> l_color_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(
-        l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
-        ImageFormat::build_color_2d(v3ui{32, 32, 1}, ImageUsageFlag::TRANSFER_READ | ImageUsageFlag::SHADER_COLOR_ATTACHMENT));
+        l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, ImageFormat::build_color_2d(v3ui{32, 32, 1}, ImageUsageFlag::TRANSFER_READ | ImageUsageFlag::SHADER_COLOR_ATTACHMENT));
     Token<TextureGPU> l_depth_texture = GraphicsAllocatorComposition::allocate_texturegpu_with_imagegpu(l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator,
                                                                                                         ImageFormat::build_depth_2d(v3ui{32, 32, 1}, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT));
 
@@ -963,9 +964,8 @@ inline void gpu_texture_mapping()
         v3ui l_render_extends = v3ui{16, 16, 1};
 
         SliceN<AttachmentType, 2> l_attachment_types = {AttachmentType::COLOR, AttachmentType::DEPTH};
-        SliceN<ImageFormat, 2> l_image_formats = {
-            ImageFormat::build_color_2d(l_render_extends, ImageUsageFlag::TRANSFER_READ | ImageUsageFlag::SHADER_COLOR_ATTACHMENT),
-            ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
+        SliceN<ImageFormat, 2> l_image_formats = {ImageFormat::build_color_2d(l_render_extends, ImageUsageFlag::TRANSFER_READ | ImageUsageFlag::SHADER_COLOR_ATTACHMENT),
+                                                  ImageFormat::build_depth_2d(l_render_extends, ImageUsageFlag::SHADER_DEPTH_ATTACHMENT)};
         SliceN<RenderPassAttachment::ClearOp, 2> l_clears = {RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED};
         Token<GraphicsPass> l_graphics_pass = GraphicsPassAllocationComposition::allocate_attachmentimages_then_attachmenttextures_then_renderpass_then_graphicspass<2>(
             l_gpu_context.buffer_memory, l_gpu_context.graphics_allocator, l_attachment_types, l_image_formats, l_clears);
@@ -1301,6 +1301,8 @@ inline void gpu_material_parameter_set()
     l_gpu_context.free();
 };
 
+#endif
+
 int main()
 {
 #ifdef RENDER_DOC_DEBUG
@@ -1313,6 +1315,7 @@ int main()
 
     gpu_buffer_allocation();
     gpu_image_allocation();
+#if TMP_GPU_GRAPHICS_ENABLED
     gpu_renderpass_clear();
     gpu_draw();
     gpu_depth_compare_test();
@@ -1320,7 +1323,7 @@ int main()
     gpu_texture_mapping();
     gpu_present();
     gpu_material_parameter_set();
-
+#endif
     memleak_ckeck();
 };
 

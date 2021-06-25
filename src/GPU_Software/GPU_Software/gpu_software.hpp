@@ -114,6 +114,7 @@ struct Instance
         l_instance.buffers = Pool<Buffer>::allocate(0);
         l_instance.images = Pool<Image>::allocate(0);
         l_instance.command_pool = pattern::cb::CommandPool<GPUCommand>::allocate_default();
+        l_instance.command_execution = pattern::cb::CommandBufferExecutionFlow<GPUCommand>::allocate_default();
         return l_instance;
     };
 
@@ -124,10 +125,12 @@ struct Instance
         assert_true(!this->buffers.has_allocated_elements());
         assert_true(!this->images.has_allocated_elements());
 #endif
+
         this->memory_chunks.free();
         this->buffers.free();
         this->images.free();
         this->command_pool.free();
+        this->command_execution.free();
     };
 
     inline Token<Span<int8>> memory_allocate(const uimax p_size)
@@ -141,14 +144,15 @@ struct Instance
         this->memory_chunks.release_element(p_memory);
     };
 
-    inline void command_buffer_submit(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer)
+    inline Token<NNTree<Token<pattern::cb::CommandBuffer<GPUCommand>>>::Node> command_buffer_submit(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer)
     {
-        this->command_execution.push_command_buffer(p_command_buffer);
+        return this->command_execution.push_command_buffer(p_command_buffer);
     };
 
-    inline void command_buffer_submit_wait_for(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer, const pattern::cb::Semaphore<GPUCommand> p_wait_for)
+    inline Token<NNTree<Token<pattern::cb::CommandBuffer<GPUCommand>>>::Node> command_buffer_submit_wait_for(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer,
+                                                                                                             const pattern::cb::Semaphore<GPUCommand> p_wait_for)
     {
-        this->command_execution.push_command_buffer_with_constraint(p_command_buffer, p_wait_for);
+        return this->command_execution.push_command_buffer_with_constraint(p_command_buffer, p_wait_for);
     };
 
     inline void wait_for_end()

@@ -301,6 +301,7 @@ void command_image_layout_transition(LogicalDevice p_device, CommandBuffer p_com
 CommandPool command_pool_allocate(const LogicalDevice p_logical_device, const QueueFamily p_queue_family);
 void command_pool_destroy(const LogicalDevice p_logical_device, CommandPool p_pool);
 CommandBuffer command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool);
+void command_pool_destroy_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool, CommandBuffer p_command_buffer);
 
 Buffer buffer_allocate(const LogicalDevice p_logical_device, const uimax p_size, const BufferUsageFlag p_usage_flag);
 void buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer);
