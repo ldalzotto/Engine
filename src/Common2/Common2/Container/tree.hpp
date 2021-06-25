@@ -386,6 +386,7 @@ template <class ElementType> struct NNTree
         l_connections_that_will_be_removed.free();
     };
 
+    // TODO -> adding a way to abort ?
     template <class _ForeachFunc> inline void traverse_to_bottom(const Resolve& p_start_node_included, const _ForeachFunc& p_foreach)
     {
         p_foreach(Resolve::build_default(), p_start_node_included);

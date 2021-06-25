@@ -430,28 +430,29 @@ void gpu::queue_wait_idle(Queue p_queue)
     vk_handle_result(vkQueueWaitIdle((VkQueue)token_value(p_queue)));
 };
 
-void gpu::command_buffer_begin(CommandBuffer p_command_buffer)
+void gpu::command_buffer_begin(LogicalDevice p_device, CommandBuffer p_command_buffer)
 {
     VkCommandBufferBeginInfo l_command_buffer_begin_info{};
     l_command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     vk_handle_result(vkBeginCommandBuffer((VkCommandBuffer)token_value(p_command_buffer), &l_command_buffer_begin_info));
 };
 
-void gpu::command_buffer_end(CommandBuffer p_command_buffer)
+void gpu::command_buffer_end(LogicalDevice p_device, CommandBuffer p_command_buffer)
 {
     vk_handle_result(vkEndCommandBuffer((VkCommandBuffer)token_value(p_command_buffer)));
 };
 
-void gpu::command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue)
+gpu::CommandBufferSubmit gpu::command_buffer_submit(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue)
 {
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     l_wait_for_end_submit.commandBufferCount = 1;
     l_wait_for_end_submit.pCommandBuffers = (VkCommandBuffer*)token_ptr(p_command_buffer);
     vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
+    return token_build_default<gpu::_CommandBufferSubmit>();
 };
 
-void gpu::command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
+gpu::CommandBufferSubmit gpu::command_buffer_submit_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
 {
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -460,9 +461,11 @@ void gpu::command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue
     l_wait_for_end_submit.signalSemaphoreCount = 1;
     l_wait_for_end_submit.pSignalSemaphores = (VkSemaphore*)token_ptr(p_notified_semaphore);
     vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
+    return token_build_default<gpu::_CommandBufferSubmit>();
 };
 
-void gpu::command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore)
+gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
+                                                          CommandBufferSubmit p_after_command_buffer)
 {
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -473,9 +476,11 @@ void gpu::command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_qu
     VkPipelineStageFlags l_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
     l_wait_for_end_submit.pWaitDstStageMask = &l_stage;
     vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
+    return token_build_default<gpu::_CommandBufferSubmit>();
 };
 
-void gpu::command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, Semaphore p_notify_semaphore)
+gpu::CommandBufferSubmit gpu::command_buffer_submit_after_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
+                                                                     CommandBufferSubmit p_after_command_buffer, Semaphore p_notify_semaphore)
 {
     VkSubmitInfo l_wait_for_end_submit{};
     l_wait_for_end_submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -488,16 +493,18 @@ void gpu::command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer,
     VkPipelineStageFlags l_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
     l_wait_for_end_submit.pWaitDstStageMask = &l_stage;
     vk_handle_result(vkQueueSubmit((VkQueue)token_value(p_queue), 1, &l_wait_for_end_submit, NULL));
+    return token_build_default<gpu::_CommandBufferSubmit>();
 };
 
-void gpu::command_copy_buffer(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
+void gpu::command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
 {
     VkBufferCopy l_buffer_copy{};
     l_buffer_copy.size = p_source_size;
     vkCmdCopyBuffer((VkCommandBuffer)token_value(p_command_buffer), (VkBuffer)token_value(p_source), (VkBuffer)token_value(p_target), 1, &l_buffer_copy);
 };
 
-void gpu::command_copy_buffer_to_image(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target, const ImageFormat& p_target_format)
+void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target,
+                                       const ImageFormat& p_target_format)
 {
     VkBufferImageCopy l_buffer_image_copy{};
     l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_target_format.imageAspect, 0, 0, (uint32_t)p_target_format.arrayLayers};
@@ -507,7 +514,7 @@ void gpu::command_copy_buffer_to_image(CommandBuffer p_command_buffer, const Buf
                            &l_buffer_image_copy);
 };
 
-void gpu::command_copy_image_to_buffer(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target)
+void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target)
 {
     VkBufferImageCopy l_buffer_image_copy{};
     l_buffer_image_copy.imageSubresource = VkImageSubresourceLayers{(VkImageAspectFlags)p_source_format.imageAspect, 0, 0, (uint32_t)p_source_format.arrayLayers};
@@ -517,7 +524,7 @@ void gpu::command_copy_image_to_buffer(CommandBuffer p_command_buffer, const Ima
                            &l_buffer_image_copy);
 };
 
-void gpu::command_copy_image(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format)
+void gpu::command_copy_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format)
 {
     VkImageCopy l_region = {VkImageSubresourceLayers{(VkImageAspectFlags)p_source_format.imageAspect, 0, 0, (uint32_t)p_source_format.arrayLayers}, VkOffset3D{0, 0, 0},
                             VkImageSubresourceLayers{(VkImageAspectFlags)p_target_format.imageAspect, 0, 0, (uint32_t)p_target_format.arrayLayers}, VkOffset3D{0, 0, 0},
@@ -527,7 +534,7 @@ void gpu::command_copy_image(CommandBuffer p_command_buffer, const Image p_sourc
                    VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_region);
 };
 
-void gpu::command_image_layout_transition(CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
+void gpu::command_image_layout_transition(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
                                           const ImageLayoutFlag p_source_layout, const GPUAccessFlag p_source_access, const GPUPipelineStageFlag p_target_stage, const ImageLayoutFlag p_target_layout,
                                           const GPUAccessFlag p_target_access)
 {

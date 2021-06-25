@@ -1,11 +1,22 @@
 #pragma once
 
+#ifndef GPU_BACKEND_VULKAN
+#define GPU_BACKEND_VULKAN 1
+#endif
+
+#ifndef GPU_BACKEND_SOFTWARE
+#define GPU_BACKEND_SOFTWARE 0
+#endif
+
 #include "Math2/math.hpp"
 
 #include "./backends/interface.hpp"
 #include "./_external/gpu_platform_interface.hpp"
+#if GPU_BACKEND_VULKAN
 #include "./backends/vulkan_backend.hpp"
-
+#elif GPU_BACKEND_SOFTWARE
+#include "./backends/software_backend.hpp"
+#endif
 
 #include "./command_buffer.hpp"
 #include "./instance.hpp"
@@ -22,6 +33,7 @@ struct GPUContext
     GraphicsAllocator2 graphics_allocator;
 
     Semafore buffer_end_semaphore;
+    gpu::CommandBufferSubmit buffer_command_submit;
     Semafore graphics_end_semaphore;
 
     inline static GPUContext allocate(const Slice<GPUExtension>& p_gpu_extensions)
@@ -51,7 +63,7 @@ struct GPUContext
         this->buffer_memory.allocator.device.command_buffer.begin();
         BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
         this->buffer_memory.allocator.device.command_buffer.end();
-        this->buffer_memory.allocator.device.command_buffer.submit_and_notity(this->buffer_end_semaphore);
+        this->buffer_command_submit = this->buffer_memory.allocator.device.command_buffer.submit_and_notify(this->buffer_end_semaphore);
     };
 
     inline void buffer_step_submit_no_graphics_notification()
@@ -59,7 +71,7 @@ struct GPUContext
         this->buffer_memory.allocator.device.command_buffer.begin();
         BufferStep::step(this->buffer_memory.allocator, this->buffer_memory.events);
         this->buffer_memory.allocator.device.command_buffer.end();
-        this->buffer_memory.allocator.device.command_buffer.submit();
+        this->buffer_command_submit = this->buffer_memory.allocator.device.command_buffer.submit();
     };
 
     inline void buffer_step_force_execution()
@@ -78,18 +90,19 @@ struct GPUContext
     inline void submit_graphics_binder(GraphicsBinder& p_binder)
     {
         p_binder.end();
-        p_binder.submit_after(this->buffer_end_semaphore);
+        p_binder.submit_after(this->buffer_end_semaphore, this->buffer_command_submit);
     };
 
     inline void submit_graphics_binder_and_notity_end(GraphicsBinder& p_binder)
     {
         p_binder.end();
-        p_binder.submit_after_and_notify(this->buffer_end_semaphore, this->graphics_end_semaphore);
+        p_binder.submit_after_and_notify(this->buffer_end_semaphore, this->buffer_command_submit, this->graphics_end_semaphore);
     };
 
     inline void wait_for_completion()
     {
         this->graphics_allocator.graphics_device.command_buffer.wait_for_completion();
+        this->buffer_command_submit = token_build_default<gpu::_CommandBufferSubmit>();
     };
 };
 
@@ -106,7 +119,7 @@ struct BufferStepExecutionFlow
     inline static void buffer_step_submit(GPUContext& p_gpu_context)
     {
         p_gpu_context.buffer_memory.allocator.device.command_buffer.end();
-        p_gpu_context.buffer_memory.allocator.device.command_buffer.submit_and_notity(p_gpu_context.buffer_end_semaphore);
+        p_gpu_context.buffer_memory.allocator.device.command_buffer.submit_and_notify(p_gpu_context.buffer_end_semaphore);
     };
 
     inline static void buffer_step_submit_no_graphics_notification(GPUContext& p_gpu_context)

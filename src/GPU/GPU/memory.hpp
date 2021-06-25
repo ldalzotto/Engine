@@ -989,7 +989,7 @@ struct BufferCommandUtils
 #endif
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_WRITE);
-        gpu::command_copy_buffer_to_image(p_command_buffer.command_buffer, p_host.buffer, p_host.size, p_gpu.image, p_gpu.format);
+        gpu::command_copy_buffer_to_image(p_command_buffer.device_used, p_command_buffer.command_buffer, p_host.buffer, p_host.size, p_gpu.image, p_gpu.format);
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_WRITE, p_gpu.format.imageUsage);
     };
 
@@ -1000,7 +1000,7 @@ struct BufferCommandUtils
 #endif
 
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, p_gpu.format.imageUsage, ImageUsageFlag::TRANSFER_READ);
-        gpu::command_copy_image_to_buffer(p_command_buffer.command_buffer, p_gpu.image, p_gpu.format, p_host.buffer);
+        gpu::command_copy_image_to_buffer(p_command_buffer.device_used, p_command_buffer.command_buffer, p_gpu.image, p_gpu.format, p_host.buffer);
         BufferCommandUtils::cmd_image_layout_transition_v2(p_command_buffer, p_barriers, iImage<const ImageGPU>{p_gpu}, ImageUsageFlag::TRANSFER_READ, p_gpu.format.imageUsage);
     };
 
@@ -1009,7 +1009,7 @@ struct BufferCommandUtils
                                                       const ImageUsageFlag p_source_image_usage, const ImageUsageFlag p_target_image_usage)
     {
         ImageLayoutTransitionBarrierConfiguration l_layout_barrier = p_barriers.get_barrier(p_source_image_usage, p_target_image_usage);
-        gpu::command_image_layout_transition(p_command_buffer.command_buffer, p_image.get_image(), p_image.get_image_format(), l_layout_barrier.src_stage,
+        gpu::command_image_layout_transition(p_command_buffer.device_used, p_command_buffer.command_buffer, p_image.get_image(), p_image.get_image_format(), l_layout_barrier.src_stage,
                                              ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_source_image_usage), l_layout_barrier.src_access_mask, l_layout_barrier.dst_stage,
                                              ImageLayoutTransitionBarriers::get_imagelayout_from_imageusage(p_target_image_usage), l_layout_barrier.dst_access_mask);
     };
@@ -1021,7 +1021,7 @@ struct BufferCommandUtils
 #if __DEBUG
         assert_true(p_source_size <= p_target_size);
 #endif
-        gpu::command_copy_buffer(p_command_buffer.command_buffer, p_source_buffer, p_source_size, p_target_buffer, p_target_size);
+        gpu::command_copy_buffer(p_command_buffer.device_used, p_command_buffer.command_buffer, p_source_buffer, p_source_size, p_target_buffer, p_target_size);
     };
 };
 

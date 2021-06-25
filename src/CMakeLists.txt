@@ -22,10 +22,16 @@ add_library(Math2 INTERFACE)
 target_include_directories(Math2 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/Math2)
 target_link_libraries(Math2 INTERFACE Common2)
 
+add_library(GPU_Software INTERFACE)
+target_include_directories(GPU_Software INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/GPU_Software)
+target_link_libraries(GPU_Software INTERFACE Common2)
+target_link_libraries(GPU_Software INTERFACE Math2)
+
 add_library(GPU INTERFACE)
 target_include_directories(GPU INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/GPU)
 target_link_libraries(GPU INTERFACE Common2)
 target_link_libraries(GPU INTERFACE Math2)
+target_link_libraries(GPU INTERFACE GPU_Software)
 target_link_libraries(GPU INTERFACE VULKAN)
 
 add_library(Collision INTERFACE)

@@ -161,6 +161,7 @@ GPU_DECLARE_TOKEN(LogicalDevice);
 GPU_DECLARE_TOKEN(DeviceMemory);
 GPU_DECLARE_TOKEN(Semaphore);
 GPU_DECLARE_TOKEN(CommandBuffer);
+GPU_DECLARE_TOKEN(CommandBufferSubmit);
 GPU_DECLARE_TOKEN(CommandPool);
 GPU_DECLARE_TOKEN(Buffer);
 GPU_DECLARE_TOKEN(Image);
@@ -283,17 +284,17 @@ void semaphore_destroy(const LogicalDevice p_device, const Semaphore p_semaphore
 
 void queue_wait_idle(Queue p_queue);
 
-void command_buffer_begin(CommandBuffer p_command_buffer);
-void command_buffer_end(CommandBuffer p_command_buffer);
-void command_buffer_submit(CommandBuffer p_command_buffer, Queue p_queue);
-void command_buffer_submit_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore);
-void command_buffer_submit_after(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore);
-void command_buffer_submit_after_and_notify(CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, Semaphore p_notify_semaphore);
-void command_copy_buffer(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size);
-void command_copy_buffer_to_image(CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target, const ImageFormat& p_target_format);
-void command_copy_image_to_buffer(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target);
-void command_copy_image(CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format);
-void command_image_layout_transition(CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
+void command_buffer_begin(LogicalDevice p_device, CommandBuffer p_command_buffer);
+void command_buffer_end(LogicalDevice p_device, CommandBuffer p_command_buffer);
+CommandBufferSubmit command_buffer_submit(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue);
+CommandBufferSubmit command_buffer_submit_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore);
+CommandBufferSubmit command_buffer_submit_after(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, CommandBufferSubmit p_after_command_buffer);
+CommandBufferSubmit command_buffer_submit_after_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore, CommandBufferSubmit p_after_command_buffer, Semaphore p_notify_semaphore);
+void command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size);
+void command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target, const ImageFormat& p_target_format);
+void command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target);
+void command_copy_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format);
+void command_image_layout_transition(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
                                      const ImageLayoutFlag p_source_layout, const GPUAccessFlag p_source_access, const GPUPipelineStageFlag p_target_stage, const ImageLayoutFlag p_target_layout,
                                      const GPUAccessFlag p_target_access);
 

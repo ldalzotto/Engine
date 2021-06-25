@@ -27,14 +27,14 @@ struct GraphicsBinder
         this->graphics_allocator.graphics_device.command_buffer.end();
     };
 
-    inline void submit_after(const Semafore p_wait_for)
+    inline void submit_after(const Semafore p_semaphore_wait_for, const gpu::CommandBufferSubmit p_command_buffer_wait_for)
     {
-        this->graphics_allocator.graphics_device.command_buffer.submit_after(p_wait_for);
+        this->graphics_allocator.graphics_device.command_buffer.submit_after(p_semaphore_wait_for, p_command_buffer_wait_for);
     };
 
-    inline void submit_after_and_notify(const Semafore p_wait_for, const Semafore p_notify)
+    inline void submit_after_and_notify(const Semafore p_semaphore_wait_for, const gpu::CommandBufferSubmit p_command_buffer_wait_for, const Semafore p_notify)
     {
-        this->graphics_allocator.graphics_device.command_buffer.submit_after_and_notify(p_wait_for, p_notify);
+        this->graphics_allocator.graphics_device.command_buffer.submit_after_and_notify(p_semaphore_wait_for, p_command_buffer_wait_for, p_notify);
     };
 
     inline void begin_render_pass(GraphicsPass& p_graphics_pass, const Slice<v4f>& p_clear_values)
@@ -139,7 +139,8 @@ struct GraphicsBinder
     inline void bind_vertex_buffer_host(const BufferHost& p_vertex_buffer_host)
     {
         VkDeviceSize l_offset = 0;
-        vkCmdBindVertexBuffers((VkCommandBuffer)token_value(this->graphics_allocator.graphics_device.command_buffer.command_buffer), 0, 1, (VkBuffer const*)token_ptr(p_vertex_buffer_host.buffer), &l_offset);
+        vkCmdBindVertexBuffers((VkCommandBuffer)token_value(this->graphics_allocator.graphics_device.command_buffer.command_buffer), 0, 1, (VkBuffer const*)token_ptr(p_vertex_buffer_host.buffer),
+                               &l_offset);
     };
 
     inline void draw(const uimax p_vertex_count)

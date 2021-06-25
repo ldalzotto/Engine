@@ -21,6 +21,7 @@ struct CommandBuffer
 {
     gpu::CommandBuffer command_buffer;
     gpu::Queue queue;
+    gpu::LogicalDevice device_used;
 
 #if __DEBUG
     enum class DebugState
@@ -36,6 +37,7 @@ struct CommandBuffer
         CommandBuffer l_return;
         l_return.command_buffer = token_build_default<gpu::_CommandBuffer>();
         l_return.queue = token_build_default<gpu::_Queue>();
+        l_return.device_used = token_build_default<gpu::_LogicalDevice>();
 #if __DEBUG
         l_return.debug_state = DebugState::WAITING;
 #endif
@@ -48,7 +50,7 @@ struct CommandBuffer
         assert_true(this->debug_state == DebugState::WAITING);
         this->debug_state = DebugState::BEGIN;
 #endif
-        gpu::command_buffer_begin(this->command_buffer);
+        gpu::command_buffer_begin(this->device_used, this->command_buffer);
     };
 
     inline void end()
@@ -58,43 +60,43 @@ struct CommandBuffer
         this->debug_state = DebugState::END;
 #endif
 
-        gpu::command_buffer_end(this->command_buffer);
+        gpu::command_buffer_end(this->device_used, this->command_buffer);
     };
 
-    inline void submit()
+    inline gpu::CommandBufferSubmit submit()
     {
 #if __DEBUG
         assert_true(this->debug_state == DebugState::END);
         this->debug_state = DebugState::WAITING;
 #endif
-        gpu::command_buffer_submit(this->command_buffer, this->queue);
+        return gpu::command_buffer_submit(this->device_used, this->command_buffer, this->queue);
     };
 
-    inline void submit_and_notity(const Semafore p_notify)
+    inline gpu::CommandBufferSubmit submit_and_notify(const Semafore p_notify_semaphore)
     {
 #if __DEBUG
         assert_true(this->debug_state == DebugState::END);
         this->debug_state = DebugState::WAITING;
 #endif
-        gpu::command_buffer_submit_and_notify(this->command_buffer, this->queue, p_notify.semaphore);
+        return gpu::command_buffer_submit_and_notify(this->device_used, this->command_buffer, this->queue, p_notify_semaphore.semaphore);
     };
 
-    inline void submit_after(const Semafore p_wait_for)
+    inline gpu::CommandBufferSubmit submit_after(const Semafore p_semaphore_wait_for, const gpu::CommandBufferSubmit p_command_buffer_wait_for)
     {
 #if __DEBUG
         assert_true(this->debug_state == DebugState::END);
         this->debug_state = DebugState::WAITING;
 #endif
-        gpu::command_buffer_submit_after(this->command_buffer, this->queue, p_wait_for.semaphore);
+        return gpu::command_buffer_submit_after(this->device_used, this->command_buffer, this->queue, p_semaphore_wait_for.semaphore, p_command_buffer_wait_for);
     };
 
-    inline void submit_after_and_notify(const Semafore p_wait_for, const Semafore p_notify)
+    inline gpu::CommandBufferSubmit submit_after_and_notify(const Semafore p_semaphore_wait_for, const gpu::CommandBufferSubmit p_command_buffer_wait_for, const Semafore p_notify)
     {
 #if __DEBUG
         assert_true(this->debug_state == DebugState::END);
         this->debug_state = DebugState::WAITING;
 #endif
-        gpu::command_buffer_submit_after_and_notify(this->command_buffer, this->queue, p_wait_for.semaphore, p_notify.semaphore);
+        return gpu::command_buffer_submit_after_and_notify(this->device_used, this->command_buffer, this->queue, p_semaphore_wait_for.semaphore, p_command_buffer_wait_for, p_notify.semaphore);
     };
 
     inline void wait_for_completion()
@@ -124,6 +126,7 @@ struct CommandPool
         CommandBuffer l_command_buffer = CommandBuffer::build_default();
         l_command_buffer.command_buffer = gpu::command_pool_allocate_command_buffer(p_device, this->pool);
         l_command_buffer.queue = p_queue;
+        l_command_buffer.device_used = p_device;
 
         // vkDestroySemaphore()
         // This is to avoid errors if we try to submit the command buffer if there is no previous recording.
