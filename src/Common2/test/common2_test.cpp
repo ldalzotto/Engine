@@ -1113,7 +1113,6 @@ inline void nntree_test()
 
     l_tree.free();
     l_tree = NNTree<uimax>::allocate_default();
-    // TODO traverse_to_bottom_distinct test
     {
         Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
         SliceN<Token<NNTree<uimax>::Node>, 1> l_first_wave_parent = {l_0};
@@ -1131,6 +1130,22 @@ inline void nntree_test()
             l_sum += *p_node.Element;
         });
         assert_true(l_sum == (1 + 2 + 3 + 4 + 5 + 6 + 7));
+    }
+    l_tree.free();
+    l_tree = NNTree<uimax>::allocate_default();
+
+    // remove_node_recursively on a chain of nodes
+    {
+        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
+        SliceN<Token<NNTree<uimax>::Node>, 1> l_first_wave_parent = {l_0};
+        Token<NNTree<uimax>::Node> l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
+        SliceN<Token<NNTree<uimax>::Node>, 1> l_second_wave_parent = {l_1};
+        Token<NNTree<uimax>::Node> l_2 = l_tree.push_value(3, slice_from_slicen(&l_second_wave_parent));
+
+        l_tree.remove_node_recursively(l_0);
+        assert_true(l_tree.is_node_free(l_0));
+        assert_true(l_tree.is_node_free(l_1));
+        assert_true(l_tree.is_node_free(l_2));
     }
     l_tree.free();
 };
@@ -2285,6 +2300,62 @@ inline void socket_server_buffer_too_small()
     SocketContext::free();
 };
 
+inline void command_buffer_pattern_test()
+{
+    struct MathOpCommand
+    {
+        enum class Type
+        {
+            ADD,
+            MUL
+        } type;
+        uimax number;
+    };
+
+    using namespace pattern::cb;
+    CommandBufferExecutionFlow<MathOpCommand> l_command_execution = CommandBufferExecutionFlow<MathOpCommand>::allocate_default();
+
+    CommandPool<MathOpCommand> l_command_pool = CommandPool<MathOpCommand>::allocate_default();
+
+    Token<CommandBuffer<MathOpCommand>> l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandBuffer<MathOpCommand>& l_add_command_buffer = l_command_pool.command_buffers.get(l_add_command_buffer_token);
+    l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 2});
+    l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 3});
+
+    Token<CommandBuffer<MathOpCommand>> l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandBuffer<MathOpCommand>& l_mul_command_buffer = l_command_pool.command_buffers.get(l_mul_command_buffer_token);
+    l_mul_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::MUL, 3});
+
+    Token<NNTree<Token<CommandBuffer<MathOpCommand>>>::Node> l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
+    Semaphore<MathOpCommand> l_semaphore;
+    l_semaphore.execute_before = l_add_command_execution;
+    l_command_execution.push_command_buffer_with_constraint(l_mul_command_buffer_token, l_semaphore);
+
+    uimax l_result = 2;
+    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const Token<CommandBuffer<MathOpCommand>>, CommandBuffer<MathOpCommand>& p_command) {
+        for (loop(i, 0, p_command.commands.Size))
+        {
+            MathOpCommand& l_command = p_command.commands.get(i);
+            switch (l_command.type)
+            {
+            case MathOpCommand::Type::ADD:
+                l_result = l_result + l_command.number;
+                break;
+            case MathOpCommand::Type::MUL:
+                l_result = l_result * l_command.number;
+                break;
+            }
+        }
+    });
+
+    assert_true(l_result == 21);
+
+    l_command_pool.free_command_buffer(l_add_command_buffer_token);
+    l_command_pool.free_command_buffer(l_mul_command_buffer_token);
+    l_command_pool.free();
+    l_command_execution.free();
+};
+
 int main(int argc, int8** argv)
 {
     slice_span_test();
@@ -2318,6 +2389,7 @@ int main(int argc, int8** argv)
     socket_server_buffer_too_small();
     native_window();
     database_test();
+    command_buffer_pattern_test();
 
     memleak_ckeck();
 }

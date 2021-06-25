@@ -282,12 +282,12 @@ template <class ElementType> struct NNTree
 
     inline int8 has_allocated_elements()
     {
-        return this->Memory.has_allocated_elements() || this->Nodes.has_allocated_elements() || this->Ranges.has_allocated_elements();
+        return this->Memory.has_allocated_elements() && this->Nodes.has_allocated_elements() && this->Ranges.has_allocated_elements();
     };
 
     inline int8 is_node_free(const Token<Node> p_node)
     {
-        return this->Memory.is_element_free(token_build_from<ElementType>(p_node)) || this->Nodes.is_element_free(p_node) || this->Ranges.is_element_free(token_build_from<Slice<Token<Node>>>(p_node));
+        return this->Memory.is_element_free(token_build_from<ElementType>(p_node)) && this->Nodes.is_element_free(p_node) && this->Ranges.is_element_free(token_build_from<Slice<Token<Node>>>(p_node));
     };
 
     inline Token<Node> push_root_value(const ElementType& p_element)
@@ -340,6 +340,8 @@ template <class ElementType> struct NNTree
 
         Vector<NodeConnection> l_connections_that_will_be_removed = Vector<NodeConnection>::allocate(0);
         Resolve l_node = this->get(p_node);
+
+        // TODO -> there is an error here, the parent node of the connection will always be p_node
         this->traverse_to_bottom_excluded(l_node, [&](const Resolve& p_child_node) {
             NodeConnection l_pair;
             l_pair.parent = l_node.node_token;
@@ -396,6 +398,26 @@ template <class ElementType> struct NNTree
         l_execution_states.slice.zero();
 
         this->traverse_to_bottom(p_start_node_included, [&](const Resolve& p_node) {
+            int8& l_exectuion_state = l_execution_states.get(token_value(p_node.node_token));
+            if (!l_exectuion_state)
+            {
+                l_exectuion_state = 1;
+                p_foreach(p_node);
+            }
+        });
+
+        l_execution_states.free();
+    };
+
+    /*
+        Perform a traversal while ensuring that all nodes are executed only once.
+    */
+    template <class _ForeachFunc> inline void traverse_to_bottom_distinct_excluded(const Resolve& p_start_node_excluded, const _ForeachFunc& p_foreach)
+    {
+        Span<int8> l_execution_states = Span<int8>::allocate(this->Nodes.get_size());
+        l_execution_states.slice.zero();
+
+        this->traverse_to_bottom_excluded(p_start_node_excluded, [&](const Resolve& p_node) {
             int8& l_exectuion_state = l_execution_states.get(token_value(p_node.node_token));
             if (!l_exectuion_state)
             {
