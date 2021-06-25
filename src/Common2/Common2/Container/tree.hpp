@@ -262,6 +262,15 @@ template <class ElementType> struct NNTree
         Token<Node> node_token;
         ElementType* Element;
         Node* Node;
+
+        inline static Resolve build_default()
+        {
+            Resolve l_return;
+            l_return.node_token = token_build_default<NNTree<ElementType>::Node>();
+            l_return.Node = NULL;
+            l_return.Element = NULL;
+            return l_return;
+        };
     };
 
     inline static NNTree<ElementType> allocate_default()
@@ -287,7 +296,7 @@ template <class ElementType> struct NNTree
 
     inline int8 is_node_free(const Token<Node> p_node)
     {
-        return this->Memory.is_element_free(token_build_from<ElementType>(p_node)) && this->Nodes.is_element_free(p_node) && this->Ranges.is_element_free(token_build_from<Slice<Token<Node>>>(p_node));
+        return this->Memory.is_element_free(token_build_from<ElementType>(p_node)) && this->Nodes.is_element_free(p_node);
     };
 
     inline Token<Node> push_root_value(const ElementType& p_element)
@@ -339,12 +348,10 @@ template <class ElementType> struct NNTree
         };
 
         Vector<NodeConnection> l_connections_that_will_be_removed = Vector<NodeConnection>::allocate(0);
-        Resolve l_node = this->get(p_node);
 
-        // TODO -> there is an error here, the parent node of the connection will always be p_node
-        this->traverse_to_bottom_excluded(l_node, [&](const Resolve& p_child_node) {
+        this->traverse_to_bottom_excluded(this->get(p_node), [&](const Resolve& p_parent, const Resolve& p_child_node) {
             NodeConnection l_pair;
-            l_pair.parent = l_node.node_token;
+            l_pair.parent = p_parent.node_token;
             l_pair.child = p_child_node.node_token;
             l_connections_that_will_be_removed.push_back_element(l_pair);
         });
@@ -355,14 +362,21 @@ template <class ElementType> struct NNTree
             Resolve l_child = this->get(l_pair.child);
             Resolve l_parent = this->get(l_pair.parent);
             this->remove_link_bidirectional(l_child, l_parent);
+        }
 
+        // We remove nodes on a second path because there is a possibility that a parent is removed while still having childs that needs to be removed.
+        // This is due to the fact that we iterate the tree from top to bottom.
+        for (loop(i, 0, l_connections_that_will_be_removed.Size))
+        {
+            NodeConnection& l_pair = l_connections_that_will_be_removed.get(i);
+            Resolve l_child = this->get(l_pair.child);
             if (this->get_parents(l_child).Size == 0)
             {
                 this->remove_node(l_child);
             }
         }
 
-        l_node = this->get(p_node);
+        Resolve l_node = this->get(p_node);
         Slice<Token<Node>> l_node_parents = this->get_parents(l_node);
         for (loop(i, 0, l_node_parents.Size))
         {
@@ -374,7 +388,7 @@ template <class ElementType> struct NNTree
 
     template <class _ForeachFunc> inline void traverse_to_bottom(const Resolve& p_start_node_included, const _ForeachFunc& p_foreach)
     {
-        p_foreach(p_start_node_included);
+        p_foreach(Resolve::build_default(), p_start_node_included);
         this->traverse_to_bottom_excluded(p_start_node_included, p_foreach);
     };
 
@@ -384,7 +398,7 @@ template <class ElementType> struct NNTree
         for (loop(i, 0, l_childs.Size))
         {
             Resolve l_node = this->get(l_childs.get(i));
-            p_foreach(l_node);
+            p_foreach(p_start_node_excluded, l_node);
             this->traverse_to_bottom_excluded(l_node, p_foreach);
         }
     };
@@ -397,12 +411,12 @@ template <class ElementType> struct NNTree
         Span<int8> l_execution_states = Span<int8>::allocate(this->Nodes.get_size());
         l_execution_states.slice.zero();
 
-        this->traverse_to_bottom(p_start_node_included, [&](const Resolve& p_node) {
+        this->traverse_to_bottom(p_start_node_included, [&](const Resolve& p_parent, const Resolve& p_node) {
             int8& l_exectuion_state = l_execution_states.get(token_value(p_node.node_token));
             if (!l_exectuion_state)
             {
                 l_exectuion_state = 1;
-                p_foreach(p_node);
+                p_foreach(p_parent, p_node);
             }
         });
 
@@ -417,12 +431,12 @@ template <class ElementType> struct NNTree
         Span<int8> l_execution_states = Span<int8>::allocate(this->Nodes.get_size());
         l_execution_states.slice.zero();
 
-        this->traverse_to_bottom_excluded(p_start_node_excluded, [&](const Resolve& p_node) {
+        this->traverse_to_bottom_excluded(p_start_node_excluded, [&](const Resolve& p_parent, const Resolve& p_node) {
             int8& l_exectuion_state = l_execution_states.get(token_value(p_node.node_token));
             if (!l_exectuion_state)
             {
                 l_exectuion_state = 1;
-                p_foreach(p_node);
+                p_foreach(p_parent, p_node);
             }
         });
 

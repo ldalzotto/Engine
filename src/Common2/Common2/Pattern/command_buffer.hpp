@@ -92,7 +92,7 @@ template <class Command> struct CommandBufferExecutionFlow
     template <class _ForeachFunc> inline void process_command_buffer_tree(CommandPool<Command>& p_command_pool, const _ForeachFunc& p_foreach)
     {
         this->command_tree.traverse_to_bottom_distinct_excluded(this->command_tree.get(token_build<NNTree<Token<CommandBuffer<Command>>>::Node>(0)),
-                                                                [&](const NNTree<Token<CommandBuffer<Command>>>::Resolve& p_node) {
+                                                                [&](const NNTree<Token<CommandBuffer<Command>>>::Resolve& p_parent, const NNTree<Token<CommandBuffer<Command>>>::Resolve& p_node) {
                                                                     Token<CommandBuffer<Command>> l_command_token = *p_node.Element;
                                                                     p_foreach(l_command_token, p_command_pool.command_buffers.get(l_command_token));
                                                                 });

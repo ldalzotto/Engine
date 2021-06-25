@@ -1126,7 +1126,7 @@ inline void nntree_test()
         Token<NNTree<uimax>::Node> l_6 = l_tree.push_value(7, slice_from_slicen(&l_third_wave_parent));
 
         uimax l_sum = 0;
-        l_tree.traverse_to_bottom_distinct(l_tree.get(l_0), [&](const NNTree<uimax>::Resolve& p_node) {
+        l_tree.traverse_to_bottom_distinct(l_tree.get(l_0), [&](const NNTree<uimax>::Resolve&, const NNTree<uimax>::Resolve& p_node) {
             l_sum += *p_node.Element;
         });
         assert_true(l_sum == (1 + 2 + 3 + 4 + 5 + 6 + 7));
