@@ -75,13 +75,15 @@ struct Heap
 
     inline SliceIndex* get(const Token<SliceIndex> p_chunk)
     {
-        return &this->AllocatedChunks.get(p_chunk);
+        // TODO -> clean token
+        return &this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk));
     };
 
     inline void release_element(const Token<SliceIndex> p_chunk)
     {
-        this->FreeChunks.push_back_element(this->AllocatedChunks.get(p_chunk));
-        this->AllocatedChunks.release_element(p_chunk);
+        // TODO -> clean token
+        this->FreeChunks.push_back_element(this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk)));
+        this->AllocatedChunks.release_element(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk));
     };
 };
 
@@ -184,7 +186,7 @@ struct HeapPaged
         for (loop(i, 0, this->FreeChunks.varying_vector.get_size()))
         {
             Single_iHeap l_single_iheap = Single_iHeap::build(this, i);
-            if ((iHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset( p_size, p_modulo_offset, &l_heap_allocated_element_return) &
+            if ((iHeapTypes::AllocationState_t)l_single_iheap.to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, &l_heap_allocated_element_return) &
                 (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED)
             {
                 *out_chunk = AllocatedElementReturn::buid_from_HeapAllocatedElementReturn(i, l_heap_allocated_element_return);
@@ -207,13 +209,15 @@ struct HeapPaged
 
     inline void release_element(const HeapPagedToken& p_token)
     {
-        this->FreeChunks.element_push_back_element(p_token.PageIndex, this->AllocatedChunks.get(p_token.token));
-        this->AllocatedChunks.release_element(p_token.token);
+        // TODO -> token clean
+        this->FreeChunks.element_push_back_element(p_token.PageIndex, this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token)));
+        this->AllocatedChunks.release_element(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token));
     };
 
     inline SliceIndex* get_sliceindex_only(const HeapPagedToken& p_token)
     {
-        return &this->AllocatedChunks.get(p_token.token);
+        // TODO -> token clean
+        return &this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token));
     };
 
   private:

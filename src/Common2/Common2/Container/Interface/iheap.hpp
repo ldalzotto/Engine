@@ -239,7 +239,8 @@ template <class _Heap> struct iHeap
     inline iHeapTypes::AllocatedElementReturn _push_chunk(SliceIndex* p_chunk)
     {
         _AllocatedChunks __allocated_chunks = this->get_allocated_chunks();
-        return iHeapTypes::AllocatedElementReturn::build(__allocated_chunks.to_ipool().allocate_element_v2(*p_chunk), p_chunk->Begin);
+        // TODO -> token clean
+        return iHeapTypes::AllocatedElementReturn::build(token_build_from<SliceIndex>(__allocated_chunks.to_ipool().allocate_element_v2(*p_chunk)), p_chunk->Begin);
     };
 
     inline void _defragment()

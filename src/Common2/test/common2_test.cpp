@@ -374,7 +374,7 @@ inline void pool_test()
         assert_true(l_pool_sizet.get_free_size() == 0);
 
         uimax l_element = 3;
-        Token<uimax> l_token = l_pool_sizet.alloc_element(l_element);
+        Pool<uimax>::sToken l_token = l_pool_sizet.alloc_element(l_element);
 
         assert_true(token_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
@@ -382,7 +382,7 @@ inline void pool_test()
 
     // pool_release_element - release elements
     {
-        Token<uimax> l_token = Token<uimax>{0};
+        Pool<uimax>::sToken l_token = Token<Pool<uimax>::sTokenValue>{0};
         l_pool_sizet.release_element(l_token);
 
         // memory is not deallocated
@@ -392,7 +392,7 @@ inline void pool_test()
     // pool_alloc_element - allocating an element while there is free slots
     {
         uimax l_element = 4;
-        Token<uimax> l_token = l_pool_sizet.alloc_element(l_element);
+        Pool<uimax>::sToken l_token = l_pool_sizet.alloc_element(l_element);
 
         l_pool_sizet.alloc_element(cast(uimax, 10));
         l_pool_sizet.release_element(l_pool_sizet.alloc_element(cast(uimax, 10)));
@@ -404,7 +404,7 @@ inline void pool_test()
 
     for (pool_loop(&l_pool_sizet, i))
     {
-        l_pool_sizet.get(Token<uimax>{i});
+        l_pool_sizet.get(Pool<uimax>::sToken{i});
     }
 
     {
@@ -876,14 +876,14 @@ inline void poolofvector_test()
         l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
         Pool<uimax> l_pool = Pool<uimax>::allocate(0);
 
-        Token<Slice<uimax>> l_vec_0 = l_pool_of_vector.alloc_vector();
-        Token<uimax> l_val_0 = l_pool.alloc_element(0);
+        PoolOfVector<uimax>::sToken l_vec_0 = l_pool_of_vector.alloc_vector();
+        Pool<uimax>::sToken l_val_0 = l_pool.alloc_element(0);
 
-        Token<Slice<uimax>> l_vec_1 = l_pool_of_vector.alloc_vector();
-        Token<uimax> l_val_1 = l_pool.alloc_element(0);
+        PoolOfVector<uimax>::sToken l_vec_1 = l_pool_of_vector.alloc_vector();
+        Pool<uimax>::sToken l_val_1 = l_pool.alloc_element(0);
 
-        Token<Slice<uimax>> l_vec_2 = l_pool_of_vector.alloc_vector();
-        Token<uimax> l_val_2 = l_pool.alloc_element(0);
+        PoolOfVector<uimax>::sToken l_vec_2 = l_pool_of_vector.alloc_vector();
+        Pool<uimax>::sToken l_val_2 = l_pool.alloc_element(0);
 
         assert_true(token_equals(l_val_0, l_vec_0));
         assert_true(token_equals(l_val_1, l_vec_1));
@@ -892,8 +892,8 @@ inline void poolofvector_test()
         l_pool_of_vector.release_vector(l_vec_1);
         l_pool.release_element(l_val_1);
 
-        Token<Slice<uimax>> l_vec_3 = l_pool_of_vector.alloc_vector();
-        Token<uimax> l_val_3 = l_pool.alloc_element(0);
+        PoolOfVector<uimax>::sToken l_vec_3 = l_pool_of_vector.alloc_vector();
+        Pool<uimax>::sToken l_val_3 = l_pool.alloc_element(0);
 
         assert_true(token_equals(l_val_3, l_vec_3));
         assert_true(token_equals(l_val_3, l_val_1));
@@ -912,7 +912,7 @@ inline void pool_hashed_counted_test()
             return 100;
         });
 
-        assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
+        assert_true(l_pool_hashed_counted.pool.get(token_build_from<Pool<uimax>::sTokenValue>(l_value_token)) == 100);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
 
         l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
@@ -936,7 +936,7 @@ inline void pool_hashed_counted_test()
         Token<uimax> l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
             return 100;
         });
-        assert_true(l_pool_hashed_counted.pool.get(l_value_token) == 100);
+        assert_true(l_pool_hashed_counted.pool.get(token_build_from<Pool<uimax>::sTokenValue>(l_value_token)) == 100);
         assert_true(l_pool_hashed_counted.CountMap.has_key_nothashed(10));
 
         l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
@@ -1156,9 +1156,9 @@ inline void assert_heap_integrity(Heap* p_heap)
     for (loop(i, 0, p_heap->AllocatedChunks.get_size()))
     {
         // Token<SliceIndex>* l_chunk = ;
-        if (!p_heap->AllocatedChunks.is_element_free(Token<SliceIndex>{i}))
+        if (!p_heap->AllocatedChunks.is_element_free(Pool<SliceIndex>::sToken{i}))
         {
-            l_calculated_size += p_heap->AllocatedChunks.get(Token<SliceIndex>{i}).Size;
+            l_calculated_size += p_heap->AllocatedChunks.get(Pool<SliceIndex>::sToken{i}).Size;
         };
     }
 
@@ -1175,9 +1175,9 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     uimax l_calculated_size = 0;
     for (loop(i, 0, p_heap_paged->AllocatedChunks.get_size()))
     {
-        if (!p_heap_paged->AllocatedChunks.is_element_free(Token<SliceIndex>{i}))
+        if (!p_heap_paged->AllocatedChunks.is_element_free(Pool<SliceIndex>::sToken{i}))
         {
-            l_calculated_size += p_heap_paged->AllocatedChunks.get(Token<SliceIndex>{i}).Size;
+            l_calculated_size += p_heap_paged->AllocatedChunks.get(Pool<SliceIndex>::sToken{i}).Size;
         };
     }
 
@@ -2056,7 +2056,7 @@ inline void file_test()
 
 inline void native_window()
 {
-    Token<EWindow> l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    Pool<EWindow>::sToken l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
     EWindow& l_allocated_window = WindowAllocator::get_window(l_window);
     assert_true(!l_allocated_window.is_closing);
 
@@ -2317,22 +2317,22 @@ inline void command_buffer_pattern_test()
 
     CommandPool<MathOpCommand> l_command_pool = CommandPool<MathOpCommand>::allocate_default();
 
-    Token<CommandBuffer<MathOpCommand>> l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
+    typename Pool<CommandBuffer<MathOpCommand>>::sToken l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_add_command_buffer = l_command_pool.command_buffers.get(l_add_command_buffer_token);
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 2});
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 3});
 
-    Token<CommandBuffer<MathOpCommand>> l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
+    typename Pool<CommandBuffer<MathOpCommand>>::sToken l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_mul_command_buffer = l_command_pool.command_buffers.get(l_mul_command_buffer_token);
     l_mul_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::MUL, 3});
 
-    Token<NNTree<Token<CommandBuffer<MathOpCommand>>>::Node> l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
+   NNTree<Pool<CommandBuffer<MathOpCommand>>::sToken>::sToken l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
     Semaphore<MathOpCommand> l_semaphore;
     l_semaphore.execute_before = l_add_command_execution;
     l_command_execution.push_command_buffer_with_constraint(l_mul_command_buffer_token, l_semaphore);
 
     uimax l_result = 2;
-    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const Token<CommandBuffer<MathOpCommand>>, CommandBuffer<MathOpCommand>& p_command) {
+    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const Pool<CommandBuffer<MathOpCommand>>::sToken, CommandBuffer<MathOpCommand>& p_command) {
         for (loop(i, 0, p_command.commands.Size))
         {
             MathOpCommand& l_command = p_command.commands.get(i);

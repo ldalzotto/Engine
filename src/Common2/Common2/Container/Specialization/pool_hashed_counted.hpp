@@ -61,7 +61,7 @@ template <class KeyType, class ElementType> struct PoolHashedCounted
 
     inline Token<ElementType> push_back_element_nothashed(const KeyType& p_key, const ElementType& p_element)
     {
-        Token<ElementType> l_allocated_token = this->pool.alloc_element(p_element);
+        Token<ElementType> l_allocated_token = token_build_from<ElementType>(this->pool.alloc_element(p_element)) ;
         this->CountMap.push_key_value_nothashed(p_key, CountElement{l_allocated_token, 1});
         return l_allocated_token;
     };

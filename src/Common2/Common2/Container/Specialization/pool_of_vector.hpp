@@ -9,16 +9,16 @@
 */
 template <class ElementType> struct PoolOfVector
 {
-    using sToken = Token<Slice<ElementType>>;
+    using sToken = Token<iPool_element<PoolOfVector<ElementType>>>;
 
     VectorOfVector<ElementType> Memory;
     Vector<sToken> FreeBlocks;
 
-    using _Element = Slice<ElementType>;
-    using _ElementValue = Slice<ElementType>;
+    using tElement = Slice<ElementType>;
+    using tElementRef = Slice<ElementType>;
 
-    using _FreeBlocksValue = Vector<sToken>;
-    using _FreeBlocks = _FreeBlocksValue&;
+    using tFreeBlocksVector = Vector<sToken>;
+    using tFreeBlocksVectorRef = tFreeBlocksVector&;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {
