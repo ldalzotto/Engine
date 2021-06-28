@@ -42,9 +42,9 @@ struct TriggerEvent
 */
 struct ColliderDetector
 {
-    PoolOfVectorToken<TriggerEvent> collision_events;
+    PoolOfVector<TriggerEvent>::sToken collision_events;
 
-    static ColliderDetector build(const PoolOfVectorToken<TriggerEvent> p_collidsion_events);
+    static ColliderDetector build(const PoolOfVector<TriggerEvent>::sToken p_collidsion_events);
 };
 
 struct CollisionHeap2

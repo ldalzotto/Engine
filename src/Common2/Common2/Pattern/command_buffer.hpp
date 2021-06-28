@@ -52,13 +52,13 @@ template <class Command> struct CommandPool
 
 template <class Command> struct Semaphore
 {
-    Token<typename NNTree<Token<CommandBuffer<Command>>>::Node> execute_before;
+    typename NNTree<Token<CommandBuffer<Command>>>::sToken execute_before;
 };
 
 template <class Command> struct CommandBufferExecutionFlow
 {
     NNTree<Token<CommandBuffer<Command>>> command_tree;
-    Token<typename NNTree<Token<CommandBuffer<Command>>>::Node> command_tree_root;
+    typename NNTree<Token<CommandBuffer<Command>>>::sToken command_tree_root;
 
     inline static CommandBufferExecutionFlow allocate_default()
     {
@@ -77,15 +77,15 @@ template <class Command> struct CommandBufferExecutionFlow
         this->command_tree.free();
     };
 
-    inline Token<typename NNTree<Token<CommandBuffer<Command>>>::Node> push_command_buffer(const Token<CommandBuffer<Command>> p_command)
+    inline typename NNTree<Token<CommandBuffer<Command>>>::sToken push_command_buffer(const Token<CommandBuffer<Command>> p_command)
     {
-        SliceN<Token<typename NNTree<Token<CommandBuffer<Command>>>::Node>, 1> l_parents = {this->command_tree_root};
+        SliceN<typename NNTree<Token<CommandBuffer<Command>>>::sToken, 1> l_parents = {this->command_tree_root};
         return this->command_tree.push_value(p_command, slice_from_slicen(&l_parents));
     };
 
-    inline Token<typename NNTree<Token<CommandBuffer<Command>>>::Node> push_command_buffer_with_constraint(const Token<CommandBuffer<Command>> p_command, const Semaphore<Command> p_semaphore)
+    inline typename NNTree<Token<CommandBuffer<Command>>>::sToken push_command_buffer_with_constraint(const Token<CommandBuffer<Command>> p_command, const Semaphore<Command> p_semaphore)
     {
-        SliceN<Token<typename NNTree<Token<CommandBuffer<Command>>>::Node>, 1> l_parents = {p_semaphore.execute_before};
+        SliceN<typename NNTree<Token<CommandBuffer<Command>>>::sToken, 1> l_parents = {p_semaphore.execute_before};
         return this->command_tree.push_value(p_command, slice_from_slicen(&l_parents));
     };
 

@@ -9,6 +9,15 @@ template <class _Pool> struct iPool
     using _FreeBlocksValue = typename _Pool::_FreeBlocksValue;
     using _FreeBlocks = typename _Pool::_FreeBlocks;
 
+#if 0
+	struct Element
+	{
+		/* empty, for tokenization */
+	};
+
+	using sToken = Token<Element>;
+#endif
+
     inline _FreeBlocks get_free_blocks()
     {
         return this->pool.get_free_blocs();

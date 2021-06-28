@@ -18,7 +18,7 @@ inline TriggerEvent TriggerEvent::build(const Token<BoxCollider> p_other, const 
     return TriggerEvent{p_other, p_state};
 };
 
-inline ColliderDetector ColliderDetector::build(const PoolOfVectorToken<TriggerEvent> p_collidsion_events)
+inline ColliderDetector ColliderDetector::build(const PoolOfVector<TriggerEvent>::sToken p_collidsion_events)
 {
     return ColliderDetector{p_collidsion_events};
 };
@@ -52,7 +52,7 @@ inline Token<ColliderDetector> CollisionHeap2::allocate_colliderdetector(const T
     assert_true(!this->does_boxcollider_have_colliderdetector(p_box_collider));
 #endif
 
-    PoolOfVectorToken<TriggerEvent> l_trigger_events = this->collider_detectors_events_2.alloc_vector();
+    PoolOfVector<TriggerEvent>::sToken l_trigger_events = this->collider_detectors_events_2.alloc_vector();
     Token<ColliderDetector> l_collider_detector_token = this->collider_detectors.alloc_element(ColliderDetector::build(l_trigger_events));
     this->get_colliderdetector_from_boxcollider(p_box_collider) = l_collider_detector_token;
     return l_collider_detector_token;
@@ -273,7 +273,7 @@ this->is_waitingfor_trigger_stay_nextframe_detector = l_tmp;
 // If there is already a TriggerEvent event between them, we set to TRIGGER_STAY else, we initialize to TRIGGER_ENTER
 inline void CollisionDetectionStep::enter_collision(CollisionHeap2& p_collision_heap, const IntersectionEvent& p_intersection_event)
 {
-    PoolOfVectorToken<TriggerEvent> l_collider_triggerevents_nestedvector = p_collision_heap.collider_detectors.get(p_intersection_event.detector).collision_events;
+    PoolOfVector<TriggerEvent>::sToken l_collider_triggerevents_nestedvector = p_collision_heap.collider_detectors.get(p_intersection_event.detector).collision_events;
     Slice<TriggerEvent> l_collider_triggerevents = p_collision_heap.collider_detectors_events_2.get_vector(l_collider_triggerevents_nestedvector);
     bool l_trigger_event_found = false;
     for (loop(i, 0, l_collider_triggerevents.Size))

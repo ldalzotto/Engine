@@ -794,7 +794,7 @@ inline void poolofvector_test()
     PoolOfVector<uimax> l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
     // poolofvector_alloc_vector poolofvector_element_push_back_element poolofvector_release_vector
     {
-        PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
+        PoolOfVector<uimax>::sToken l_vector_0 = l_pool_of_vector.alloc_vector();
 
         uimax l_element = 100;
         l_pool_of_vector.element_push_back_element(l_vector_0, l_element);
@@ -805,7 +805,7 @@ inline void poolofvector_test()
 
         l_pool_of_vector.release_vector(l_vector_0);
 
-        PoolOfVectorToken<uimax> l_vector_0_new = l_pool_of_vector.alloc_vector();
+        PoolOfVector<uimax>::sToken l_vector_0_new = l_pool_of_vector.alloc_vector();
         assert_true(token_value(l_vector_0_new) == token_value(l_vector_0));
         l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 0);
@@ -815,7 +815,7 @@ inline void poolofvector_test()
     {
         uimax l_elements[3] = {100, 200, 300};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
-        PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector_with_values(l_elements_slice);
+        PoolOfVector<uimax>::sToken l_vector_0 = l_pool_of_vector.alloc_vector_with_values(l_elements_slice);
 
         Slice<uimax> l_vector_mem = l_pool_of_vector.get_vector(l_vector_0);
         assert_true(l_vector_mem.Size == 3);
@@ -826,7 +826,7 @@ inline void poolofvector_test()
     }
 
     {
-        PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
+        PoolOfVector<uimax>::sToken l_vector_0 = l_pool_of_vector.alloc_vector();
         PoolOfVector<uimax>::Element_iVector l_shadow = l_pool_of_vector.get_element_as_iVector(l_vector_0);
 
         assert_true(l_shadow.get_size() == 0);
@@ -840,7 +840,7 @@ inline void poolofvector_test()
     // Element_ShadowVector
     {
         l_pool_of_vector = PoolOfVector<uimax>::allocate_default();
-        PoolOfVectorToken<uimax> l_vector_0 = l_pool_of_vector.alloc_vector();
+        PoolOfVector<uimax>::sToken l_vector_0 = l_pool_of_vector.alloc_vector();
         PoolOfVector<uimax>::Element_iVector l_element_ivector_0 = l_pool_of_vector.get_element_as_iVector(l_vector_0);
 
         uimax l_el_0 = 10;
@@ -854,7 +854,7 @@ inline void poolofvector_test()
         assert_true(l_element_ivector_0.get_size() == 2);
         assert_true(l_element_ivector_0.get(1) == l_el_1);
 
-        PoolOfVectorToken<uimax> l_vector_1 = l_pool_of_vector.alloc_vector();
+        PoolOfVector<uimax>::sToken l_vector_1 = l_pool_of_vector.alloc_vector();
         PoolOfVector<uimax>::Element_iVector l_element_ivector_1 = l_pool_of_vector.get_element_as_iVector(l_vector_1);
         l_element_ivector_1.push_back_element(30);
         l_element_ivector_1.push_back_element(40);
@@ -1072,7 +1072,7 @@ inline void nntree_test()
     // Multiple parent childs
     // Removing a node recursively
     {
-        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
+        NNTree<uimax>::sToken l_0 = l_tree.push_root_value(1);
 
         assert_true(token_value(l_0) == 0);
         assert_true(*l_tree.get(l_0).Element == 1);
@@ -1080,9 +1080,9 @@ inline void nntree_test()
         assert_true(l_tree.get_parents(l_tree.get(l_0)).Size == 0);
 
         // Adding child nodes to the root node
-        SliceN<Token<NNTree<uimax>::Node>, 1> l_parents = {l_0};
-        Token<NNTree<uimax>::Node> l_0_1 = l_tree.push_value(2, slice_from_slicen(&l_parents));
-        Token<NNTree<uimax>::Node> l_0_2 = l_tree.push_value(3, slice_from_slicen(&l_parents));
+        SliceN<NNTree<uimax>::sToken, 1> l_parents = {l_0};
+        NNTree<uimax>::sToken l_0_1 = l_tree.push_value(2, slice_from_slicen(&l_parents));
+        NNTree<uimax>::sToken l_0_2 = l_tree.push_value(3, slice_from_slicen(&l_parents));
 
         assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 2);
         assert_true(l_tree.get_parents(l_tree.get(l_0_1)).Size == 1);
@@ -1091,8 +1091,8 @@ inline void nntree_test()
         assert_true(*l_tree.get(l_0_2).Element == 3);
 
         // We add a node whose parents are all already created nodes
-        SliceN<Token<NNTree<uimax>::Node>, 3> l_parents_2 = {l_0_1, l_0_2, l_0};
-        Token<NNTree<uimax>::Node> l_0_0_1 = l_tree.push_value(4, slice_from_slicen(&l_parents_2));
+        SliceN<NNTree<uimax>::sToken, 3> l_parents_2 = {l_0_1, l_0_2, l_0};
+        NNTree<uimax>::sToken l_0_0_1 = l_tree.push_value(4, slice_from_slicen(&l_parents_2));
 
         assert_true(l_tree.get_childs(l_tree.get(l_0)).Size == 3);
         assert_true(l_tree.get_childs(l_tree.get(l_0_1)).Size == 1);
@@ -1101,8 +1101,8 @@ inline void nntree_test()
         assert_true(l_tree.get_parents(l_tree.get(l_0_0_1)).Size == 3);
         assert_true(*l_tree.get(l_0_0_1).Element == 4);
 
-        SliceN<Token<NNTree<uimax>::Node>, 1> l_parent_3 = {l_0_1};
-        Token<NNTree<uimax>::Node> l_0_0_2 = l_tree.push_value(5, slice_from_slicen(&l_parent_3));
+        SliceN<NNTree<uimax>::sToken, 1> l_parent_3 = {l_0_1};
+        NNTree<uimax>::sToken l_0_0_2 = l_tree.push_value(5, slice_from_slicen(&l_parent_3));
         l_tree.remove_node_recursively(l_0_1);
 
         assert_true(l_tree.is_node_free(l_0_0_2));
@@ -1114,16 +1114,16 @@ inline void nntree_test()
     l_tree.free();
     l_tree = NNTree<uimax>::allocate_default();
     {
-        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
-        SliceN<Token<NNTree<uimax>::Node>, 1> l_first_wave_parent = {l_0};
-        Token<NNTree<uimax>::Node> l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
-        Token<NNTree<uimax>::Node> l_2 = l_tree.push_value(3, slice_from_slicen(&l_first_wave_parent));
-        Token<NNTree<uimax>::Node> l_3 = l_tree.push_value(4, slice_from_slicen(&l_first_wave_parent));
-        SliceN<Token<NNTree<uimax>::Node>, 3> l_second_wave_parent = {l_1, l_2, l_3};
-        Token<NNTree<uimax>::Node> l_4 = l_tree.push_value(5, slice_from_slicen(&l_second_wave_parent));
-        Token<NNTree<uimax>::Node> l_5 = l_tree.push_value(6, slice_from_slicen(&l_second_wave_parent));
-        SliceN<Token<NNTree<uimax>::Node>, 3> l_third_wave_parent = {l_4, l_5};
-        Token<NNTree<uimax>::Node> l_6 = l_tree.push_value(7, slice_from_slicen(&l_third_wave_parent));
+        NNTree<uimax>::sToken l_0 = l_tree.push_root_value(1);
+        SliceN<NNTree<uimax>::sToken, 1> l_first_wave_parent = {l_0};
+        NNTree<uimax>::sToken l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
+        NNTree<uimax>::sToken l_2 = l_tree.push_value(3, slice_from_slicen(&l_first_wave_parent));
+        NNTree<uimax>::sToken l_3 = l_tree.push_value(4, slice_from_slicen(&l_first_wave_parent));
+        SliceN<NNTree<uimax>::sToken, 3> l_second_wave_parent = {l_1, l_2, l_3};
+        NNTree<uimax>::sToken l_4 = l_tree.push_value(5, slice_from_slicen(&l_second_wave_parent));
+        NNTree<uimax>::sToken l_5 = l_tree.push_value(6, slice_from_slicen(&l_second_wave_parent));
+        SliceN<NNTree<uimax>::sToken, 3> l_third_wave_parent = {l_4, l_5};
+        NNTree<uimax>::sToken l_6 = l_tree.push_value(7, slice_from_slicen(&l_third_wave_parent));
 
         uimax l_sum = 0;
         l_tree.traverse_to_bottom_distinct(l_tree.get(l_0), [&](const NNTree<uimax>::Resolve&, const NNTree<uimax>::Resolve& p_node) {
@@ -1136,11 +1136,11 @@ inline void nntree_test()
 
     // remove_node_recursively on a chain of nodes
     {
-        Token<NNTree<uimax>::Node> l_0 = l_tree.push_root_value(1);
-        SliceN<Token<NNTree<uimax>::Node>, 1> l_first_wave_parent = {l_0};
-        Token<NNTree<uimax>::Node> l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
-        SliceN<Token<NNTree<uimax>::Node>, 1> l_second_wave_parent = {l_1};
-        Token<NNTree<uimax>::Node> l_2 = l_tree.push_value(3, slice_from_slicen(&l_second_wave_parent));
+        NNTree<uimax>::sToken l_0 = l_tree.push_root_value(1);
+        SliceN<NNTree<uimax>::sToken, 1> l_first_wave_parent = {l_0};
+        NNTree<uimax>::sToken l_1 = l_tree.push_value(2, slice_from_slicen(&l_first_wave_parent));
+        SliceN<NNTree<uimax>::sToken, 1> l_second_wave_parent = {l_1};
+        NNTree<uimax>::sToken l_2 = l_tree.push_value(3, slice_from_slicen(&l_second_wave_parent));
 
         l_tree.remove_node_recursively(l_0);
         assert_true(l_tree.is_node_free(l_0));
