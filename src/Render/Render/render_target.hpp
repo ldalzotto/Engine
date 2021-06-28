@@ -3,8 +3,8 @@
 struct RenderTargetInternal_Color_Depth
 {
     v3ui dimensions;
-    Token<TextureGPU> color;
-    Token<TextureGPU> depth;
+    TextureGPU_Token color;
+    TextureGPU_Token depth;
 
     struct AllocateInfo
     {

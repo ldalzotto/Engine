@@ -198,6 +198,11 @@ template <class ElementType> struct NTree
         this->detach_from_tree(p_node);
     };
 
+    inline int8 is_node_free(sToken p_token)
+    {
+        return this->Memory.is_element_free(token_build_from<t_MemoryPool_sTokenValue>(p_token));
+    };
+
   private:
     inline void allocate_node(const sToken p_parent, const ElementType& p_element, sToken* out_created_node, t_RangesPoolOfVector_sToken* out_created_childs)
     {

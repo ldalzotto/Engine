@@ -64,7 +64,7 @@ struct CollisionHeap2
     void push_boxcollider_transform(Token<BoxCollider> p_boxcollider, const transform_pa& p_world_transform);
     void free_boxcollider(const Token<BoxCollider> p_box_collider);
 
-    Token<ColliderDetector> & get_colliderdetector_from_boxcollider(const Token<BoxCollider> p_box_collider);
+    Token<ColliderDetector>& get_colliderdetector_from_boxcollider(const Token<BoxCollider> p_box_collider);
 
     Slice<TriggerEvent> get_triggerevents_from_boxcollider(const Token<BoxCollider> p_box_collider);
     Slice<TriggerEvent> get_triggerevents_from_colliderdetector(const Token<ColliderDetector> p_collider_detector);

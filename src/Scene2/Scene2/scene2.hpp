@@ -50,6 +50,8 @@ struct Node
 };
 
 using NodeEntry = NTree<Node>::Resolve;
+using Node_Token = NTree<Node>::sToken;
+using Node_TokenValue = NTree<Node>::sTokenValue;
 
 struct NodeComponent
 {
@@ -82,33 +84,36 @@ struct SceneTree
 
         return l_scene;
     };
+
     inline void free()
     {
 #if __DEBUG
-        NodeEntry l_root_node = this->get_node(token_build<Node>(0));
+        NodeEntry l_root_node = this->get_node(token_build<Node_TokenValue>(0));
         assert_true(this->get_node_childs(l_root_node).Size == 0);
 #endif
 
         this->node_tree.free();
     };
 
-    inline Token<Node> add_node(const transform& p_initial_local_transform, const Token<Node> p_parent)
+    inline Node_Token add_node(const transform& p_initial_local_transform, const Node_Token p_parent)
     {
         return this->allocate_node(p_initial_local_transform, p_parent);
     };
-    inline NodeEntry get_node(const Token<Node> p_node)
+
+    inline NodeEntry get_node(const Node_Token p_node)
     {
-        return this->node_tree.get(token_build_from<NTree<Node>::Node>(p_node));
-    };
-    inline NodeEntry get_node_parent(const NodeEntry& p_node)
-    {
-        return this->get_node(token_build_from<Node>(p_node.Node->parent));
+        return this->node_tree.get(p_node);
     };
 
-    inline Slice<Token<Node>> get_node_childs(const NodeEntry& p_node)
+    inline NodeEntry get_node_parent(const NodeEntry& p_node)
+    {
+        return this->get_node(p_node.Node->parent);
+    };
+
+    inline Slice<Node_Token> get_node_childs(const NodeEntry& p_node)
     {
         Slice<Token<NTree<Node>::Node>> l_childs = this->node_tree.get_childs(p_node.Node->childs);
-        return sliceoftoken_cast(Node, l_childs);
+        return Slice<Node_Token>::build_memory_elementnb((Node_Token*)l_childs.Begin, l_childs.Size);
     };
 
     inline void add_child(const NodeEntry& p_parent, const NodeEntry& p_child)
@@ -169,7 +174,7 @@ struct SceneTree
         }
         else
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(p_node.Node->parent);
             this->set_localposition(p_node, (this->get_worldtolocal(l_parent) * v4f::build_v3f_s(p_world_position, 1.0f)).Vec3);
         }
     };
@@ -181,7 +186,7 @@ struct SceneTree
         }
         else
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(p_node.Node->parent);
             this->set_localrotation(p_node, this->get_worldrotation(l_parent).inv() * p_world_rotation);
         }
     };
@@ -197,7 +202,7 @@ struct SceneTree
         }
         else
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(p_node.Node->parent);
             set_localscale(p_node, p_world_scale * this->get_worldscalefactor(l_parent).inv());
         }
     };
@@ -214,7 +219,7 @@ struct SceneTree
         }
         else
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(p_node.Node->parent);
             return this->get_worldrotation(l_parent) * p_node.Element->local_transform.rotation;
         }
     };
@@ -226,7 +231,7 @@ struct SceneTree
         }
         else
         {
-            NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+            NodeEntry l_parent = this->get_node(p_node.Node->parent);
             return this->get_worldscalefactor(l_parent) * p_node.Element->local_transform.scale;
         }
     };
@@ -249,15 +254,13 @@ struct SceneTree
     };
 
   private:
-    inline Token<Node> allocate_node(const transform& p_initial_local_transform, const Token<Node> p_parent)
+    inline Node_Token allocate_node(const transform& p_initial_local_transform, const Node_Token p_parent)
     {
-        Token<NTree<Node>::Node> l_node = this->node_tree.push_value(Node::build(Node::State::build(1, 1), p_initial_local_transform), token_build_from<NTree<Node>::Node>(p_parent));
-        return token_build_from<Node>(l_node);
+        return this->node_tree.push_value(Node::build(Node::State::build(1, 1), p_initial_local_transform), token_build_from<NTree<Node>::Node>(p_parent));
     };
-    inline Token<Node> allocate_root_node()
+    inline Node_Token allocate_root_node()
     {
-        Token<NTree<Node>::Node> l_node = this->node_tree.push_root_value(Node::build(Node::State::build(1, 1), transform_const::ORIGIN));
-        return token_build_from<Node>(l_node);
+        return this->node_tree.push_root_value(Node::build(Node::State::build(1, 1), transform_const::ORIGIN));
     };
     inline void mark_node_for_recalculation_recursive(const NodeEntry& p_node)
     {
@@ -273,7 +276,7 @@ struct SceneTree
 
             if (p_node.has_parent())
             {
-                NodeEntry l_parent = this->get_node(token_build_from<Node>(p_node.Node->parent));
+                NodeEntry l_parent = this->get_node(p_node.Node->parent);
                 p_node.Element->localtoworld = this->get_localtoworld(l_parent) * p_node.Element->localtoworld;
             }
             p_node.Element->state.matrices_mustBe_recalculated = false;
@@ -293,13 +296,13 @@ struct SceneTree
 
 namespace Scene_const
 {
-const Token<Node> root_node = token_build<Node>(0);
+const Node_Token root_node = token_build<Node_TokenValue>(0);
 };
 
 struct SceneEvents
 {
-    Vector<Token<Node>> orphan_nodes_to_be_destroyed;
-    Vector<Token<Node>> nodes_to_be_destroyed; // This event is used to break links between node and components
+    Vector<Node_Token> orphan_nodes_to_be_destroyed;
+    Vector<Node_Token> nodes_to_be_destroyed; // This event is used to break links between node and components
 
     /*
         When we add or remove components on a Scene, component events are generated.
@@ -308,11 +311,11 @@ struct SceneEvents
     */
     struct ComponentRemovedEvent
     {
-        Token<Node> node;
+        Node_Token node;
         // The component has already been detached. So we copy it's value;
         NodeComponent value;
 
-        inline static ComponentRemovedEvent build(const Token<Node> p_node, const NodeComponent& p_component_value)
+        inline static ComponentRemovedEvent build(const Node_Token p_node, const NodeComponent& p_component_value)
         {
             return ComponentRemovedEvent{p_node, p_component_value};
         };
@@ -321,7 +324,7 @@ struct SceneEvents
 
     inline static SceneEvents allocate_default()
     {
-        return SceneEvents{Vector<Token<Node>>::allocate(0), Vector<Token<Node>>::allocate(0), Vector<ComponentRemovedEvent>::allocate(0)};
+        return SceneEvents{Vector<Node_Token>::allocate(0), Vector<Node_Token>::allocate(0), Vector<ComponentRemovedEvent>::allocate(0)};
     };
 
     inline void free()
@@ -346,9 +349,13 @@ struct SceneEvents
 */
 struct Scene
 {
-
     SceneTree tree;
-    PoolOfVector<NodeComponent> node_to_components;
+
+    using t_NodeToComponents = PoolOfVector<NodeComponent>;
+    using NodeToComponents_Token = t_NodeToComponents::sToken;
+    using NodeToComponents_TokenValue = t_NodeToComponents::sTokenValue;
+
+    t_NodeToComponents node_to_components;
 
     SceneEvents scene_events;
 
@@ -404,14 +411,14 @@ struct Scene
         this->tree.clear_nodes_state();
     };
 
-    inline Token<Node> add_node(const transform& p_initial_local_transform, const Token<Node> p_parent)
+    inline Node_Token add_node(const transform& p_initial_local_transform, const Node_Token p_parent)
     {
-        Token<Node> l_node = this->tree.add_node(p_initial_local_transform, p_parent);
+        Node_Token l_node = this->tree.add_node(p_initial_local_transform, p_parent);
         this->node_to_components.alloc_vector();
         return l_node;
     };
 
-    inline NodeEntry get_node(const Token<Node> p_node)
+    inline NodeEntry get_node(const Node_Token p_node)
     {
         return this->tree.get_node(p_node);
     };
@@ -419,7 +426,7 @@ struct Scene
     {
         return this->tree.get_node_parent(p_node);
     };
-    inline Slice<Token<Node>> get_node_childs(const NodeEntry& p_node)
+    inline Slice<Node_Token> get_node_childs(const NodeEntry& p_node)
     {
         return this->tree.get_node_childs(p_node);
     };
@@ -429,32 +436,32 @@ struct Scene
 
         NodeEntry l_node_copy = p_node;
         this->tree.node_tree.make_node_orphan(l_node_copy);
-        this->scene_events.orphan_nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_node.Node->index));
+        this->scene_events.orphan_nodes_to_be_destroyed.push_back_element(p_node.Node->index);
 
         this->tree.node_tree.traverse3(p_node.Node->index, [this](const NodeEntry& p_tree_node) {
-            Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_tree_node.Node->index));
+            Slice<NodeComponent> l_node_component_tokens = this->node_to_components.get_vector(token_build_from<NodeToComponents_TokenValue>(p_tree_node.Node->index));
             for (loop(i, 0, l_node_component_tokens.Size))
             {
                 this->scene_events.component_removed_events.push_back_element(
-                    SceneEvents::ComponentRemovedEvent::build(token_build_from<Node>(p_tree_node.Node->index), l_node_component_tokens.get(i)));
+                    SceneEvents::ComponentRemovedEvent::build(p_tree_node.Node->index, l_node_component_tokens.get(i)));
             }
-            this->scene_events.nodes_to_be_destroyed.push_back_element(token_build_from<Node>(p_tree_node.Node->index));
+            this->scene_events.nodes_to_be_destroyed.push_back_element(p_tree_node.Node->index);
         });
     };
 
-    inline void add_node_component_by_value(const Token<Node> p_node, const NodeComponent& p_component)
+    inline void add_node_component_by_value(const Node_Token p_node, const NodeComponent& p_component)
     {
-        this->node_to_components.element_push_back_element(token_build_from<Slice<NodeComponent>>(p_node), p_component);
+        this->node_to_components.element_push_back_element(token_build_from<NodeToComponents_TokenValue>(p_node), p_component);
     };
 
-    template <class ComponentType> inline void add_node_component_typed(const Token<Node> p_node, const token_t p_component_resource)
+    template <class ComponentType> inline void add_node_component_typed(const Node_Token p_node, const token_t p_component_resource)
     {
         this->add_node_component_by_value(p_node, NodeComponent{ComponentType::Type, p_component_resource});
     };
 
-    inline NodeComponent* get_node_component_by_type(const Token<Node> p_node, const component_t p_type)
+    inline NodeComponent* get_node_component_by_type(const Node_Token p_node, const component_t p_type)
     {
-        Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
+        Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<NodeToComponents_TokenValue>(p_node));
         for (loop(i, 0, l_components.Size))
         {
             NodeComponent& l_component = l_components.get(i);
@@ -467,17 +474,17 @@ struct Scene
         return NULL;
     };
 
-    template <class ComponentType> inline NodeComponent* get_node_component_typed(const Token<Node> p_node)
+    template <class ComponentType> inline NodeComponent* get_node_component_typed(const Node_Token p_node)
     {
         return this->get_node_component_by_type(p_node, ComponentType::Type);
     };
 
-    inline Slice<NodeComponent> get_node_components(const Token<Node> p_node)
+    inline Slice<NodeComponent> get_node_components(const Node_Token p_node)
     {
-        return this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
+        return this->node_to_components.get_vector(token_build_from<NodeToComponents_TokenValue>(p_node));
     };
 
-    inline void remove_node_component(const Token<Node> p_node, const component_t p_component_type)
+    inline void remove_node_component(const Node_Token p_node, const component_t p_component_type)
     {
         NodeComponent l_detached_component;
         if (!this->remove_node_component_by_type(p_node, p_component_type, &l_detached_component))
@@ -486,22 +493,22 @@ struct Scene
         };
     };
 
-    template <class ComponentType> inline void remove_node_component_typed(const Token<Node> p_node)
+    template <class ComponentType> inline void remove_node_component_typed(const Node_Token p_node)
     {
         this->remove_node_component(p_node, ComponentType::Type);
     };
 
   private:
-    inline int8 remove_node_component_by_type(const Token<Node> p_node, const component_t p_type, NodeComponent* out_component)
+    inline int8 remove_node_component_by_type(const Node_Token p_node, const component_t p_type, NodeComponent* out_component)
     {
-        Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<Slice<NodeComponent>>(p_node));
+        Slice<NodeComponent> l_components = this->node_to_components.get_vector(token_build_from<NodeToComponents_TokenValue>(p_node));
         for (loop(i, 0, l_components.Size))
         {
             NodeComponent& l_component = l_components.get(i);
             if (l_component.type == p_type)
             {
                 *out_component = l_component;
-                this->node_to_components.element_erase_element_at_always(token_build_from<Slice<NodeComponent>>(p_node), i);
+                this->node_to_components.element_erase_element_at_always(token_build_from<NodeToComponents_TokenValue>(p_node), i);
                 this->scene_events.component_removed_events.push_back_element(SceneEvents::ComponentRemovedEvent::build(p_node, *out_component));
                 return 1;
             }
@@ -521,7 +528,7 @@ struct Scene
     {
         for (vector_loop(&this->scene_events.orphan_nodes_to_be_destroyed, i))
         {
-            Token<Node> l_node_to_destroy = this->scene_events.orphan_nodes_to_be_destroyed.get(i);
+            Node_Token l_node_to_destroy = this->scene_events.orphan_nodes_to_be_destroyed.get(i);
             this->tree.remove_node(this->tree.get_node(l_node_to_destroy));
         }
         this->scene_events.orphan_nodes_to_be_destroyed.clear();
@@ -531,7 +538,7 @@ struct Scene
     {
         for (loop(i, 0, this->scene_events.nodes_to_be_destroyed.Size))
         {
-            this->node_to_components.release_vector(token_build_from<Slice<NodeComponent>>(this->scene_events.nodes_to_be_destroyed.get(i)));
+            this->node_to_components.release_vector(token_build_from<NodeToComponents_TokenValue>(this->scene_events.nodes_to_be_destroyed.get(i)));
         }
         this->scene_events.nodes_to_be_destroyed.clear();
     };

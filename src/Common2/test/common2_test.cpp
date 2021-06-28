@@ -2055,7 +2055,7 @@ inline void file_test()
 
 inline void native_window()
 {
-    Pool<EWindow>::sToken l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
+    EWindow_Token l_window = WindowAllocator::allocate(300, 300, slice_int8_build_rawstr("TEST"));
     EWindow& l_allocated_window = WindowAllocator::get_window(l_window);
     assert_true(!l_allocated_window.is_closing);
 

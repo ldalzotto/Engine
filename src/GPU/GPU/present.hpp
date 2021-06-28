@@ -82,8 +82,8 @@ struct GPUPresent_2DQuad
         v2f uv;
     };
 
-    Token<BufferGPU> d2_quad_vertices;
-    Token<BufferGPU> d2_quad_indices_image_indices;
+    BufferGPU_Token d2_quad_vertices;
+    BufferGPU_Token d2_quad_indices_image_indices;
 
     inline static GPUPresent_2DQuad allocate(BufferMemory& p_buffer_memory)
     {
@@ -131,16 +131,16 @@ struct SwapChain
     Semafore swap_chain_next_image_semaphore;
 
     v3ui swap_chain_dimensions;
-    Span<Token<ImageGPU>> swap_chain_images;
-    Span<Token<GraphicsPass>> rendertarget_copy_pass;
-    Span<Token<Shader>> image_copy_shaders;
+    Span<ImageGPU_Token> swap_chain_images;
+    Span<GraphicsPass_Token> rendertarget_copy_pass;
+    Span<Shader_Token> image_copy_shaders;
 
-    Token<ShaderLayout> image_copy_shader_layout;
-    Token<ShaderModule> image_copy_shader_vertex;
-    Token<ShaderModule> image_copy_shader_fragment;
-    Token<ShaderTextureGPUParameter> shader_parameter_texture;
+    ShaderLayout_Token image_copy_shader_layout;
+    ShaderModule_Token image_copy_shader_vertex;
+    ShaderModule_Token image_copy_shader_fragment;
+    ShaderTextureGPUParameter_Token shader_parameter_texture;
 
-    inline static SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const Token<TextureGPU> p_presented_texture,
+    inline static SwapChain allocate(GPUPresentDevice& p_present_device, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const TextureGPU_Token p_presented_texture,
                                      const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader, const v3ui p_window_handle_dimensions)
     {
         SwapChain l_swap_chain;
@@ -163,7 +163,7 @@ struct SwapChain
 
   private:
     inline static void allocate_swap_chain_texture_independant(SwapChain& p_swap_chain, GPUPresentDevice& p_present_device, GraphicsAllocator2& p_graphics_allocator,
-                                                               const Token<TextureGPU> p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
+                                                               const TextureGPU_Token p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         p_swap_chain.swap_chain_next_image_semaphore = Semafore::allocate(gpu::LogicalDevice{(token_t)p_present_device.device});
 
@@ -222,9 +222,9 @@ struct SwapChain
         // l_present_device.present_mode =  VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
         Span<VkImage> l_images = vk::getSwapchainImagesKHR(p_present_device.device, p_swap_chain.swap_chain);
-        p_swap_chain.swap_chain_images = Span<Token<ImageGPU>>::allocate(l_images.Capacity);
-        p_swap_chain.rendertarget_copy_pass = Span<Token<GraphicsPass>>::allocate(l_images.Capacity);
-        p_swap_chain.image_copy_shaders = Span<Token<Shader>>::allocate(l_images.Capacity);
+        p_swap_chain.swap_chain_images = Span<ImageGPU_Token>::allocate(l_images.Capacity);
+        p_swap_chain.rendertarget_copy_pass = Span<GraphicsPass_Token>::allocate(l_images.Capacity);
+        p_swap_chain.image_copy_shaders = Span<Shader_Token>::allocate(l_images.Capacity);
 
         for (loop(i, 0, l_images.Capacity))
         {
@@ -234,7 +234,7 @@ struct SwapChain
                 p_buffer_memory.allocator.gpu_images.alloc_element(ImageGPU{TransferDeviceHeapToken{}, token_build<gpu::_Image>((token_t)l_images.get(i)), l_image_format, 0});
 
             SliceN<AttachmentType, 1> l_attachment_types = {AttachmentType::KHR};
-            SliceN<Token<ImageGPU>, 1> l_attachment_images = {p_swap_chain.swap_chain_images.get(i)};
+            SliceN<ImageGPU_Token , 1> l_attachment_images = {p_swap_chain.swap_chain_images.get(i)};
             SliceN<RenderPassAttachment::ClearOp, 1> l_attachment_clear = {RenderPassAttachment::ClearOp::CLEARED};
             p_swap_chain.rendertarget_copy_pass.get(i) = GraphicsPassAllocationComposition::allocate_attachmenttextures_then_renderpass_then_graphicspass<1>(
                 p_buffer_memory, p_graphics_allocator, l_attachment_types, l_attachment_images, l_attachment_clear);
@@ -284,7 +284,7 @@ struct GPUPresent
     GPUPresent_2DQuad d2_quad;
 
     inline static GPUPresent allocate(const GPUInstance& p_gpu_instance, BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, const window_native p_window_handle,
-                                      const v3ui p_window_size, Token<TextureGPU> p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
+                                      const v3ui p_window_size, TextureGPU_Token p_presented_texture, const Slice<int8>& p_compiled_vertex_shader, const Slice<int8>& p_compiled_fragment_shader)
     {
         GPUPresent l_gpu_present;
         l_gpu_present.device = GPUPresentDevice::allocate(p_gpu_instance, p_window_handle);

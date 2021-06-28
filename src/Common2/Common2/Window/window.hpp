@@ -27,6 +27,9 @@ struct EWindow
     void consume_resize_event();
 };
 
+using t_EWindows = Pool<EWindow>;
+using EWindow_Token = t_EWindows::sToken;
+
 GLOBAL_STATIC Pool<EWindow> g_app_windows;
 
 struct NativeWindow_to_Window
@@ -42,11 +45,11 @@ struct WindowAllocator
     static void initialize();
     static void finalize();
 
-    static Pool<EWindow>::sToken allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
-    static void free(const Pool<EWindow>::sToken p_window);
-    static void free_headless(const Pool<EWindow>::sToken p_window);
+    static EWindow_Token allocate(const uint32 p_client_width, const uint32 p_client_height, const Slice<int8>& p_name);
+    static void free(const EWindow_Token p_window);
+    static void free_headless(const EWindow_Token p_window);
 
-    static EWindow& get_window(const Pool<EWindow>::sToken p_window);
+    static EWindow& get_window(const EWindow_Token p_window);
 
     static void on_appevent(window_native p_window_handle, AppEventType* p_appevent);
 };
@@ -123,7 +126,7 @@ inline Pool<EWindow>::sToken WindowAllocator::allocate(const uint32 p_client_wid
     return l_allocated_window;
 };
 
-inline void WindowAllocator::free(const Pool<EWindow>::sToken p_window)
+inline void WindowAllocator::free(const EWindow_Token p_window)
 {
     free_headless(p_window);
 
@@ -145,7 +148,7 @@ inline void WindowAllocator::free(const Pool<EWindow>::sToken p_window)
     };
 };
 
-inline void WindowAllocator::free_headless(const Pool<EWindow>::sToken p_window)
+inline void WindowAllocator::free_headless(const EWindow_Token p_window)
 {
     g_app_windows.release_element(p_window);
 
@@ -155,7 +158,7 @@ inline void WindowAllocator::free_headless(const Pool<EWindow>::sToken p_window)
     };
 };
 
-inline EWindow& WindowAllocator::get_window(const Pool<EWindow>::sToken p_window)
+inline EWindow& WindowAllocator::get_window(const EWindow_Token p_window)
 {
     return g_app_windows.get(p_window);
 };
