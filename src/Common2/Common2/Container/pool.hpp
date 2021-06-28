@@ -92,6 +92,8 @@ template <class ElementType> struct Pool
         this->to_ipool().allocate_element_empty_v2();
     }
 
+    // TODO -> finding a way to define a Token that is more restrictive. In this case, we want a token that is usable only for Pools.
+    //         also, the token type must be very simple.
     inline Token<ElementType> alloc_element(const ElementType& p_element)
     {
         return this->to_ipool().allocate_element_v2(p_element);

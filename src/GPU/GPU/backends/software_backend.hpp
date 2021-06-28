@@ -169,7 +169,7 @@ void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_c
     l_copy_memory.source = l_source_buffer.binded_memory;
     l_copy_memory.source.Size = p_source_size;
     l_copy_memory.target = l_target_image.binded_memory;
-    l_copy_memory.target.Size = p_target_format.extent.x * p_target_format.extent.y * p_target_format.extent.z;
+    l_copy_memory.target.Size = l_target_image.binded_memory.Size;
     l_command_buffer.commands.push_back_element(gpu_software::GPUCommand::build_copy_memory(l_copy_memory));
 };
 
@@ -184,7 +184,7 @@ void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_c
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_image.binded_memory;
-    l_copy_memory.source.Size = p_source_format.extent.x * p_source_format.extent.y * p_source_format.extent.z;
+    l_copy_memory.source.Size = l_source_image.binded_memory.Size;
     l_copy_memory.target = l_target_buffer.binded_memory;
     l_copy_memory.target.Size = l_copy_memory.source.Size;
     l_command_buffer.commands.push_back_element(gpu_software::GPUCommand::build_copy_memory(l_copy_memory));
@@ -201,16 +201,16 @@ void gpu::command_copy_image(LogicalDevice p_device, CommandBuffer p_command_buf
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_image.binded_memory;
-    l_copy_memory.source.Size = p_source_format.extent.x * p_source_format.extent.y * p_source_format.extent.z;
+    l_copy_memory.source.Size = l_source_image.binded_memory.Size;
     l_copy_memory.target = l_target_image.binded_memory;
-    l_copy_memory.target.Size = p_target_format.extent.x * p_target_format.extent.y * p_target_format.extent.z;
+    l_copy_memory.target.Size = l_target_image.binded_memory.Size;
     l_command_buffer.commands.push_back_element(gpu_software::GPUCommand::build_copy_memory(l_copy_memory));
 };
 
 void gpu::command_image_layout_transition(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_image, const ImageFormat& p_image_format, const GPUPipelineStageFlag p_source_stage,
                                           const ImageLayoutFlag p_source_layout, const GPUAccessFlag p_source_access, const GPUPipelineStageFlag p_target_stage, const ImageLayoutFlag p_target_layout,
                                           const GPUAccessFlag p_target_access){
-    // nothign
+    // nothing
 };
 
 int8* gpu::map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size)
@@ -286,8 +286,7 @@ void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer 
 gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format, const ImageTilingFlag p_image_tiling)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Image> l_image =
-        l_instance->images.alloc_element(gpu_software::Image::build_format(gpu_software::Image::Format{p_image_format.extent.x, p_image_format.extent.y, p_image_format.extent.z}));
+    Token<gpu_software::Image> l_image = l_instance->images.alloc_element(gpu_software::Image::build_format(p_image_format));
     return token_build_from<gpu::_Image>(l_image);
 };
 
@@ -304,7 +303,7 @@ gpu::MemoryRequirements gpu::image_get_memory_requirements(const LogicalDevice p
     Token<gpu_software::Image> l_image_token = token_build_from<gpu_software::Image>(p_image);
     gpu_software::Image& l_image = l_instance->images.get(l_image_token);
     gpu::MemoryRequirements l_requirements;
-    l_requirements.size = l_image.format.x * l_image.format.y * l_image.format.z;
+    l_requirements.size = l_image.format.get_size();
     l_requirements.alignment = 1;
     l_requirements.memory_type = MemoryTypeFlag::HOST_VISIBLE;
     return l_requirements;
@@ -317,5 +316,5 @@ void gpu::image_bind_memory(const LogicalDevice p_logical_device, const Image p_
     Token<Span<int8>> l_memory = token_build_from<Span<int8>>(p_memory);
     gpu_software::Image& l_image = l_instance->images.get(l_image_token);
     l_image.binded_memory = l_instance->memory_chunks.get(l_memory).slice.slide_rv(p_offset);
-    l_image.binded_memory.Size = l_image.format.x * l_image.format.y * l_image.format.z;
+    l_image.binded_memory.Size = l_image.format.get_size();
 };

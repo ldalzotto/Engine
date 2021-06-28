@@ -137,6 +137,27 @@ struct ImageFormat
         l_depth_imageformat.imageUsage = p_usage;
         return l_depth_imageformat;
     };
+
+    inline int8 get_pixel_size()
+    {
+        switch (this->format)
+        {
+        case ImageFormatFlag::R8G8B8A8_SRGB:
+            return 4;
+        case ImageFormatFlag::D16_UNORM:
+            return 2;
+        case ImageFormatFlag::R8G8B8_SRGB:
+            return 3;
+        case ImageFormatFlag::UNKNOWN:
+            abort();
+        }
+        return 0;
+    };
+
+    inline uint32 get_size()
+    {
+        return (this->extent.x * this->extent.y * this->extent.z) * this->get_pixel_size();
+    };
 };
 
 #define GPU_DECLARE_TOKEN(p_name)                                                                                                                                                                      \

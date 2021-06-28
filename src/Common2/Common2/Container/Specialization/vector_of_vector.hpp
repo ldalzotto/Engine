@@ -51,7 +51,8 @@ struct VectorOfVector_VectorHeader
 /*
         A VectorOfVector is a chain of resizable Vector allocated on the same memory block.
         Every nested vectors can be altered with "vectorofvector_element_*" functions.
-    */
+*/
+// TODO -> having a way to have different ElementType for every nested vectors ? To facilitate the fact of grouping adjacent containers.
 template <class ElementType> struct VectorOfVector
 {
     VaryingVector varying_vector;
