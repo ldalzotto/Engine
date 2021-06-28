@@ -5,8 +5,8 @@ template <class ElementType> struct VectorSlice
     uimax Size;
     Slice<ElementType> Memory;
 
-    using _ElementValue = ElementType;
-    using _SizeType = uimax;
+    using t_ElementValue = ElementType;
+    using t_SizeType = uimax;
 
     inline static VectorSlice<ElementType> build(const Slice<ElementType>& p_memory, const uimax p_initial_size)
     {

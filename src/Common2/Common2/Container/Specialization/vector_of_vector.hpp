@@ -258,8 +258,8 @@ template <class ElementType> struct VectorOfVector
         VectorOfVector<ElementType>* vectorOfVector;
         uimax Index;
 
-        using _ElementValue = ElementType;
-        using _SizeType = uimax;
+        using t_ElementValue = ElementType;
+        using t_SizeType = uimax;
 
         inline static Element_iVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
         {

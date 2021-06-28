@@ -7,17 +7,12 @@ template <class ElementType> struct NTree
 {
     struct Node;
 
-    using sToken = Token<Node>;
+    using sTokenValue = Node;
+    using sToken = Token<sTokenValue>;
 
-    using t_MemoryPool = Pool<ElementType>;
-    using t_MemoryPool_sTokenValue = typename t_MemoryPool::sTokenValue;
-
-    using t_IndicesPool = Pool<Node>;
-    using t_IndicesPool_sToken = typename t_IndicesPool::sToken;
-    using t_IndicesPool_sTokenValue = typename t_IndicesPool::sTokenValue;
-
-    using t_RangesPoolOfVector = PoolOfVector<sToken>;
-    using t_RangesPoolOfVector_sToken = typename t_RangesPoolOfVector::sToken;
+    iPool_types_declare(MemoryPool, Pool<ElementType>);
+    iPool_types_declare(IndicesPool, Pool<Node>);
+    iPool_types_declare(RangesPoolOfVector, PoolOfVector<sToken>);
 
     struct Node
     {
@@ -266,11 +261,10 @@ template <class ElementType> struct NNTree
     using sToken = typename Pool<Node>::sToken;
 
     using t_Element = ElementType;
-    using t_MemoryPool = Pool<t_Element>;
-    using t_NodesPool = Pool<Node>;
 
-    using t_RangesPoolOfVector = PoolOfVector<sToken>;
-    using t_RangesPoolOfVector_sToken = typename t_RangesPoolOfVector::sToken;
+    iPool_types_declare(MemoryPool, Pool<t_Element>);
+    iPool_types_declare(NodesPool, Pool<Node>);
+    iPool_types_declare(RangesPoolOfVector, PoolOfVector<sToken>);
 
     struct Node
     {
@@ -321,7 +315,7 @@ template <class ElementType> struct NNTree
 
     inline int8 is_node_free(const sToken p_node)
     {
-        return this->Memory.is_element_free(token_build_from<t_MemoryPool::sTokenValue>(p_node)) && this->Nodes.is_element_free(p_node);
+        return this->Memory.is_element_free(token_build_from<t_MemoryPool_sTokenValue>(p_node)) && this->Nodes.is_element_free(p_node);
     };
 
     inline sToken push_root_value(const ElementType& p_element)
@@ -339,7 +333,7 @@ template <class ElementType> struct NNTree
         Resolve l_return;
         l_return.node_token = p_element;
         l_return.Node = &this->Nodes.get(p_element);
-        l_return.Element = &this->Memory.get(token_build_from<t_MemoryPool::sTokenValue>(p_element));
+        l_return.Element = &this->Memory.get(token_build_from<t_MemoryPool_sTokenValue>(p_element));
         return l_return;
     };
 
@@ -562,3 +556,10 @@ template <class ElementType> struct NNTree
         }
     };
 };
+
+#define NNTree_type_declare(p_nntree_name, p_nntree_type)                                                                                                                                              \
+    using t_##p_nntree_name = p_nntree_type;                                                                                                                                                           \
+    using t_##p_nntree_name##_Resolve = typename t_##p_nntree_name::Resolve;                                                                                                                           \
+    using t_##p_nntree_name##_Element = typename t_##p_nntree_name::t_Element;                                                                                                                         \
+    using t_##p_nntree_name##_sToken = typename t_##p_nntree_name::sToken;                                                                                                                             \
+    using t_##p_nntree_name##_sTokenValue = typename t_##p_nntree_name::sTokenValue;

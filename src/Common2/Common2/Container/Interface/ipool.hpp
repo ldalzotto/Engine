@@ -95,3 +95,9 @@ template <class _Pool> struct iPool
         return this->pool._push_back_element(p_element);
     };
 };
+
+#define iPool_types_declare(p_pool_name, p_pool_type)                                                                                                                                                   \
+    using t_##p_pool_name = p_pool_type;                                                                                                                                                               \
+    using t_##p_pool_name##_element = typename t_##p_pool_name::t_Element;                                                                                                                             \
+    using t_##p_pool_name##_sToken = typename t_##p_pool_name::sToken;                                                                                                                                 \
+    using t_##p_pool_name##_sTokenValue = typename t_##p_pool_name::sTokenValue;

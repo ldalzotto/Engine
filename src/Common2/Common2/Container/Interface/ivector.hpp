@@ -4,21 +4,21 @@ template <class _Vector> struct iVector
 {
     _Vector& vector;
 
-    using _ElementValue = typename _Vector::_ElementValue;
-    using _SizeType = typename _Vector::_SizeType;
+    using t_ElementValue = typename _Vector::t_ElementValue;
+    using t_SizeType = typename _Vector::t_SizeType;
 
     struct Assert
     {
         template <class ComparedType> inline static constexpr int8 element_type()
         {
 #if __DEBUG
-            static_assert(sizeof(_ElementValue) == sizeof(ComparedType), "iVector : element_type");
+            static_assert(sizeof(t_ElementValue) == sizeof(ComparedType), "iVector : element_type");
 #endif
             return 0;
         };
     };
 
-    inline _SizeType get_size() const
+    inline t_SizeType get_size() const
     {
         return this->vector.get_size();
     };
@@ -33,17 +33,17 @@ template <class _Vector> struct iVector
         this->vector.clear();
     };
 
-    inline _ElementValue& get(const uimax p_index)
+    inline t_ElementValue& get(const uimax p_index)
     {
         return this->vector.get(p_index);
     };
 
-    inline const _ElementValue& get(const uimax p_index) const
+    inline const t_ElementValue& get(const uimax p_index) const
     {
         return this->vector.get(p_index);
     };
 
-    inline void set(const uimax p_index, const _ElementValue& p_element)
+    inline void set(const uimax p_index, const t_ElementValue& p_element)
     {
         return this->vector.set(p_index, p_element);
     };
@@ -58,7 +58,7 @@ template <class _Vector> struct iVector
         this->vector.erase_element_at_always(p_index);
     };
 
-    inline void push_back_element(const _ElementValue& p_element)
+    inline void push_back_element(const t_ElementValue& p_element)
     {
         this->vector.push_back_element(p_element);
     };
@@ -68,12 +68,12 @@ template <class _Vector> struct iVector
         this->vector.push_back_element_empty();
     };
 
-    inline void insert_element_at(const _ElementValue& p_element, const uimax p_index)
+    inline void insert_element_at(const t_ElementValue& p_element, const uimax p_index)
     {
         this->vector.insert_element_at(p_element, p_index);
     };
 
-    inline void push_back_array(const Slice<_ElementValue>& p_array)
+    inline void push_back_array(const Slice<t_ElementValue>& p_array)
     {
         this->vector.push_back_array(p_array);
     };
@@ -83,7 +83,7 @@ template <class _Vector> struct iVector
         this->vector.push_back_array_empty(p_element_count);
     };
 
-    inline void insert_array_at(const Slice<_ElementValue>& p_array, const uimax p_index)
+    inline void insert_array_at(const Slice<t_ElementValue>& p_array, const uimax p_index)
     {
         this->vector.insert_array_at(p_array, p_index);
     };
@@ -98,9 +98,9 @@ template <class _Vector> struct iVector
         this->vector.pop_back();
     };
 
-    inline _ElementValue pop_back_return()
+    inline t_ElementValue pop_back_return()
     {
-        _ElementValue l_return = this->get(this->get_size() - 1);
+        t_ElementValue l_return = this->get(this->get_size() - 1);
         this->pop_back();
         return l_return;
     };
@@ -110,7 +110,7 @@ template <class _Vector> struct iVector
         this->vector.pop_back_array(p_index);
     };
 
-    inline Slice<_ElementValue> to_slice() const
+    inline Slice<t_ElementValue> to_slice() const
     {
         return this->vector.to_slice();
     };
@@ -119,7 +119,7 @@ template <class _Vector> struct iVector
     {
         for (loop_reverse(i, 0, this->get_size()))
         {
-            _ElementValue& l_element = this->get(i);
+            t_ElementValue& l_element = this->get(i);
             if (p_predicate_func(l_element))
             {
                 this->erase_element_at_always(i);
@@ -129,7 +129,7 @@ template <class _Vector> struct iVector
 
     template <class ComparedElementType, class EqualityFunc> inline void erase_all_elements_that_matches_element_v2(const ComparedElementType& p_compared_element, const EqualityFunc& p_equality_func)
     {
-        this->erase_if([&](const _ElementValue& p_element) {
+        this->erase_if([&](const t_ElementValue& p_element) {
             return p_equality_func(p_element, p_compared_element);
         });
     };
@@ -137,7 +137,7 @@ template <class _Vector> struct iVector
     template <class ElementTypeCompared, class EqualityFunc>
     inline void erase_all_elements_that_matches_any_of_element_v2(const Slice<ElementTypeCompared>& p_compared_elements, const EqualityFunc& p_equality_func)
     {
-        this->erase_if([&](const _ElementValue& p_element) {
+        this->erase_if([&](const t_ElementValue& p_element) {
             for (loop(i, 0, p_compared_elements.get_size()))
             {
                 if (p_equality_func(p_element, p_compared_elements.get(i)))

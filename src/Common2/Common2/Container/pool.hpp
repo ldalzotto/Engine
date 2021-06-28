@@ -8,7 +8,6 @@
 */
 template <class ElementType> struct Pool
 {
-    // TODO -> using a common structure between debug and release for token to remove this
     using sTokenValue = iPool_element<Pool<ElementType>>;
     using sToken = Token<sTokenValue>;
 

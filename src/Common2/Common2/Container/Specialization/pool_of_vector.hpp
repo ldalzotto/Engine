@@ -9,7 +9,8 @@
 */
 template <class ElementType> struct PoolOfVector
 {
-    using sToken = Token<iPool_element<PoolOfVector<ElementType>>>;
+    using sTokenValue = iPool_element<PoolOfVector<ElementType>>;
+    using sToken = Token<sTokenValue>;
 
     VectorOfVector<ElementType> Memory;
     Vector<sToken> FreeBlocks;

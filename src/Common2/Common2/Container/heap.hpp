@@ -7,19 +7,22 @@
 */
 struct Heap
 {
-    Pool<SliceIndex> AllocatedChunks;
-    Vector<SliceIndex> FreeChunks;
+    using t_AllocatedChunks = Pool<SliceIndex>;
+    using t_AllocatedChunksRef = t_AllocatedChunks&;
+    using t_AllocatedChunks_sToken = t_AllocatedChunks::sToken;
+
+    using t_FreeChunks = Vector<SliceIndex>;
+    using t_FreeChunksRef = t_FreeChunks&;
+
+    using t_AllocatedChunk_Return = iHeap<Heap>::AllocatedElementReturn;
+
+    t_AllocatedChunks AllocatedChunks;
+    t_FreeChunks FreeChunks;
     uimax Size;
-
-    using _FreeChunksValue = Vector<SliceIndex>;
-    using _FreeChunks = _FreeChunksValue&;
-
-    using _AllocatedChunksValue = Pool<SliceIndex>;
-    using _AllocatedChunks = _AllocatedChunksValue&;
 
     inline static Heap allocate(const uimax p_heap_size)
     {
-        Heap l_heap = Heap{Pool<SliceIndex>::allocate(0), Vector<SliceIndex>::allocate(1), p_heap_size};
+        Heap l_heap = Heap{t_AllocatedChunks::allocate(0), t_FreeChunks::allocate(1), p_heap_size};
         l_heap.FreeChunks.push_back_element(SliceIndex::build(0, p_heap_size));
         return l_heap;
     };
@@ -58,39 +61,31 @@ struct Heap
         return iHeap<Heap>{*this};
     };
 
-    inline iHeapTypes::AllocationState allocate_element(const uimax p_size, iHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element(const uimax p_size, t_AllocatedChunk_Return* out_chunk)
     {
         return this->to_iheap().allocate_element(p_size, out_chunk);
     };
 
-    inline iHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, t_AllocatedChunk_Return* out_chunk)
     {
         return this->to_iheap().allocate_element_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
 
-    inline iHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, iHeapTypes::AllocatedElementReturn* out_chunk)
+    inline iHeapTypes::AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, t_AllocatedChunk_Return* out_chunk)
     {
         return this->to_iheap().allocate_element_norealloc_with_modulo_offset(p_size, p_modulo_offset, out_chunk);
     };
 
-    inline SliceIndex* get(const Token<SliceIndex> p_chunk)
+    inline SliceIndex* get(const t_AllocatedChunks_sToken p_chunk)
     {
-        // TODO -> clean token
-        return &this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk));
+        return &this->AllocatedChunks.get(p_chunk);
     };
 
-    inline void release_element(const Token<SliceIndex> p_chunk)
+    inline void release_element(const t_AllocatedChunks_sToken p_chunk)
     {
-        // TODO -> clean token
-        this->FreeChunks.push_back_element(this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk)));
-        this->AllocatedChunks.release_element(token_build_from<Pool<SliceIndex>::sTokenValue>(p_chunk));
+        this->FreeChunks.push_back_element(this->AllocatedChunks.get(p_chunk));
+        this->AllocatedChunks.release_element(p_chunk);
     };
-};
-
-struct HeapPagedToken
-{
-    uimax PageIndex;
-    Token<SliceIndex> token;
 };
 
 /*
@@ -109,17 +104,6 @@ struct HeapPaged
         ALLOCATED_AND_PAGE_CREATED = ALLOCATED | PAGE_CREATED
     };
 
-    struct AllocatedElementReturn
-    {
-        HeapPagedToken token;
-        uimax Offset;
-
-        inline static AllocatedElementReturn buid_from_HeapAllocatedElementReturn(const uimax p_page_index, const iHeapTypes::AllocatedElementReturn& p_heap_allocated_element_return)
-        {
-            return AllocatedElementReturn{HeapPagedToken{p_page_index, p_heap_allocated_element_return.token}, p_heap_allocated_element_return.Offset};
-        };
-    };
-
     Pool<SliceIndex> AllocatedChunks;
     VectorOfVector<SliceIndex> FreeChunks;
     uimax PageSize;
@@ -133,10 +117,14 @@ struct HeapPaged
         uimax index;
         VectorOfVector<SliceIndex>::Element_iVector tmp_shadow_vec;
 
-        using _FreeChunksValue = VectorOfVector<SliceIndex>::Element_iVector;
-        using _FreeChunks = _FreeChunksValue&;
-        using _AllocatedChunksValue = Pool<SliceIndex>;
-        using _AllocatedChunks = _AllocatedChunksValue&;
+        using t_FreeChunks = VectorOfVector<SliceIndex>::Element_iVector;
+        using t_FreeChunksRef = t_FreeChunks&;
+
+        using t_AllocatedChunks = Pool<SliceIndex>;
+        using t_AllocatedChunksRef = Pool<SliceIndex>&;
+        using t_AllocatedChunks_sToken = t_AllocatedChunks::sToken;
+
+        using t_AllocatedChunk_Return = iHeap<Single_iHeap>::AllocatedElementReturn;
 
         inline static Single_iHeap build(HeapPaged* p_heap_paged, const uimax p_index)
         {
@@ -163,6 +151,23 @@ struct HeapPaged
         };
     };
 
+    struct HeapPagedToken
+    {
+        uimax PageIndex;
+        Single_iHeap::t_AllocatedChunks_sToken token;
+    };
+
+    struct AllocatedElementReturn
+    {
+        HeapPagedToken token;
+        uimax Offset;
+
+        inline static AllocatedElementReturn buid_from_HeapAllocatedElementReturn(const uimax p_page_index, const Single_iHeap::t_AllocatedChunk_Return& p_heap_allocated_element_return)
+        {
+            return AllocatedElementReturn{HeapPagedToken{p_page_index, p_heap_allocated_element_return.token}, p_heap_allocated_element_return.Offset};
+        };
+    };
+
     inline static HeapPaged allocate_default(const uimax p_page_size)
     {
         return HeapPaged{Pool<SliceIndex>::allocate(0), VectorOfVector<SliceIndex>::allocate_default(), p_page_size};
@@ -181,7 +186,7 @@ struct HeapPaged
 
     inline AllocationState allocate_element_norealloc_with_modulo_offset(const uimax p_size, const uimax p_modulo_offset, AllocatedElementReturn* out_chunk)
     {
-        iHeapTypes::AllocatedElementReturn l_heap_allocated_element_return;
+        Single_iHeap::t_AllocatedChunk_Return l_heap_allocated_element_return;
 
         for (loop(i, 0, this->FreeChunks.varying_vector.get_size()))
         {
@@ -209,15 +214,13 @@ struct HeapPaged
 
     inline void release_element(const HeapPagedToken& p_token)
     {
-        // TODO -> token clean
-        this->FreeChunks.element_push_back_element(p_token.PageIndex, this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token)));
-        this->AllocatedChunks.release_element(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token));
+        this->FreeChunks.element_push_back_element(p_token.PageIndex, this->AllocatedChunks.get(p_token.token));
+        this->AllocatedChunks.release_element(p_token.token);
     };
 
     inline SliceIndex* get_sliceindex_only(const HeapPagedToken& p_token)
     {
-        // TODO -> token clean
-        return &this->AllocatedChunks.get(token_build_from<Pool<SliceIndex>::sTokenValue>(p_token.token));
+        return &this->AllocatedChunks.get(p_token.token);
     };
 
   private:

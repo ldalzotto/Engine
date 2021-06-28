@@ -24,8 +24,7 @@ template <class Command> struct CommandBuffer
 
 template <class Command> struct CommandPool
 {
-    using t_CommandBufferPool = Pool<CommandBuffer<Command>>;
-    using t_CommandBufferPool_sToken = typename t_CommandBufferPool::sToken;
+    iPool_types_declare(CommandBufferPool, Pool<CommandBuffer<Command>>);
 
     t_CommandBufferPool command_buffers;
 
@@ -63,11 +62,7 @@ template <class Command> struct Semaphore
 
 template <class Command> struct CommandBufferExecutionFlow
 {
-    using t_CommandBufferExecutionTree = NNTree<typename Pool<CommandBuffer<Command>>::sToken>;
-    using t_CommandBufferExecutionTree_Resolve = typename t_CommandBufferExecutionTree::Resolve;
-    using t_CommandBufferExecutionTree_Element = typename t_CommandBufferExecutionTree::t_Element;
-    using t_CommandBufferExecutionTree_sToken = typename t_CommandBufferExecutionTree::sToken;
-    using t_CommandBufferExecutionTree_sTokenValue = typename t_CommandBufferExecutionTree::sTokenValue;
+    NNTree_type_declare(CommandBufferExecutionTree, NNTree<typename Pool<CommandBuffer<Command>>::sToken>);
 
     t_CommandBufferExecutionTree command_execution_tree;
     t_CommandBufferExecutionTree_sToken command_execution_tree_root;

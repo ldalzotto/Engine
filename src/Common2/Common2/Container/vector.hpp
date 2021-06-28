@@ -12,9 +12,9 @@ template <class ElementType> struct Vector
     uimax Size;
     Span<ElementType> Memory;
 
-    using _Element = ElementType&;
-    using _ElementValue = ElementType;
-    using _SizeType = uimax;
+    using t_Element = ElementType&;
+    using t_ElementValue = ElementType;
+    using t_SizeType = uimax;
 
     inline static Vector<ElementType> build_zero_size(ElementType* p_memory, const uimax p_initial_capacity)
     {

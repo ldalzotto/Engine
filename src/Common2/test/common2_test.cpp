@@ -123,7 +123,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_push_back_array
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
 
@@ -137,14 +137,14 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // push_back_array_empty
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         p_vector.push_back_array_empty(5);
         assert_true(p_vector.get_size() == (l_old_size + (uimax)5));
     }
 
     // vector_push_back_element
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         uimax l_element = 25;
         p_vector.push_back_element(l_element);
         assert_true(p_vector.get_size() == l_old_size + 1);
@@ -153,7 +153,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_insert_array_at
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
         p_vector.insert_array_at(l_elements_slice, 0);
@@ -183,7 +183,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
     // vector_insert_element_at
     {
         uimax l_element = 20;
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
 
         p_vector.insert_element_at(l_element, 7);
         assert_true(p_vector.get(7) == l_element);
@@ -194,7 +194,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_erase_element_at
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         uimax l_erase_index = 1;
         uimax l_element_after = p_vector.get(l_erase_index + 1);
         p_vector.erase_element_at(1);
@@ -204,7 +204,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_erase_array_at
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         uimax l_erase_begin_index = 3;
         const uimax l_erase_nb = 6;
         const uimax l_old_element_check_nb = 3;
@@ -226,14 +226,14 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_pop_back
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         p_vector.pop_back();
         assert_true(p_vector.get_size() == l_old_size - 1);
     }
 
     // vector_pop_back_array
     {
-        typename Container::_SizeType l_old_size = p_vector.get_size();
+        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
         p_vector.pop_back_array(3);
         assert_true(p_vector.get_size() == l_old_size - 3);
     }
@@ -1192,7 +1192,7 @@ inline void asset_heappaged_integrity(HeapPaged* p_heap_paged)
     assert_true(l_calculated_size == (p_heap_paged->PageSize * p_heap_paged->get_page_count()));
 };
 
-inline void assert_heap_memory_alignement(const uimax p_alignment, const iHeapTypes::AllocatedElementReturn& p_chunk)
+inline void assert_heap_memory_alignement(const uimax p_alignment, const Heap::t_AllocatedChunk_Return& p_chunk)
 {
     assert_true((p_chunk.Offset % p_alignment) == 0);
 };
@@ -1222,20 +1222,19 @@ inline void heap_test()
     assert_heap_integrity(&l_heap);
 
     {
-
-        iHeapTypes::AllocatedElementReturn l_chunk_1;
+        Heap::t_AllocatedChunk_Return l_chunk_1;
         assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(10, &l_chunk_1) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_1.token)->Begin == 0);
         assert_true(l_heap.get(l_chunk_1.token)->Size == 10);
         assert_heap_integrity(&l_heap);
 
-        iHeapTypes::AllocatedElementReturn l_chunk_0;
+        Heap::t_AllocatedChunk_Return l_chunk_0;
         assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(5, &l_chunk_0) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED);
         assert_true(l_heap.get(l_chunk_0.token)->Begin == 10);
         assert_true(l_heap.get(l_chunk_0.token)->Size == 5);
         assert_heap_integrity(&l_heap);
 
-        iHeapTypes::AllocatedElementReturn l_chunk_2;
+        Heap::t_AllocatedChunk_Return l_chunk_2;
         l_heap.allocate_element(5, &l_chunk_2);
         assert_heap_integrity(&l_heap);
 
@@ -1249,7 +1248,7 @@ inline void heap_test()
         assert_heap_integrity(&l_heap);
 
         // The heap is resized
-        iHeapTypes::AllocatedElementReturn l_chunk_3;
+        Heap::t_AllocatedChunk_Return l_chunk_3;
         assert_true((iHeapTypes::AllocationState_t)l_heap.allocate_element(50, &l_chunk_3) & (iHeapTypes::AllocationState_t)iHeapTypes::AllocationState::ALLOCATED_AND_HEAP_RESIZED);
         assert_true(l_chunk_3.Offset == 20);
         assert_true(l_heap.get(l_chunk_3.token)->Size == 50);
@@ -1264,7 +1263,7 @@ inline void heap_test()
     assert_heap_integrity(&l_heap);
     {
 
-        iHeapTypes::AllocatedElementReturn l_allocated_chunk;
+        Heap::t_AllocatedChunk_Return l_allocated_chunk;
         assert_true(l_heap.allocate_element_with_modulo_offset(1, 5, &l_allocated_chunk) == iHeapTypes::AllocationState::ALLOCATED);
         assert_heap_integrity(&l_heap);
         assert_heap_memory_alignement(5, l_allocated_chunk);
@@ -1292,7 +1291,7 @@ inline void heap_test()
     l_heap = Heap::allocate(l_initial_heap_size);
     assert_heap_integrity(&l_heap);
     {
-        iHeapTypes::AllocatedElementReturn l_allocated_chunk;
+        Heap::t_AllocatedChunk_Return l_allocated_chunk;
 
         assert_true(l_heap.AllocatedChunks.get_size() == 0);
         assert_true(l_heap.allocate_element_norealloc_with_modulo_offset(l_initial_heap_size + 10, 0, &l_allocated_chunk) == iHeapTypes::AllocationState::NOT_ALLOCATED);
@@ -1340,7 +1339,7 @@ inline void heap_memory_test()
     HeapMemory l_heap_memory = HeapMemory::allocate(l_initial_heap_size);
 
     uimax l_element = 10;
-    Token<SliceIndex> l_sigle_sizet_chunk;
+    Heap::t_AllocatedChunks_sToken l_sigle_sizet_chunk;
 
     // single allocation
     {
