@@ -959,15 +959,15 @@ inline void ntree_test()
 {
     NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
 
-    Token<NTree<uimax>::Node> l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
+    NTree<uimax>::sToken l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
     l_uimax_tree.push_value(cast(uimax, 1), l_root);
-    Token<NTree<uimax>::Node> l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-    Token<NTree<uimax>::Node> l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+    NTree<uimax>::sToken l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
+    NTree<uimax>::sToken l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
 
     l_uimax_tree.push_value(cast(uimax, 4), l_2_node);
     l_uimax_tree.push_value(cast(uimax, 5), l_2_node);
 
-    Token<NTree<uimax>::Node> l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
+    NTree<uimax>::sToken l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
 
     {
         assert_true(l_uimax_tree.Memory.get_size() == 7);
@@ -981,7 +981,7 @@ inline void ntree_test()
             assert_true(token_value(l_root_element.Node->index) == (token_t)0);
             assert_true(token_value(l_root_element.Node->childs) != (token_t)-1);
 
-            Slice<Token<NTree<uimax>::Node>> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
+            Slice<NTree<uimax>::sToken> l_childs_indices = l_uimax_tree.get_childs(l_root_element.Node->childs);
             assert_true(l_childs_indices.Size == 3);
             for (loop(i, 0, l_childs_indices.Size))
             {
@@ -997,7 +997,7 @@ inline void ntree_test()
             assert_true(token_value(l_2_element.Node->index) == (token_t)2);
             assert_true(token_value(l_2_element.Node->childs) != (token_t)-1);
 
-            Slice<Token<NTree<uimax>::Node>> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
+            Slice<NTree<uimax>::sToken> l_childs_indices = l_uimax_tree.get_childs(l_2_element.Node->childs);
             assert_true(l_childs_indices.Size == 2);
             for (loop(i, 0, l_childs_indices.Size))
             {
@@ -1028,7 +1028,7 @@ inline void ntree_test()
         l_uimax_tree.remove_node_recursively(l_2_node);
 
         NTree<uimax>::Resolve l_root_node = l_uimax_tree.get(l_root);
-        Slice<Token<NTree<uimax>::Node>> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
+        Slice<NTree<uimax>::sToken> l_root_node_childs = l_uimax_tree.get_childs(l_root_node.Node->childs);
         assert_true(l_root_node_childs.Size == 2);
 
         {
@@ -1045,16 +1045,16 @@ inline void ntree_test()
     // add_child
     {
         l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-        Token<NTree<uimax>::Node> l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
-        Token<NTree<uimax>::Node> l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        NTree<uimax>::sToken l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        NTree<uimax>::sToken l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
 
         assert_true(l_uimax_tree.add_child_silent(l_3_node, l_2_2_node));
 
-        Slice<Token<NTree<uimax>::Node>> l_2_node_childs = l_uimax_tree.get_childs_from_node(l_2_node);
+        Slice<NTree<uimax>::sToken> l_2_node_childs = l_uimax_tree.get_childs_from_node(l_2_node);
         assert_true(l_2_node_childs.Size == 1);
         assert_true(token_value(l_2_node_childs.get(0)) == token_value(l_2_1_node));
 
-        Slice<Token<NTree<uimax>::Node>> l_3_node_childs = l_uimax_tree.get_childs_from_node(l_3_node);
+        Slice<NTree<uimax>::sToken> l_3_node_childs = l_uimax_tree.get_childs_from_node(l_3_node);
         assert_true(l_3_node_childs.Size == 2);
         assert_true(token_value(l_3_node_childs.get(1)) == token_value(l_2_2_node));
 
@@ -2317,22 +2317,22 @@ inline void command_buffer_pattern_test()
 
     CommandPool<MathOpCommand> l_command_pool = CommandPool<MathOpCommand>::allocate_default();
 
-    typename Pool<CommandBuffer<MathOpCommand>>::sToken l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandPool<MathOpCommand>::sToken l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_add_command_buffer = l_command_pool.command_buffers.get(l_add_command_buffer_token);
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 2});
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 3});
 
-    typename Pool<CommandBuffer<MathOpCommand>>::sToken l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandPool<MathOpCommand>::sToken l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_mul_command_buffer = l_command_pool.command_buffers.get(l_mul_command_buffer_token);
     l_mul_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::MUL, 3});
 
-   NNTree<Pool<CommandBuffer<MathOpCommand>>::sToken>::sToken l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
+    CommandBufferExecutionFlow<MathOpCommand>::tCommandBufferTreeToken l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
     Semaphore<MathOpCommand> l_semaphore;
     l_semaphore.execute_before = l_add_command_execution;
     l_command_execution.push_command_buffer_with_constraint(l_mul_command_buffer_token, l_semaphore);
 
     uimax l_result = 2;
-    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const Pool<CommandBuffer<MathOpCommand>>::sToken, CommandBuffer<MathOpCommand>& p_command) {
+    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const CommandBufferExecutionFlow<MathOpCommand>::tCommandBufferTreeElement, CommandBuffer<MathOpCommand>& p_command) {
         for (loop(i, 0, p_command.commands.Size))
         {
             MathOpCommand& l_command = p_command.commands.get(i);
