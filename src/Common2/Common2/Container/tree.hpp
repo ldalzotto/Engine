@@ -5,6 +5,7 @@
 */
 template <class ElementType> struct NTree
 {
+    // TODO -> moving the node out of the tree and simplyfy the node token
     struct Node
     {
         Token<Node> index;
@@ -247,6 +248,7 @@ template <class ElementType> struct NTree
  */
 template <class ElementType> struct NNTree
 {
+    // TODO -> moving the node out of the tree and simplyfy the node token
     struct Node
     {
         Token<Slice<Token<Node>>> parents;

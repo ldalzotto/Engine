@@ -75,22 +75,18 @@ struct Buffer
 
 struct Image
 {
-    struct Format
-    {
-        uimax x, y, z;
-    } format;
-
+    // TODO -> Is this really necessary to copy the whole image format ?
+    ImageFormat format;
     Slice<int8> binded_memory;
 
     inline static Image build_default()
     {
         Image l_image;
-        l_image.format = {0, 0, 0};
         l_image.binded_memory = Slice<int8>::build_default();
         return l_image;
     };
 
-    inline static Image build_format(const Format& p_format)
+    inline static Image build_format(const ImageFormat& p_format)
     {
         Image l_image;
         l_image.format = p_format;
