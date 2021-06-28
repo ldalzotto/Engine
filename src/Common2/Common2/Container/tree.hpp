@@ -9,37 +9,37 @@ template <class ElementType> struct NTree
 
     using sToken = Token<Node>;
 
-    using tMemoryPool = Pool<ElementType>;
-    using tMemoryPoolTokenValue = typename tMemoryPool::sTokenValue;
+    using t_MemoryPool = Pool<ElementType>;
+    using t_MemoryPool_sTokenValue = typename t_MemoryPool::sTokenValue;
 
-    using tIndicesPool = Pool<Node>;
-    using tIndicesPoolToken = typename tIndicesPool::sToken;
-    using tIndicesPoolTokenValue = typename tIndicesPool::sTokenValue;
+    using t_IndicesPool = Pool<Node>;
+    using t_IndicesPool_sToken = typename t_IndicesPool::sToken;
+    using t_IndicesPool_sTokenValue = typename t_IndicesPool::sTokenValue;
 
-    using tRangesPoolOfVector = PoolOfVector<sToken>;
-    using tRangesPoolOfVectorToken = typename tRangesPoolOfVector::sToken;
+    using t_RangesPoolOfVector = PoolOfVector<sToken>;
+    using t_RangesPoolOfVector_sToken = typename t_RangesPoolOfVector::sToken;
 
     struct Node
     {
         sToken index;
         sToken parent;
 
-        tRangesPoolOfVectorToken childs;
+        t_RangesPoolOfVector_sToken childs;
 
-        inline static Node build(const sToken p_index, const sToken p_parent, const tRangesPoolOfVectorToken p_childs)
+        inline static Node build(const sToken p_index, const sToken p_parent, const t_RangesPoolOfVector_sToken p_childs)
         {
             return Node{p_index, p_parent, p_childs};
         };
 
-        inline static Node build_index_childs(const sToken p_index, const tRangesPoolOfVectorToken p_childs)
+        inline static Node build_index_childs(const sToken p_index, const t_RangesPoolOfVector_sToken p_childs)
         {
             return Node{p_index, token_build_default<Node>(), p_childs};
         };
     };
 
-    tMemoryPool Memory;
-    tIndicesPool Indices;
-    tRangesPoolOfVector Indices_childs;
+    t_MemoryPool Memory;
+    t_IndicesPool Indices;
+    t_RangesPoolOfVector Indices_childs;
 
     struct Resolve
     {
@@ -59,7 +59,7 @@ template <class ElementType> struct NTree
 
     inline static NTree<ElementType> allocate_default()
     {
-        return NTree<ElementType>{tMemoryPool::allocate(0), tIndicesPool::allocate(0), tRangesPoolOfVector::allocate_default()};
+        return NTree<ElementType>{t_MemoryPool::allocate(0), t_IndicesPool::allocate(0), t_RangesPoolOfVector::allocate_default()};
     };
 
     inline void free()
@@ -71,15 +71,15 @@ template <class ElementType> struct NTree
 
     inline Resolve get(const sToken p_token)
     {
-        return Resolve::build(&this->Memory.get(token_build_from<tMemoryPoolTokenValue>(p_token)), &this->Indices.get(token_build_from<tIndicesPoolTokenValue>(p_token)));
+        return Resolve::build(&this->Memory.get(token_build_from<t_MemoryPool_sTokenValue>(p_token)), &this->Indices.get(token_build_from<t_IndicesPool_sTokenValue>(p_token)));
     };
 
     inline ElementType& get_value(const sToken p_token)
     {
-        return this->Memory.get(token_build_from<tMemoryPoolTokenValue>(p_token));
+        return this->Memory.get(token_build_from<t_MemoryPool_sTokenValue>(p_token));
     };
 
-    inline Slice<sToken> get_childs(const tRangesPoolOfVectorToken p_child_token)
+    inline Slice<sToken> get_childs(const t_RangesPoolOfVector_sToken p_child_token)
     {
         return this->Indices_childs.get_vector(p_child_token);
     };
@@ -129,7 +129,7 @@ template <class ElementType> struct NTree
         assert_true(this->Memory.get_size() == 0);
 #endif
         sToken l_node;
-        tRangesPoolOfVectorToken l_childs;
+        t_RangesPoolOfVector_sToken l_childs;
         this->allocate_root_node(p_element, &l_node, &l_childs);
         return l_node;
     };
@@ -137,7 +137,7 @@ template <class ElementType> struct NTree
     inline sToken push_value(const ElementType& p_element, const sToken p_parent)
     {
         sToken l_node;
-        tRangesPoolOfVectorToken l_childs;
+        t_RangesPoolOfVector_sToken l_childs;
         this->allocate_node(p_parent, p_element, &l_node, &l_childs);
         return l_node;
     };
@@ -186,8 +186,8 @@ template <class ElementType> struct NTree
         for (loop(i, 0, p_removed_nodes.Size))
         {
             const Resolve& l_removed_node = p_removed_nodes.get(i);
-            this->Memory.release_element(token_build_from<tMemoryPoolTokenValue>(l_removed_node.Node->index));
-            this->Indices.release_element(token_build_from<tIndicesPoolTokenValue>(l_removed_node.Node->index));
+            this->Memory.release_element(token_build_from<t_MemoryPool_sTokenValue>(l_removed_node.Node->index));
+            this->Indices.release_element(token_build_from<t_IndicesPool_sTokenValue>(l_removed_node.Node->index));
             this->Indices_childs.release_vector(l_removed_node.Node->childs);
         }
     };
@@ -204,11 +204,11 @@ template <class ElementType> struct NTree
     };
 
   private:
-    inline void allocate_node(const sToken p_parent, const ElementType& p_element, sToken* out_created_node, tRangesPoolOfVectorToken* out_created_childs)
+    inline void allocate_node(const sToken p_parent, const ElementType& p_element, sToken* out_created_node, t_RangesPoolOfVector_sToken* out_created_childs)
     {
         *out_created_node = token_build_from<Node>(this->Memory.alloc_element(p_element));
         *out_created_childs = this->Indices_childs.alloc_vector();
-        tIndicesPoolToken l_created_index = this->Indices.alloc_element(Node::build(*out_created_node, p_parent, *out_created_childs));
+        t_IndicesPool_sToken l_created_index = this->Indices.alloc_element(Node::build(*out_created_node, p_parent, *out_created_childs));
 
 #if __DEBUG
         assert_true(token_equals(l_created_index, *out_created_node));
@@ -217,11 +217,11 @@ template <class ElementType> struct NTree
         this->Indices_childs.element_push_back_element(this->get(p_parent).Node->childs, token_build_from<Node>(l_created_index));
     };
 
-    inline void allocate_root_node(const ElementType& p_element, sToken* out_created_node, tRangesPoolOfVectorToken* out_created_childs)
+    inline void allocate_root_node(const ElementType& p_element, sToken* out_created_node, t_RangesPoolOfVector_sToken* out_created_childs)
     {
         *out_created_node = token_build_from<Node>(this->Memory.alloc_element(p_element));
         *out_created_childs = this->Indices_childs.alloc_vector();
-        tIndicesPoolToken l_created_index = this->Indices.alloc_element(Node::build_index_childs(*out_created_node, *out_created_childs));
+        t_IndicesPool_sToken l_created_index = this->Indices.alloc_element(Node::build_index_childs(*out_created_node, *out_created_childs));
 
 #if __DEBUG
         assert_true(token_equals(l_created_index, *out_created_node));
@@ -265,20 +265,22 @@ template <class ElementType> struct NNTree
     using sTokenValue = typename Pool<Node>::sTokenValue;
     using sToken = typename Pool<Node>::sToken;
 
-    using tElement = ElementType;
-    using tMemoryPool = Pool<tElement>;
-    using tNodesPool = Pool<Node>;
-    using tRangesPoolOfVector = PoolOfVector<sToken>;
+    using t_Element = ElementType;
+    using t_MemoryPool = Pool<t_Element>;
+    using t_NodesPool = Pool<Node>;
+
+    using t_RangesPoolOfVector = PoolOfVector<sToken>;
+    using t_RangesPoolOfVector_sToken = typename t_RangesPoolOfVector::sToken;
 
     struct Node
     {
-        typename tRangesPoolOfVector::sToken parents;
-        typename tRangesPoolOfVector::sToken childs;
+        t_RangesPoolOfVector_sToken parents;
+        t_RangesPoolOfVector_sToken childs;
     };
 
-    tMemoryPool Memory;
-    tNodesPool Nodes;
-    tRangesPoolOfVector Ranges;
+    t_MemoryPool Memory;
+    t_NodesPool Nodes;
+    t_RangesPoolOfVector Ranges;
 
     struct Resolve
     {
@@ -299,9 +301,9 @@ template <class ElementType> struct NNTree
     inline static NNTree<ElementType> allocate_default()
     {
         NNTree<ElementType> l_return;
-        l_return.Memory = tMemoryPool::allocate(0);
-        l_return.Nodes = tNodesPool::allocate(0);
-        l_return.Ranges = tRangesPoolOfVector::allocate_default();
+        l_return.Memory = t_MemoryPool::allocate(0);
+        l_return.Nodes = t_NodesPool::allocate(0);
+        l_return.Ranges = t_RangesPoolOfVector::allocate_default();
         return l_return;
     };
 
@@ -319,7 +321,7 @@ template <class ElementType> struct NNTree
 
     inline int8 is_node_free(const sToken p_node)
     {
-        return this->Memory.is_element_free(token_build_from<tMemoryPool::sTokenValue>(p_node)) && this->Nodes.is_element_free(p_node);
+        return this->Memory.is_element_free(token_build_from<t_MemoryPool::sTokenValue>(p_node)) && this->Nodes.is_element_free(p_node);
     };
 
     inline sToken push_root_value(const ElementType& p_element)
@@ -337,7 +339,7 @@ template <class ElementType> struct NNTree
         Resolve l_return;
         l_return.node_token = p_element;
         l_return.Node = &this->Nodes.get(p_element);
-        l_return.Element = &this->Memory.get(token_build_from<tMemoryPool::sTokenValue>(p_element));
+        l_return.Element = &this->Memory.get(token_build_from<t_MemoryPool::sTokenValue>(p_element));
         return l_return;
     };
 
@@ -486,7 +488,7 @@ template <class ElementType> struct NNTree
 
     inline void remove_node(const Resolve& p_node)
     {
-        this->Memory.release_element(token_build_from<tMemoryPool::sTokenValue>(p_node.node_token));
+        this->Memory.release_element(token_build_from<t_MemoryPool::sTokenValue>(p_node.node_token));
         this->Ranges.release_vector(p_node.Node->childs);
         this->Ranges.release_vector(p_node.Node->parents);
         this->Nodes.release_element(p_node.node_token);
@@ -500,7 +502,7 @@ template <class ElementType> struct NNTree
 
     inline void add_parent_to(const Resolve& p_node, const sToken p_parent_token, const Resolve& p_parent)
     {
-        typename tRangesPoolOfVector::Element_iVector l_parents = this->Ranges.get_element_as_iVector(p_node.Node->parents);
+        typename t_RangesPoolOfVector::Element_iVector l_parents = this->Ranges.get_element_as_iVector(p_node.Node->parents);
 
 #if __DEBUG
         for (loop(i, 0, l_parents.get_size()))
@@ -517,7 +519,7 @@ template <class ElementType> struct NNTree
 
     inline void add_child_to(const Resolve& p_node, const sToken p_child_token, const Resolve& p_child)
     {
-        typename tRangesPoolOfVector::Element_iVector l_childs = this->Ranges.get_element_as_iVector(p_node.Node->childs);
+        typename t_RangesPoolOfVector::Element_iVector l_childs = this->Ranges.get_element_as_iVector(p_node.Node->childs);
 
 #if __DEBUG
         for (loop(i, 0, l_childs.get_size()))
@@ -534,7 +536,7 @@ template <class ElementType> struct NNTree
 
     inline void remove_parent_to(const Resolve& p_node, const sToken p_parent_token, const Resolve& p_parent)
     {
-        typename tRangesPoolOfVector::Element_iVector l_parents = this->Ranges.get_element_as_iVector(p_node.Node->parents);
+        typename t_RangesPoolOfVector::Element_iVector l_parents = this->Ranges.get_element_as_iVector(p_node.Node->parents);
 
         for (loop(i, 0, l_parents.get_size()))
         {
@@ -548,7 +550,7 @@ template <class ElementType> struct NNTree
 
     inline void remove_child_to(const Resolve& p_node, const sToken p_child_token, const Resolve& p_child)
     {
-        typename tRangesPoolOfVector::Element_iVector l_childs = this->Ranges.get_element_as_iVector(p_node.Node->childs);
+        typename t_RangesPoolOfVector::Element_iVector l_childs = this->Ranges.get_element_as_iVector(p_node.Node->childs);
 
         for (loop(i, 0, l_childs.get_size()))
         {

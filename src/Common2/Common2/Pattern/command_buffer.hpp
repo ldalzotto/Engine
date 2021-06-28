@@ -7,13 +7,13 @@ namespace cb
 
 template <class Command> struct CommandBuffer
 {
-    using tCommandVector = Vector<Command>;
+    using t_CommandVector = Vector<Command>;
 
-    tCommandVector commands;
+    t_CommandVector commands;
 
     inline static CommandBuffer allocate_default()
     {
-        return CommandBuffer{tCommandVector::allocate(0)};
+        return CommandBuffer{t_CommandVector::allocate(0)};
     };
 
     inline void free()
@@ -24,23 +24,23 @@ template <class Command> struct CommandBuffer
 
 template <class Command> struct CommandPool
 {
-    using tCommandBufferPool = Pool<CommandBuffer<Command>>;
-    using sToken = typename tCommandBufferPool::sToken;
+    using t_CommandBufferPool = Pool<CommandBuffer<Command>>;
+    using t_CommandBufferPool_sToken = typename t_CommandBufferPool::sToken;
 
-    tCommandBufferPool command_buffers;
+    t_CommandBufferPool command_buffers;
 
     inline static CommandPool allocate_default()
     {
-        return CommandPool<Command>{tCommandBufferPool::allocate(0)};
+        return CommandPool<Command>{t_CommandBufferPool::allocate(0)};
     };
 
-    inline sToken allocate_command_buffer()
+    inline t_CommandBufferPool_sToken allocate_command_buffer()
     {
         CommandBuffer<Command> l_command_buffer = CommandBuffer<Command>::allocate_default();
         return this->command_buffers.alloc_element(l_command_buffer);
     };
 
-    inline void free_command_buffer(const sToken p_token)
+    inline void free_command_buffer(const t_CommandBufferPool_sToken p_token)
     {
         this->command_buffers.get(p_token).free();
         this->command_buffers.release_element(p_token);
@@ -57,59 +57,59 @@ template <class Command> struct CommandPool
 
 template <class Command> struct Semaphore
 {
-    using tExecutionToken = typename NNTree<typename CommandPool<Command>::sToken>::sToken;
-    tExecutionToken execute_before;
+    using t_Execution_Token = typename NNTree<typename CommandPool<Command>::t_CommandBufferPool_sToken>::sToken;
+    t_Execution_Token execute_before;
 };
 
 template <class Command> struct CommandBufferExecutionFlow
 {
-    using tCommandBufferTree = NNTree<typename Pool<CommandBuffer<Command>>::sToken>;
-    using tCommandBufferTreeResolve = typename tCommandBufferTree::Resolve;
-    using tCommandBufferTreeElement = typename tCommandBufferTree::tElement;
-    using tCommandBufferTreeToken = typename tCommandBufferTree::sToken;
-    using tCommandBufferTreeTokenValue = typename tCommandBufferTree::sTokenValue;
+    using t_CommandBufferExecutionTree = NNTree<typename Pool<CommandBuffer<Command>>::sToken>;
+    using t_CommandBufferExecutionTree_Resolve = typename t_CommandBufferExecutionTree::Resolve;
+    using t_CommandBufferExecutionTree_Element = typename t_CommandBufferExecutionTree::t_Element;
+    using t_CommandBufferExecutionTree_sToken = typename t_CommandBufferExecutionTree::sToken;
+    using t_CommandBufferExecutionTree_sTokenValue = typename t_CommandBufferExecutionTree::sTokenValue;
 
-    tCommandBufferTree command_tree;
-    tCommandBufferTreeToken command_tree_root;
+    t_CommandBufferExecutionTree command_execution_tree;
+    t_CommandBufferExecutionTree_sToken command_execution_tree_root;
 
     inline static CommandBufferExecutionFlow allocate_default()
     {
         CommandBufferExecutionFlow<Command> l_return;
-        l_return.command_tree = tCommandBufferTree::allocate_default();
-        l_return.command_tree_root = l_return.command_tree.push_root_value(tCommandBufferTree::tElement{(token_t)-1});
+        l_return.command_execution_tree = t_CommandBufferExecutionTree::allocate_default();
+        l_return.command_execution_tree_root = l_return.command_execution_tree.push_root_value(t_CommandBufferExecutionTree::t_Element{(token_t)-1});
         return l_return;
     };
 
     inline void free()
     {
 #if __DEBUG
-        assert_true(this->command_tree.Nodes.get_free_size() == (this->command_tree.Nodes.get_size() - 1)); // Only the root element is still allocated
-        assert_true(!this->command_tree.is_node_free(this->command_tree_root));
+        assert_true(this->command_execution_tree.Nodes.get_free_size() == (this->command_execution_tree.Nodes.get_size() - 1)); // Only the root element is still allocated
+        assert_true(!this->command_execution_tree.is_node_free(this->command_execution_tree_root));
 #endif
-        this->command_tree.free();
+        this->command_execution_tree.free();
     };
 
-    inline tCommandBufferTreeToken push_command_buffer(const tCommandBufferTreeElement p_command)
+    inline t_CommandBufferExecutionTree_sToken push_command_buffer(const t_CommandBufferExecutionTree_Element p_command)
     {
-        SliceN<tCommandBufferTreeToken, 1> l_parents = {this->command_tree_root};
-        return this->command_tree.push_value(p_command, slice_from_slicen(&l_parents));
+        SliceN<t_CommandBufferExecutionTree_sToken, 1> l_parents = {this->command_execution_tree_root};
+        return this->command_execution_tree.push_value(p_command, slice_from_slicen(&l_parents));
     };
 
-    inline tCommandBufferTreeToken push_command_buffer_with_constraint(const tCommandBufferTreeElement p_command, const Semaphore<Command> p_semaphore)
+    inline t_CommandBufferExecutionTree_sToken push_command_buffer_with_constraint(const t_CommandBufferExecutionTree_Element p_command, const Semaphore<Command> p_semaphore)
     {
-        SliceN<tCommandBufferTreeToken, 1> l_parents = {p_semaphore.execute_before};
-        return this->command_tree.push_value(p_command, slice_from_slicen(&l_parents));
+        SliceN<t_CommandBufferExecutionTree_sToken, 1> l_parents = {p_semaphore.execute_before};
+        return this->command_execution_tree.push_value(p_command, slice_from_slicen(&l_parents));
     };
 
     template <class _ForeachFunc> inline void process_command_buffer_tree(CommandPool<Command>& p_command_pool, const _ForeachFunc& p_foreach)
     {
-        this->command_tree.traverse_to_bottom_distinct_excluded(this->command_tree.get(token_build<tCommandBufferTreeTokenValue>(0)),
-                                                                [&](const tCommandBufferTreeResolve& p_parent, const tCommandBufferTreeResolve& p_node) {
-                                                                    tCommandBufferTreeElement l_command_token = *p_node.Element;
-                                                                    p_foreach(l_command_token, p_command_pool.command_buffers.get(l_command_token));
-                                                                });
-        this->command_tree.remove_node_recursively(this->command_tree_root);
-        this->command_tree_root = this->command_tree.push_root_value(tCommandBufferTreeElement{(token_t)-1});
+        this->command_execution_tree.traverse_to_bottom_distinct_excluded(this->command_execution_tree.get(token_build<t_CommandBufferExecutionTree_sTokenValue>(0)),
+                                                                          [&](const t_CommandBufferExecutionTree_Resolve& p_parent, const t_CommandBufferExecutionTree_Resolve& p_node) {
+                                                                              t_CommandBufferExecutionTree_Element l_command_token = *p_node.Element;
+                                                                              p_foreach(l_command_token, p_command_pool.command_buffers.get(l_command_token));
+                                                                          });
+        this->command_execution_tree.remove_node_recursively(this->command_execution_tree_root);
+        this->command_execution_tree_root = this->command_execution_tree.push_root_value(t_CommandBufferExecutionTree_Element{(token_t)-1});
     };
 };
 

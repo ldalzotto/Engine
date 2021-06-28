@@ -14,11 +14,11 @@ template <class ElementType> struct PoolOfVector
     VectorOfVector<ElementType> Memory;
     Vector<sToken> FreeBlocks;
 
-    using tElement = Slice<ElementType>;
-    using tElementRef = Slice<ElementType>;
+    using t_Element = Slice<ElementType>;
+    using t_ElementRef = Slice<ElementType>;
 
-    using tFreeBlocksVector = Vector<sToken>;
-    using tFreeBlocksVectorRef = tFreeBlocksVector&;
+    using t_FreeBlocksVector = Vector<sToken>;
+    using t_FreeBlocksVectorRef = t_FreeBlocksVector&;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {

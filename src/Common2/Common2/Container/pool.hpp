@@ -12,24 +12,24 @@ template <class ElementType> struct Pool
     using sTokenValue = iPool_element<Pool<ElementType>>;
     using sToken = Token<sTokenValue>;
 
-    using tMemoryVector = Vector<ElementType>;
-    using tFreeBlocksVector = Vector<Token<ElementType>>;
-    using tFreeBlocksVectorRef = tFreeBlocksVector&;
+    using t_MemoryVector = Vector<ElementType>;
+    using t_FreeBlocksVector = Vector<Token<ElementType>>;
+    using t_FreeBlocksVectorRef = t_FreeBlocksVector&;
 
-    using tElement = ElementType;
-    using tElementRef = ElementType&;
+    using t_Element = ElementType;
+    using t_ElementRef = ElementType&;
 
-    tMemoryVector memory;
-    tFreeBlocksVector free_blocks;
+    t_MemoryVector memory;
+    t_FreeBlocksVector free_blocks;
 
-    inline static Pool<ElementType> build(const tMemoryVector& p_memory, const tFreeBlocksVector& p_free_blocks)
+    inline static Pool<ElementType> build(const t_MemoryVector& p_memory, const t_FreeBlocksVector& p_free_blocks)
     {
         return Pool<ElementType>{p_memory, p_free_blocks};
     };
 
     inline static Pool<ElementType> allocate(const uimax p_memory_capacity)
     {
-        return Pool<ElementType>{tMemoryVector::allocate(p_memory_capacity), tFreeBlocksVector::build_zero_size(cast(Token<ElementType>*, NULL), 0)};
+        return Pool<ElementType>{t_MemoryVector::allocate(p_memory_capacity), t_FreeBlocksVector::build_zero_size(cast(Token<ElementType>*, NULL), 0)};
     };
 
     inline void free()
@@ -53,12 +53,12 @@ template <class ElementType> struct Pool
         return this->free_blocks.Size;
     };
 
-    inline tFreeBlocksVector& get_free_blocs()
+    inline t_FreeBlocksVector& get_free_blocs()
     {
         return this->free_blocks;
     };
 
-    inline tMemoryVector& get_memory()
+    inline t_MemoryVector& get_memory()
     {
         return this->memory;
     };

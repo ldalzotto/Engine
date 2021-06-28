@@ -9,23 +9,23 @@ template <class _Pool> struct iPool
 {
     _Pool& pool;
 
-    using tElement = typename _Pool::tElement;
-    using tElementRef = typename _Pool::tElementRef;
-    using tFreeBlocksVector = typename _Pool::tFreeBlocksVector;
-    using tFreeBlocksVectorRef = typename _Pool::tFreeBlocksVectorRef;
+    using t_Element = typename _Pool::t_Element;
+    using t_ElementRef = typename _Pool::t_ElementRef;
+    using t_FreeBlocksVector = typename _Pool::t_FreeBlocksVector;
+    using t_FreeBlocksVectorRef = typename _Pool::t_FreeBlocksVectorRef;
 
     using sTokenValue = iPool_element<_Pool>;
     using sToken = Token<sTokenValue>;
 
-    inline tFreeBlocksVectorRef get_free_blocks()
+    inline t_FreeBlocksVectorRef get_free_blocks()
     {
         return this->pool.get_free_blocs();
     };
 
     inline sToken allocate_element_empty_v2()
     {
-        tFreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-        iVector<tFreeBlocksVector> l_free_blocks = iVector<tFreeBlocksVector>{__free_blocks};
+        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
+        iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
         if (!l_free_blocks.empty())
         {
             return l_free_blocks.pop_back_return();
@@ -37,10 +37,10 @@ template <class _Pool> struct iPool
         }
     };
 
-    inline sToken allocate_element_v2(const tElement& p_element)
+    inline sToken allocate_element_v2(const t_Element& p_element)
     {
-		tFreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-        iVector<tFreeBlocksVector> l_free_blocks = iVector<tFreeBlocksVector>{__free_blocks};
+        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
+        iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
         if (!l_free_blocks.empty())
         {
             sToken l_availble_token = token_build_from<sTokenValue>(l_free_blocks.pop_back_return());
@@ -56,8 +56,8 @@ template <class _Pool> struct iPool
 
     inline int8 is_element_free(const sToken p_token)
     {
-		tFreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-		iVector<tFreeBlocksVector> l_free_blocks = iVector<tFreeBlocksVector>{__free_blocks};
+        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
+		iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
         for (loop(i, 0, l_free_blocks.get_size()))
         {
             sToken l_pool_token = token_build_from<sTokenValue>(l_free_blocks.get(i));
@@ -74,7 +74,7 @@ template <class _Pool> struct iPool
         this->pool.release_element(p_token);
     };
 
-    inline tElementRef get(const sToken p_token)
+    inline t_ElementRef get(const sToken p_token)
     {
         return this->pool.get(p_token);
     };
@@ -85,12 +85,12 @@ template <class _Pool> struct iPool
         return this->pool._push_back_element_empty();
     };
 
-    inline void _set_element(const sToken p_token, const tElement& p_element)
+    inline void _set_element(const sToken p_token, const t_Element& p_element)
     {
         this->pool._set_element(p_token, p_element);
     };
 
-    inline uimax _push_back_element(const tElement& p_element)
+    inline uimax _push_back_element(const t_Element& p_element)
     {
         return this->pool._push_back_element(p_element);
     };
