@@ -650,6 +650,7 @@ struct ImageLayoutTransitionBarriers
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_BufferHosts = Pool<BufferHost>;
 using t_BufferGPUs = Pool<BufferGPU>;
 using t_ImageHosts = Pool<ImageHost>;
@@ -823,7 +824,7 @@ struct BufferEvents
 
     inline static BufferEvents allocate()
     {
-        return BufferEvents{Vector<BufferHost_Token>::allocate(0),        Vector<WriteBufferHostToBufferGPU>::allocate(0), Vector<WriteBufferGPUToBufferHost>::allocate(0),
+        return BufferEvents{Vector<BufferHost_Token>::allocate(0),         Vector<WriteBufferHostToBufferGPU>::allocate(0), Vector<WriteBufferGPUToBufferHost>::allocate(0),
                             Vector<AllocatedImageHost>::allocate(0),       Vector<AllocatedImageGPU>::allocate(0),          Vector<WriteBufferHostToImageGPU>::allocate(0),
                             Vector<WriteImageGPUToBufferHost>::allocate(0)};
     };
@@ -1194,7 +1195,7 @@ struct BufferAllocatorComposition
     };
 
     inline static ImageHost_Token allocate_imagehost_and_push_creation_event(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const Slice<int8>& p_value,
-                                                                              const ImageFormat& p_image_format)
+                                                                             const ImageFormat& p_image_format)
     {
         ImageHost_Token l_image_host = p_buffer_allocator.allocate_imagehost(p_value, p_image_format);
         p_buffer_events.image_host_allocate_events.push_back_element(BufferEvents::AllocatedImageHost{l_image_host});
@@ -1259,8 +1260,7 @@ struct BufferReadWrite
         p_buffer_events.write_buffer_host_to_image_gpu_events.push_back_element(BufferEvents::WriteBufferHostToImageGPU{l_stagin_buffer, 1, p_image_gpu_token});
     };
 
-    inline static BufferHost_Token read_from_imagegpu_to_buffer(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const ImageGPU_Token p_image_gpu_token,
-                                                                 const ImageGPU& p_image_gpu)
+    inline static BufferHost_Token read_from_imagegpu_to_buffer(BufferAllocator& p_buffer_allocator, BufferEvents& p_buffer_events, const ImageGPU_Token p_image_gpu_token, const ImageGPU& p_image_gpu)
     {
         BufferHost_Token l_stagin_buffer = p_buffer_allocator.allocate_bufferhost_empty(p_image_gpu.size, BufferUsageFlag::TRANSFER_WRITE);
         p_buffer_events.write_image_gpu_to_buffer_host_events.push_back_element(BufferEvents::WriteImageGPUToBufferHost{p_image_gpu_token, l_stagin_buffer});

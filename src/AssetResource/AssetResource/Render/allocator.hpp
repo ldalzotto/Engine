@@ -332,6 +332,11 @@ struct MeshResourceUnit
         return this->meshes;
     };
 
+    inline MeshResource& get(const MeshResource::sToken p_token)
+    {
+        return iResourceUnit<MeshResourceUnit>{*this}.get(p_token);
+    };
+
     inline void allocation_step(D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         iResourceUnit<MeshResourceUnit>{*this}.allocation_step(p_database_connection, p_asset_database, ResourceAllocationFunc{p_renderer, p_gpu_context});
@@ -626,6 +631,11 @@ struct MaterialResourceUnit
         return this->materials;
     };
 
+    inline MaterialResource& get(const MaterialResource::sToken p_token)
+    {
+        return iResourceUnit<MaterialResourceUnit>{*this}.get(p_token);
+    };
+
     inline void allocation_step(TextureResourceUnit& p_texture_unit, ShaderResourceUnit& p_shader_resource_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context,
                                 DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
@@ -682,9 +692,9 @@ struct MaterialResourceUnit
     };
 
     inline MaterialResource::sToken allocate_or_increment_inline(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
-                                                                const MaterialResource::InlineAllocationInput& p_inline_input, const ShaderResource::InlineAllocationInput& p_shader_input,
-                                                                const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
-                                                                const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
+                                                                 const MaterialResource::InlineAllocationInput& p_inline_input, const ShaderResource::InlineAllocationInput& p_shader_input,
+                                                                 const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
+                                                                 const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
     {
 
         return iResourceUnit<MaterialResourceUnit>{*this}.allocate_or_increment_inline(
@@ -694,9 +704,9 @@ struct MaterialResourceUnit
     };
 
     inline MaterialResource::sToken allocate_or_increment_database(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
-                                                                  const MaterialResource::DatabaseAllocationInput& p_inline_input, const ShaderResource::DatabaseAllocationInput& p_shader_input,
-                                                                  const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
-                                                                  const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
+                                                                   const MaterialResource::DatabaseAllocationInput& p_inline_input, const ShaderResource::DatabaseAllocationInput& p_shader_input,
+                                                                   const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                   const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         return iResourceUnit<MaterialResourceUnit>{*this}.allocate_or_increment_database(
             p_inline_input.id, MaterialResourceUnit::ResourceIncrementDatabaseFunction::build(*this, p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input,
@@ -704,8 +714,8 @@ struct MaterialResourceUnit
     };
 
     inline MaterialResource::sToken allocate_or_increment_database_and_load_dependecies(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
-                                                                                       TextureResourceUnit& p_texture_unit, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
-                                                                                       const hash_t p_id)
+                                                                                        TextureResourceUnit& p_texture_unit, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
+                                                                                        const hash_t p_id)
     {
         return iResourceUnit<MaterialResourceUnit>{*this}.allocate_or_increment_database(
             p_id, MaterialResourceUnit::ResourceLoadIncrementDatabaseFunction{*this, p_shader_unit, p_shader_module_unit, p_texture_unit, p_database_connection, p_asset_database});

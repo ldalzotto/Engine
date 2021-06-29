@@ -266,6 +266,7 @@ struct TextureGPU
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_TextureGPUs = Pool<TextureGPU>;
 using TextureGPU_Token = t_TextureGPUs::sToken;
 using TextureGPU_TokenValue = t_TextureGPUs::sTokenValue;
@@ -426,6 +427,7 @@ struct RenderPass
 
 typedef VkFramebuffer FrameBuffer_t;
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_RenderPassAttachmentTextures = PoolOfVector<TextureGPU_Token>;
 using RenderPassAttachmentTextures_Token = t_RenderPassAttachmentTextures::sToken;
 
@@ -477,6 +479,7 @@ struct GraphicsPass
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_GraphicsPasses = Pool<GraphicsPass>;
 using GraphicsPass_Token = t_GraphicsPasses::sToken;
 
@@ -535,6 +538,7 @@ struct ShaderLayout
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderLayouts = Pool<ShaderLayout>;
 using ShaderLayout_Token = t_ShaderLayouts::sToken;
 
@@ -577,6 +581,7 @@ struct ShaderModule
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderModules = Pool<ShaderModule>;
 using ShaderModule_Token = t_ShaderModules::sToken;
 using ShaderModule_TokenValue = t_ShaderModules::sTokenValue;
@@ -772,6 +777,7 @@ struct Shader
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_Shaders = Pool<Shader>;
 using Shader_Token = t_Shaders::sToken;
 
@@ -779,7 +785,6 @@ template <class _ShaderUniformBufferParameter> struct iShaderUniformBufferParame
 {
     _ShaderUniformBufferParameter& shader_uniform_buffer_parameter;
 
-    // using _Buffer_sTokenValue = typename _ShaderUniformBufferParameter::_Buffer_sTokenValue;
     using _BufferToken = typename _ShaderUniformBufferParameter::_BufferToken;
     using _BufferValue = typename _ShaderUniformBufferParameter::_BufferValue;
 
@@ -846,6 +851,7 @@ struct ShaderUniformBufferHostParameter
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderUniformBufferHostParameters = Pool<ShaderUniformBufferHostParameter>;
 using ShaderUniformBufferHostParameter_Token = t_ShaderUniformBufferHostParameters::sToken;
 
@@ -869,6 +875,7 @@ struct ShaderUniformBufferGPUParameter
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderUniformBufferGPUParameters = Pool<ShaderUniformBufferGPUParameter>;
 using ShaderUniformBufferGPUParameter_Token = t_ShaderUniformBufferGPUParameters::sToken;
 
@@ -913,6 +920,7 @@ struct ShaderTextureGPUParameter
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderTextureGPUParameters = Pool<ShaderTextureGPUParameter>;
 using ShaderTextureGPUParameter_Token = t_ShaderTextureGPUParameters::sToken;
 
@@ -934,6 +942,7 @@ struct ShaderParameter
     };
 };
 
+// TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_MaterialParameters = PoolOfVector<ShaderParameter>;
 using MaterialParameters_Token = t_MaterialParameters::sToken;
 

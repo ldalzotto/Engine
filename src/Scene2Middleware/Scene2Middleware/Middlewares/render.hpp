@@ -26,12 +26,12 @@ struct CameraComponent
 
     int8 allocated;
     int8 force_update;
-    Token<Node> scene_node;
+    Node_Token scene_node;
     Asset asset;
 
     inline static CameraComponent build_default()
     {
-        return CameraComponent{0, 0, token_build_default<Node>()};
+        return CameraComponent{0, 0, token_build_default<Node_TokenValue>()};
     };
 };
 
@@ -40,22 +40,26 @@ struct CameraComponent
 */
 struct MeshRendererComponent
 {
+    using t_MeshRendererComponents = PoolIndexed<MeshRendererComponent>;
+    using sToken = t_MeshRendererComponents::sToken;
+    using sTokenValue = t_MeshRendererComponents::sTokenValue;
+
     struct Dependencies
     {
-        Token<MaterialResource> material;
-        Token<MeshResource> mesh;
+        MaterialResource::sToken material;
+        MeshResource::sToken mesh;
     };
 
     static constexpr component_t Type = HashFunctions::hash_compile<strlen_compile::get_size(STR(MeshRendererComponent))>(STR(MeshRendererComponent));
     int8 allocated;
     int8 force_update;
-    Token<Node> scene_node;
-    Token<RenderableObject> renderable_object;
+    Node_Token scene_node;
+    RenderableObject_Token renderable_object;
     Dependencies dependencies;
 
-    inline static MeshRendererComponent build(const Token<Node> p_scene_node, const Dependencies& p_dependencies)
+    inline static MeshRendererComponent build(const Node_Token p_scene_node, const Dependencies& p_dependencies)
     {
-        return MeshRendererComponent{0, 1, p_scene_node, token_build_default<RenderableObject>(), p_dependencies};
+        return MeshRendererComponent{0, 1, p_scene_node, token_build_default<RenderableObject_TokenValue>(), p_dependencies};
     };
 
     struct DatabaseAllocationLoadDependenciesInput
@@ -66,12 +70,12 @@ struct MeshRendererComponent
 
     struct AllocationEvent
     {
-        Token<MeshRendererComponent> allocated_resource;
+        sToken allocated_resource;
     };
 
     struct FreeEvent
     {
-        Token<MeshRendererComponent> component;
+        sToken component;
     };
 };
 
@@ -115,7 +119,7 @@ struct MeshRendererComponentUnit
         {
             auto& l_event = this->meshrenderer_free_events.get(i);
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.component);
-            MaterialResource& l_linked_material = p_render_resource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material);
+            MaterialResource& l_linked_material = p_render_resource_allocator.material_unit.get(l_mesh_renderer.dependencies.material);
             p_renderer.allocator.heap.unlink_material_with_renderable_object(l_linked_material.material, l_mesh_renderer.renderable_object);
             D3RendererAllocatorComposition::free_renderable_object_with_buffers(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_renderer.events,
                                                                                 l_mesh_renderer.renderable_object);
@@ -132,8 +136,8 @@ struct MeshRendererComponentUnit
             MeshRendererComponent& l_mesh_renderer = this->mesh_renderers.get(l_event.allocated_resource);
 
             l_mesh_renderer.renderable_object = D3RendererAllocatorComposition::allocate_renderable_object_with_buffers(
-                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_resource_allocator.mesh_unit.meshes.pool.get(l_mesh_renderer.dependencies.mesh).resource);
-            p_renderer.allocator.heap.link_material_with_renderable_object(p_render_resource_allocator.material_unit.materials.pool.get(l_mesh_renderer.dependencies.material).material,
+                p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_render_resource_allocator.mesh_unit.get(l_mesh_renderer.dependencies.mesh).resource);
+            p_renderer.allocator.heap.link_material_with_renderable_object(p_render_resource_allocator.material_unit.get(l_mesh_renderer.dependencies.material).material,
                                                                            l_mesh_renderer.renderable_object);
             l_mesh_renderer.allocated = 1;
 
@@ -141,9 +145,9 @@ struct MeshRendererComponentUnit
         }
     };
 
-    inline Token<MeshRendererComponent> allocate_meshrenderer_inline(const MeshRendererComponent::Dependencies& p_dependencies, const Token<Node> p_scene_node)
+    inline MeshRendererComponent::sToken allocate_meshrenderer_inline(const MeshRendererComponent::Dependencies& p_dependencies, const Node_Token p_scene_node)
     {
-        Token<MeshRendererComponent> l_mesh_renderer = this->mesh_renderers.alloc_element(MeshRendererComponent::build(p_scene_node, p_dependencies));
+        MeshRendererComponent::sToken l_mesh_renderer = this->mesh_renderers.alloc_element(MeshRendererComponent::build(p_scene_node, p_dependencies));
         this->mesh_renderer_allocation_events.push_back_element(MeshRendererComponent::AllocationEvent{l_mesh_renderer});
         return l_mesh_renderer;
     };
@@ -152,46 +156,46 @@ struct MeshRendererComponentUnit
 // TODO -> we can implement a generalization like the one in the AssetResource
 struct MeshRendererComponentComposition
 {
-    inline static Token<MeshRendererComponent>
+    inline static MeshRendererComponent::sToken
     allocate_meshrenderer_inline_with_dependencies(MeshRendererComponentUnit& p_meshrenderer_component_unit, RenderResourceAllocator2& p_render_resource_allocator,
                                                    const ShaderModuleResource::InlineAllocationInput& p_vertex_shader, const ShaderModuleResource::InlineAllocationInput& p_fragment_shader,
                                                    const ShaderResource::InlineAllocationInput& p_shader, const MaterialResource::InlineAllocationInput& p_material,
-                                                   const MeshResource::InlineAllocationInput& p_mesh, const Token<Node> p_scene_node)
+                                                   const MeshResource::InlineAllocationInput& p_mesh, const Node_Token p_scene_node)
     {
-        Token<MaterialResource> l_material_resource =
+        MaterialResource::sToken l_material_resource =
             p_render_resource_allocator.material_unit.allocate_or_increment_inline(p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
                                                                                    p_render_resource_allocator.texture_unit, p_material, p_shader, p_vertex_shader, p_fragment_shader);
-        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_inline(p_mesh);
+        MeshResource::sToken l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_inline(p_mesh);
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
-    inline static Token<MeshRendererComponent>
+    inline static MeshRendererComponent::sToken
     allocate_meshrenderer_database_with_dependencies(MeshRendererComponentUnit& p_meshrenderer_component_unit, RenderResourceAllocator2& p_render_resource_allocator,
                                                      const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader, const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader,
                                                      const ShaderResource::DatabaseAllocationInput& p_shader, const MaterialResource::DatabaseAllocationInput& p_material,
-                                                     const MeshResource::DatabaseAllocationInput& p_mesh, const Token<Node> p_scene_node)
+                                                     const MeshResource::DatabaseAllocationInput& p_mesh, const Node_Token p_scene_node)
     {
-        Token<MaterialResource> l_material_resource =
+        MaterialResource::sToken l_material_resource =
             p_render_resource_allocator.material_unit.allocate_or_increment_database(p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit,
                                                                                      p_render_resource_allocator.texture_unit, p_material, p_shader, p_vertex_shader, p_fragment_shader);
-        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(p_mesh);
+        MeshResource::sToken l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(p_mesh);
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
-    inline static Token<MeshRendererComponent>
+    inline static MeshRendererComponent::sToken
     allocate_meshrenderer_database_and_load_dependecies(MeshRendererComponentUnit& p_meshrenderer_component_unit, RenderResourceAllocator2& p_render_resource_allocator,
                                                         DatabaseConnection& p_database_connection, AssetDatabase& p_assrt_database,
-                                                        const MeshRendererComponent::DatabaseAllocationLoadDependenciesInput& p_meshrenderer_asset_dependencied, const Token<Node> p_scene_node)
+                                                        const MeshRendererComponent::DatabaseAllocationLoadDependenciesInput& p_meshrenderer_asset_dependencied, const Node_Token p_scene_node)
     {
-        Token<MaterialResource> l_material_resource = p_render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
+        MaterialResource::sToken l_material_resource = p_render_resource_allocator.material_unit.allocate_or_increment_database_and_load_dependecies(
             p_render_resource_allocator.shader_unit, p_render_resource_allocator.shader_module_unit, p_render_resource_allocator.texture_unit, p_database_connection, p_assrt_database,
             p_meshrenderer_asset_dependencied.material);
-        Token<MeshResource> l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(MeshResource::DatabaseAllocationInput{p_meshrenderer_asset_dependencied.mesh});
+        MeshResource::sToken l_mesh_resource = p_render_resource_allocator.mesh_unit.allocate_or_increment_database(MeshResource::DatabaseAllocationInput{p_meshrenderer_asset_dependencied.mesh});
         return p_meshrenderer_component_unit.allocate_meshrenderer_inline(MeshRendererComponent::Dependencies{l_material_resource, l_mesh_resource}, p_scene_node);
     };
 
     inline static void free_meshrenderer_with_dependencies(MeshRendererComponentUnit& p_meshrenderer_component_unit, RenderResourceAllocator2& p_render_resource_allocator,
-                                                           const Token<MeshRendererComponent> p_mesh_renderer)
+                                                           const MeshRendererComponent::sToken p_mesh_renderer)
     {
         MeshRendererComponent& l_mesh_renderer = p_meshrenderer_component_unit.mesh_renderers.get(p_mesh_renderer);
 
@@ -245,7 +249,7 @@ struct D3RenderMiddleWare
         this->meshrenderer_component_unit.free(p_renderer, p_gpu_context, p_render_resource_allocator);
     };
 
-    inline void allocate_camera_inline(const CameraComponent::Asset& p_camera_component_asset, const Token<Node> p_scene_node)
+    inline void allocate_camera_inline(const CameraComponent::Asset& p_camera_component_asset, const Node_Token p_scene_node)
     {
         this->camera_component.force_update = 1;
         this->camera_component.allocated = 1;
@@ -262,7 +266,7 @@ struct D3RenderMiddleWare
     //         may provoque some cache loading of unused data (renderable_object and dependencies). This is a use case for a struct of array.
     inline void step(D3Renderer& p_renderer, RenderTargetInternal_Color_Depth& p_render_targets, GPUContext& p_gpu_context, Scene* p_scene)
     {
-        this->meshrenderer_component_unit.mesh_renderers.foreach ([&](const Token<MeshRendererComponent>, MeshRendererComponent& l_mesh_renderer) {
+        this->meshrenderer_component_unit.mesh_renderers.foreach ([&](const MeshRendererComponent::sToken, MeshRendererComponent& l_mesh_renderer) {
             NodeEntry l_node = p_scene->get_node(l_mesh_renderer.scene_node);
             if (l_mesh_renderer.force_update || l_node.Element->state.haschanged_thisframe)
             {

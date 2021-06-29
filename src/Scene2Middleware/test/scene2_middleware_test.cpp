@@ -150,9 +150,9 @@ struct Scene2MiddlewareContext
 namespace MeshRederer_AllocationTestUtil
 {
 
-inline static Token<MeshRendererComponent> allocate_mesh_renderer(Scene2MiddlewareContext& p_ctx, ShaderCompiler& p_shader_compiler, const Token<Node> p_scene_node, const hash_t p_vertex_shader_id,
-                                                                  const hash_t p_fragment_shader_id, const hash_t p_shader_asset_id, const hash_t p_mesh_id, const hash_t p_material_texture_id,
-                                                                  const hash_t p_material_id)
+inline static MeshRendererComponent::sToken allocate_mesh_renderer(Scene2MiddlewareContext& p_ctx, ShaderCompiler& p_shader_compiler, const Node_Token p_scene_node, const hash_t p_vertex_shader_id,
+                                                                   const hash_t p_fragment_shader_id, const hash_t p_shader_asset_id, const hash_t p_mesh_id, const hash_t p_material_texture_id,
+                                                                   const hash_t p_material_id)
 {
     const int8* p_vertex_litteral = MULTILINE(#version 450 \n layout(location = 0) in vec3 pos; \n layout(location = 1) in vec2 uv; \n void main()\n {
         \n gl_Position = vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -244,8 +244,8 @@ inline void collision_middleware_component_allocation()
     */
     {
         v3f l_half_extend = {1.0f, 2.0f, 3.0f};
-        Token<Node> l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<BoxColliderComponent> l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{l_half_extend});
+        Node_Token l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        BoxColliderComponent_Token l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{l_half_extend});
 
         NodeComponent l_box_collider_node_component = BoxColliderComponentAsset_SceneCommunication::build_nodecomponent(l_box_collider_component);
         l_ctx.scene.add_node_component_by_value(l_node, l_box_collider_node_component);
@@ -272,8 +272,8 @@ inline void collision_middleware_component_allocation()
 
     {
         v3f l_half_extend = {1.0f, 2.0f, 3.0f};
-        Token<Node> l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<BoxColliderComponent> l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component(l_ctx.collision, l_node, BoxColliderComponentAsset{l_half_extend});
+        Node_Token l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        BoxColliderComponent_Token l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component(l_ctx.collision, l_node, BoxColliderComponentAsset{l_half_extend});
 
         NodeComponent l_box_collider_node_component = BoxColliderComponentAsset_SceneCommunication::build_nodecomponent(l_box_collider_component);
         l_ctx.scene.add_node_component_by_value(l_node, l_box_collider_node_component);
@@ -297,12 +297,13 @@ inline void collision_middleware_component_allocation()
 inline void collision_middleware_queuing_for_calculation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_collision_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
+    ComponentReleaser2 component_releaser =
+        ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
 
     {
         v3f l_half_extend = {1.0f, 2.0f, 3.0f};
-        Token<Node> l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<BoxColliderComponent> l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{l_half_extend});
+        Node_Token l_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        BoxColliderComponent_Token l_box_collider_component = l_ctx.collision_middleware.allocator.allocate_box_collider_component_deferred(l_node, BoxColliderComponentAsset{l_half_extend});
         l_ctx.scene.add_node_component_by_value(l_node, BoxColliderComponentAsset_SceneCommunication::build_nodecomponent(l_box_collider_component));
 
         assert_true(!l_ctx.collision_middleware.allocator.box_collider_is_queued_for_detection(l_ctx.collision, l_box_collider_component));
@@ -321,12 +322,13 @@ inline void collision_middleware_queuing_for_calculation()
 inline void render_middleware_inline_allocation()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_render_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
+    ComponentReleaser2 component_releaser =
+        ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
-        Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<Node> l_node_2 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<Node> l_node_3 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        Node_Token l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        Node_Token l_node_2 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        Node_Token l_node_3 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
 
         const int8* p_vertex_litteral = MULTILINE(#version 450 \n layout(location = 0) in vec3 pos; \n layout(location = 1) in vec2 uv; \n void main()\n {
             \n gl_Position = vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -398,13 +400,13 @@ inline void render_middleware_inline_allocation()
         }
 
         SliceN<TextureResource::InlineAllocationInput, 1> l_material_texture_input{TextureResource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
-        Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
+        MeshRendererComponent::sToken l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.render_middleware.meshrenderer_component_unit, l_ctx.render_resource_allocator, ShaderModuleResource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleResource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderResource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
             MaterialResource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&l_material_texture_input)}, MeshResource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
 
-        Token<Node> l_camera_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        Node_Token l_camera_node = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
         l_ctx.render_middleware.allocate_camera_inline(CameraComponent::Asset{10.0f, 2.0f, 100.0f}, l_camera_node);
         l_ctx.scene.add_node_component_by_value(l_camera_node, CameraComponentAsset_SceneCommunication::build_nodecomponent());
 
@@ -442,10 +444,11 @@ inline void render_middleware_inline_allocation()
 inline void render_middleware_inline_alloc_dealloc_same_frame()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate_render_only();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
+    ComponentReleaser2 component_releaser =
+        ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
     {
 
-        Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        Node_Token l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
 
         const int8* p_vertex_litteral = "a";
         const int8* p_fragment_litteral = "b";
@@ -502,7 +505,7 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
         }
 
         SliceN<TextureResource::InlineAllocationInput, 1> tmp_material_input{TextureResource::InlineAllocationInput{l_material_texture_id, l_material_texture_asset}};
-        Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
+        MeshRendererComponent::sToken l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_inline_with_dependencies(
             l_ctx.render_middleware.meshrenderer_component_unit, l_ctx.render_resource_allocator, ShaderModuleResource::InlineAllocationInput{l_vertex_shader_id, l_vertex_shader},
             ShaderModuleResource::InlineAllocationInput{l_fragment_shader_id, l_fragment_shader}, ShaderResource::InlineAllocationInput{l_shader_asset_id, l_shader_asset},
             MaterialResource::InlineAllocationInput{0, l_material_asset_1, slice_from_slicen(&tmp_material_input)}, MeshResource::InlineAllocationInput{l_mesh_id, l_mesh_asset}, l_node_1);
@@ -525,11 +528,12 @@ inline void render_middleware_inline_alloc_dealloc_same_frame()
 inline void scene_object_movement()
 {
     Scene2MiddlewareContext l_ctx = Scene2MiddlewareContext::allocate();
-    ComponentReleaser2 component_releaser = ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
+    ComponentReleaser2 component_releaser =
+        ComponentReleaser2{l_ctx.collision, l_ctx.renderer_3D.d3_renderer, l_ctx.gpu_ctx, l_ctx.render_resource_allocator, &l_ctx.render_middleware, &l_ctx.collision_middleware};
     ShaderCompiler l_shader_compiler = ShaderCompiler::allocate();
     {
-        Token<Node> l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
-        Token<MeshRendererComponent> l_mesh_renderer = MeshRederer_AllocationTestUtil::allocate_mesh_renderer(l_ctx, l_shader_compiler, l_node_1, 0, 1, 2, 3, 4, 5);
+        Node_Token l_node_1 = l_ctx.scene.add_node(transform_const::ORIGIN, Scene_const::root_node);
+        MeshRendererComponent::sToken l_mesh_renderer = MeshRederer_AllocationTestUtil::allocate_mesh_renderer(l_ctx, l_shader_compiler, l_node_1, 0, 1, 2, 3, 4, 5);
         l_ctx.scene.add_node_component_by_value(l_node_1, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
 
         l_ctx.step(component_releaser);
