@@ -39,7 +39,7 @@ template <class _Engine> struct iEngine
         return this->engine.asset_database;
     };
 
-    inline Token<EWindow> get_window()
+    inline EWindow_Token get_window()
     {
         return this->engine.window;
     };
@@ -127,36 +127,36 @@ template <class _Engine> struct iEngine
         return this->get_core().clock.deltatime;
     };
 
-    inline Token<Node> create_node(const transform& p_transform, const Token<Node> p_parent)
+    inline Node_Token create_node(const transform& p_transform, const Node_Token p_parent)
     {
         return this->get_scene().add_node(p_transform, p_parent);
     };
 
-    inline Token<Node> create_node(const transform& p_transform)
+    inline Node_Token create_node(const transform& p_transform)
     {
         return this->get_scene().add_node(p_transform, Scene_const::root_node);
     };
 
-    inline void remove_node(const Token<Node> p_node)
+    inline void remove_node(const Node_Token p_node)
     {
         Scene& l_scene = this->get_scene();
         l_scene.remove_node(l_scene.get_node(p_node));
     };
 
-    inline v3f node_get_localposition(const Token<Node> p_node)
+    inline v3f node_get_localposition(const Node_Token p_node)
     {
         Scene& l_scene = this->get_scene();
         return l_scene.tree.get_localposition(l_scene.get_node(p_node));
     };
 
-    inline void node_add_worldrotation(const Token<Node> p_node, const quat& p_delta_rotation)
+    inline void node_add_worldrotation(const Node_Token p_node, const quat& p_delta_rotation)
     {
         Scene& l_scene = this->get_scene();
         NTree<Node>::Resolve l_node = l_scene.get_node(p_node);
         l_scene.tree.add_worldrotation(l_node, p_delta_rotation);
     };
 
-    inline CameraComponent& node_add_camera(const Token<Node> p_node, const CameraComponent::Asset& p_camera_asset)
+    inline CameraComponent& node_add_camera(const Node_Token p_node, const CameraComponent::Asset& p_camera_asset)
     {
         D3RenderMiddleWare& l_render_middleware = this->get_render_middleware();
         Scene& l_scene = this->get_scene();
@@ -165,16 +165,16 @@ template <class _Engine> struct iEngine
         return l_render_middleware.camera_component;
     };
 
-    inline Token<MeshRendererComponent> node_add_meshrenderer(const Token<Node> p_node, const hash_t p_material_id, const hash_t p_mesh_id)
+    inline MeshRendererComponent::sToken node_add_meshrenderer(const Node_Token p_node, const hash_t p_material_id, const hash_t p_mesh_id)
     {
-        Token<MeshRendererComponent> l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_database_and_load_dependecies(
+        MeshRendererComponent::sToken l_mesh_renderer = MeshRendererComponentComposition::allocate_meshrenderer_database_and_load_dependecies(
             this->get_render_middleware().meshrenderer_component_unit, this->get_render_resource_allocator(), this->get_database_connection(), this->get_asset_database(),
             MeshRendererComponent::DatabaseAllocationLoadDependenciesInput{p_material_id, p_mesh_id}, p_node);
         this->get_scene().add_node_component_by_value(p_node, MeshRendererComponentAsset_SceneCommunication::build_nodecomponent(l_mesh_renderer));
         return l_mesh_renderer;
     };
 
-    inline void node_remove_meshrenderer(const Token<Node> p_node)
+    inline void node_remove_meshrenderer(const Node_Token p_node)
     {
         this->get_scene().remove_node_component(p_node, MeshRendererComponent::Type);
     };

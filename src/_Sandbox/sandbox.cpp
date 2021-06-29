@@ -8,7 +8,7 @@ struct SandboxTestUtil
     inline static void render_texture_compare(GPUContext& p_gpu_context, D3Renderer& p_renderer, const Slice<int8>& p_compared_image_path)
     {
         ImageFormat l_rendertarget_texture_format;
-        Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+        BufferHost_Token l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass), 0, &l_rendertarget_texture_format);
 
         p_gpu_context.buffer_step_force_execution();
@@ -24,7 +24,7 @@ struct SandboxTestUtil
     inline static void render_texture_screenshot(GPUContext& p_gpu_context, D3Renderer& p_renderer, const Slice<int8>& p_path)
     {
         ImageFormat l_rendertarget_texture_format;
-        Token<BufferHost> l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
+        BufferHost_Token l_rendertarget_texture = GraphicsPassReader::read_graphics_pass_attachment_to_bufferhost_with_imageformat(
             p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.graphics_pass.get(p_renderer.color_step.pass), 0, &l_rendertarget_texture_format);
 
         p_gpu_context.buffer_step_force_execution();
@@ -147,15 +147,15 @@ struct BoxCollisionSandboxEnvironmentV3
 {
     Engine_Scene_Collision engine;
 
-    Token<Node> moving_node;
-    Token<ColliderDetector> moving_node_collider_detector;
-    Token<Node> static_node;
-    Token<BoxColliderComponent> static_node_boxcollider_component;
+    Node_Token moving_node;
+    ColliderDetector_Token moving_node_collider_detector;
+    Node_Token static_node;
+    BoxColliderComponent_Token static_node_boxcollider_component;
 
     inline static BoxCollisionSandboxEnvironmentV3 allocate_default()
     {
-        return BoxCollisionSandboxEnvironmentV3{Engine_Scene_Collision::allocate(EngineModuleCore::RuntimeConfiguration{0}), token_build_default<Node>(), token_build_default<ColliderDetector>(),
-                                                token_build_default<Node>(), token_build_default<BoxColliderComponent>()};
+        return BoxCollisionSandboxEnvironmentV3{Engine_Scene_Collision::allocate(EngineModuleCore::RuntimeConfiguration{0}), token_build_default<Node_TokenValue>(), token_build_default<ColliderDetector_TokenValue>(),
+                                                token_build_default<Node_TokenValue>(), token_build_default<BoxColliderComponent_TokenValue>()};
     };
 
     inline void free()
@@ -173,7 +173,7 @@ struct BoxCollisionSandboxEnvironmentV3
                 this->moving_node = l_engine.create_node(transform{v3f{0.0f, 1.0f, 0.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
                 this->static_node = l_engine.create_node(transform{v3f{2.0f, 1.0f, 0.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3});
 
-                Token<BoxColliderComponent> l_node_1_box_collider_component =
+                BoxColliderComponent_Token l_node_1_box_collider_component =
                     this->engine.collision_middleware.allocator.allocate_box_collider_component(this->engine.collision, this->moving_node, BoxColliderComponentAsset{v3f_const::ONE.vec3});
                 this->engine.scene.add_node_component_by_value(this->moving_node, NodeComponent::build(BoxColliderComponent::Type, token_value(l_node_1_box_collider_component)));
                 this->moving_node_collider_detector = this->engine.collision_middleware.allocator.attach_collider_detector(this->engine.collision, l_node_1_box_collider_component);
@@ -259,8 +259,8 @@ const hash_t block_1x1_obj = HashFunctions::hash(slice_int8_build_rawstr("block_
 struct D3RendererCubeSandboxEnvironmentV2
 {
     Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present engine;
-    Token<Node> camera_node;
-    Token<Node> l_square_root_node;
+    Node_Token camera_node;
+    Node_Token l_square_root_node;
 
     inline static D3RendererCubeSandboxEnvironmentV2 allocate(const Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present::RuntimeConfiguration& p_configuration)
     {
@@ -293,7 +293,7 @@ struct D3RendererCubeSandboxEnvironmentV2
             {
                 this->l_square_root_node = l_engine.create_node(transform_const::ORIGIN);
 
-                Token<Node> l_node = l_engine.create_node(transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
+                Node_Token l_node = l_engine.create_node(transform{v3f{2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
                 l_engine.node_add_meshrenderer(l_node, D3RendererCubeSandboxEnvironment_Const::block_1x1_material, D3RendererCubeSandboxEnvironment_Const::block_1x1_obj);
 
                 l_node = l_engine.create_node(transform{v3f{-2.0f, 2.0f, 2.0f}, quat_const::IDENTITY, v3f_const::ONE.vec3}, this->l_square_root_node);
@@ -380,8 +380,8 @@ struct ProceduralMeshEnvironment
         Token<Mesh> mesh;
         Vector<Vertex> vertices;
         Vector<uint32> indices;
-        Token<BufferHost> vertices_source_buffer;
-        Token<BufferHost> indices_source_buffer;
+        BufferHost_Token vertices_source_buffer;
+        BufferHost_Token indices_source_buffer;
 
         inline static MeshProcedural allocate_default(GPUContext& p_gpu_context, const Token<Mesh> p_mesh)
         {

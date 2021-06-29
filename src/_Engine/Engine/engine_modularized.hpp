@@ -123,7 +123,7 @@ struct EngineAllocationFragments
         return Renderer_3D_imgui::allocate(p_gpu_context, l_rendertarget_allocate_info);
     };
 
-    inline static GPUPresent present_allocate(GPUContext& p_gpu_context, RenderTargetInternal_Color_Depth& p_render_targets, const Token<EWindow> p_window, const v2ui& p_render_size,
+    inline static GPUPresent present_allocate(GPUContext& p_gpu_context, RenderTargetInternal_Color_Depth& p_render_targets, const EWindow_Token p_window, const v2ui& p_render_size,
                                               DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         Span<int8> l_quad_blit_vert = p_asset_database.get_asset_blob(p_database_connection, HashFunctions::hash(slice_int8_build_rawstr("internal/quad_blit.vert")));
@@ -148,7 +148,7 @@ struct EngineFreeFragments
 
 struct EngineStepFragments
 {
-    inline static int8 window_step(const Token<EWindow> p_window, GPUContext& p_gpu_context, GPUPresent& p_present)
+    inline static int8 window_step(const EWindow_Token p_window, GPUContext& p_gpu_context, GPUPresent& p_present)
     {
         EWindow& l_window = WindowAllocator::get_window(p_window);
         if (l_window.resize_event.ask)

@@ -10,9 +10,9 @@ struct MaterialViewerEngineUnit
 {
     int8 is_running;
 
-    Token<Node> camera_node;
-    Token<Node> material_node;
-    Token<MeshRendererComponent> material_node_meshrenderer;
+    Node_Token camera_node;
+    Node_Token material_node;
+    MeshRendererComponent::sToken material_node_meshrenderer;
 
     struct SharedResources
     {
@@ -100,9 +100,9 @@ struct MaterialViewerEngineUnit
     {
         this->thread.ptr = NULL;
         this->thread_synchronization.reset();
-        this->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
-        this->camera_node = token_build_default<Node>();
-        this->material_node = token_build_default<Node>();
+        this->material_node_meshrenderer = token_build_default<MeshRendererComponent::sTokenValue>();
+        this->camera_node = token_build_default<Node_TokenValue>();
+        this->material_node = token_build_default<Node_TokenValue>();
     };
 
     inline void free()
@@ -160,7 +160,7 @@ struct MaterialViewerEngineUnit
         iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present> l_engine = iEngine<Engine_Scene_GPU_AssetDatabase_D3Renderer_Window_Present>{this->engine};
         l_engine.remove_node(this->camera_node);
         l_engine.remove_node(this->material_node);
-        this->material_node_meshrenderer = token_build_default<MeshRendererComponent>();
+        this->material_node_meshrenderer = token_build_default<MeshRendererComponent::sTokenValue>();
     };
 };
 

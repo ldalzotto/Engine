@@ -201,6 +201,11 @@ struct TextureResourceUnit
         return this->textures;
     };
 
+    inline TextureResource& get(const TextureResource::sToken p_token)
+    {
+        return iResourceUnit<TextureResourceUnit>{*this}.get(p_token);
+    };
+
     inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         iResourceUnit<TextureResourceUnit>{*this}.allocation_step(p_database_connection, p_asset_database, ResourceAllocationFunction{p_gpu_context});

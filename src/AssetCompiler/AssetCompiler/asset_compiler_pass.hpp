@@ -33,6 +33,7 @@ struct AssetCompilationPass
     Vector<String> assets_to_compile;
 
     using sToken = Pool<AssetCompilationPass>::sToken;
+    using sTokenValue = Pool<AssetCompilationPass>::sTokenValue;
 
     inline static AssetCompilationPass build(const String& p_database_path, const String& p_root_path, const Vector<String>& p_asset_to_compile)
     {
