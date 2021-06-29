@@ -15,9 +15,13 @@ struct Vertex
 struct ShaderIndex
 {
     uimax execution_order;
-    Token<Shader> shader_index;
-    Token<ShaderLayout> shader_layout;
+    Shader_Token shader_index;
+    ShaderLayout_Token shader_layout;
 };
+
+using t_ShaderIndexes = Pool<ShaderIndex>;
+using ShaderIndex_Token = t_ShaderIndexes::sToken;
+using ShaderIndex_TokenValue = t_ShaderIndexes::sTokenValue;
 
 /*
     Holds reference to a vertex and index GPU buffer.
@@ -27,10 +31,15 @@ struct ShaderIndex
 */
 struct Mesh
 {
-    Token<BufferGPU> vertices_buffer;
-    Token<BufferGPU> indices_buffer;
+    BufferGPU_Token vertices_buffer;
+    BufferGPU_Token indices_buffer;
     uimax indices_count;
 };
+
+using t_Meshes = Pool<Mesh>;
+using Mesh_Token = t_Meshes::sToken;
+using Mesh_TokenValue = t_Meshes::sTokenValue;
+
 
 /*
 The renderable object is the representation of an object in 3D space with it's shape.
@@ -39,24 +48,32 @@ is subject to change often.
  */
 struct RenderableObject
 {
-    Token<ShaderUniformBufferHostParameter> model;
-    Token<Mesh> mesh;
+    ShaderUniformBufferHostParameter_Token model;
+    Mesh_Token mesh;
 };
+
+using t_RenderableObjects = Pool<RenderableObject>;
+using RenderableObject_Token = t_RenderableObjects::sToken;
+using RenderableObject_TokenValue = t_RenderableObjects::sTokenValue;
+
+using t_Materials = Pool<Material>;
+using Material_Token = t_Materials::sToken;
+using Material_TokenValue = t_Materials::sTokenValue;
 
 /*
  holds values of the render hierarchy.
 */
 struct D3RendererHeap
 {
-    Pool<ShaderIndex> shaders;
-    PoolOfVector<Token<Material>> shaders_to_materials;
-    Vector<Token<ShaderIndex>> shaders_indexed;
+    t_ShaderIndexes shaders;
+    PoolOfVector<Material_Token> shaders_to_materials;
+    Vector<ShaderIndex_Token> shaders_indexed;
 
-    Pool<Material> materials;
-    PoolOfVector<Token<RenderableObject>> material_to_renderable_objects;
+    t_Materials materials;
+    PoolOfVector<RenderableObject_Token> material_to_renderable_objects;
 
-    Pool<Mesh> meshes;
-    Pool<RenderableObject> renderable_objects;
+    t_Meshes meshes;
+    t_RenderableObjects renderable_objects;
 
     inline static D3RendererHeap allocate()
     {
@@ -66,9 +83,9 @@ struct D3RendererHeap
         l_heap.materials = Pool<Material>::allocate(0);
         l_heap.meshes = Pool<Mesh>::allocate(0);
         l_heap.renderable_objects = Pool<RenderableObject>::allocate(0);
-        l_heap.shaders_indexed = Vector<Token<ShaderIndex>>::allocate(0);
-        l_heap.shaders_to_materials = PoolOfVector<Token<Material>>::allocate_default();
-        l_heap.material_to_renderable_objects = PoolOfVector<Token<RenderableObject>>::allocate_default();
+        l_heap.shaders_indexed = Vector<ShaderIndex_Token>::allocate(0);
+        l_heap.shaders_to_materials = PoolOfVector<Material_Token>::allocate_default();
+        l_heap.material_to_renderable_objects = PoolOfVector<RenderableObject_Token>::allocate_default();
         return l_heap;
     };
 
@@ -93,12 +110,12 @@ struct D3RendererHeap
         this->material_to_renderable_objects.free();
     };
 
-    inline void link_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
+    inline void link_shader_with_material(const ShaderIndex_Token p_shader, const Material_Token p_material)
     {
-        this->shaders_to_materials.element_push_back_element(token_build_from<Slice<Token<Material>>>(p_shader), p_material);
+        this->shaders_to_materials.element_push_back_element(token_build_from<PoolOfVector<Material_Token>::sTokenValue>(p_shader), p_material);
     };
 
-    inline void unlink_shader_with_material(const Token<ShaderIndex> p_shader, const Token<Material> p_material)
+    inline void unlink_shader_with_material(const ShaderIndex_Token p_shader, const Material_Token p_material)
     {
         auto l_materials = this->get_materials_from_shader(p_shader);
         for (loop(i, 0, l_materials.get_size()))
@@ -116,8 +133,7 @@ struct D3RendererHeap
         return this->shaders.get(this->shaders_indexed.get(p_index));
     };
 
-    inline void get_materials_and_renderableobject_linked_to_shader(const Token<ShaderIndex> p_shader, Vector<Token<Material>>* in_out_materials,
-                                                                    Vector<Token<RenderableObject>>* in_out_renderableobject)
+    inline void get_materials_and_renderableobject_linked_to_shader(const ShaderIndex_Token p_shader, Vector<Material_Token>* in_out_materials, Vector<RenderableObject_Token>* in_out_renderableobject)
     {
         auto l_materials = this->get_materials_from_shader(p_shader);
         for (loop(i, 0, l_materials.get_size()))
@@ -127,17 +143,17 @@ struct D3RendererHeap
         in_out_materials->push_back_array(l_materials.to_slice());
     };
 
-    inline PoolOfVector<Token<Material>>::Element_iVector get_materials_from_shader(const Token<ShaderIndex> p_shader)
+    inline PoolOfVector<Material_Token>::Element_iVector get_materials_from_shader(const ShaderIndex_Token p_shader)
     {
-        return this->shaders_to_materials.get_element_as_iVector(token_build_from<Slice<Token<Material>>>(p_shader));
+        return this->shaders_to_materials.get_element_as_iVector(token_build_from<PoolOfVector<Material_Token>::sTokenValue>(p_shader));
     };
 
-    inline void link_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
+    inline void link_material_with_renderable_object(const Material_Token p_material, const RenderableObject_Token p_renderable_object)
     {
-        this->material_to_renderable_objects.element_push_back_element(token_build_from<Slice<Token<RenderableObject>>>(p_material), p_renderable_object);
+        this->material_to_renderable_objects.element_push_back_element(token_build_from<PoolOfVector<RenderableObject_Token>::sTokenValue>(p_material), p_renderable_object);
     };
 
-    inline void unlink_material_with_renderable_object(const Token<Material> p_material, const Token<RenderableObject> p_renderable_object)
+    inline void unlink_material_with_renderable_object(const Material_Token p_material, const RenderableObject_Token p_renderable_object)
     {
         auto l_linked_renderable_objects = this->get_renderableobjects_from_material(p_material);
         for (loop(i, 0, l_linked_renderable_objects.get_size()))
@@ -150,9 +166,9 @@ struct D3RendererHeap
         }
     };
 
-    inline PoolOfVector<Token<RenderableObject>>::Element_iVector get_renderableobjects_from_material(const Token<Material> p_material)
+    inline PoolOfVector<RenderableObject_Token>::Element_iVector get_renderableobjects_from_material(const Material_Token p_material)
     {
-        return this->material_to_renderable_objects.get_element_as_iVector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
+        return this->material_to_renderable_objects.get_element_as_iVector(token_build_from<PoolOfVector<RenderableObject_Token>::sTokenValue>(p_material));
     };
 };
 
@@ -173,7 +189,7 @@ struct D3RendererAllocator
         this->heap.free();
     };
 
-    inline Token<ShaderIndex> allocate_shader(const ShaderIndex& p_shader)
+    inline ShaderIndex_Token allocate_shader(const ShaderIndex& p_shader)
     {
         uimax l_insertion_index = 0;
         for (loop(i, 0, this->heap.shaders_indexed.Size))
@@ -184,14 +200,14 @@ struct D3RendererAllocator
             };
         };
 
-        Token<ShaderIndex> l_shader = this->heap.shaders.alloc_element(p_shader);
+        ShaderIndex_Token l_shader = this->heap.shaders.alloc_element(p_shader);
         this->heap.shaders_to_materials.alloc_vector();
 
         this->heap.shaders_indexed.insert_element_at_always(l_shader, l_insertion_index);
         return l_shader;
     };
 
-    inline void free_shader(const Token<ShaderIndex> p_shader)
+    inline void free_shader(const ShaderIndex_Token p_shader)
     {
         ShaderIndex& l_shader = this->heap.shaders.get(p_shader);
 
@@ -204,38 +220,38 @@ struct D3RendererAllocator
             }
         }
 
-        this->heap.shaders_to_materials.release_vector(token_build_from<Slice<Token<Material>>>(p_shader));
+        this->heap.shaders_to_materials.release_vector(token_build_from<PoolOfVector<Material_Token>::sTokenValue>(p_shader));
         this->heap.shaders.release_element(p_shader);
     };
 
-    inline Token<Material> allocate_material(const Material& p_material)
+    inline Material_Token allocate_material(const Material& p_material)
     {
         this->heap.material_to_renderable_objects.alloc_vector();
         return this->heap.materials.alloc_element(p_material);
     };
 
-    inline void free_material(const Token<Material> p_material)
+    inline void free_material(const Material_Token p_material)
     {
-        this->heap.material_to_renderable_objects.release_vector(token_build_from<Slice<Token<RenderableObject>>>(p_material));
+        this->heap.material_to_renderable_objects.release_vector(token_build_from<PoolOfVector<RenderableObject_Token>::sTokenValue>(p_material));
         this->heap.materials.release_element(p_material);
     };
 
-    inline Token<Mesh> allocate_mesh(const Mesh& p_mesh)
+    inline Mesh_Token allocate_mesh(const Mesh& p_mesh)
     {
         return this->heap.meshes.alloc_element(p_mesh);
     };
 
-    inline void free_mesh(const Token<Mesh> p_mesh)
+    inline void free_mesh(const Mesh_Token p_mesh)
     {
         this->heap.meshes.release_element(p_mesh);
     };
 
-    inline Token<RenderableObject> allocate_renderable_object(const RenderableObject& p_renderable_object)
+    inline RenderableObject_Token allocate_renderable_object(const RenderableObject& p_renderable_object)
     {
         return this->heap.renderable_objects.alloc_element(p_renderable_object);
     };
 
-    inline void free_renderable_object(const Token<RenderableObject> p_rendereable_object)
+    inline void free_renderable_object(const RenderableObject_Token p_rendereable_object)
     {
         this->heap.renderable_objects.release_element(p_rendereable_object);
     };
@@ -245,7 +261,7 @@ struct D3RendererEvents
 {
     struct RenderableObject_ModelUpdateEvent
     {
-        Token<RenderableObject> renderable_object;
+        RenderableObject_Token renderable_object;
         m44f model_matrix;
     };
 
@@ -269,7 +285,7 @@ struct D3RendererEvents
     {
         this->model_update_events.push_back_element(p_modelupdateevent);
     };
-    inline void remove_renderableobject_references(const Token<RenderableObject> p_renderable_object)
+    inline void remove_renderableobject_references(const RenderableObject_Token p_renderable_object)
     {
         for (loop_reverse(i, 0, this->model_update_events.Size))
         {
@@ -294,10 +310,10 @@ SliceN<ShaderLayout::VertexInputParameter, 2> shaderlayout_vertex_input = SliceN
 struct ColorStep
 {
 
-    Token<GraphicsPass> pass;
+    GraphicsPass_Token pass;
     Span<v4f> clear_values;
 
-    Token<ShaderLayout> global_buffer_layout;
+    ShaderLayout_Token global_buffer_layout;
     Material global_material;
 
     struct GlobalParameter_Time
@@ -322,7 +338,7 @@ struct ColorStep
 
         {
             GraphicsPassAllocationComposition::RenderPassAttachmentInput<2> l_renderpasss_allocation_input = {
-                SliceN<Token<TextureGPU>, 2>{p_render_target_internal.color, p_render_target_internal.depth}, SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
+                SliceN<TextureGPU_Token, 2>{p_render_target_internal.color, p_render_target_internal.depth}, SliceN<AttachmentType, 2>{AttachmentType::COLOR, AttachmentType::DEPTH},
                 SliceN<RenderPassAttachment::ClearOp, 2>{RenderPassAttachment::ClearOp::CLEARED, RenderPassAttachment::ClearOp::CLEARED}};
 
             l_step.pass = GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_renderpasss_allocation_input);
@@ -444,21 +460,21 @@ struct D3Renderer
 
         for (loop(i, 0, this->heap().shaders_indexed.Size))
         {
-            Token<ShaderIndex> l_shader_token = this->heap().shaders_indexed.get(i);
+            ShaderIndex_Token l_shader_token = this->heap().shaders_indexed.get(i);
             ShaderIndex& l_shader_index = this->heap().shaders.get(l_shader_token);
             p_graphics_binder.bind_shader(p_graphics_binder.graphics_allocator.heap.shaders.get(l_shader_index.shader_index));
 
             auto l_materials = this->heap().get_materials_from_shader(l_shader_token);
             for (loop(j, 0, l_materials.get_size()))
             {
-                Token<Material> l_material = l_materials.get(j);
+                Material_Token l_material = l_materials.get(j);
                 p_graphics_binder.bind_material(this->heap().materials.get(l_material));
 
                 auto l_renderable_objects = this->heap().get_renderableobjects_from_material(l_material);
 
                 for (loop(k, 0, l_renderable_objects.get_size()))
                 {
-                    Token<RenderableObject> l_renderable_object_token = l_renderable_objects.get(k);
+                    RenderableObject_Token l_renderable_object_token = l_renderable_objects.get(k);
                     RenderableObject& l_renderable_object = this->heap().renderable_objects.get(l_renderable_object_token);
 
                     p_graphics_binder.bind_shaderbufferhost_parameter(p_graphics_binder.graphics_allocator.heap.shader_uniform_buffer_host_parameters.get(l_renderable_object.model));
@@ -484,8 +500,8 @@ struct D3Renderer
 struct D3RendererAllocatorComposition
 {
 
-    inline static Token<Mesh> allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
-                                                         const Slice<uint32>& p_initial_indices)
+    inline static Mesh_Token allocate_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
+                                                        const Slice<uint32>& p_initial_indices)
     {
         Mesh l_mesh;
         Slice<int8> l_initial_vertices_binary = p_initial_vertices.build_asint8();
@@ -501,7 +517,7 @@ struct D3RendererAllocatorComposition
         return p_render_allocator.allocate_mesh(l_mesh);
     };
 
-    inline static void free_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Token<Mesh> p_mesh)
+    inline static void free_mesh_with_buffers(BufferMemory& p_buffer_memory, D3RendererAllocator& p_render_allocator, const Mesh_Token p_mesh)
     {
         Mesh& l_mesh = p_render_allocator.heap.meshes.get(p_mesh);
         BufferAllocatorComposition::free_buffer_gpu_and_remove_event_references(p_buffer_memory.allocator, p_buffer_memory.events, l_mesh.vertices_buffer);
@@ -509,32 +525,32 @@ struct D3RendererAllocatorComposition
         p_render_allocator.free_mesh(p_mesh);
     };
 
-    inline static Token<Material> allocate_emptymaterial_with_parameters(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator)
+    inline static Material_Token allocate_emptymaterial_with_parameters(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator)
     {
         Material l_material = Material::allocate_empty(p_graphics_allocator, 1);
         return p_render_allocator.allocate_material(l_material);
     };
 
     inline static void free_material_with_parameters_and_textures(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                  const Token<Material> p_material)
+                                                                  const Material_Token p_material)
     {
         p_render_allocator.heap.materials.get(p_material).free_with_textures(p_graphics_allocator, p_buffer_memory);
         p_render_allocator.free_material(p_material);
     };
 
-    inline static void free_material_with_parameters(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token<Material> p_material)
+    inline static void free_material_with_parameters(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Material_Token p_material)
     {
         p_render_allocator.heap.materials.get(p_material).free(p_graphics_allocator, p_buffer_memory);
         p_render_allocator.free_material(p_material);
     };
 
-    inline static Token<RenderableObject> allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                                  const Token<Mesh> p_mesh)
+    inline static RenderableObject_Token allocate_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+                                                                                 const Mesh_Token p_mesh)
     {
         RenderableObject l_renderable_object;
         l_renderable_object.mesh = p_mesh;
 
-        Token<BufferHost> l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
+        BufferHost_Token l_buffer = p_buffer_memory.allocator.allocate_bufferhost_empty(sizeof(m44f), BufferUsageFlag::UNIFORM);
         l_renderable_object.model =
             p_graphics_allocator.allocate_shaderuniformbufferhost_parameter(ShaderLayoutParameterType::UNIFORM_BUFFER_VERTEX, l_buffer, p_buffer_memory.allocator.host_buffers.get(l_buffer));
 
@@ -542,7 +558,7 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_renderable_object_with_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                           D3RendererEvents& p_render_events, const Token<RenderableObject> p_renderable_object)
+                                                           D3RendererEvents& p_render_events, const RenderableObject_Token p_renderable_object)
     {
         RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
         GraphicsAllocatorComposition::free_shaderparameter_uniformbufferhost_with_buffer(p_buffer_memory, p_graphics_allocator, l_renderable_object.model);
@@ -550,16 +566,16 @@ struct D3RendererAllocatorComposition
         p_render_allocator.free_renderable_object(p_renderable_object);
     };
 
-    inline static Token<RenderableObject> allocate_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
-                                                                                           D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
-                                                                                           const Slice<uint32>& p_initial_indices)
+    inline static RenderableObject_Token allocate_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+                                                                                          D3RendererAllocator& p_render_allocator, const Slice<Vertex>& p_initial_vertices,
+                                                                                          const Slice<uint32>& p_initial_indices)
     {
-        Token<Mesh> l_mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
+        Mesh_Token l_mesh = allocate_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_initial_vertices, p_initial_indices);
         return allocate_renderable_object_with_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, l_mesh);
     };
 
     inline static void free_renderable_object_with_mesh_and_buffers(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                    D3RendererEvents& p_render_events, const Token<RenderableObject> p_renderable_object)
+                                                                    D3RendererEvents& p_render_events, const RenderableObject_Token p_renderable_object)
     {
         RenderableObject& l_renderable_object = p_render_allocator.heap.renderable_objects.get(p_renderable_object);
         free_mesh_with_buffers(p_buffer_memory, p_render_allocator, l_renderable_object.mesh);
@@ -573,10 +589,10 @@ struct D3RendererAllocatorComposition
         free_mesh_with_buffers(p_buffer_memory, p_render_allocator, p_renderable_object.mesh);
     };
 
-    inline static Token<ShaderIndex> allocate_colorstep_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                                 const Slice<ShaderLayoutParameterType>& p_specific_parameters, const uimax p_execution_order,
-                                                                                 const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration,
-                                                                                 const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
+    inline static ShaderIndex_Token allocate_colorstep_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
+                                                                                const Slice<ShaderLayoutParameterType>& p_specific_parameters, const uimax p_execution_order,
+                                                                                const GraphicsPass& p_graphics_pass, const ShaderConfiguration& p_shader_configuration,
+                                                                                const ShaderModule& p_vertex_shader, const ShaderModule& p_fragment_shader)
     {
         Span<ShaderLayoutParameterType> l_span =
             Span<ShaderLayoutParameterType>::allocate_slice_3(slice_from_slicen(&ColorStep_const::shaderlayout_before), p_specific_parameters, slice_from_slicen(&ColorStep_const::shaderlayout_after));
@@ -592,7 +608,7 @@ struct D3RendererAllocatorComposition
         return p_render_allocator.allocate_shader(l_shader_index);
     };
 
-    inline static void free_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const Token<ShaderIndex> p_shader)
+    inline static void free_shader_with_shaderlayout(GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator, const ShaderIndex_Token p_shader)
     {
         p_graphics_allocator.free_shader_layout(p_render_allocator.heap.shaders.get(p_shader).shader_layout);
         p_graphics_allocator.free_shader(p_render_allocator.heap.shaders.get(p_shader).shader_index);
@@ -600,19 +616,19 @@ struct D3RendererAllocatorComposition
     };
 
     inline static void free_shader_recursively_with_gpu_resources(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator, D3RendererAllocator& p_render_allocator,
-                                                                  D3RendererEvents& p_render_events, const Token<ShaderIndex> p_shader)
+                                                                  D3RendererEvents& p_render_events, const ShaderIndex_Token p_shader)
     {
         auto l_materials_to_remove = p_render_allocator.heap.get_materials_from_shader(p_shader);
 
         for (loop_reverse(i, 0, l_materials_to_remove.get_size()))
         {
-            Token<Material> l_material_to_remove = l_materials_to_remove.get(i);
+            Material_Token l_material_to_remove = l_materials_to_remove.get(i);
 
             auto l_renderable_objects_to_remove = p_render_allocator.heap.get_renderableobjects_from_material(l_material_to_remove);
 
             for (loop_reverse(j, 0, l_renderable_objects_to_remove.get_size()))
             {
-                Token<RenderableObject> l_renderable_object_to_remove = l_renderable_objects_to_remove.get(j);
+                RenderableObject_Token l_renderable_object_to_remove = l_renderable_objects_to_remove.get(j);
                 p_render_allocator.heap.unlink_material_with_renderable_object(l_material_to_remove, l_renderable_object_to_remove);
                 free_renderable_object_with_mesh_and_buffers(p_buffer_memory, p_graphics_allocator, p_render_allocator, p_render_events, l_renderable_object_to_remove);
             }

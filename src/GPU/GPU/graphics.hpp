@@ -268,6 +268,7 @@ struct TextureGPU
 
 using t_TextureGPUs = Pool<TextureGPU>;
 using TextureGPU_Token = t_TextureGPUs::sToken;
+using TextureGPU_TokenValue = t_TextureGPUs::sTokenValue;
 
 typedef VkRenderPass RenderPass_t;
 
@@ -578,6 +579,7 @@ struct ShaderModule
 
 using t_ShaderModules = Pool<ShaderModule>;
 using ShaderModule_Token = t_ShaderModules::sToken;
+using ShaderModule_TokenValue = t_ShaderModules::sTokenValue;
 
 struct ShaderConfiguration
 {
@@ -1222,11 +1224,11 @@ struct GraphicsPassAllocationComposition
 
         template <uint8 AttachmentCount>
         inline static GraphicsPass_Token graphicspass_allocate_fixed_size_v2(GraphicsAllocator2& p_graphics_allocator, const TransferDevice& p_transfer_device, const RenderPass& p_render_pass,
-                                                                             const SliceN<Token<TextureGPU>, AttachmentCount>& p_attachment_textures,
+                                                                             const SliceN<TextureGPU_Token, AttachmentCount>& p_attachment_textures,
                                                                              const SliceN<VkImageView, AttachmentCount>& p_attachment_image_views,
                                                                              const SliceN<ImageFormat, AttachmentCount>& p_attachment_formats)
         {
-            Token<Slice<Token<TextureGPU>>> l_allocated_attachment_textures =
+            RenderPassAttachmentTextures_Token l_allocated_attachment_textures =
                 p_graphics_allocator.heap.renderpass_attachment_textures.alloc_vector_with_values(slice_from_slicen(&p_attachment_textures));
             GraphicsPass l_graphics_pass = GraphicsPass::allocate_v2(p_transfer_device, p_graphics_allocator.graphics_device, l_allocated_attachment_textures, slice_from_slicen(&p_attachment_formats),
                                                                      slice_from_slicen(&p_attachment_image_views), p_render_pass);
@@ -1249,13 +1251,13 @@ struct GraphicsPassAllocationComposition
 
     template <int8 AttachmentSize> struct RenderPassAttachmentInput
     {
-        SliceN<Token<TextureGPU>, AttachmentSize> attachment_textures;
+        SliceN<TextureGPU_Token, AttachmentSize> attachment_textures;
         SliceN<AttachmentType, AttachmentSize> attachment_types;
         SliceN<RenderPassAttachment::ClearOp, AttachmentSize> attachment_clear;
     };
 
     template <int8 AttachmentSize>
-    inline static Token<GraphicsPass> allocate_renderpass_then_graphicspass(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
+    inline static GraphicsPass_Token allocate_renderpass_then_graphicspass(BufferMemory& p_buffer_memory, GraphicsAllocator2& p_graphics_allocator,
                                                                             const RenderPassAttachmentInput<AttachmentSize>& p_input)
     {
         SliceN<Fragments::Texture_GPU_Image_GPU, AttachmentSize> l_extracted_textures;

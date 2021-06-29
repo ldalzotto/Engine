@@ -908,7 +908,7 @@ inline void pool_hashed_counted_test()
 {
     PoolHashedCounted<uimax, uimax> l_pool_hashed_counted = PoolHashedCounted<uimax, uimax>::allocate_default();
     {
-        Token<uimax> l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+        PoolHashedCounted<uimax, uimax>::sToken l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
             return 100;
         });
 
@@ -933,7 +933,7 @@ inline void pool_hashed_counted_test()
 
     // increment or allocate stateful
     {
-        Token<uimax> l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
+        PoolHashedCounted<uimax, uimax>::sToken l_value_token = l_pool_hashed_counted.increment_or_allocate_v2(10, []() {
             return 100;
         });
         assert_true(l_pool_hashed_counted.pool.get(token_build_from<Pool<uimax>::sTokenValue>(l_value_token)) == 100);

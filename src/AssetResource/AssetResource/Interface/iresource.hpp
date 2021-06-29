@@ -24,18 +24,29 @@ struct ResourceIdentifiedHeader
     };
 };
 
+template <class _Resource> struct iResource_Token
+{
+    // Empty, for tokenization
+    using sTokenValue = iResource_Token<_Resource>;
+    using sToken = Token<sTokenValue>;
+
+    using t_HashPoolToken = typename PoolHashedCounted<hash_t, _Resource>::sToken;
+    using t_HashPoolTokenValue = typename PoolHashedCounted<hash_t, _Resource>::sTokenValue;
+};
+
 template <class _Resource> struct iResource
 {
-    _Resource& resource;
+    using t_Resource_Token = typename iResource_Token<_Resource>::sToken;
+    using t_Resource_TokenValue = typename iResource_Token<_Resource>::sTokenValue;
 
-    using _SystemObjectValue = typename _Resource::_SystemObjectValue;
+    _Resource& resource;
 
     inline ResourceIdentifiedHeader& get_header()
     {
         return this->resource.header;
     };
 
-    inline static _Resource build_resource(const ResourceIdentifiedHeader& p_header, const Token<_SystemObjectValue> p_resource_token)
+    inline static _Resource build_resource(const ResourceIdentifiedHeader& p_header, const t_Resource_Token p_resource_token)
     {
         return _Resource{p_header, p_resource_token};
     };
@@ -46,8 +57,9 @@ template <class _DatabaseAllocationEvent> struct iDatabaseAllocationEvent
     _DatabaseAllocationEvent& database_allocation_event;
 
     using _ResourceValue = typename _DatabaseAllocationEvent::_ResourceValue;
+    using t_Resource_Token = typename iResource<_ResourceValue>::t_Resource_Token;
 
-    inline Token<_ResourceValue> get_allocated_resource()
+    inline t_Resource_Token get_allocated_resource()
     {
         return this->database_allocation_event.allocated_resource;
     };
@@ -63,11 +75,12 @@ template <class _InlineAllocationEvent> struct iInlineAllocationEvent
     _InlineAllocationEvent& inline_allocation_event;
 
     using _ResourceValue = typename _InlineAllocationEvent::_ResourceValue;
+    using t_Resource_Token = typename iResource<_ResourceValue>::t_Resource_Token;
 
     using _Asset = typename _InlineAllocationEvent::_Asset;
     using _AssetValue = typename _InlineAllocationEvent::_AssetValue;
 
-    inline Token<_ResourceValue> get_allocated_resource()
+    inline t_Resource_Token get_allocated_resource()
     {
         return this->inline_allocation_event.allocated_resource;
     };
@@ -83,8 +96,9 @@ template <class _FreeEvent> struct iFreeEvent
     _FreeEvent& free_event;
 
     using _ResourceValue = typename _FreeEvent::_ResourceValue;
+    using t_Resource_Token = typename iResource<_ResourceValue>::t_Resource_Token;
 
-    inline Token<_ResourceValue> get_allocated_resource()
+    inline t_Resource_Token get_allocated_resource()
     {
         return this->free_event.allocated_resource;
     };
@@ -96,6 +110,8 @@ template <class _ResourceUnit> struct iResourceUnit
 
     using _Resource = typename _ResourceUnit::_Resource;
     using _ResourceValue = typename _ResourceUnit::_ResourceValue;
+    using t_Resource_Token = typename iResource<_ResourceValue>::t_Resource_Token;
+    using t_Resource_TokenValue = typename iResource<_ResourceValue>::t_Resource_TokenValue;
 
     using _AssetBinary = typename _ResourceUnit::_AssetBinary;
     using _AssetBinaryValue = typename _ResourceUnit::_AssetBinaryValue;
@@ -144,6 +160,11 @@ template <class _ResourceUnit> struct iResourceUnit
         return this->resource_unit.get_free_events();
     };
 
+    inline _ResourceValue& get(const t_Resource_Token p_token)
+    {
+        return this->get_pool().get_from_pool(token_build_from<PoolHashedCounted<hash_t, _ResourceValue>::sTokenValue>(p_token));
+    };
+
     template <class ResourceAllocationFunc>
     inline void allocation_step(DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const ResourceAllocationFunc& p_resource_allocation_func)
     {
@@ -157,8 +178,7 @@ template <class _ResourceUnit> struct iResourceUnit
             _AssetBinaryValue l_asset_binary = _AssetBinaryValue{p_asset_database.get_asset_blob(p_database_connection, l_event.get_id())};
             _AssetValue l_asset_value = _ResourceValue::Asset::Value::build_from_asset(l_asset_binary);
 
-            PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-            _Resource __resource = l_resource_pool.pool.get(l_event.get_allocated_resource());
+            _Resource __resource = this->get(l_event.get_allocated_resource());
             p_resource_allocation_func(__resource, l_asset_value);
             __resource.header.allocated = 1;
             l_asset_binary.free();
@@ -174,8 +194,7 @@ template <class _ResourceUnit> struct iResourceUnit
 
             _AssetValue l_asset_value = _ResourceValue::Asset::Value::build_from_asset(l_event.get_asset());
 
-            PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-            _Resource __resource = l_resource_pool.pool.get(l_event.get_allocated_resource());
+            _Resource __resource = this->get(l_event.get_allocated_resource());
             p_resource_allocation_func(__resource, l_asset_value);
             __resource.header.allocated = 1;
             l_event.get_asset().free();
@@ -192,18 +211,17 @@ template <class _ResourceUnit> struct iResourceUnit
         {
             _FreeEvent __l_event = l_resource_free_events.get(i);
             iFreeEvent<_FreeEventValue> l_event = iFreeEvent<_FreeEventValue>{__l_event};
-            Token<_ResourceValue> l_allocated_resource = l_event.get_allocated_resource();
+            t_Resource_Token l_allocated_resource = l_event.get_allocated_resource();
 
-            PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-            _Resource l_resource = l_resource_pool.pool.get(l_allocated_resource);
+            _Resource l_resource = this->get(l_allocated_resource);
             p_resource_deallocation_func(l_resource);
-            l_resource_pool.pool.release_element(l_event.get_allocated_resource());
+            this->_release_pool_resource(l_event.get_allocated_resource());
         }
         l_resource_free_events.clear();
     };
 
     template <class ResourceValueBuilderFunc>
-    inline Token<_ResourceValue> allocate_or_increment_inline(const hash_t p_id, const _AssetBinaryValue& p_asset_binary, const ResourceValueBuilderFunc& p_resource_builder)
+    inline t_Resource_Token allocate_or_increment_inline(const hash_t p_id, const _AssetBinaryValue& p_asset_binary, const ResourceValueBuilderFunc& p_resource_builder)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         if (l_resource_pool.has_key_nothashed(p_id))
@@ -213,7 +231,7 @@ template <class _ResourceUnit> struct iResourceUnit
             iResource<_ResourceValue> l_resource = iResource<_ResourceValue>{__l_resource};
             assert_true(l_resource.get_header().allocation_type == ResourceAllocationType::INLINE);
 #endif
-            return l_resource_pool.increment_nothashed(p_id);
+            return token_build_from<t_Resource_TokenValue>(l_resource_pool.increment_nothashed(p_id));
         }
         else
         {
@@ -223,7 +241,7 @@ template <class _ResourceUnit> struct iResourceUnit
         }
     };
 
-    template <class ResourceValueBuilderFunc> inline Token<_ResourceValue> allocate_or_increment_database(const hash_t p_id, const ResourceValueBuilderFunc& p_resource_builder)
+    template <class ResourceValueBuilderFunc> inline t_Resource_Token allocate_or_increment_database(const hash_t p_id, const ResourceValueBuilderFunc& p_resource_builder)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         if (l_resource_pool.has_key_nothashed(p_id))
@@ -231,7 +249,7 @@ template <class _ResourceUnit> struct iResourceUnit
 #if __DEBUG
             assert_true(l_resource_pool.get_nothashed(p_id).header.allocation_type == ResourceAllocationType::ASSET_DATABASE);
 #endif
-            return l_resource_pool.increment_nothashed(p_id);
+            return token_build_from<t_Resource_TokenValue>(l_resource_pool.increment_nothashed(p_id));
         }
         else
         {
@@ -240,10 +258,10 @@ template <class _ResourceUnit> struct iResourceUnit
         }
     };
 
-    template <class ResourceReleaseFunc> inline void decrement_or_release_resource_by_token(const Token<_ResourceValue> p_resource_token, const ResourceReleaseFunc& p_resource_release_func)
+    template <class ResourceReleaseFunc> inline void decrement_or_release_resource_by_token(const t_Resource_Token p_resource_token, const ResourceReleaseFunc& p_resource_release_func)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-        _Resource __l_resource = l_resource_pool.pool.get(p_resource_token);
+        _Resource __l_resource = this->get(p_resource_token);
         iResource<_ResourceValue> l_resource = iResource<_ResourceValue>{__l_resource};
         hash_t l_hashed_id = l_resource_pool.CountMap.hash_key(l_resource.get_header().id);
 
@@ -254,7 +272,7 @@ template <class _ResourceUnit> struct iResourceUnit
             {
                 _FreeEvents __l_free_events = this->get_free_events();
                 iVector<_FreeEventsValue> l_free_events = __l_free_events.to_ivector();
-                l_free_events.push_back_element(_FreeEventValue{l_counted_element->token});
+                l_free_events.push_back_element(_FreeEventValue{token_build_from<t_Resource_TokenValue>(l_counted_element->token)});
                 // We don't remove the pool because it is handles by the free event
                 l_resource_pool.CountMap.erase_key(l_hashed_id);
                 p_resource_release_func(__l_resource);
@@ -294,30 +312,35 @@ template <class _ResourceUnit> struct iResourceUnit
 
                 l_resource_pool.CountMap.erase_key(l_hashed_id);
                 p_resource_release_func(__l_resource);
-                l_resource_pool.pool.release_element(p_resource_token);
+                this->_release_pool_resource(p_resource_token);
             }
         }
     };
 
   private:
-    inline Token<_ResourceValue> push_resource_to_be_allocated_inline(const _ResourceValue& p_resource, const hash_t p_id, const _AssetBinaryValue& p_asset_binary)
+    inline t_Resource_Token push_resource_to_be_allocated_inline(const _ResourceValue& p_resource, const hash_t p_id, const _AssetBinaryValue& p_asset_binary)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-        Token<_ResourceValue> l_resource = l_resource_pool.push_back_element_nothashed(p_id, p_resource);
+        t_Resource_Token l_resource = token_build_from<t_Resource_TokenValue>(l_resource_pool.push_back_element_nothashed(p_id, p_resource));
         _InlineAllocationEvents __l_inline_allocation_events = this->get_inline_allocation_events();
         iVector<_InlineAllocationEventsValue> l_inline_allocation_events = __l_inline_allocation_events.to_ivector();
         l_inline_allocation_events.push_back_element(_InlineAllocationEventValue{p_asset_binary, l_resource});
         return l_resource;
     };
 
-    inline Token<_ResourceValue> push_resource_to_be_allocated_database(const _ResourceValue& p_resource, const hash_t p_id)
+    inline t_Resource_Token push_resource_to_be_allocated_database(const _ResourceValue& p_resource, const hash_t p_id)
     {
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
-        Token<_ResourceValue> l_resource = l_resource_pool.push_back_element_nothashed(p_id, p_resource);
+        t_Resource_Token l_resource = token_build_from<t_Resource_TokenValue>(l_resource_pool.push_back_element_nothashed(p_id, p_resource));
         _DatabaseAllocationEvents __l_database_allocation_events = this->get_database_allocation_events();
         iVector<_DatabaseAllocationEventsValue> l_database_allocation_events = __l_database_allocation_events.to_ivector();
         l_database_allocation_events.push_back_element(_DatabaseAllocationEventValue{p_id, l_resource});
         return l_resource;
+    };
+
+    inline void _release_pool_resource(const t_Resource_Token p_token)
+    {
+        this->get_pool().pool.release_element(token_build_from<PoolHashedCounted<hash_t, _ResourceValue>::sTokenValue>(p_token));
     };
 };
 

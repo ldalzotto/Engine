@@ -61,6 +61,11 @@ struct ShaderModuleResourceUnit
         return this->shader_modules;
     };
 
+    inline ShaderModuleResource& get(const ShaderModuleResource::sToken p_token)
+    {
+        return iResourceUnit<ShaderModuleResourceUnit>{*this}.get(p_token);
+    };
+
     inline void allocation_step(GPUContext& p_gpu_context, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database)
     {
         iResourceUnit<ShaderModuleResourceUnit>{*this}.allocation_step(p_database_connection, p_asset_database, ResourceAllocationFunction::build(p_gpu_context));
@@ -71,17 +76,17 @@ struct ShaderModuleResourceUnit
         iResourceUnit<ShaderModuleResourceUnit>{*this}.deallocation_step(ResourceFreeFunction::build(p_gpu_context));
     };
 
-    inline Token<ShaderModuleResource> allocate_or_increment_inline(const ShaderModuleResource::InlineAllocationInput& p_inline_input)
+    inline ShaderModuleResource::sToken allocate_or_increment_inline(const ShaderModuleResource::InlineAllocationInput& p_inline_input)
     {
         return iResourceUnit<ShaderModuleResourceUnit>{*this}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, ShaderModuleResourceUnit::ResourceIncrementInlineFunction{});
     };
 
-    inline Token<ShaderModuleResource> allocate_or_increment_database(const ShaderModuleResource::DatabaseAllocationInput& p_inline_input)
+    inline ShaderModuleResource::sToken allocate_or_increment_database(const ShaderModuleResource::DatabaseAllocationInput& p_inline_input)
     {
         return iResourceUnit<ShaderModuleResourceUnit>{*this}.allocate_or_increment_database(p_inline_input.id, ShaderModuleResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
-    inline void decrement_or_release(const Token<ShaderModuleResource> p_resource)
+    inline void decrement_or_release(const ShaderModuleResource::sToken p_resource)
     {
         iResourceUnit<ShaderModuleResourceUnit>{*this}.decrement_or_release_resource_by_token(p_resource, ShaderModuleResourceUnit::ResourceDecrementFunction{});
     };
@@ -121,7 +126,7 @@ struct ShaderModuleResourceUnit
     {
         inline ShaderModuleResource operator()(const hash_t p_id) const
         {
-            return ShaderModuleResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderModule>()};
+            return ShaderModuleResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderModule_TokenValue>()};
         };
     };
 
@@ -129,7 +134,7 @@ struct ShaderModuleResourceUnit
     {
         inline ShaderModuleResource operator()(const hash_t p_id) const
         {
-            return ShaderModuleResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderModule>()};
+            return ShaderModuleResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderModule_TokenValue>()};
         };
     };
 
@@ -206,17 +211,17 @@ struct TextureResourceUnit
         iResourceUnit<TextureResourceUnit>{*this}.deallocation_step(ResourceFreeFunction{p_gpu_context});
     };
 
-    inline Token<TextureResource> allocate_or_increment_inline(const TextureResource::InlineAllocationInput& p_inline_input)
+    inline TextureResource::sToken allocate_or_increment_inline(const TextureResource::InlineAllocationInput& p_inline_input)
     {
         return iResourceUnit<TextureResourceUnit>{*this}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, TextureResourceUnit::ResourceIncrementInlineFunction{});
     };
 
-    inline Token<TextureResource> allocate_or_increment_database(const TextureResource::DatabaseAllocationInput& p_inline_input)
+    inline TextureResource::sToken allocate_or_increment_database(const TextureResource::DatabaseAllocationInput& p_inline_input)
     {
         return iResourceUnit<TextureResourceUnit>{*this}.allocate_or_increment_database(p_inline_input.id, TextureResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
-    inline void decrement_or_release(const Token<TextureResource> p_resource)
+    inline void decrement_or_release(const TextureResource::sToken p_resource)
     {
         iResourceUnit<TextureResourceUnit>{*this}.decrement_or_release_resource_by_token(p_resource, TextureResourceUnit::ResourceDecrementFunction{});
     };
@@ -250,7 +255,7 @@ struct TextureResourceUnit
     {
         inline TextureResource operator()(const hash_t p_id) const
         {
-            return TextureResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<TextureGPU>()};
+            return TextureResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<TextureGPU_TokenValue>()};
         };
     };
 
@@ -258,7 +263,7 @@ struct TextureResourceUnit
     {
         inline TextureResource operator()(const hash_t p_id) const
         {
-            return TextureResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<TextureGPU>()};
+            return TextureResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<TextureGPU_TokenValue>()};
         };
     };
 
@@ -337,17 +342,17 @@ struct MeshResourceUnit
         iResourceUnit<MeshResourceUnit>{*this}.deallocation_step(ResourceFreeFunc{p_renderer, p_gpu_context});
     };
 
-    inline Token<MeshResource> allocate_or_increment_inline(const MeshResource::InlineAllocationInput& p_inline_input)
+    inline MeshResource::sToken allocate_or_increment_inline(const MeshResource::InlineAllocationInput& p_inline_input)
     {
         return iResourceUnit<MeshResourceUnit>{*this}.allocate_or_increment_inline(p_inline_input.id, p_inline_input.asset, MeshResourceUnit::ResourceIncrementInlineFunction{});
     };
 
-    inline Token<MeshResource> allocate_or_increment_database(const MeshResource::DatabaseAllocationInput& p_inline_input)
+    inline MeshResource::sToken allocate_or_increment_database(const MeshResource::DatabaseAllocationInput& p_inline_input)
     {
         return iResourceUnit<MeshResourceUnit>{*this}.allocate_or_increment_database(p_inline_input.id, MeshResourceUnit::ResourceIncrementDatabaseFunction{});
     };
 
-    inline void decrement_or_release(const Token<MeshResource> p_mesh_resource)
+    inline void decrement_or_release(const MeshResource::sToken p_mesh_resource)
     {
         iResourceUnit<MeshResourceUnit>{*this}.decrement_or_release_resource_by_token(p_mesh_resource, MeshResourceUnit::ResourceDecrementFunc{});
     };
@@ -378,7 +383,7 @@ struct MeshResourceUnit
     {
         inline MeshResource operator()(const hash_t p_id) const
         {
-            return MeshResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Mesh>()};
+            return MeshResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Mesh_TokenValue>()};
         };
     };
 
@@ -386,7 +391,7 @@ struct MeshResourceUnit
     {
         inline MeshResource operator()(const hash_t p_id) const
         {
-            return MeshResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Mesh>()};
+            return MeshResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Mesh_TokenValue>()};
         };
     };
 
@@ -454,6 +459,11 @@ struct ShaderResourceUnit
         return this->shaders;
     };
 
+    inline ShaderResource& get(const ShaderResource::sToken p_token)
+    {
+        return iResourceUnit<ShaderResourceUnit>{*this}.get(p_token);
+    };
+
     inline void allocation_step(ShaderModuleResourceUnit& p_shader_module_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, DatabaseConnection& p_database_connection,
                                 AssetDatabase& p_asset_database)
     {
@@ -465,23 +475,23 @@ struct ShaderResourceUnit
         iResourceUnit<ShaderResourceUnit>{*this}.deallocation_step(ResourceFreeFunc{p_renderer, p_gpu_context});
     };
 
-    inline Token<ShaderResource> allocate_or_increment_inline(ShaderModuleResourceUnit& p_shader_module_unit, const ShaderResource::InlineAllocationInput& p_inline_input,
-                                                              const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
-                                                              const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
+    inline ShaderResource::sToken allocate_or_increment_inline(ShaderModuleResourceUnit& p_shader_module_unit, const ShaderResource::InlineAllocationInput& p_inline_input,
+                                                               const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
+                                                               const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
     {
         return iResourceUnit<ShaderResourceUnit>{*this}.allocate_or_increment_inline(
             p_inline_input.id, p_inline_input.asset, ShaderResourceUnit::ResourceIncrementInlineFunction{p_shader_module_unit, p_vertex_shader_input, p_fragment_shader_input});
     };
 
-    inline Token<ShaderResource> allocate_or_increment_database(ShaderModuleResourceUnit& p_shader_module_unit, const ShaderResource::DatabaseAllocationInput& p_inline_input,
-                                                                const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
-                                                                const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
+    inline ShaderResource::sToken allocate_or_increment_database(ShaderModuleResourceUnit& p_shader_module_unit, const ShaderResource::DatabaseAllocationInput& p_inline_input,
+                                                                 const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
+                                                                 const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
     {
         return iResourceUnit<ShaderResourceUnit>{*this}.allocate_or_increment_database(
             p_inline_input.id, ShaderResourceUnit::ResourceIncrementDatabaseFunction{p_shader_module_unit, p_vertex_shader_input, p_fragment_shader_input});
     };
 
-    inline void decrement_or_release(ShaderModuleResourceUnit& p_shader_module_unit, const Token<ShaderResource> p_shader_resource)
+    inline void decrement_or_release(ShaderModuleResourceUnit& p_shader_module_unit, const ShaderResource::sToken p_shader_resource)
     {
         iResourceUnit<ShaderResourceUnit>{*this}.decrement_or_release_resource_by_token(p_shader_resource, ShaderResourceUnit::ResourceDecrementFunction{p_shader_module_unit});
     };
@@ -495,8 +505,8 @@ struct ShaderResourceUnit
 
         inline void operator()(ShaderResource& p_mesh_resource, const ShaderResource::Asset::Value& p_value) const
         {
-            ShaderModuleResource& l_vertex_shader = shader_module_unit.shader_modules.pool.get(p_mesh_resource.dependencies.vertex_shader);
-            ShaderModuleResource& l_fragment_shader = shader_module_unit.shader_modules.pool.get(p_mesh_resource.dependencies.fragment_shader);
+            ShaderModuleResource& l_vertex_shader = shader_module_unit.get(p_mesh_resource.dependencies.vertex_shader);
+            ShaderModuleResource& l_fragment_shader = shader_module_unit.get(p_mesh_resource.dependencies.fragment_shader);
             p_mesh_resource.shader = D3RendererAllocatorComposition::allocate_colorstep_shader_with_shaderlayout(
                 gpu_context.graphics_allocator, renderer.allocator, p_value.specific_parameters, p_value.execution_order,
                 gpu_context.graphics_allocator.heap.graphics_pass.get(renderer.color_step.pass), p_value.shader_configuration,
@@ -525,7 +535,7 @@ struct ShaderResourceUnit
             ShaderResource::Dependencies l_dependencies;
             l_dependencies.vertex_shader = this->shadermodule_unit.allocate_or_increment_database(this->vertex_inline_input);
             l_dependencies.fragment_shader = this->shadermodule_unit.allocate_or_increment_database(this->fragment_inline_input);
-            return ShaderResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderIndex>(), l_dependencies};
+            return ShaderResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<ShaderIndex_TokenValue>(), l_dependencies};
         };
     };
 
@@ -540,7 +550,7 @@ struct ShaderResourceUnit
             ShaderResource::Dependencies l_dependencies;
             l_dependencies.vertex_shader = this->shadermodule_unit.allocate_or_increment_inline(this->vertex_inline_input);
             l_dependencies.fragment_shader = this->shadermodule_unit.allocate_or_increment_inline(this->fragment_inline_input);
-            return ShaderResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex>(), l_dependencies};
+            return ShaderResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<ShaderIndex_TokenValue>(), l_dependencies};
         };
     };
 
@@ -631,7 +641,7 @@ struct MaterialResourceUnit
     inline static void allocate_resource(TextureResourceUnit& p_texture_unit, ShaderResourceUnit& p_shader_resource_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context,
                                          MaterialResource& p_resource, const MaterialResource::Asset::Value& p_value)
     {
-        ShaderResource& l_shader = p_shader_resource_unit.shaders.pool.get(p_resource.dependencies.shader);
+        ShaderResource& l_shader = p_shader_resource_unit.get(p_resource.dependencies.shader);
         ShaderIndex& l_shader_index = p_renderer.allocator.heap.shaders.get(l_shader.shader);
 
         Material l_material_value = Material::allocate_empty(p_gpu_context.graphics_allocator, (uint32)ColorStep_const::shaderlayout_before.Size());
@@ -650,7 +660,7 @@ struct MaterialResourceUnit
             case ShaderParameter::Type::TEXTURE_GPU:
             {
                 const hash_t* l_texture_id = p_value.parameters.get_parameter_texture_gpu_value(j);
-                Token<TextureGPU> l_texture = p_texture_unit.textures.get_nothashed(*l_texture_id).resource;
+                TextureGPU_Token l_texture = p_texture_unit.textures.get_nothashed(*l_texture_id).resource;
                 l_material_value.add_texture_gpu_parameter(p_gpu_context.graphics_allocator, p_gpu_context.graphics_allocator.heap.shader_layouts.get(l_shader_index.shader_layout), l_texture,
                                                            p_gpu_context.graphics_allocator.heap.textures_gpu.get(l_texture));
             }
@@ -666,12 +676,12 @@ struct MaterialResourceUnit
 
     inline static void free_resource(ShaderResourceUnit& p_shader_unit, D3Renderer& p_renderer, GPUContext& p_gpu_context, const MaterialResource& p_resource)
     {
-        ShaderResource& l_linked_shader = p_shader_unit.shaders.pool.get(p_resource.dependencies.shader);
+        ShaderResource& l_linked_shader = p_shader_unit.get(p_resource.dependencies.shader);
         p_renderer.allocator.heap.unlink_shader_with_material(l_linked_shader.shader, p_resource.material);
         D3RendererAllocatorComposition::free_material_with_parameters(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, p_renderer.allocator, p_resource.material);
     };
 
-    inline Token<MaterialResource> allocate_or_increment_inline(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
+    inline MaterialResource::sToken allocate_or_increment_inline(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
                                                                 const MaterialResource::InlineAllocationInput& p_inline_input, const ShaderResource::InlineAllocationInput& p_shader_input,
                                                                 const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
                                                                 const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input)
@@ -683,7 +693,7 @@ struct MaterialResourceUnit
                                                                          p_shader_input, p_vertex_shader_input, p_fragment_shader_input));
     };
 
-    inline Token<MaterialResource> allocate_or_increment_database(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
+    inline MaterialResource::sToken allocate_or_increment_database(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
                                                                   const MaterialResource::DatabaseAllocationInput& p_inline_input, const ShaderResource::DatabaseAllocationInput& p_shader_input,
                                                                   const ShaderModuleResource::DatabaseAllocationInput& p_vertex_shader_input,
                                                                   const ShaderModuleResource::DatabaseAllocationInput& p_fragment_shader_input)
@@ -693,7 +703,7 @@ struct MaterialResourceUnit
                                                                                               p_vertex_shader_input, p_fragment_shader_input));
     };
 
-    inline Token<MaterialResource> allocate_or_increment_database_and_load_dependecies(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
+    inline MaterialResource::sToken allocate_or_increment_database_and_load_dependecies(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
                                                                                        TextureResourceUnit& p_texture_unit, DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database,
                                                                                        const hash_t p_id)
     {
@@ -702,7 +712,7 @@ struct MaterialResourceUnit
     };
 
     inline void decrement_or_release(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
-                                     const Token<MaterialResource> p_material_resource)
+                                     const MaterialResource::sToken p_material_resource)
     {
 
         iResourceUnit<MaterialResourceUnit>{*this}.decrement_or_release_resource_by_token(p_material_resource,
@@ -714,12 +724,12 @@ struct MaterialResourceUnit
     {
         const _DependenciesAllocator& dependencies_allocator;
 
-        inline Token<ShaderResource> shader() const
+        inline ShaderResource::sToken shader() const
         {
             return this->dependencies_allocator.shader();
         };
 
-        inline Token<TextureResource> texture(const uimax p_dependency_index) const
+        inline TextureResource::sToken texture(const uimax p_dependency_index) const
         {
             return this->dependencies_allocator.texture(p_dependency_index);
         };
@@ -763,12 +773,12 @@ struct MaterialResourceUnit
             return DatabaseDependencyIncrement{p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input};
         };
 
-        inline Token<ShaderResource> shader() const
+        inline ShaderResource::sToken shader() const
         {
             return p_shader_unit.allocate_or_increment_database(p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
         };
 
-        inline Token<TextureResource> texture(const uimax p_dependency_index) const
+        inline TextureResource::sToken texture(const uimax p_dependency_index) const
         {
             return p_texture_unit.allocate_or_increment_database(p_inline_input.texture_dependencies_input.get(p_dependency_index));
         };
@@ -797,12 +807,12 @@ struct MaterialResourceUnit
             return InlineDependencyIncrement{p_shader_unit, p_shader_module_unit, p_texture_unit, p_texture_inputs, p_shader_input, p_vertex_shader_input, p_fragment_shader_input};
         };
 
-        inline Token<ShaderResource> shader() const
+        inline ShaderResource::sToken shader() const
         {
             return p_shader_unit.allocate_or_increment_inline(p_shader_module_unit, p_shader_input, p_vertex_shader_input, p_fragment_shader_input);
         };
 
-        inline Token<TextureResource> texture(const uimax p_dependency_index) const
+        inline TextureResource::sToken texture(const uimax p_dependency_index) const
         {
             return p_texture_unit.allocate_or_increment_inline(p_texture_inputs.get(p_dependency_index));
         };
@@ -835,7 +845,7 @@ struct MaterialResourceUnit
         MaterialResource::Dependencies l_resource_dependencies = this->allocate_dependencies(iDependenciesAllocator<DatabaseDependencyIncrement>{l_database_dependency_increment});
 
         l_asset_dependencies_span.free();
-        return MaterialResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Material>(), l_resource_dependencies};
+        return MaterialResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Material_TokenValue>(), l_resource_dependencies};
     };
 
     inline MaterialResource increment_resource_database(ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit, TextureResourceUnit& p_texture_unit,
@@ -845,7 +855,7 @@ struct MaterialResourceUnit
     {
         MaterialResource::Dependencies l_resource_dependencies = this->allocate_dependencies(iDependenciesAllocator<DatabaseDependencyIncrement>{
             DatabaseDependencyIncrement::build(p_shader_unit, p_shader_module_unit, p_texture_unit, p_inline_input, p_shader_input, p_vertex_shader_input, p_fragment_shader_input)});
-        return MaterialResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Material>(), l_resource_dependencies};
+        return MaterialResource{ResourceIdentifiedHeader::build_database_with_id(p_id), token_build_default<Material_TokenValue>(), l_resource_dependencies};
     };
 
     inline MaterialResource increment_resource_inline(const MaterialResource::InlineAllocationInput& p_inline_input, ShaderResourceUnit& p_shader_unit, ShaderModuleResourceUnit& p_shader_module_unit,
@@ -853,7 +863,7 @@ struct MaterialResourceUnit
                                                       const ShaderResource::InlineAllocationInput& p_shader_input, const ShaderModuleResource::InlineAllocationInput& p_vertex_shader_input,
                                                       const ShaderModuleResource::InlineAllocationInput& p_fragment_shader_input, hash_t p_id)
     {
-        return MaterialResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Material>(),
+        return MaterialResource{ResourceIdentifiedHeader::build_inline_with_id(p_id), token_build_default<Material_TokenValue>(),
                                 this->allocate_dependencies(iDependenciesAllocator<InlineDependencyIncrement>{InlineDependencyIncrement::build(
                                     p_shader_unit, p_shader_module_unit, p_texture_unit, p_texture_inputs, p_shader_input, p_vertex_shader_input, p_fragment_shader_input)})};
     };

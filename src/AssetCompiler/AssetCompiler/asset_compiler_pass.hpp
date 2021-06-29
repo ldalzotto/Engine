@@ -32,6 +32,8 @@ struct AssetCompilationPass
     String root_path;
     Vector<String> assets_to_compile;
 
+    using sToken = Pool<AssetCompilationPass>::sToken;
+
     inline static AssetCompilationPass build(const String& p_database_path, const String& p_root_path, const Vector<String>& p_asset_to_compile)
     {
         return AssetCompilationPass{p_database_path, p_root_path, p_asset_to_compile};
@@ -82,7 +84,7 @@ struct AssetCompilerPassHeap
         this->asset_compilation_passes.free();
     };
 
-    inline void free_asset_compiler_pass(const Token<AssetCompilationPass> p_asset_compiler_pass_token)
+    inline void free_asset_compiler_pass(const AssetCompilationPass::sToken p_asset_compiler_pass_token)
     {
         this->asset_compilation_passes.get(p_asset_compiler_pass_token).free();
         this->asset_compilation_passes.release_element(p_asset_compiler_pass_token);
@@ -212,7 +214,7 @@ struct AssetCompilerConfigurationJSON
 struct AssetCompilerPassComposition
 {
     inline static void allocate_passes_from_json_configuration(AssetCompilerPassHeap& p_asset_compiler_pass_heap, const Slice<int8>& p_configuration_file_path, const Slice<int8>& p_asset_folder_root,
-                                                               Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
+                                                               Vector<AssetCompilationPass::sToken>* in_out_asset_compilation_pass)
     {
         AssetCompilerConfigurationJSON l_asset_compiler_configuration = AssetCompilerConfigurationJSON::allocate_from_json_file(p_configuration_file_path, p_asset_folder_root);
         allocate_passes_from_inline(p_asset_compiler_pass_heap, l_asset_compiler_configuration, p_asset_folder_root, in_out_asset_compilation_pass);
@@ -220,7 +222,7 @@ struct AssetCompilerPassComposition
 
     inline static void allocate_passes_from_json_configuration_with_assetroot_as_configuration_file_path(AssetCompilerPassHeap& p_asset_compiler_pass_heap,
                                                                                                          const Slice<int8>& p_configuration_file_path,
-                                                                                                         Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
+                                                                                                         Vector<AssetCompilationPass::sToken>* in_out_asset_compilation_pass)
     {
         String l_configuration_file_path_str = String::allocate_elements(p_configuration_file_path);
         Path::move_up(&l_configuration_file_path_str);
@@ -230,7 +232,7 @@ struct AssetCompilerPassComposition
     };
 
     inline static void allocate_passes_from_inline(AssetCompilerPassHeap& p_asset_compiler_pass_heap, AssetCompilerConfigurationJSON& p_configuration_file, const Slice<int8>& p_asset_folder_root,
-                                                   Vector<Token<AssetCompilationPass>>* in_out_asset_compilation_pass)
+                                                   Vector<AssetCompilationPass::sToken>* in_out_asset_compilation_pass)
     {
         Vector<AssetCompilationPass> l_passes = p_configuration_file.consume_and_merge_to_passes();
         for (loop(i, 0, l_passes.Size))

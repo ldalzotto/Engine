@@ -26,7 +26,7 @@ struct ImguiRenderer
 {
     ImGuiContext* imgui_ctx;
 
-    Token<GraphicsPass> graphics_pass;
+    GraphicsPass_Token graphics_pass;
     int8 fonts_initialized;
     Span<v4f> clear_values;
 
@@ -35,7 +35,7 @@ struct ImguiRenderer
         ImguiRenderer l_return;
         l_return.fonts_initialized = 0;
         GraphicsPassAllocationComposition::RenderPassAttachmentInput<1> l_graphicspass_allocation_input = {
-            SliceN<Token<TextureGPU>, 1>{p_render_target.color}, SliceN<AttachmentType, 1>{AttachmentType::COLOR}, SliceN<RenderPassAttachment::ClearOp, 1>{p_clear_op}};
+            SliceN<TextureGPU_Token, 1>{p_render_target.color}, SliceN<AttachmentType, 1>{AttachmentType::COLOR}, SliceN<RenderPassAttachment::ClearOp, 1>{p_clear_op}};
         l_return.graphics_pass =
             GraphicsPassAllocationComposition::allocate_renderpass_then_graphicspass(p_gpu_context.buffer_memory, p_gpu_context.graphics_allocator, l_graphicspass_allocation_input);
 
@@ -48,7 +48,7 @@ struct ImguiRenderer
         return l_return;
     };
 
-    inline static ImGuiContext* initialize_imgui(GPUContext& p_gpu_context, const Token<GraphicsPass> p_graphics_pass)
+    inline static ImGuiContext* initialize_imgui(GPUContext& p_gpu_context, const GraphicsPass_Token p_graphics_pass)
     {
         ImGuiContext* l_imgui_ctx = ImGui::CreateContext();
 
