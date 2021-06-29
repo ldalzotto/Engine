@@ -541,6 +541,7 @@ struct ShaderLayout
 // TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_ShaderLayouts = Pool<ShaderLayout>;
 using ShaderLayout_Token = t_ShaderLayouts::sToken;
+using ShaderLayout_TokenValue = t_ShaderLayouts::sTokenValue;
 
 enum class ShaderModuleStage
 {
@@ -780,6 +781,7 @@ struct Shader
 // TODO -> is there a cleaner way to do this ? Yes, tokens can be defined in the structure itself. It can also have a more explicit name : something with "heap" in it ?
 using t_Shaders = Pool<Shader>;
 using Shader_Token = t_Shaders::sToken;
+using Shader_TokenValue = t_Shaders::sTokenValue;
 
 template <class _ShaderUniformBufferParameter> struct iShaderUniformBufferParameter
 {
