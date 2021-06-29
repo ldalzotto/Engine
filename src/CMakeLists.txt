@@ -95,6 +95,13 @@ target_link_libraries(GPUTest PUBLIC GPU)
 target_link_libraries(GPUTest PUBLIC Test_Renderdoc)
 target_link_libraries(GPUTest PUBLIC AssetCompiler)
 
+add_executable(GPUTest_Software ${CMAKE_CURRENT_SOURCE_DIR}/GPU/test/gpu_test.cpp)
+target_compile_definitions(GPUTest_Software PUBLIC GPU_BACKEND_VULKAN=0)
+target_compile_definitions(GPUTest_Software PUBLIC GPU_BACKEND_SOFTWARE=1)
+target_link_libraries(GPUTest_Software PUBLIC GPU)
+target_link_libraries(GPUTest_Software PUBLIC Test_Renderdoc)
+target_link_libraries(GPUTest_Software PUBLIC AssetCompiler)
+
 add_executable(Math2Test ${CMAKE_CURRENT_SOURCE_DIR}/Math2/test/math2_test.cpp)
 target_link_libraries(Math2Test PUBLIC Math2)
 

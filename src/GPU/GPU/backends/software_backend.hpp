@@ -73,14 +73,14 @@ gpu::Queue gpu::logical_device_get_queue(const LogicalDevice p_logical_device, c
 gpu::DeviceMemory gpu::allocate_memory(const LogicalDevice p_device, const uimax p_allocation_size, const PhysicalDeviceMemoryIndex p_memory_index)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<Span<int8>> l_memory = l_instance->memory_allocate(p_allocation_size);
+    gpu_software::t_MemoryChunk_sToken l_memory = l_instance->memory_allocate(p_allocation_size);
     return token_build<gpu::_DeviceMemory>(token_value(l_memory));
 };
 
 void gpu::free_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<Span<int8>> l_memory = token_build_from<Span<int8>>(p_device_memory);
+    gpu_software::t_MemoryChunk_sToken l_memory = token_build_from<gpu_software::t_MemoryChunk_sTokenValue>(p_device_memory);
     l_instance->memory_free(l_memory);
 };
 
@@ -110,13 +110,15 @@ void gpu::command_buffer_end(LogicalDevice p_device, CommandBuffer p_command_buf
 gpu::CommandBufferSubmit gpu::command_buffer_submit(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer)));
+    return token_build_from<gpu::_CommandBufferSubmit>(
+        l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer)));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer)));
+    return token_build_from<gpu::_CommandBufferSubmit>(
+        l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer)));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
@@ -125,8 +127,8 @@ gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
 
     return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
-        token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)}));
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer),
+        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<pattern::cb::Semaphore<gpu_software::GPUCommand>::t_Execution_TokenValue>(p_after_command_buffer)}));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
@@ -134,18 +136,19 @@ gpu::CommandBufferSubmit gpu::command_buffer_submit_after_and_notify(LogicalDevi
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
     return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
-        token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<NNTree<Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>>::Node>(p_after_command_buffer)}));
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer),
+        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<pattern::cb::Semaphore<gpu_software::GPUCommand>::t_Execution_TokenValue>(p_after_command_buffer)}));
 };
 
 void gpu::command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer_token = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
-    gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::Buffer>(p_source));
-    gpu_software::Buffer& l_target_buffer = l_instance->buffers.get(token_build_from<gpu_software::Buffer>(p_target));
+    gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_source));
+    gpu_software::Buffer& l_target_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_target));
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_buffer.binded_memory;
@@ -159,11 +162,12 @@ void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_c
                                        const ImageFormat& p_target_format)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer_token = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
-    gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::Buffer>(p_source));
-    gpu_software::Image& l_target_image = l_instance->images.get(token_build_from<gpu_software::Image>(p_target));
+    gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_source));
+    gpu_software::Image& l_target_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_target));
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_buffer.binded_memory;
@@ -176,11 +180,12 @@ void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_c
 void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer_token = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
-    gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::Image>(p_source));
-    gpu_software::Buffer& l_target_buffer = l_instance->buffers.get(token_build_from<gpu_software::Buffer>(p_target));
+    gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_source));
+    gpu_software::Buffer& l_target_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_target));
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_image.binded_memory;
@@ -193,11 +198,12 @@ void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_c
 void gpu::command_copy_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer_token = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
-    gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::Image>(p_source));
-    gpu_software::Image& l_target_image = l_instance->images.get(token_build_from<gpu_software::Image>(p_target));
+    gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_source));
+    gpu_software::Image& l_target_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_target));
 
     gpu_software::GPUCommand_CopyMemory l_copy_memory;
     l_copy_memory.source = l_source_image.binded_memory;
@@ -216,7 +222,7 @@ void gpu::command_image_layout_transition(LogicalDevice p_device, CommandBuffer 
 int8* gpu::map_memory(const LogicalDevice p_device, const DeviceMemory p_device_memory, const uimax p_offset, const uimax p_size)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    Token<Span<int8>> l_memory = token_build_from<Span<int8>>(p_device_memory);
+    gpu_software::t_MemoryChunk_sToken l_memory = token_build_from<gpu_software::t_MemoryChunk_sTokenValue>(p_device_memory);
     Slice<int8> l_mapped_slice = l_instance->memory_chunks.get(l_memory).slice.slide_rv(p_offset);
 #if __DEBUG
     assert_true(l_mapped_slice.get_size() >= p_size);
@@ -236,14 +242,15 @@ void gpu::command_pool_destroy(const LogicalDevice p_logical_device, CommandPool
 gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer = l_instance->command_pool.allocate_command_buffer();
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer = l_instance->command_pool.allocate_command_buffer();
     return token_build_from<gpu::_CommandBuffer>(l_command_buffer);
 };
 
 void gpu::command_pool_destroy_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool, CommandBuffer p_command_buffer)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<pattern::cb::CommandBuffer<gpu_software::GPUCommand>> l_command_buffer = token_build_from<pattern::cb::CommandBuffer<gpu_software::GPUCommand>>(p_command_buffer);
+    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer =
+        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
     l_instance->command_pool.free_command_buffer(l_command_buffer);
 };
 
@@ -258,14 +265,14 @@ gpu::Buffer gpu::buffer_allocate(const LogicalDevice p_logical_device, const uim
 void gpu::buffer_destroy(const LogicalDevice p_logical_device, const Buffer p_buffer)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Buffer> l_buffer = token_build_from<gpu_software::Buffer>(p_buffer);
+    gpu_software::t_Buffer_sToken l_buffer = token_build_from<gpu_software::t_Buffer_sTokenValue>(p_buffer);
     l_instance->buffers.release_element(l_buffer);
 };
 
 gpu::MemoryRequirements gpu::buffer_get_memory_requirements(const LogicalDevice p_logical_device, const Buffer p_buffer)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Buffer> l_buffer = token_build_from<gpu_software::Buffer>(p_buffer);
+    gpu_software::t_Buffer_sToken l_buffer = token_build_from<gpu_software::t_Buffer_sTokenValue>(p_buffer);
     MemoryRequirements l_requirements;
     l_requirements.size = l_instance->buffers.get(l_buffer).size;
     l_requirements.alignment = 1;
@@ -276,9 +283,9 @@ gpu::MemoryRequirements gpu::buffer_get_memory_requirements(const LogicalDevice 
 void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer p_buffer, const DeviceMemory p_memory, const uimax p_offset)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Buffer> l_buffer_token = token_build_from<gpu_software::Buffer>(p_buffer);
+    gpu_software::t_Buffer_sToken l_buffer_token = token_build_from<gpu_software::t_Buffer_sTokenValue>(p_buffer);
     gpu_software::Buffer& l_buffer = l_instance->buffers.get(l_buffer_token);
-    Token<Span<int8>> l_memory = token_build_from<Span<int8>>(p_memory);
+    gpu_software::t_MemoryChunk_sToken l_memory = token_build_from<gpu_software::t_MemoryChunk_sTokenValue>(p_memory);
     l_buffer.binded_memory = l_instance->memory_chunks.get(l_memory).slice.slide_rv(p_offset);
     l_buffer.binded_memory.Size = l_buffer.size;
 };
@@ -286,21 +293,21 @@ void gpu::buffer_bind_memory(const LogicalDevice p_logical_device, const Buffer 
 gpu::Image gpu::image_allocate(const LogicalDevice p_logical_device, const ImageFormat& p_image_format, const ImageTilingFlag p_image_tiling)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Image> l_image = l_instance->images.alloc_element(gpu_software::Image::build_format(p_image_format));
+    gpu_software::t_Image_sToken l_image = l_instance->images.alloc_element(gpu_software::Image::build_format(p_image_format));
     return token_build_from<gpu::_Image>(l_image);
 };
 
 void gpu::image_destroy(const LogicalDevice p_logical_device, const Image p_image)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Image> l_image = token_build_from<gpu_software::Image>(p_image);
+    gpu_software::t_Image_sToken l_image = token_build_from<gpu_software::t_Image_sTokenValue>(p_image);
     l_instance->images.release_element(l_image);
 };
 
 gpu::MemoryRequirements gpu::image_get_memory_requirements(const LogicalDevice p_logical_device, const Image p_image)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Image> l_image_token = token_build_from<gpu_software::Image>(p_image);
+    gpu_software::t_Image_sToken l_image_token = token_build_from<gpu_software::t_Image_sTokenValue>(p_image);
     gpu_software::Image& l_image = l_instance->images.get(l_image_token);
     gpu::MemoryRequirements l_requirements;
     l_requirements.size = l_image.format.get_size();
@@ -312,8 +319,8 @@ gpu::MemoryRequirements gpu::image_get_memory_requirements(const LogicalDevice p
 void gpu::image_bind_memory(const LogicalDevice p_logical_device, const Image p_image, const DeviceMemory p_memory, const uimax p_offset)
 {
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    Token<gpu_software::Image> l_image_token = token_build_from<gpu_software::Image>(p_image);
-    Token<Span<int8>> l_memory = token_build_from<Span<int8>>(p_memory);
+    gpu_software::t_Image_sToken l_image_token = token_build_from<gpu_software::t_Image_sTokenValue>(p_image);
+    gpu_software::t_MemoryChunk_sToken l_memory = token_build_from<gpu_software::t_MemoryChunk_sTokenValue>(p_memory);
     gpu_software::Image& l_image = l_instance->images.get(l_image_token);
     l_image.binded_memory = l_instance->memory_chunks.get(l_memory).slice.slide_rv(p_offset);
     l_image.binded_memory.Size = l_image.format.get_size();

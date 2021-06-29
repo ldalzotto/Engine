@@ -48,6 +48,7 @@ add_custom_target(
         COMMAND AssetResourceTest
         COMMAND Scene2Test
         COMMAND GPUTest
+        COMMAND GPUTest_Software
         COMMAND Scene2MiddlewareTest
         COMMAND Sandbox
         COMMAND AssetCompilerTest

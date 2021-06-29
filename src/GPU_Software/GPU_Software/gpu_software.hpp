@@ -95,6 +95,10 @@ struct Image
     };
 };
 
+iPool_types_declare(MemoryChunk, Pool<Span<int8>>);
+iPool_types_declare(Buffer, Pool<Buffer>);
+iPool_types_declare(Image, Pool<Image>);
+
 struct Instance
 {
     Pool<Span<int8>> memory_chunks;
@@ -129,34 +133,36 @@ struct Instance
         this->command_execution.free();
     };
 
-    inline Token<Span<int8>> memory_allocate(const uimax p_size)
+    inline t_MemoryChunk_sToken memory_allocate(const uimax p_size)
     {
         return this->memory_chunks.alloc_element(Span<int8>::allocate(p_size));
     };
 
-    inline void memory_free(const Token<Span<int8>> p_memory)
+    inline void memory_free(const t_MemoryChunk_sToken p_memory)
     {
         this->memory_chunks.get(p_memory).free();
         this->memory_chunks.release_element(p_memory);
     };
 
-    inline Token<NNTree<Token<pattern::cb::CommandBuffer<GPUCommand>>>::Node> command_buffer_submit(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer)
+    inline pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_sToken
+    command_buffer_submit(const pattern::cb::CommandPool<GPUCommand>::t_CommandBufferPool_sToken p_command_buffer)
     {
         return this->command_execution.push_command_buffer(p_command_buffer);
     };
 
-    inline Token<NNTree<Token<pattern::cb::CommandBuffer<GPUCommand>>>::Node> command_buffer_submit_wait_for(const Token<pattern::cb::CommandBuffer<GPUCommand>> p_command_buffer,
-                                                                                                             const pattern::cb::Semaphore<GPUCommand> p_wait_for)
+    inline pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_sToken
+    command_buffer_submit_wait_for(const pattern::cb::CommandPool<GPUCommand>::t_CommandBufferPool_sToken p_command_buffer, const pattern::cb::Semaphore<GPUCommand> p_wait_for)
     {
         return this->command_execution.push_command_buffer_with_constraint(p_command_buffer, p_wait_for);
     };
 
     inline void wait_for_end()
     {
-        this->command_execution.process_command_buffer_tree(this->command_pool, [&](const Token<pattern::cb::CommandBuffer<GPUCommand>>, pattern::cb::CommandBuffer<GPUCommand>& p_command_buffer) {
-            GPUCommand_Utils::process_commands(p_command_buffer.commands);
-            p_command_buffer.commands.clear();
-        });
+        this->command_execution.process_command_buffer_tree(
+            this->command_pool, [&](const pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_Element, pattern::cb::CommandBuffer<GPUCommand>& p_command_buffer) {
+                GPUCommand_Utils::process_commands(p_command_buffer.commands);
+                p_command_buffer.commands.clear();
+            });
     };
 };
 

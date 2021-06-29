@@ -56,7 +56,8 @@ template <class Command> struct CommandPool
 
 template <class Command> struct Semaphore
 {
-    using t_Execution_Token = typename NNTree<typename CommandPool<Command>::t_CommandBufferPool_sToken>::sToken;
+    using t_Execution_TokenValue = typename NNTree<typename CommandPool<Command>::t_CommandBufferPool_sToken>::sTokenValue;
+    using t_Execution_Token = Token<t_Execution_TokenValue>;
     t_Execution_Token execute_before;
 };
 
