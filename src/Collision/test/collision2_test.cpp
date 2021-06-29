@@ -23,7 +23,7 @@ inline void collision_test_01()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -34,7 +34,7 @@ inline void collision_test_01()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
+    ColliderDetector_Token l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
 
     l_collision.step();
 
@@ -118,7 +118,7 @@ inline void collision_test_02()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -129,7 +129,7 @@ inline void collision_test_02()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle;
+    ColliderDetector_Token l_box_collider_1_detector_handle;
     {
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
     }
@@ -225,7 +225,7 @@ inline void collision_test_03()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -236,7 +236,7 @@ inline void collision_test_03()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+    ColliderDetector_Token l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
     {
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
         l_box_collider_2_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_2);
@@ -378,7 +378,7 @@ inline void collision_test_04()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -389,7 +389,7 @@ inline void collision_test_04()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+    ColliderDetector_Token l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
     {
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
         l_box_collider_2_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_2);
@@ -417,7 +417,7 @@ inline void collision_test_04()
     {
         l_box_collider_4_transform = transform_pa{v3f{100000.0f, 100000.0f, 100000.0f}, quat_const::IDENTITY.to_axis()};
     }
-    Token<BoxCollider> l_box_collider_4;
+    BoxCollider_Token l_box_collider_4;
     l_box_collider_4 = l_collision.allocate_boxcollider(l_unit_aabb);
 
     l_collision.step();
@@ -460,7 +460,7 @@ inline void collision_test_05()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -471,7 +471,7 @@ inline void collision_test_05()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
+    ColliderDetector_Token l_box_collider_1_detector_handle, l_box_collider_2_detector_handle, l_box_collider_3_detector_handle;
     {
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
         l_box_collider_2_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_2);
@@ -539,7 +539,7 @@ inline void collision_test_06()
         l_box_collider_3_transform = transform_pa{v3f{0.25f, 0.0f, -0.25f}, quat_const::IDENTITY.to_axis()};
     }
 
-    Token<BoxCollider> l_box_collider_1, l_box_collider_2, l_box_collider_3;
+    BoxCollider_Token l_box_collider_1, l_box_collider_2, l_box_collider_3;
     {
         l_box_collider_1 = l_collision.allocate_boxcollider(l_unit_aabb);
         l_box_collider_2 = l_collision.allocate_boxcollider(l_unit_aabb);
@@ -550,7 +550,7 @@ inline void collision_test_06()
         l_collision.on_collider_moved(l_box_collider_3, l_box_collider_3_transform);
     }
 
-    Token<ColliderDetector> l_box_collider_1_detector_handle, l_box_collider_2_detector_handle;
+    ColliderDetector_Token l_box_collider_1_detector_handle, l_box_collider_2_detector_handle;
     {
         l_box_collider_1_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_1);
         l_box_collider_2_detector_handle = l_collision.allocate_colliderdetector(l_box_collider_2);
