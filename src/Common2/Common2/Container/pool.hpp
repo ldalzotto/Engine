@@ -1,5 +1,27 @@
 #pragma once
 
+template <class ElementType> struct Pool;
+namespace Pool_Types
+{
+template <class ElementType> using Element = ElementType;
+template <class ElementType> using ElementRef = ElementType&;
+// TODO -> remove
+template <class ElementType> using sTokenValue = iPool_element<Pool<ElementType>>;
+template <class ElementType> using sToken = Token<sTokenValue<ElementType>>;
+template <class ElementType> using Memory_Vector = Vector<ElementType>;
+template <class ElementType> using FreeBlock_Vector = Vector<sToken<ElementType>>;
+template <class ElementType> using FreeBlock_VectorRef = FreeBlock_Vector<ElementType>&;
+}; // namespace Pool_Types
+
+#define Pool_Types_forward(Prefix, ElementType)                                                                                                                                                        \
+    using Prefix##Element = Pool_Types::Element<ElementType>;                                                                                                                                          \
+    using Prefix##ElementRef = Pool_Types::ElementRef<ElementType>;                                                                                                                                    \
+    using Prefix##sTokenValue = Pool_Types::sTokenValue<ElementType>;                                                                                                                                  \
+    using Prefix##sToken = Pool_Types::sToken<ElementType>;                                                                                                                                            \
+    using Prefix##Memory_Vector = Pool_Types::Memory_Vector<ElementType>;                                                                                                                              \
+    using Prefix##FreeBlock_Vector = Pool_Types::FreeBlock_Vector<ElementType>;                                                                                                                        \
+    using Prefix##FreeBlock_VectorRef = Pool_Types::FreeBlock_VectorRef<ElementType>;
+
 /*
     A Pool is a non continous Vector where elements are acessed via Tokens.
     Generated Tokens are unique from it's source Pool.
@@ -8,27 +30,19 @@
 */
 template <class ElementType> struct Pool
 {
-    using sTokenValue = iPool_element<Pool<ElementType>>;
-    using sToken = Token<sTokenValue>;
+    Pool_Types_forward(, ElementType);
 
-    using t_MemoryVector = Vector<ElementType>;
-    using t_FreeBlocksVector = Vector<Token<ElementType>>;
-    using t_FreeBlocksVectorRef = t_FreeBlocksVector&;
+    Memory_Vector memory;
+    FreeBlock_Vector free_blocks;
 
-    using t_Element = ElementType;
-    using t_ElementRef = ElementType&;
-
-    t_MemoryVector memory;
-    t_FreeBlocksVector free_blocks;
-
-    inline static Pool<ElementType> build(const t_MemoryVector& p_memory, const t_FreeBlocksVector& p_free_blocks)
+    inline static Pool<ElementType> build(const Memory_Vector& p_memory, const FreeBlock_Vector& p_free_blocks)
     {
         return Pool<ElementType>{p_memory, p_free_blocks};
     };
 
     inline static Pool<ElementType> allocate(const uimax p_memory_capacity)
     {
-        return Pool<ElementType>{t_MemoryVector::allocate(p_memory_capacity), t_FreeBlocksVector::build_zero_size(cast(Token<ElementType>*, NULL), 0)};
+        return Pool<ElementType>{Memory_Vector::allocate(p_memory_capacity), FreeBlock_Vector::build_zero_size(cast(sToken*, NULL), 0)};
     };
 
     inline void free()
@@ -52,14 +66,9 @@ template <class ElementType> struct Pool
         return this->free_blocks.Size;
     };
 
-    inline t_FreeBlocksVector& get_free_blocs()
+    inline FreeBlock_Vector& get_free_blocs()
     {
         return this->free_blocks;
-    };
-
-    inline t_MemoryVector& get_memory()
-    {
-        return this->memory;
     };
 
     inline ElementType* get_memory_raw()
@@ -107,7 +116,7 @@ template <class ElementType> struct Pool
         this->element_not_free_check(p_token);
 #endif
 
-        this->free_blocks.push_back_element(token_build_from<ElementType>(p_token));
+        this->free_blocks.push_back_element(p_token);
     };
 
     inline void _set_element(const sToken p_token, const ElementType& p_element)

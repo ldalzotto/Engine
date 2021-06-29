@@ -562,6 +562,7 @@ template <class ElementType> struct NNTree
     };
 };
 
+// TODO -> remove ?
 #define NNTree_type_declare(p_nntree_name, p_nntree_type)                                                                                                                                              \
     using t_##p_nntree_name = p_nntree_type;                                                                                                                                                           \
     using t_##p_nntree_name##_Resolve = typename t_##p_nntree_name::Resolve;                                                                                                                           \

@@ -5,27 +5,36 @@ template <class _Pool> struct iPool_element
     /* empty, for tokenization */
 };
 
+namespace iPool_Types
+{
+template <class _Pool> using sToken = Token<iPool_element<_Pool>>;
+template <class _Pool> using Element = typename _Pool::Element;
+template <class _Pool> using ElementRef = typename _Pool::ElementRef;
+template <class _Pool> using FreeBlock_Vector = typename _Pool::FreeBlock_Vector;
+template <class _Pool> using FreeBlock_VectorRef = typename _Pool::FreeBlock_VectorRef;
+}; // namespace iPool_Types
+
+#define iPool_Types_forward(PoolType)                                                                                                                                                                  \
+    using sToken = iPool_Types::sToken<PoolType>;                                                                                                                                                      \
+    using Element = iPool_Types::Element<PoolType>;                                                                                                                                                    \
+    using ElementRef = iPool_Types::ElementRef<PoolType>;                                                                                                                                              \
+    using FreeBlock_Vector = iPool_Types::FreeBlock_Vector<PoolType>;                                                                                                                                  \
+    using FreeBlock_VectorRef = iPool_Types::FreeBlock_VectorRef<PoolType>;
+
 template <class _Pool> struct iPool
 {
     _Pool& pool;
+    iPool_Types_forward(_Pool);
 
-    using t_Element = typename _Pool::t_Element;
-    using t_ElementRef = typename _Pool::t_ElementRef;
-    using t_FreeBlocksVector = typename _Pool::t_FreeBlocksVector;
-    using t_FreeBlocksVectorRef = typename _Pool::t_FreeBlocksVectorRef;
-
-    using sTokenValue = iPool_element<_Pool>;
-    using sToken = Token<sTokenValue>;
-
-    inline t_FreeBlocksVectorRef get_free_blocks()
+    inline FreeBlock_VectorRef get_free_blocks()
     {
         return this->pool.get_free_blocs();
     };
 
     inline sToken allocate_element_empty_v2()
     {
-        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-        iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
+        FreeBlock_VectorRef __free_blocks = this->get_free_blocks();
+        iVector<FreeBlock_Vector> l_free_blocks = iVector<FreeBlock_Vector>{__free_blocks};
         if (!l_free_blocks.empty())
         {
             return l_free_blocks.pop_back_return();
@@ -37,13 +46,13 @@ template <class _Pool> struct iPool
         }
     };
 
-    inline sToken allocate_element_v2(const t_Element& p_element)
+    inline sToken allocate_element_v2(const Element& p_element)
     {
-        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-        iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
+        FreeBlock_VectorRef __free_blocks = this->get_free_blocks();
+        iVector<FreeBlock_Vector> l_free_blocks = iVector<FreeBlock_Vector>{__free_blocks};
         if (!l_free_blocks.empty())
         {
-            sToken l_availble_token = token_build_from<sTokenValue>(l_free_blocks.pop_back_return());
+            sToken l_availble_token = sToken::build_from(l_free_blocks.pop_back_return());
             _set_element(l_availble_token, p_element);
             return l_availble_token;
         }
@@ -56,11 +65,11 @@ template <class _Pool> struct iPool
 
     inline int8 is_element_free(const sToken p_token)
     {
-        t_FreeBlocksVectorRef __free_blocks = this->get_free_blocks();
-		iVector<t_FreeBlocksVector> l_free_blocks = iVector<t_FreeBlocksVector>{__free_blocks};
+        FreeBlock_VectorRef __free_blocks = this->get_free_blocks();
+        iVector<FreeBlock_Vector> l_free_blocks = iVector<FreeBlock_Vector>{__free_blocks};
         for (loop(i, 0, l_free_blocks.get_size()))
         {
-            sToken l_pool_token = token_build_from<sTokenValue>(l_free_blocks.get(i));
+            sToken l_pool_token = sToken::build_from(l_free_blocks.get(i));
             if (token_equals(l_pool_token, p_token))
             {
                 return 1;
@@ -74,7 +83,7 @@ template <class _Pool> struct iPool
         this->pool.release_element(p_token);
     };
 
-    inline t_ElementRef get(const sToken p_token)
+    inline ElementRef get(const sToken p_token)
     {
         return this->pool.get(p_token);
     };
@@ -85,19 +94,20 @@ template <class _Pool> struct iPool
         return this->pool._push_back_element_empty();
     };
 
-    inline void _set_element(const sToken p_token, const t_Element& p_element)
+    inline void _set_element(const sToken p_token, const Element& p_element)
     {
         this->pool._set_element(p_token, p_element);
     };
 
-    inline uimax _push_back_element(const t_Element& p_element)
+    inline uimax _push_back_element(const Element& p_element)
     {
         return this->pool._push_back_element(p_element);
     };
 };
 
-#define iPool_types_declare(p_pool_name, p_pool_type)                                                                                                                                                   \
+// TODO -> remove ?
+#define iPool_types_declare(p_pool_name, p_pool_type)                                                                                                                                                  \
     using t_##p_pool_name = p_pool_type;                                                                                                                                                               \
-    using t_##p_pool_name##_element = typename t_##p_pool_name::t_Element;                                                                                                                             \
+    using t_##p_pool_name##_element =  typename t_##p_pool_name::Element;                                                                                                                             \
     using t_##p_pool_name##_sToken = typename t_##p_pool_name::sToken;                                                                                                                                 \
     using t_##p_pool_name##_sTokenValue = typename t_##p_pool_name::sTokenValue;

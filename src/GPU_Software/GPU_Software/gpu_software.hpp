@@ -95,6 +95,11 @@ struct Image
     };
 };
 
+namespace types
+{
+CommandBufferTypes_forward(gpu_software::GPUCommand);
+}
+
 iPool_types_declare(MemoryChunk, Pool<Span<int8>>);
 iPool_types_declare(Buffer, Pool<Buffer>);
 iPool_types_declare(Image, Pool<Image>);
@@ -144,25 +149,22 @@ struct Instance
         this->memory_chunks.release_element(p_memory);
     };
 
-    inline pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_sToken
-    command_buffer_submit(const pattern::cb::CommandPool<GPUCommand>::t_CommandBufferPool_sToken p_command_buffer)
+    inline types::CommandBufferExecution_Token command_buffer_submit(const types::CommandBuffer_Token p_command_buffer)
     {
         return this->command_execution.push_command_buffer(p_command_buffer);
     };
 
-    inline pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_sToken
-    command_buffer_submit_wait_for(const pattern::cb::CommandPool<GPUCommand>::t_CommandBufferPool_sToken p_command_buffer, const pattern::cb::Semaphore<GPUCommand> p_wait_for)
+    inline types::CommandBufferExecution_Token command_buffer_submit_wait_for(const types::CommandBuffer_Token p_command_buffer, const pattern::cb::Semaphore<GPUCommand> p_wait_for)
     {
         return this->command_execution.push_command_buffer_with_constraint(p_command_buffer, p_wait_for);
     };
 
     inline void wait_for_end()
     {
-        this->command_execution.process_command_buffer_tree(
-            this->command_pool, [&](const pattern::cb::CommandBufferExecutionFlow<GPUCommand>::t_CommandBufferExecutionTree_Element, pattern::cb::CommandBuffer<GPUCommand>& p_command_buffer) {
-                GPUCommand_Utils::process_commands(p_command_buffer.commands);
-                p_command_buffer.commands.clear();
-            });
+        this->command_execution.process_command_buffer_tree(this->command_pool, [&](const types::CommandBuffer_Token, pattern::cb::CommandBuffer<GPUCommand>& p_command_buffer) {
+            GPUCommand_Utils::process_commands(p_command_buffer.commands);
+            p_command_buffer.commands.clear();
+        });
     };
 };
 

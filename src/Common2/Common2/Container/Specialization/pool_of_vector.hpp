@@ -2,6 +2,28 @@
 
 #include "vector_of_vector.hpp"
 
+template <class ElementType> struct PoolOfVector;
+namespace PoolOfVector_Types
+{
+template <class ElementType> using Element = Slice<ElementType>;
+template <class ElementType> using ElementRef = Element<ElementType>&;
+// TODO -> remove
+template <class ElementType> using sTokenValue = iPool_element<PoolOfVector<ElementType>>;
+template <class ElementType> using sToken = Token<sTokenValue<ElementType>>;
+template <class ElementType> using Memory_VectorOfVector = VectorOfVector<ElementType>;
+template <class ElementType> using FreeBlock_Vector = Vector<sToken<ElementType>>;
+template <class ElementType> using FreeBlock_VectorRef = FreeBlock_Vector<ElementType>&;
+}; // namespace PoolOfVector_Types
+
+#define PoolOfVector_Types_forward(ElementType)                                                                                                                                                        \
+    using Element = PoolOfVector_Types::Element<ElementType>;                                                                                                                                          \
+    using ElementRef = PoolOfVector_Types::ElementRef<ElementType>;                                                                                                                                    \
+    using sTokenValue = PoolOfVector_Types::sTokenValue<ElementType>;                                                                                                                                  \
+    using sToken = PoolOfVector_Types::sToken<ElementType>;                                                                                                                                            \
+    using Memory_VectorOfVector = PoolOfVector_Types::Memory_VectorOfVector<ElementType>;                                                                                                              \
+    using FreeBlock_Vector = PoolOfVector_Types::FreeBlock_Vector<ElementType>;                                                                                                                        \
+    using FreeBlock_VectorRef = PoolOfVector_Types::FreeBlock_VectorRef<ElementType>;
+
 /*
     A PoolOfVector is a wrapped VectorOfVector with pool allocation logic.
     Any operation on nested vectors must be called with the (poolofvector_element_*) functions.
@@ -9,17 +31,10 @@
 */
 template <class ElementType> struct PoolOfVector
 {
-    using sTokenValue = iPool_element<PoolOfVector<ElementType>>;
-    using sToken = Token<sTokenValue>;
+    PoolOfVector_Types_forward(ElementType);
 
     VectorOfVector<ElementType> Memory;
     Vector<sToken> FreeBlocks;
-
-    using t_Element = Slice<ElementType>;
-    using t_ElementRef = Slice<ElementType>;
-
-    using t_FreeBlocksVector = Vector<sToken>;
-    using t_FreeBlocksVectorRef = t_FreeBlocksVector&;
 
     inline static PoolOfVector<ElementType> allocate_default()
     {
@@ -45,11 +60,6 @@ template <class ElementType> struct PoolOfVector
     inline int8 is_element_free(const sToken p_token)
     {
         return this->to_ipool().is_element_free(p_token);
-    };
-
-    inline VectorOfVector<ElementType>& get_memory()
-    {
-        return this->Memory;
     };
 
     inline int8 has_allocated_elements()

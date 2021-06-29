@@ -109,42 +109,41 @@ void gpu::command_buffer_end(LogicalDevice p_device, CommandBuffer p_command_buf
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    return token_build_from<gpu::_CommandBufferSubmit>(
-        l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer)));
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(p_command_buffer.tcast<CommandBuffer_Token>()));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_notified_semaphore)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    return token_build_from<gpu::_CommandBufferSubmit>(
-        l_instance->command_buffer_submit(token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer)));
+    return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit(p_command_buffer.tcast<CommandBuffer_Token>()));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
                                                           CommandBufferSubmit p_after_command_buffer)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-
     return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<pattern::cb::Semaphore<gpu_software::GPUCommand>::t_Execution_TokenValue>(p_after_command_buffer)}));
+        p_command_buffer.tcast<CommandBuffer_Token>(), pattern::cb::Semaphore<gpu_software::GPUCommand>{p_after_command_buffer.tcast<CommandBufferExecution_Token>()}));
 };
 
 gpu::CommandBufferSubmit gpu::command_buffer_submit_after_and_notify(LogicalDevice p_device, CommandBuffer p_command_buffer, Queue p_queue, Semaphore p_after_semaphore,
                                                                      CommandBufferSubmit p_after_command_buffer, Semaphore p_notify_semaphore)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
     return token_build_from<gpu::_CommandBufferSubmit>(l_instance->command_buffer_submit_wait_for(
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer),
-        pattern::cb::Semaphore<gpu_software::GPUCommand>{token_build_from<pattern::cb::Semaphore<gpu_software::GPUCommand>::t_Execution_TokenValue>(p_after_command_buffer)}));
+        p_command_buffer.tcast<CommandBuffer_Token>(), pattern::cb::Semaphore<gpu_software::GPUCommand>{p_after_command_buffer.tcast<CommandBufferExecution_Token>()}));
 };
 
 void gpu::command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, Buffer p_target, const uimax p_target_size)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
+    CommandBuffer_Token l_command_buffer_token = p_command_buffer.tcast<CommandBuffer_Token>();
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
     gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_source));
@@ -161,9 +160,9 @@ void gpu::command_copy_buffer(LogicalDevice p_device, CommandBuffer p_command_bu
 void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Buffer p_source, const uimax p_source_size, const Image p_target,
                                        const ImageFormat& p_target_format)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
+    CommandBuffer_Token l_command_buffer_token = p_command_buffer.tcast<CommandBuffer_Token>();
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
     gpu_software::Buffer& l_source_buffer = l_instance->buffers.get(token_build_from<gpu_software::t_Buffer_sTokenValue>(p_source));
@@ -179,9 +178,9 @@ void gpu::command_copy_buffer_to_image(LogicalDevice p_device, CommandBuffer p_c
 
 void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Buffer p_target)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
+    CommandBuffer_Token l_command_buffer_token = p_command_buffer.tcast<CommandBuffer_Token>();
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
     gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_source));
@@ -197,9 +196,9 @@ void gpu::command_copy_image_to_buffer(LogicalDevice p_device, CommandBuffer p_c
 
 void gpu::command_copy_image(LogicalDevice p_device, CommandBuffer p_command_buffer, const Image p_source, const ImageFormat& p_source_format, const Image p_target, const ImageFormat& p_target_format)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer_token =
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
+    CommandBuffer_Token l_command_buffer_token = p_command_buffer.tcast<CommandBuffer_Token>();
     pattern::cb::CommandBuffer<gpu_software::GPUCommand>& l_command_buffer = l_instance->command_pool.command_buffers.get(l_command_buffer_token);
 
     gpu_software::Image& l_source_image = l_instance->images.get(token_build_from<gpu_software::t_Image_sTokenValue>(p_source));
@@ -241,16 +240,17 @@ void gpu::command_pool_destroy(const LogicalDevice p_logical_device, CommandPool
 
 gpu::CommandBuffer gpu::command_pool_allocate_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer = l_instance->command_pool.allocate_command_buffer();
+    CommandBuffer_Token l_command_buffer = l_instance->command_pool.allocate_command_buffer();
     return token_build_from<gpu::_CommandBuffer>(l_command_buffer);
 };
 
 void gpu::command_pool_destroy_command_buffer(const LogicalDevice p_logical_device, CommandPool p_command_pool, CommandBuffer p_command_buffer)
 {
+    using namespace gpu_software::types;
     gpu_software::Instance* l_instance = (gpu_software::Instance*)token_value(p_logical_device);
-    pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sToken l_command_buffer =
-        token_build_from<pattern::cb::CommandPool<gpu_software::GPUCommand>::t_CommandBufferPool_sTokenValue>(p_command_buffer);
+    CommandBuffer_Token l_command_buffer = p_command_buffer.tcast<CommandBuffer_Token>();
     l_instance->command_pool.free_command_buffer(l_command_buffer);
 };
 

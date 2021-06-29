@@ -2312,41 +2312,42 @@ inline void command_buffer_pattern_test()
     };
 
     using namespace pattern::cb;
+    using namespace CommandBuffer_Types;
+
     CommandBufferExecutionFlow<MathOpCommand> l_command_execution = CommandBufferExecutionFlow<MathOpCommand>::allocate_default();
 
     CommandPool<MathOpCommand> l_command_pool = CommandPool<MathOpCommand>::allocate_default();
 
-    CommandPool<MathOpCommand>::t_CommandBufferPool_sToken l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandBuffer_Token<MathOpCommand> l_add_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_add_command_buffer = l_command_pool.command_buffers.get(l_add_command_buffer_token);
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 2});
     l_add_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::ADD, 3});
 
-    CommandPool<MathOpCommand>::t_CommandBufferPool_sToken l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
+    CommandBuffer_Token<MathOpCommand> l_mul_command_buffer_token = l_command_pool.allocate_command_buffer();
     CommandBuffer<MathOpCommand>& l_mul_command_buffer = l_command_pool.command_buffers.get(l_mul_command_buffer_token);
     l_mul_command_buffer.commands.push_back_element(MathOpCommand{MathOpCommand::Type::MUL, 3});
 
-    CommandBufferExecutionFlow<MathOpCommand>::t_CommandBufferExecutionTree_sToken l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
+    CommandBufferExecution_Token<MathOpCommand> l_add_command_execution = l_command_execution.push_command_buffer(l_add_command_buffer_token);
     Semaphore<MathOpCommand> l_semaphore;
     l_semaphore.execute_before = l_add_command_execution;
     l_command_execution.push_command_buffer_with_constraint(l_mul_command_buffer_token, l_semaphore);
 
     uimax l_result = 2;
-    l_command_execution.process_command_buffer_tree(l_command_pool,
-                                                    [&](const CommandBufferExecutionFlow<MathOpCommand>::t_CommandBufferExecutionTree_Element, CommandBuffer<MathOpCommand>& p_command) {
-                                                        for (loop(i, 0, p_command.commands.Size))
-                                                        {
-                                                            MathOpCommand& l_command = p_command.commands.get(i);
-                                                            switch (l_command.type)
-                                                            {
-                                                            case MathOpCommand::Type::ADD:
-                                                                l_result = l_result + l_command.number;
-                                                                break;
-                                                            case MathOpCommand::Type::MUL:
-                                                                l_result = l_result * l_command.number;
-                                                                break;
-                                                            }
-                                                        }
-                                                    });
+    l_command_execution.process_command_buffer_tree(l_command_pool, [&](const CommandBuffer_Token<MathOpCommand>, CommandBuffer<MathOpCommand>& p_command) {
+        for (loop(i, 0, p_command.commands.Size))
+        {
+            MathOpCommand& l_command = p_command.commands.get(i);
+            switch (l_command.type)
+            {
+            case MathOpCommand::Type::ADD:
+                l_result = l_result + l_command.number;
+                break;
+            case MathOpCommand::Type::MUL:
+                l_result = l_result * l_command.number;
+                break;
+            }
+        }
+    });
 
     assert_true(l_result == 21);
 
@@ -2355,6 +2356,37 @@ inline void command_buffer_pattern_test()
     l_command_pool.free();
     l_command_execution.free();
 };
+
+#if 0
+
+struct Element;
+
+namespace Common2HeapTypes
+{
+using Elements = Pool<Element>;
+using Element_Token = Elements::sToken;
+}; // namespace Common2HeapTypes
+
+struct Element
+{
+    float val0, val1, val2;
+};
+
+
+
+using namespace Common2HeapTypes;
+
+struct HHeap
+{
+    Elements element;
+
+    inline Element& get_element(const Element_Token p_token)
+    {
+        return this->element.get(p_token);
+    };
+};
+
+#endif
 
 int main(int argc, int8** argv)
 {
