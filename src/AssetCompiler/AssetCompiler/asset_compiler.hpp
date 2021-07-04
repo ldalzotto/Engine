@@ -106,7 +106,7 @@ inline int8 AssetCompiler_compile_single_file(ShaderCompiler& p_shader_compiler,
             AssetCompiled l_compiled_asset = AssetCompiled::build_default();
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             Vector<int8> l_buffer_vector = Vector<int8>{l_buffer.Capacity, l_buffer};
-            JSONDeserializer l_json_deserializer = JSONDeserializer::sanitize_and_start(iVector_v2<Vector<int8>>{l_buffer_vector});
+            JSONDeserializer l_json_deserializer = JSONDeserializer::sanitize_and_start(iVector<Vector<int8>>{l_buffer_vector});
             JSONDeserializer l_json_value_deserializer;
 
             l_compiled_asset.type = AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer);
@@ -155,7 +155,7 @@ inline Span<int8> AssetCompiler_compile_dependencies_of_file(ShaderCompiler& p_s
             Span<int8> l_compiled_dependencies;
             Span<int8> l_buffer = p_asset_file.read_file_allocate();
             Vector<int8> l_buffer_vector = Vector<int8>{l_buffer.Capacity, l_buffer};
-            JSONDeserializer l_json_deserializer = JSONDeserializer::sanitize_and_start(iVector_v2<Vector<int8>>{l_buffer_vector});
+            JSONDeserializer l_json_deserializer = JSONDeserializer::sanitize_and_start(iVector<Vector<int8>>{l_buffer_vector});
 
             JSONDeserializer l_json_value_deserializer;
             switch (AssetJSON::get_value_of_asset_json(&l_json_deserializer, &l_json_value_deserializer))

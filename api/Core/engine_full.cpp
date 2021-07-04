@@ -27,7 +27,7 @@ extern "C"
     EXPORT inline void EntryPoint(const Slice<int8>& p_input, VectorSlice<int8>& out)
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(p_input);
-        iVector_v2<VectorSlice<int8>> l_out = iVector_v2<VectorSlice<int8>>{out};
+        iVector<VectorSlice<int8>> l_out = iVector<VectorSlice<int8>>{out};
         EngineFunctions l_function = *l_deserializer.type<EngineFunctions>();
 
         switch (l_function)

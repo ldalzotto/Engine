@@ -85,13 +85,6 @@ template <class ElementType> struct Vector
         return this->Memory.Capacity;
     };
 
-    // TODO
-    inline int8 empty() const
-    {
-        return this->Size == 0;
-        // return iVector_v2<Vector<ElementType>>{*(Vector<ElementType>*)this}.empty();
-    };
-
     inline ElementType& get_unchecked(const uimax p_index)
     {
         return this->Memory.Memory[p_index];

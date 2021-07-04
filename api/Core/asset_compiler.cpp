@@ -57,7 +57,7 @@ extern "C"
             AssetMetadataDatabase* l_asset_metadata_database = *l_deserializer.type<AssetMetadataDatabase*>();
             Slice<int8> l_asset_type = l_deserializer.slice();
             AssetMetadataDatabase::Paths l_assets_path = l_asset_metadata_database->get_all_path_from_type(*l_database_connection, l_asset_type);
-            iVector_v2<VectorSlice<int8>> l_out = iVector_v2<VectorSlice<int8>>{out};
+            iVector<VectorSlice<int8>> l_out = iVector<VectorSlice<int8>>{out};
             BinarySerializer::varying_slice(l_out, l_assets_path.data_v2.varying_vector.to_varying_slice());
             l_assets_path.free();
         }

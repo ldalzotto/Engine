@@ -28,11 +28,6 @@ template <class ElementType> struct VectorSlice
         this->Size = p_size;
     };
 
-    inline int8 empty() const
-    {
-        return this->Size == 0;
-    };
-
     inline ElementType& get_unchecked(const uimax p_index)
     {
         return this->Memory.Begin[p_index];
