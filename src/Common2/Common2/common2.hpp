@@ -60,7 +60,6 @@
 #include "./Functional/sort.hpp"
 #include "./Functional/slice_algorithm.hpp"
 
-#include "./Container/Vector/Interface/ivector.hpp"
 #include "./Container/Vector/Interface/ivector_v2.hpp"
 #include "./Container/Interface/ipool.hpp"
 #include "./Container/Interface/iheap.hpp"

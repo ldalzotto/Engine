@@ -136,7 +136,7 @@ template <class _Heap> struct iHeap
 #endif
 
         t_FreeChunksRef __free_chunks = this->get_free_chunks();
-        iVector<t_FreeChunks> l_free_chunks = __free_chunks.to_ivector();
+        iVector_v2<t_FreeChunks> l_free_chunks = iVector_v2<t_FreeChunks>{__free_chunks};
 
         for (loop_reverse(i, 0, l_free_chunks.get_size()))
         {
@@ -166,7 +166,7 @@ template <class _Heap> struct iHeap
 #endif
 
         t_FreeChunksRef __free_chunks = this->get_free_chunks();
-        iVector<t_FreeChunks> l_free_chunks = __free_chunks.to_ivector();
+        iVector_v2<t_FreeChunks> l_free_chunks = iVector_v2<t_FreeChunks>{__free_chunks};
         // using ShadowVector(free_chunks) = decltype(sh_c_get_freechunks(p_heap));
         // ShadowVector(free_chunks)& l_free_chunks = sh_c_get_freechunks(p_heap);
         for (loop_reverse(i, 0, l_free_chunks.get_size()))
@@ -246,7 +246,7 @@ template <class _Heap> struct iHeap
     inline void _defragment()
     {
         t_FreeChunksRef __free_chunks = this->get_free_chunks();
-        iVector<t_FreeChunks> l_free_chunks = __free_chunks.to_ivector();
+        iVector_v2<t_FreeChunks> l_free_chunks = iVector_v2<t_FreeChunks>{__free_chunks};
 
         if (l_free_chunks.get_size() > 0)
         {

@@ -172,7 +172,7 @@ struct AssetCompilerConfigurationJSON
         l_file.free();
 
         Vector<int8> l_file_content_vector = Vector<int8>{l_file_content.Capacity, l_file_content};
-        JSONDeserializer l_deserializer = JSONDeserializer::sanitize_and_start(l_file_content_vector.to_ivector());
+        JSONDeserializer l_deserializer = JSONDeserializer::sanitize_and_start(iVector_v2<Vector<int8>>{l_file_content_vector});
 
         AssetCompilerConfigurationJSON l_return = allocate_from_json(l_deserializer, p_pathes_absolute_prefix);
 

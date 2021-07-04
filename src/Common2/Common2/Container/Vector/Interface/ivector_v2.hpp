@@ -5,9 +5,20 @@ template <class _Vector> struct iVector_v2
     using Element = typename _Vector::t_Element;
     using ElementValue = typename _Vector::t_ElementValue;
 
+    struct Assert
+    {
+        template <class ComparedType> inline static constexpr int8 element_type()
+        {
+#if __DEBUG
+            static_assert(sizeof(ElementValue) == sizeof(ComparedType), "iVector_v2 : element_type");
+#endif
+            return 0;
+        };
+    };
+
     _Vector& vector;
 
-    inline uimax get_size()
+    inline uimax get_size() const
     {
         return vector.get_size();
     };
@@ -171,6 +182,13 @@ template <class _Vector> struct iVector_v2
     {
         set_size(get_size() - 1);
         return 1;
+    };
+
+    inline ElementValue pop_back_return()
+    {
+        ElementValue l_return = this->get(get_size() - 1);
+        this->pop_back();
+        return l_return;
     };
 
     inline int8 erase_array_at(const uimax p_index, const uimax p_element_nb)
@@ -363,7 +381,8 @@ template <class _Vector> struct iVector_v2
                                                                                                                                                                                                        \
     inline const t_ElementValue& get(const uimax p_index) const                                                                                                                                        \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType>{*this}.get(p_index);                                                                                                                                             \
+        iVector_v2<VectorType> l_v = iVector_v2<VectorType>{*(VectorType*)this};                                                                                                                       \
+        return ((const iVector_v2<VectorType>*)&l_v)->get(p_index);                                                                                                                                    \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 insert_array_at(const Slice<t_ElementValue>& p_elements, const uimax p_index)                                                                                                          \

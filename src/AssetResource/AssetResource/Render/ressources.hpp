@@ -146,8 +146,8 @@ struct MeshResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            BinarySerializer::slice(l_binary.to_ivector(), p_values.initial_vertices.build_asint8());
-            BinarySerializer::slice(l_binary.to_ivector(), p_values.initial_indices.build_asint8());
+            BinarySerializer::slice(iVector_v2<VectorSlice<int8>>{l_binary}, p_values.initial_vertices.build_asint8());
+            BinarySerializer::slice(iVector_v2<VectorSlice<int8>>{l_binary}, p_values.initial_indices.build_asint8());
             return build_from_binary(l_binary_buffer);
         };
     };
@@ -249,9 +249,9 @@ struct ShaderResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            BinarySerializer::slice(l_binary.to_ivector(), p_values.specific_parameters.build_asint8());
-            BinarySerializer::type(l_binary.to_ivector(), p_values.execution_order);
-            BinarySerializer::type(l_binary.to_ivector(), p_values.shader_configuration);
+            BinarySerializer::slice(iVector_v2<VectorSlice<int8>>{l_binary}, p_values.specific_parameters.build_asint8());
+            BinarySerializer::type(iVector_v2<VectorSlice<int8>>{l_binary}, p_values.execution_order);
+            BinarySerializer::type(iVector_v2<VectorSlice<int8>>{l_binary}, p_values.shader_configuration);
             return build_from_binary(l_binary_buffer);
         };
 
@@ -289,9 +289,9 @@ struct ShaderResource
                 return sizeof(this->vertex_module) + sizeof(this->fragment_module);
             };
 
-            template <class BufferContainer> inline void push_to_binary_buffer(iVector<BufferContainer> in_out_buffer) const
+            template <class BufferContainer> inline void push_to_binary_buffer(iVector_v2<BufferContainer> in_out_buffer) const
             {
-                iVector<BufferContainer>::Assert::template element_type<int8>();
+                iVector_v2<BufferContainer>::Assert::element_type<int8>();
 
                 BinarySerializer::type(in_out_buffer, this->vertex_module);
                 BinarySerializer::type(in_out_buffer, this->fragment_module);
@@ -302,7 +302,7 @@ struct ShaderResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_values.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            p_values.push_to_binary_buffer(l_binary.to_ivector());
+            p_values.push_to_binary_buffer(iVector_v2<VectorSlice<int8>>{l_binary});
             return AssetDependencies{l_binary_buffer};
         };
 
@@ -396,9 +396,9 @@ struct TextureResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            BinarySerializer::type(l_binary.to_ivector(), p_value.size);
-            BinarySerializer::type(l_binary.to_ivector(), p_value.channel_nb);
-            BinarySerializer::slice(l_binary.to_ivector(), p_value.pixels);
+            BinarySerializer::type(iVector_v2<VectorSlice<int8>>{l_binary}, p_value.size);
+            BinarySerializer::type(iVector_v2<VectorSlice<int8>>{l_binary}, p_value.channel_nb);
+            BinarySerializer::slice(iVector_v2<VectorSlice<int8>>{l_binary}, p_value.pixels);
             return build_from_binary(l_binary_buffer);
         };
 
@@ -553,7 +553,7 @@ struct MaterialResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            BinarySerializer::varying_slice(l_binary.to_ivector(), p_value.parameters.parameters);
+            BinarySerializer::varying_slice(iVector_v2<VectorSlice<int8>>{l_binary}, p_value.parameters.parameters);
             return build_from_binary(l_binary_buffer);
         };
     };
@@ -583,9 +583,9 @@ struct MaterialResource
                 return build_from_binarydeserializer(l_deserializer);
             };
 
-            template <class BufferContainer> inline void push_to_binary_buffer(iVector<BufferContainer> in_out_buffer) const
+            template <class BufferContainer> inline void push_to_binary_buffer(iVector_v2<BufferContainer> in_out_buffer) const
             {
-                iVector<BufferContainer>::Assert::template element_type<int8>();
+                iVector_v2<BufferContainer>::Assert::element_type<int8>();
 
                 BinarySerializer::type(in_out_buffer, this->shader);
                 BinarySerializer::type(in_out_buffer, this->shader_dependencies);
@@ -612,7 +612,7 @@ struct MaterialResource
         {
             Span<int8> l_binary_buffer = Span<int8>::allocate(p_value.binary_size());
             VectorSlice<int8> l_binary = VectorSlice<int8>::build(l_binary_buffer.slice, 0);
-            p_value.push_to_binary_buffer(l_binary.to_ivector());
+            p_value.push_to_binary_buffer(iVector_v2<VectorSlice<int8>>{l_binary});
             return build_from_binary(l_binary_buffer);
         };
     };

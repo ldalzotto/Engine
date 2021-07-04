@@ -241,59 +241,6 @@ template <class ElementType> struct VectorOfVector
     };
 
     /*
-        Element_iVector is a wrapper around a VectorOfVector that acts like a regular Vector.
-        It can be used in some templated algorithm that uses Vector.
-    */
-    struct Element_iVector
-    {
-        VectorOfVector<ElementType>* vectorOfVector;
-        uimax Index;
-
-        using t_ElementValue = ElementType;
-        using t_SizeType = uimax;
-
-        inline static Element_iVector build(VectorOfVector<ElementType>* p_vector_of_vector, const uimax p_index)
-        {
-            return Element_iVector{p_vector_of_vector, p_index};
-        };
-
-        inline uimax get_size() const
-        {
-            return this->vectorOfVector->get_vectorheader(this->Index)->Size;
-        };
-
-        inline ElementType& get(const uimax p_index)
-        {
-            return this->vectorOfVector->get(this->Index).get(p_index);
-        };
-
-        inline void erase_element_at(const uimax p_index)
-        {
-            this->vectorOfVector->element_erase_element_at(this->Index, p_index);
-        };
-
-        inline void erase_element_at_always(const uimax p_index)
-        {
-            this->vectorOfVector->element_erase_element_at_always(this->Index, p_index);
-        };
-
-        inline void push_back_element(const ElementType& p_index)
-        {
-            this->vectorOfVector->element_push_back_element(this->Index, p_index);
-        };
-
-        inline Slice<ElementType> to_slice() const
-        {
-            return this->vectorOfVector->get(this->Index);
-        };
-
-        inline iVector<Element_iVector> to_ivector()
-        {
-            return iVector<Element_iVector>{*this};
-        };
-    };
-
-    /*
             Element_iVector is a wrapper around a VectorOfVector that acts like a regular Vector.
             It can be used in some templated algorithm that uses Vector.
     */
@@ -377,11 +324,6 @@ template <class ElementType> struct VectorOfVector
         {
             this->vectorOfVector->element_resize(this->Index, p_desired_capacity);
         };
-    };
-
-    inline Element_iVector element_as_iVector(const uimax p_nested_vector_index)
-    {
-        return Element_iVector::build(this, p_nested_vector_index);
     };
 
     inline Element_iVector_v2 element_as_iVector_v2(const uimax p_nested_vector_index)

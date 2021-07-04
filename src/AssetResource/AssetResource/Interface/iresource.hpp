@@ -169,7 +169,7 @@ template <class _ResourceUnit> struct iResourceUnit
     inline void allocation_step(DatabaseConnection& p_database_connection, AssetDatabase& p_asset_database, const ResourceAllocationFunc& p_resource_allocation_func)
     {
         _DatabaseAllocationEvents __database_allocation_events = this->get_database_allocation_events();
-        iVector<_DatabaseAllocationEventsValue> l_allocation_events = __database_allocation_events.to_ivector();
+        iVector_v2<_DatabaseAllocationEventsValue> l_allocation_events = iVector_v2<_DatabaseAllocationEventsValue>{__database_allocation_events};
         for (loop(i, 0, l_allocation_events.get_size()))
         {
             _DatabaseAllocationEvent __l_event = l_allocation_events.get(i);
@@ -186,7 +186,7 @@ template <class _ResourceUnit> struct iResourceUnit
         l_allocation_events.clear();
 
         _InlineAllocationEvents __inline_allocation_events = this->get_inline_allocation_events();
-        iVector<_InlineAllocationEventsValue> l_inline_allocation_events = __inline_allocation_events.to_ivector();
+        iVector_v2<_InlineAllocationEventsValue> l_inline_allocation_events = iVector_v2<_InlineAllocationEventsValue>{__inline_allocation_events};
         for (loop(i, 0, l_inline_allocation_events.get_size()))
         {
             _InlineAllocationEvent __l_event = l_inline_allocation_events.get(i);
@@ -205,7 +205,7 @@ template <class _ResourceUnit> struct iResourceUnit
     template <class ResourceDeallocationFunc> inline void deallocation_step(const ResourceDeallocationFunc& p_resource_deallocation_func)
     {
         _FreeEvents __resource_free_events = this->get_free_events();
-        iVector<_FreeEventsValue> l_resource_free_events = __resource_free_events.to_ivector();
+        iVector_v2<_FreeEventsValue> l_resource_free_events = iVector_v2<_FreeEventsValue>{__resource_free_events};
 
         for (loop(i, 0, l_resource_free_events.get_size()))
         {
@@ -271,7 +271,7 @@ template <class _ResourceUnit> struct iResourceUnit
             if (l_counted_element->counter == 0)
             {
                 _FreeEvents __l_free_events = this->get_free_events();
-                iVector<_FreeEventsValue> l_free_events = __l_free_events.to_ivector();
+                iVector_v2<_FreeEventsValue> l_free_events = iVector_v2<_FreeEventsValue>{__l_free_events};
                 l_free_events.push_back_element(_FreeEventValue{token_build_from<t_Resource_TokenValue>(l_counted_element->token)});
                 // We don't remove the pool because it is handles by the free event
                 l_resource_pool.CountMap.erase_key(l_hashed_id);
@@ -284,7 +284,7 @@ template <class _ResourceUnit> struct iResourceUnit
             if (l_counted_element->counter == 0)
             {
                 _InlineAllocationEvents __l_inline_allocation_events = this->get_inline_allocation_events();
-                iVector<_InlineAllocationEventsValue> l_inline_allocation_events = __l_inline_allocation_events.to_ivector();
+                iVector_v2<_InlineAllocationEventsValue> l_inline_allocation_events = iVector_v2<_InlineAllocationEventsValue>{__l_inline_allocation_events};
                 // iInlineAllocationEvent<_InlineAllocationEvents> l_inline_allocation_events = iInlineAllocationEvent<_InlineAllocationEvents>{__l_inline_allocation_events};
                 for (loop_reverse(i, 0, l_inline_allocation_events.get_size()))
                 {
@@ -298,7 +298,7 @@ template <class _ResourceUnit> struct iResourceUnit
                 }
 
                 _DatabaseAllocationEvents __l_database_allocation_events = this->get_database_allocation_events();
-                iVector<_DatabaseAllocationEventsValue> l_database_allocation_events = iVector<_DatabaseAllocationEventsValue>{__l_database_allocation_events};
+                iVector_v2<_DatabaseAllocationEventsValue> l_database_allocation_events = iVector_v2<_DatabaseAllocationEventsValue>{__l_database_allocation_events};
 
                 for (loop_reverse(i, 0, l_database_allocation_events.get_size()))
                 {
@@ -323,7 +323,7 @@ template <class _ResourceUnit> struct iResourceUnit
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         t_Resource_Token l_resource = token_build_from<t_Resource_TokenValue>(l_resource_pool.push_back_element_nothashed(p_id, p_resource));
         _InlineAllocationEvents __l_inline_allocation_events = this->get_inline_allocation_events();
-        iVector<_InlineAllocationEventsValue> l_inline_allocation_events = __l_inline_allocation_events.to_ivector();
+        iVector_v2<_InlineAllocationEventsValue> l_inline_allocation_events = iVector_v2<_InlineAllocationEventsValue>{__l_inline_allocation_events};
         l_inline_allocation_events.push_back_element(_InlineAllocationEventValue{p_asset_binary, l_resource});
         return l_resource;
     };
@@ -333,7 +333,7 @@ template <class _ResourceUnit> struct iResourceUnit
         PoolHashedCounted<hash_t, _ResourceValue>& l_resource_pool = this->get_pool();
         t_Resource_Token l_resource = token_build_from<t_Resource_TokenValue>(l_resource_pool.push_back_element_nothashed(p_id, p_resource));
         _DatabaseAllocationEvents __l_database_allocation_events = this->get_database_allocation_events();
-        iVector<_DatabaseAllocationEventsValue> l_database_allocation_events = __l_database_allocation_events.to_ivector();
+        iVector_v2<_DatabaseAllocationEventsValue> l_database_allocation_events = iVector_v2<_DatabaseAllocationEventsValue>{__l_database_allocation_events};
         l_database_allocation_events.push_back_element(_DatabaseAllocationEventValue{p_id, l_resource});
         return l_resource;
     };

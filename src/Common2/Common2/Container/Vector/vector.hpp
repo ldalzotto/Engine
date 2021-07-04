@@ -92,11 +92,6 @@ template <class ElementType> struct Vector
         // return iVector_v2<Vector<ElementType>>{*(Vector<ElementType>*)this}.empty();
     };
 
-    inline iVector<Vector<ElementType>> to_ivector()
-    {
-        return iVector<Vector<ElementType>>{*this};
-    };
-
     inline ElementType& get_unchecked(const uimax p_index)
     {
         return this->Memory.Memory[p_index];

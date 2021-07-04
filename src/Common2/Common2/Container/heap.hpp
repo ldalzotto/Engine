@@ -115,9 +115,9 @@ struct HeapPaged
     {
         HeapPaged* heapPaged;
         uimax index;
-        VectorOfVector<SliceIndex>::Element_iVector tmp_shadow_vec;
+        VectorOfVector<SliceIndex>::Element_iVector_v2 tmp_shadow_vec;
 
-        using t_FreeChunks = VectorOfVector<SliceIndex>::Element_iVector;
+        using t_FreeChunks = VectorOfVector<SliceIndex>::Element_iVector_v2;
         using t_FreeChunksRef = t_FreeChunks&;
 
         using t_AllocatedChunks = Pool<SliceIndex>;
@@ -134,9 +134,9 @@ struct HeapPaged
             return l_iheap;
         };
 
-        inline VectorOfVector<SliceIndex>::Element_iVector& get_freechunks()
+        inline VectorOfVector<SliceIndex>::Element_iVector_v2& get_freechunks()
         {
-            this->tmp_shadow_vec = this->heapPaged->FreeChunks.element_as_iVector(this->index);
+            this->tmp_shadow_vec = this->heapPaged->FreeChunks.element_as_iVector_v2(this->index);
             return tmp_shadow_vec;
         };
 

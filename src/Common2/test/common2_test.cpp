@@ -117,158 +117,6 @@ inline void base64_test()
     l_encoded.free();
 };
 
-// TODO -> remove
-template <class Container> inline void ivector_test_v2(iVector<Container> p_vector)
-{
-    iVector<Container>::Assert::template element_type<uimax>();
-
-    // vector_push_back_array
-    {
-        uimax l_old_size = p_vector.get_size();
-        uimax l_elements[5] = {0, 1, 2, 3, 4};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
-
-        p_vector.push_back_array(l_elements_slice);
-        assert_true(p_vector.get_size() == l_old_size + 5);
-        for (loop(i, l_old_size, p_vector.get_size()))
-        {
-            assert_true(p_vector.get(i) == l_elements[i - l_old_size]);
-        }
-    }
-
-    // push_back_array_empty
-    {
-        uimax l_old_size = p_vector.get_size();
-        p_vector.push_back_array_empty(5);
-        assert_true(p_vector.get_size() == (l_old_size + (uimax)5));
-    }
-
-    // vector_push_back_element
-    {
-        uimax l_old_size = p_vector.get_size();
-        uimax l_element = 25;
-        p_vector.push_back_element(l_element);
-        assert_true(p_vector.get_size() == l_old_size + 1);
-        assert_true(p_vector.get(p_vector.get_size() - 1) == l_element);
-    }
-
-    // vector_insert_array_at
-    {
-        uimax l_old_size = p_vector.get_size();
-        uimax l_elements[5] = {0, 1, 2, 3, 4};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
-        p_vector.insert_array_at(l_elements_slice, 0);
-        assert_true(p_vector.get_size() == l_old_size + 5);
-        for (loop_int16(i, 0, 5))
-        {
-            assert_true(p_vector.get(i) == (uimax)i);
-        }
-
-        p_vector.insert_array_at(l_elements_slice, 3);
-        assert_true(p_vector.get_size() == l_old_size + 10);
-        for (loop_int16(i, 0, 3))
-        {
-            assert_true((p_vector.get(i)) == l_elements[i]);
-        }
-        // Middle insertion
-        for (loop_int16(i, 3, 8))
-        {
-            assert_true((p_vector.get(i)) == l_elements[i - 3]);
-        }
-        for (loop_int16(i, 8, 10))
-        {
-            assert_true((p_vector.get(i)) == l_elements[i - 5]);
-        }
-    }
-
-    // vector_insert_element_at
-    {
-        uimax l_element = 20;
-        uimax l_old_size = p_vector.get_size();
-
-        p_vector.insert_element_at(l_element, 7);
-        assert_true(p_vector.get(7) == l_element);
-        assert_true(p_vector.get_size() == l_old_size + 1);
-
-        p_vector.insert_element_at(20, 9);
-    }
-
-    // vector_erase_element_at
-    {
-        uimax l_old_size = p_vector.get_size();
-        uimax l_erase_index = 1;
-        uimax l_element_after = p_vector.get(l_erase_index + 1);
-        p_vector.erase_element_at(1);
-        assert_true(p_vector.get_size() == l_old_size - 1);
-        assert_true(p_vector.get(1) == l_element_after);
-    }
-
-    // vector_erase_array_at
-    {
-        uimax l_old_size = p_vector.get_size();
-        uimax l_erase_begin_index = 3;
-        const uimax l_erase_nb = 6;
-        const uimax l_old_element_check_nb = 3;
-
-        uimax l_old_values[l_old_element_check_nb];
-        for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
-        {
-            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = p_vector.get(i);
-        }
-
-        p_vector.erase_array_at(l_erase_begin_index, l_erase_nb);
-
-        assert_true(p_vector.get_size() == l_old_size - l_erase_nb);
-        for (loop(i, 0, l_old_element_check_nb))
-        {
-            assert_true(p_vector.get(l_erase_begin_index + i) == l_old_values[i]);
-        }
-    }
-
-    // vector_pop_back
-    {
-        uimax l_old_size = p_vector.get_size();
-        p_vector.pop_back();
-        assert_true(p_vector.get_size() == l_old_size - 1);
-    }
-
-    // vector_pop_back_array
-    {
-        uimax l_old_size = p_vector.get_size();
-        p_vector.pop_back_array(3);
-        assert_true(p_vector.get_size() == l_old_size - 3);
-    }
-
-    // format
-    {
-        p_vector.clear();
-        p_vector.push_back_element(0);
-        p_vector.push_back_element(1);
-        p_vector.push_back_element(2);
-        p_vector.push_back_element(2);
-        p_vector.push_back_element(3);
-        assert_true(p_vector.get_size() == 5);
-        p_vector.erase_all_elements_that_matches_element_v2((uimax)2, Equality::Default{});
-        assert_true(p_vector.get_size() == 3);
-        assert_true(p_vector.get(2) == 3);
-    }
-
-    {
-        p_vector.clear();
-        p_vector.push_back_element(0);
-        p_vector.push_back_element(1);
-        p_vector.push_back_element(2);
-        p_vector.push_back_element(2);
-        p_vector.push_back_element(3);
-        assert_true(p_vector.get_size() == 5);
-        SliceN<uimax, 2> l_erased_elements = {0, 2};
-        p_vector.erase_all_elements_that_matches_any_of_element_v2(slice_from_slicen(&l_erased_elements), Equality::Default{});
-        assert_true(p_vector.get_size() == 2);
-        assert_true(p_vector.get(0) == 1);
-        assert_true(p_vector.get(1) == 3);
-    }
-};
-
 template <class Container> inline void ivector_test_v2(iVector_v2<Container> p_vector)
 {
 #if 0
@@ -423,7 +271,7 @@ template <class Container> inline void ivector_test_v2(iVector_v2<Container> p_v
 inline void vector_test()
 {
     Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size((uimax*)NULL, 0);
-    iVector<Vector<uimax>> l_vector_sizet_sahdow = l_vector_sizet.to_ivector();
+    iVector_v2<Vector<uimax>> l_vector_sizet_sahdow = iVector_v2<Vector<uimax>>{l_vector_sizet};
     // shadow_vector_test(l_vector_sizet);
     ivector_test_v2(l_vector_sizet_sahdow);
     l_vector_sizet.free();
@@ -438,7 +286,7 @@ inline void vector_slice_test()
 {
     Span<uimax> l_vector_sizet_buffer = Span<uimax>::allocate(100);
     VectorSlice<uimax> l_vector_sizet = VectorSlice<uimax>::build(l_vector_sizet_buffer.slice, 0);
-    iVector<VectorSlice<uimax>> l_vector_sizet_shadow = l_vector_sizet.to_ivector();
+    iVector_v2<VectorSlice<uimax>> l_vector_sizet_shadow = iVector_v2<VectorSlice<uimax>>{l_vector_sizet};
     ivector_test_v2(l_vector_sizet_shadow);
     l_vector_sizet_buffer.free();
 };
@@ -1613,245 +1461,248 @@ inline void fromstring_test()
     assert_true(FromString::afloat32(slice_int8_build_rawstr("-245689.0")) == -245689.f);
 };
 
-inline void deserialize_json_test(){{
-
-    const int8* l_json = MULTILINE({
-        "local_position" : {"x" : 16.550000, "y" : "16.650000", "z" : "16.750000"},
-        "local_position2" : {"x" : "  17.550000", "y" : 17.650000, "z" : "17.750000"},
-        "nodes" : [
-            {"local_position" : {"x" : "  10.550000", "y" : "10.650000", "z" : "10.750000"}}, {"local_position" : {"x" : "  11.550000", "y" : "11.650000", "z" : "11.750000"}},
-            {"local_position" : {"x" : "  12.550000", "y" : "12.650000", "z" : "12.750000"}}
-        ]
-    });
-
-String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
-l_deserialized.next_object("local_position", &l_v3);
-
-l_v3.next_number("x");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.550000f);
-l_v3.next_field("y");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.650000f);
-l_v3.next_field("z");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.750000f);
-
-l_deserialized.next_object("local_position2", &l_v3);
-
-l_v3.next_field("x");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.550000f);
-l_v3.next_number("y");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.650000f);
-l_v3.next_field("z");
-assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.750000f);
-
-float32 l_delta = 0.0f;
-JSONDeserializer l_array = JSONDeserializer::allocate_default();
-JSONDeserializer l_object = JSONDeserializer::allocate_default();
-l_deserialized.next_array("nodes", &l_array);
-while (l_array.next_array_object(&l_object))
+inline void deserialize_json_test()
 {
-    json_deser_iterate_array_object.next_object("local_position", &l_v3);
-    l_v3.next_field("x");
-    assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.550000f + l_delta);
-    l_v3.next_field("y");
-    assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.650000f + l_delta);
-    l_v3.next_field("z");
-    assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
-    l_delta += 1;
-}
-l_array.free();
-l_object.free();
-
-l_v3.free();
-l_deserialized.free();
-l_json_str.free();
-}
-
-// empty array
-{
-    const int8* l_json = "{"
-                         "\"nodes\":[]}";
-
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
-    l_deserialized.next_array("nodes", &l_array);
-    l_array.next_array_object(&l_object);
-
-    l_object.free();
-    l_array.free();
-    l_deserialized.free();
-    l_json_str.free();
-}
-
-// missed field
-{
-    const int8* l_json = "{"
-                         "\"local_position\":{"
-                         "\"x\":\"16.506252\","
-                         "\"y\" : \"16.604988\","
-                         "\"z\" : \"16.705424\""
-                         "}";
-
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
-    l_deserialized.next_object("local_position", &l_v3);
-    l_v3.next_field("x");
-    l_v3.next_field("y");
-    l_v3.next_field("zz");
-    l_v3.next_field("z");
-    assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.705424f);
-
-    l_v3.free();
-    l_deserialized.free();
-    l_json_str.free();
-}
-
-// only fields
-{
-    const int8* l_json = "{"
-                         "\"x\":\"16.506252\","
-                         "\"y\" : \"16.604988\","
-                         "\"z\" : \"16.705424\""
-                         "}";
-
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-    l_deserialized.next_field("x");
-    assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
-    l_deserialized.next_field("y");
-    assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.604988f);
-    l_deserialized.next_field("z");
-    assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.705424f);
-    l_deserialized.free();
-    l_json_str.free();
-}
-
-// empty array - then filled array
-{
-    const int8* l_json =
-        "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
-
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    JSONDeserializer l_array = JSONDeserializer::allocate_default();
-    JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
-    assert_true(l_deserialized.next_array("empty_array", &l_array));
-    assert_true(!l_array.next_array_object(&l_array_object));
-    assert_true(l_deserialized.next_array("filled_array", &l_array));
-    assert_true(l_array.next_array_object(&l_array_object));
-
-    l_array_object.next_field("x");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.506252f);
-    l_array_object.next_field("y");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.604988f);
-    l_array_object.next_field("z");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.705424f);
-
-    assert_true(l_array.next_array_object(&l_array_object));
-
-    l_array_object.next_field("x");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.506252f);
-    l_array_object.next_field("y");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.604988f);
-    l_array_object.next_field("z");
-    assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.705424f);
-
-    l_deserialized.free();
-    l_array.free();
-    l_array_object.free();
-    l_json_str.free();
-}
-
-// array with values
-{
-    const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    JSONDeserializer l_array = JSONDeserializer::allocate_default();
-    Slice<int8> l_array_plain_value;
-    assert_true(l_deserialized.next_array("value_array", &l_array));
-    assert_true(l_array.next_array_string_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
-    assert_true(l_array.next_array_string_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
-    assert_true(l_array.next_array_string_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
-
-    l_deserialized.free();
-    l_array.free();
-    l_json_str.free();
-}
-// array with numbers
-{
-    const int8* l_json = MULTILINE({"value_array" : [ 17.001, 18.001, 19.001 ]});
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    JSONDeserializer l_array = JSONDeserializer::allocate_default();
-    Slice<int8> l_array_plain_value;
-    assert_true(l_deserialized.next_array("value_array", &l_array));
-    assert_true(l_array.next_array_number_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
-    assert_true(l_array.next_array_number_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
-    assert_true(l_array.next_array_number_value(&l_array_plain_value));
-    assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
-
-    l_deserialized.free();
-    l_array.free();
-    l_json_str.free();
-}
-
-// field - nested objects (uimax)
-{
-    const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
-
-    String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_json_str_ivector = l_json_str.Memory.to_ivector();
-    JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
-
-    assert_true(l_deserialized.next_field("field"));
-    assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
-
-    JSONDeserializer l_obj_deserializer = JSONDeserializer::allocate_default();
-    assert_true(l_deserialized.next_object("obj", &l_obj_deserializer));
+#if 0
+#endif
     {
-        assert_true(l_obj_deserializer.next_field("f1"));
-        assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 14);
-        assert_true(l_obj_deserializer.next_field("f2"));
-        assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 15);
 
-        JSONDeserializer l_obj2_deserializer = JSONDeserializer::allocate_default();
-        assert_true(l_obj_deserializer.next_object("obj2", &l_obj2_deserializer));
+        const int8* l_json = MULTILINE({
+            "local_position" : {"x" : 16.550000, "y" : "16.650000", "z" : "16.750000"},
+            "local_position2" : {"x" : "  17.550000", "y" : 17.650000, "z" : "17.750000"},
+            "nodes" : [
+                {"local_position" : {"x" : "  10.550000", "y" : "10.650000", "z" : "10.750000"}}, {"local_position" : {"x" : "  11.550000", "y" : "11.650000", "z" : "11.750000"}},
+                {"local_position" : {"x" : "  12.550000", "y" : "12.650000", "z" : "12.750000"}}
+            ]
+        });
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
+        l_deserialized.next_object("local_position", &l_v3);
+
+        l_v3.next_number("x");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.550000f);
+        l_v3.next_field("y");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.650000f);
+        l_v3.next_field("z");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.750000f);
+
+        l_deserialized.next_object("local_position2", &l_v3);
+
+        l_v3.next_field("x");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.550000f);
+        l_v3.next_number("y");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.650000f);
+        l_v3.next_field("z");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 17.750000f);
+
+        float32 l_delta = 0.0f;
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+        JSONDeserializer l_object = JSONDeserializer::allocate_default();
+        l_deserialized.next_array("nodes", &l_array);
+        while (l_array.next_array_object(&l_object))
         {
-            assert_true(l_obj2_deserializer.next_field("f1"));
-            assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 16);
-            assert_true(l_obj2_deserializer.next_field("f2"));
-            assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 17);
+            json_deser_iterate_array_object.next_object("local_position", &l_v3);
+            l_v3.next_field("x");
+            assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.550000f + l_delta);
+            l_v3.next_field("y");
+            assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.650000f + l_delta);
+            l_v3.next_field("z");
+            assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 10.750000f + l_delta);
+            l_delta += 1;
         }
-        l_obj2_deserializer.free();
+        l_array.free();
+        l_object.free();
+
+        l_v3.free();
+        l_deserialized.free();
+        l_json_str.free();
     }
-    l_obj_deserializer.free();
-    l_deserialized.free();
-    l_json_str.free();
-}
-}
-;
+
+    // empty array
+    {
+        const int8* l_json = "{"
+                             "\"nodes\":[]}";
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_array = JSONDeserializer::allocate_default(), l_object = JSONDeserializer::allocate_default();
+        l_deserialized.next_array("nodes", &l_array);
+        l_array.next_array_object(&l_object);
+
+        l_object.free();
+        l_array.free();
+        l_deserialized.free();
+        l_json_str.free();
+    }
+
+    // missed field
+    {
+        const int8* l_json = "{"
+                             "\"local_position\":{"
+                             "\"x\":\"16.506252\","
+                             "\"y\" : \"16.604988\","
+                             "\"z\" : \"16.705424\""
+                             "}";
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_v3 = JSONDeserializer::allocate_default();
+        l_deserialized.next_object("local_position", &l_v3);
+        l_v3.next_field("x");
+        l_v3.next_field("y");
+        l_v3.next_field("zz");
+        l_v3.next_field("z");
+        assert_true(FromString::afloat32(l_v3.get_currentfield().value) == 16.705424f);
+
+        l_v3.free();
+        l_deserialized.free();
+        l_json_str.free();
+    }
+
+    // only fields
+    {
+        const int8* l_json = "{"
+                             "\"x\":\"16.506252\","
+                             "\"y\" : \"16.604988\","
+                             "\"z\" : \"16.705424\""
+                             "}";
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+        l_deserialized.next_field("x");
+        assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.506252f);
+        l_deserialized.next_field("y");
+        assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.604988f);
+        l_deserialized.next_field("z");
+        assert_true(FromString::afloat32(l_deserialized.get_currentfield().value) == 16.705424f);
+        l_deserialized.free();
+        l_json_str.free();
+    }
+
+    // empty array - then filled array
+    {
+        const int8* l_json =
+            "{\"empty_array\":[],\"filled_array\":[{\"x\":\"16.506252\", \"y\" : \"16.604988\", \"z\" : \"16.705424\"}, {\"x\":\"17.506252\", \"y\" : \"17.604988\", \"z\" : \"17.705424\"}]}";
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+        JSONDeserializer l_array_object = JSONDeserializer::allocate_default();
+        assert_true(l_deserialized.next_array("empty_array", &l_array));
+        assert_true(!l_array.next_array_object(&l_array_object));
+        assert_true(l_deserialized.next_array("filled_array", &l_array));
+        assert_true(l_array.next_array_object(&l_array_object));
+
+        l_array_object.next_field("x");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.506252f);
+        l_array_object.next_field("y");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.604988f);
+        l_array_object.next_field("z");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 16.705424f);
+
+        assert_true(l_array.next_array_object(&l_array_object));
+
+        l_array_object.next_field("x");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.506252f);
+        l_array_object.next_field("y");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.604988f);
+        l_array_object.next_field("z");
+        assert_true(FromString::afloat32(l_array_object.get_currentfield().value) == 17.705424f);
+
+        l_deserialized.free();
+        l_array.free();
+        l_array_object.free();
+        l_json_str.free();
+    }
+
+    // array with values
+    {
+        const int8* l_json = MULTILINE({"value_array" : [ "17.001", "18.001", "19.001" ]});
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+        Slice<int8> l_array_plain_value;
+        assert_true(l_deserialized.next_array("value_array", &l_array));
+        assert_true(l_array.next_array_string_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
+        assert_true(l_array.next_array_string_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
+        assert_true(l_array.next_array_string_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
+
+        l_deserialized.free();
+        l_array.free();
+        l_json_str.free();
+    }
+    // array with numbers
+    {
+        const int8* l_json = MULTILINE({"value_array" : [ 17.001, 18.001, 19.001 ]});
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        JSONDeserializer l_array = JSONDeserializer::allocate_default();
+        Slice<int8> l_array_plain_value;
+        assert_true(l_deserialized.next_array("value_array", &l_array));
+        assert_true(l_array.next_array_number_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 17.001f);
+        assert_true(l_array.next_array_number_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 18.001f);
+        assert_true(l_array.next_array_number_value(&l_array_plain_value));
+        assert_true(FromString::afloat32(l_array_plain_value) == 19.001f);
+
+        l_deserialized.free();
+        l_array.free();
+        l_json_str.free();
+    }
+
+    // field - nested objects (uimax)
+    {
+        const int8* l_json = MULTILINE({"field" : "1248", "obj" : {"f1" : "14", "f2" : "15", "obj2" : {"f1" : "16", "f2" : "17"}}});
+
+        String l_json_str = String::allocate_elements(slice_int8_build_rawstr(l_json));
+        iVector_v2<Vector<int8>> l_json_str_ivector = iVector_v2<Vector<int8>>{l_json_str.Memory};
+        JSONDeserializer l_deserialized = JSONDeserializer::sanitize_and_start(l_json_str_ivector);
+
+        assert_true(l_deserialized.next_field("field"));
+        assert_true(FromString::auimax(l_deserialized.get_currentfield().value) == 1248);
+
+        JSONDeserializer l_obj_deserializer = JSONDeserializer::allocate_default();
+        assert_true(l_deserialized.next_object("obj", &l_obj_deserializer));
+        {
+            assert_true(l_obj_deserializer.next_field("f1"));
+            assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 14);
+            assert_true(l_obj_deserializer.next_field("f2"));
+            assert_true(FromString::auimax(l_obj_deserializer.get_currentfield().value) == 15);
+
+            JSONDeserializer l_obj2_deserializer = JSONDeserializer::allocate_default();
+            assert_true(l_obj_deserializer.next_object("obj2", &l_obj2_deserializer));
+            {
+                assert_true(l_obj2_deserializer.next_field("f1"));
+                assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 16);
+                assert_true(l_obj2_deserializer.next_field("f2"));
+                assert_true(FromString::auimax(l_obj2_deserializer.get_currentfield().value) == 17);
+            }
+            l_obj2_deserializer.free();
+        }
+        l_obj_deserializer.free();
+        l_deserialized.free();
+        l_json_str.free();
+    }
+};
 
 inline void serialize_json_test()
 {
@@ -1956,7 +1807,7 @@ inline void serialize_json_test()
 
     // JSONUtil::remove_spaces(l_serializer.output.Memory);
     String l_compared_json = String::allocate_elements(slice_int8_build_rawstr(l_json));
-    iVector<Vector<int8>> l_compared_json_ivector = l_compared_json.Memory.to_ivector();
+    iVector_v2<Vector<int8>> l_compared_json_ivector = iVector_v2<Vector<int8>>{l_compared_json.Memory};
     JSONUtil::sanitize_json(l_compared_json_ivector);
 
     assert_true(l_compared_json.to_slice().compare(l_serializer.output.to_slice()));
@@ -1971,7 +1822,7 @@ inline void serialize_deserialize_binary_test()
     Slice<uimax> l_slice = slice_from_slicen(&l_slice_arr);
 
     Vector<int8> l_binary_data = Vector<int8>::allocate(0);
-    BinarySerializer::slice(l_binary_data.to_ivector(), l_slice.build_asint8());
+    BinarySerializer::slice(iVector_v2<Vector<int8>>{l_binary_data}, l_slice.build_asint8());
 
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
@@ -1985,7 +1836,7 @@ inline void serialize_deserialize_binary_test()
 
     SliceN<uimax, 10> l_buffer;
     VectorSlice<int8> l_binary_data_slice = VectorSlice<int8>::build(slice_from_slicen(&l_buffer).build_asint8(), 0);
-    BinarySerializer::slice(l_binary_data_slice.to_ivector(), slice_from_slicen(&l_slice_arr).build_asint8());
+    BinarySerializer::slice(iVector_v2<VectorSlice<int8>>{l_binary_data_slice}, slice_from_slicen(&l_slice_arr).build_asint8());
 
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data_slice.to_slice());

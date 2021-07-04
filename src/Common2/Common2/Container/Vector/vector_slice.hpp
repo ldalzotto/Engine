@@ -33,11 +33,6 @@ template <class ElementType> struct VectorSlice
         return this->Size == 0;
     };
 
-    inline iVector<VectorSlice<ElementType>> to_ivector()
-    {
-        return iVector<VectorSlice<ElementType>>{*this};
-    };
-
     inline ElementType& get_unchecked(const uimax p_index)
     {
         return this->Memory.Begin[p_index];
