@@ -128,23 +128,26 @@ struct VaryingVector
         this->chunks.erase_array_at(p_index, p_element_nb);
     };
 
-    inline void element_expand(const uimax p_index, const uimax p_expansion_size)
+    inline void element_expand(const uimax p_index, const uimax p_new_size)
     {
+
+#if __DEBUG
+        assert_true(p_new_size > 0);
+#endif
+
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
 
 #if __DEBUG
-        assert_true(p_expansion_size != 0);
+        assert_true(p_new_size > l_updated_chunk.Size);
 #endif
 
-        uimax l_new_varyingvector_size = this->memory.Size + p_expansion_size;
+        this->element_expand_delta(p_index, p_new_size - l_updated_chunk.Size);
+    };
 
-        this->memory.Memory.resize_until_capacity_met(l_new_varyingvector_size);
-        l_updated_chunk.Size += p_expansion_size;
-
-        for (loop(i, p_index + 1, this->chunks.Size))
-        {
-            this->chunks.get(i).Begin += p_expansion_size;
-        }
+    inline void element_expand_delta(const uimax p_index, const uimax p_delta)
+    {
+        // !!\ We push an empty slice of the size of delta at the end of the p_index chunk
+        this->element_expand_with_value(p_index, Slice<int8>::build_memory_elementnb((int8*)this, p_delta));
     };
 
     inline void element_expand_with_value(const uimax p_index, const Slice<int8>& p_pushed_element)
@@ -158,7 +161,7 @@ struct VaryingVector
         uimax l_size_delta = p_pushed_element.Size;
         uimax l_new_varyingvector_size = this->memory.Size + l_size_delta;
 
-        this->memory.Memory.resize_until_capacity_met(l_new_varyingvector_size);
+        // this->memory.Memory.resize_until_capacity_met(l_new_varyingvector_size);
 
         this->memory.insert_array_at_always(p_pushed_element, l_updated_chunk.Begin + l_updated_chunk.Size);
         l_updated_chunk.Size += l_size_delta;
@@ -169,7 +172,7 @@ struct VaryingVector
         }
     };
 
-    inline void element_shrink(const uimax p_index, const uimax p_size_delta)
+    inline void element_shrink_delta(const uimax p_index, const uimax p_size_delta)
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);
 
@@ -195,6 +198,26 @@ struct VaryingVector
         l_updated_chunk_slice.copy_memory(p_inserted_element);
     };
 
+    // TODO -> write test
+    inline void element_writeto_2(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element_1, const Slice<int8>& p_inserted_element_2)
+    {
+        SliceIndex& l_updated_chunk = this->chunks.get(p_index);
+        Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
+
+        l_updated_chunk_slice.copy_memory_2(p_inserted_element_1, p_inserted_element_2);
+    };
+
+    // TODO -> write test
+    inline void element_writeto_3(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element_1, const Slice<int8>& p_inserted_element_2,
+                                  const Slice<int8>& p_inserted_element_3)
+    {
+        SliceIndex& l_updated_chunk = this->chunks.get(p_index);
+        Slice<int8> l_updated_chunk_slice = Slice<int8>::build_asint8_memory_elementnb(this->memory.get_memory() + l_updated_chunk.Begin, l_updated_chunk.Size).slide_rv(p_insertion_offset);
+
+        l_updated_chunk_slice.copy_memory_3(p_inserted_element_1, p_inserted_element_2, p_inserted_element_3);
+    };
+
+    // TODO -> is there a way to simulate this with insert empty instead ? Yes, with a VectorSlice
     inline void element_movememory(const uimax p_index, const uimax p_insertion_offset, const Slice<int8>& p_inserted_element)
     {
         SliceIndex& l_updated_chunk = this->chunks.get(p_index);

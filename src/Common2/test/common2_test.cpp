@@ -117,10 +117,162 @@ inline void base64_test()
     l_encoded.free();
 };
 
+// TODO -> remove
 template <class Container> inline void ivector_test_v2(iVector<Container> p_vector)
 {
     iVector<Container>::Assert::template element_type<uimax>();
 
+    // vector_push_back_array
+    {
+        uimax l_old_size = p_vector.get_size();
+        uimax l_elements[5] = {0, 1, 2, 3, 4};
+        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+
+        p_vector.push_back_array(l_elements_slice);
+        assert_true(p_vector.get_size() == l_old_size + 5);
+        for (loop(i, l_old_size, p_vector.get_size()))
+        {
+            assert_true(p_vector.get(i) == l_elements[i - l_old_size]);
+        }
+    }
+
+    // push_back_array_empty
+    {
+        uimax l_old_size = p_vector.get_size();
+        p_vector.push_back_array_empty(5);
+        assert_true(p_vector.get_size() == (l_old_size + (uimax)5));
+    }
+
+    // vector_push_back_element
+    {
+        uimax l_old_size = p_vector.get_size();
+        uimax l_element = 25;
+        p_vector.push_back_element(l_element);
+        assert_true(p_vector.get_size() == l_old_size + 1);
+        assert_true(p_vector.get(p_vector.get_size() - 1) == l_element);
+    }
+
+    // vector_insert_array_at
+    {
+        uimax l_old_size = p_vector.get_size();
+        uimax l_elements[5] = {0, 1, 2, 3, 4};
+        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
+        p_vector.insert_array_at(l_elements_slice, 0);
+        assert_true(p_vector.get_size() == l_old_size + 5);
+        for (loop_int16(i, 0, 5))
+        {
+            assert_true(p_vector.get(i) == (uimax)i);
+        }
+
+        p_vector.insert_array_at(l_elements_slice, 3);
+        assert_true(p_vector.get_size() == l_old_size + 10);
+        for (loop_int16(i, 0, 3))
+        {
+            assert_true((p_vector.get(i)) == l_elements[i]);
+        }
+        // Middle insertion
+        for (loop_int16(i, 3, 8))
+        {
+            assert_true((p_vector.get(i)) == l_elements[i - 3]);
+        }
+        for (loop_int16(i, 8, 10))
+        {
+            assert_true((p_vector.get(i)) == l_elements[i - 5]);
+        }
+    }
+
+    // vector_insert_element_at
+    {
+        uimax l_element = 20;
+        uimax l_old_size = p_vector.get_size();
+
+        p_vector.insert_element_at(l_element, 7);
+        assert_true(p_vector.get(7) == l_element);
+        assert_true(p_vector.get_size() == l_old_size + 1);
+
+        p_vector.insert_element_at(20, 9);
+    }
+
+    // vector_erase_element_at
+    {
+        uimax l_old_size = p_vector.get_size();
+        uimax l_erase_index = 1;
+        uimax l_element_after = p_vector.get(l_erase_index + 1);
+        p_vector.erase_element_at(1);
+        assert_true(p_vector.get_size() == l_old_size - 1);
+        assert_true(p_vector.get(1) == l_element_after);
+    }
+
+    // vector_erase_array_at
+    {
+        uimax l_old_size = p_vector.get_size();
+        uimax l_erase_begin_index = 3;
+        const uimax l_erase_nb = 6;
+        const uimax l_old_element_check_nb = 3;
+
+        uimax l_old_values[l_old_element_check_nb];
+        for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
+        {
+            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = p_vector.get(i);
+        }
+
+        p_vector.erase_array_at(l_erase_begin_index, l_erase_nb);
+
+        assert_true(p_vector.get_size() == l_old_size - l_erase_nb);
+        for (loop(i, 0, l_old_element_check_nb))
+        {
+            assert_true(p_vector.get(l_erase_begin_index + i) == l_old_values[i]);
+        }
+    }
+
+    // vector_pop_back
+    {
+        uimax l_old_size = p_vector.get_size();
+        p_vector.pop_back();
+        assert_true(p_vector.get_size() == l_old_size - 1);
+    }
+
+    // vector_pop_back_array
+    {
+        uimax l_old_size = p_vector.get_size();
+        p_vector.pop_back_array(3);
+        assert_true(p_vector.get_size() == l_old_size - 3);
+    }
+
+    // format
+    {
+        p_vector.clear();
+        p_vector.push_back_element(0);
+        p_vector.push_back_element(1);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(3);
+        assert_true(p_vector.get_size() == 5);
+        p_vector.erase_all_elements_that_matches_element_v2((uimax)2, Equality::Default{});
+        assert_true(p_vector.get_size() == 3);
+        assert_true(p_vector.get(2) == 3);
+    }
+
+    {
+        p_vector.clear();
+        p_vector.push_back_element(0);
+        p_vector.push_back_element(1);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(2);
+        p_vector.push_back_element(3);
+        assert_true(p_vector.get_size() == 5);
+        SliceN<uimax, 2> l_erased_elements = {0, 2};
+        p_vector.erase_all_elements_that_matches_any_of_element_v2(slice_from_slicen(&l_erased_elements), Equality::Default{});
+        assert_true(p_vector.get_size() == 2);
+        assert_true(p_vector.get(0) == 1);
+        assert_true(p_vector.get(1) == 3);
+    }
+};
+
+template <class Container> inline void ivector_test_v2(iVector_v2<Container> p_vector)
+{
+#if 0
+#endif
     // vector_push_back_array
     {
         uimax l_old_size = p_vector.get_size();
@@ -557,7 +709,7 @@ inline void varyingvector_test()
             assert_true(*l_sizet_element_3 == 3);
         }
 
-        l_varyingvector.element_shrink(2, sizeof(uimax));
+        l_varyingvector.element_shrink_delta(2, sizeof(uimax));
         l_sizet_element_2 = slice_cast<uimax>(l_varyingvector.get_element(2));
         assert_true(l_sizet_element_2.Size == 1);
         assert_true(l_sizet_element_2.get(0) == 2);
@@ -568,13 +720,34 @@ inline void varyingvector_test()
         }
     }
 
+    // element_expand
+    {
+        uimax l_element_0 = 10;
+        uimax l_element_1 = 20;
+        uimax l_element_2 = 30;
+
+        l_varyingvector.push_back(Slice<uimax>::build_asint8_memory_singleelement(&l_element_0));
+        l_varyingvector.push_back(Slice<uimax>::build_asint8_memory_singleelement(&l_element_1));
+
+        uimax l_first_index = l_varyingvector.get_size() - 2;
+        uimax l_second_index = l_first_index + 1;
+
+        assert_true(l_varyingvector.get_element_typed<uimax>(l_first_index).get(0) == l_element_0);
+        assert_true(l_varyingvector.get_element_typed<uimax>(l_second_index).get(0) == l_element_1);
+
+        l_varyingvector.element_expand(l_first_index, l_varyingvector.memory.get_capacity() * 2);
+
+        assert_true(l_varyingvector.get_element_typed<uimax>(l_first_index).get(0) == l_element_0);
+        assert_true(l_varyingvector.get_element_typed<uimax>(l_second_index).get(0) == l_element_1);
+    }
+
     // varyingvector_element_writeto
     {
         uimax l_element_0 = 10;
         uimax l_element_1 = 20;
         uimax l_element_2 = 30;
 
-        l_varyingvector.element_expand(2, sizeof(uimax) * 3);
+        l_varyingvector.element_expand_delta(2, sizeof(uimax) * 3);
         l_varyingvector.element_writeto(2, 0, Slice<uimax>::build_asint8_memory_singleelement(&l_element_0));
         l_varyingvector.element_writeto(2, 2 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_2));
         l_varyingvector.element_writeto(2, 1 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_1));
@@ -637,35 +810,23 @@ inline void vectorofvector_test()
 
             uimax l_element = 30;
             l_index = l_vectorofvector_uimax.varying_vector.get_size() - 2;
-            l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
-            Slice<uimax> l_element_nested = l_vectorofvector_uimax.get(l_index);
-            assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            assert_true(l_index == i + 2);
+
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+            iVector_v2<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector_v2<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
+            l_entry.push_back_element(l_element);
+
+            Slice<uimax> l_element_nested = l_entry.to_slice();
+            assert_true(l_entry.get_size() == 1);
+            assert_true(l_entry.get(0) == l_element);
 
             l_element = 35;
-            l_vectorofvector_uimax.element_clear(l_index);
-            l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
-            assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            l_entry.clear();
+            l_entry.push_back_element(l_element);
+
+            assert_true(l_entry.get_size() == 1);
+            assert_true(l_entry.get(0) == l_element);
         }
-    }
-
-    // vectorofvector_element_insert_element_at
-    {
-        uimax l_elements[3] = {100, 120, 140};
-        Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
-        l_vectorofvector_uimax.push_back_element(l_elements_slice);
-        uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
-
-        uimax l_inserted_element = 200;
-        l_vectorofvector_uimax.element_insert_element_at(l_index, 1, l_inserted_element);
-
-        Slice<uimax> l_vector = l_vectorofvector_uimax.get(l_index);
-        assert_true(l_vector.Size == 4);
-        assert_true(l_vector.get(0) == l_elements[0]);
-        assert_true(l_vector.get(1) == l_inserted_element);
-        assert_true(l_vector.get(2) == l_elements[1]);
-        assert_true(l_vector.get(3) == l_elements[2]);
     }
 
     // vectorofvector_element_erase_element_at
@@ -676,8 +837,10 @@ inline void vectorofvector_test()
 
         // uimax l_inserted_element = 200;
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
-        l_vectorofvector_uimax.element_erase_element_at(l_index, 1);
-        Slice<uimax> l_vector = l_vectorofvector_uimax.get(l_index);
+        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+        iVector_v2<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector_v2<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
+        l_entry.erase_element_at(1);
+        Slice<uimax> l_vector = l_entry.to_slice();
         assert_true(l_vector.Size == 2);
         assert_true(l_vector.get(0) == l_elements[0]);
         assert_true(l_vector.get(1) == l_elements[2]);
@@ -692,20 +855,18 @@ inline void vectorofvector_test()
         }
 
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
+        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+        iVector_v2<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector_v2<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
 
         uimax l_elements[3] = {100, 120, 140};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 3);
 
-        uimax l_old_size = 0;
-        {
-            Slice<uimax> l_vector_element = l_vectorofvector_uimax.get(l_index);
-            l_old_size = l_vector_element.Size;
-        }
+        uimax l_old_size = l_entry.get_size();
 
-        l_vectorofvector_uimax.element_push_back_array(l_index, l_elements_slice);
+        l_entry.push_back_array(l_elements_slice);
 
         {
-            Slice<uimax> l_vector_element = l_vectorofvector_uimax.get(l_index);
+            Slice<uimax> l_vector_element = l_entry.to_slice();
             assert_true(l_vector_element.Size == l_old_size + 3);
             for (loop(i, 0, 3))
             {
@@ -717,11 +878,11 @@ inline void vectorofvector_test()
             }
         }
 
-        l_vectorofvector_uimax.element_erase_element_at(l_index, 4);
-        l_vectorofvector_uimax.element_push_back_array(l_index, l_elements_slice);
+        l_entry.erase_element_at(4);
+        l_entry.push_back_array(l_elements_slice);
 
         {
-            Slice<uimax> l_vector_element = l_vectorofvector_uimax.get(l_index);
+            Slice<uimax> l_vector_element = l_entry.to_slice();
             assert_true(l_vector_element.Size == 8);
             for (loop(i, 0, 3))
             {
@@ -735,12 +896,12 @@ inline void vectorofvector_test()
             assert_true(l_vector_element.get(7) == l_elements[2]);
         }
 
-        l_vectorofvector_uimax.element_clear(l_index);
-        l_vectorofvector_uimax.element_push_back_array(l_index, l_elements_slice);
+        l_entry.clear();
+        l_entry.push_back_array(l_elements_slice);
         {
-            Slice<uimax> l_vector_element = l_vectorofvector_uimax.get(l_index);
+            Slice<uimax> l_vector_element = l_entry.to_slice();
             assert_true(l_vector_element.Size == 3);
-            assert_true(l_vectorofvector_uimax.get_vectorheader(l_index)->Capacity == 8);
+            assert_true(l_entry.get_capacity() == 8); //  l_vectorofvector_uimax.get_vectorheader(l_index)->Capacity
             assert_true(l_vector_element.get(0) == l_elements[0]);
             assert_true(l_vector_element.get(1) == l_elements[1]);
             assert_true(l_vector_element.get(2) == l_elements[2]);
@@ -773,19 +934,44 @@ inline void vectorofvector_test()
             Slice<uimax> l_initial_elements_1_slice = Slice<uimax>::build_memory_elementnb(l_initial_elements_1, 3);
             l_vectorofvector_uimax.push_back_element(l_initial_elements_1_slice);
         }
+        {
+            assert_true(l_vectorofvector_uimax.get(1).get(0) == l_initial_elements_1[0]);
+            assert_true(l_vectorofvector_uimax.get(1).get(1) == l_initial_elements_1[1]);
+        }
 
         {
-            VectorOfVector<uimax>::Element_iVector l_shadow = l_vectorofvector_uimax.element_as_iVector(0);
-            l_shadow.push_back_element(9);
-            assert_true(l_shadow.get_size() == 4);
-            assert_true(l_shadow.get(3) == 9);
-            assert_true(l_shadow.get(2) == l_initial_elements_0[2]);
-
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(0);
+            iVector_v2<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector_v2<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
+            l_entry.push_back_element(9);
+            assert_true(l_entry.get_size() == 4);
+            assert_true(l_entry.get(3) == 9);
+            assert_true(l_entry.get(2) == l_initial_elements_0[2]);
+        }
+        {
             assert_true(l_vectorofvector_uimax.get(1).get(0) == l_initial_elements_1[0]);
             assert_true(l_vectorofvector_uimax.get(1).get(1) == l_initial_elements_1[1]);
         }
     }
 
+#if 1
+    // iVector test on random elements
+    {
+        l_vectorofvector_uimax.free();
+        l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
+        for (loop(i, 0, 10))
+        {
+            l_vectorofvector_uimax.push_back_element_empty();
+        }
+
+        SliceN<uimax, 4> l_indices = {2, 7, 0, 5};
+        for (loop(i, 0, l_indices.Size()))
+        {
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_indices.get(i));
+            iVector_v2<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector_v2<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
+            ivector_test_v2(l_entry);
+        }
+    }
+#endif
     l_vectorofvector_uimax.free();
 };
 

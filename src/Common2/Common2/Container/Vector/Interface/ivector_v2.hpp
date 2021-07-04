@@ -17,6 +17,11 @@ template <class _Vector> struct iVector_v2
         vector.set_size(p_new_size);
     };
 
+    inline uimax get_capacity() const
+    {
+        return vector.get_capacity();
+    };
+
     inline ElementValue& get(const uimax p_index)
     {
 #if __DEBUG
@@ -44,6 +49,11 @@ template <class _Vector> struct iVector_v2
     inline int8 empty() const
     {
         return get_size() == 0;
+    };
+
+    inline void clear()
+    {
+        this->set_size(0);
     };
 
     inline Slice<ElementValue> to_slice() const
@@ -223,6 +233,40 @@ template <class _Vector> struct iVector_v2
         }
     };
 
+    template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate_func)
+    {
+        for (loop_reverse(i, 0, this->get_size()))
+        {
+            ElementValue& l_element = this->get(i);
+            if (p_predicate_func(l_element))
+            {
+                this->erase_element_at_always(i);
+            }
+        }
+    };
+
+    template <class ComparedElementType, class EqualityFunc> inline void erase_all_elements_that_matches_element_v2(const ComparedElementType& p_compared_element, const EqualityFunc& p_equality_func)
+    {
+        this->erase_if([&](const ElementValue& p_element) {
+            return p_equality_func(p_element, p_compared_element);
+        });
+    };
+
+    template <class ElementTypeCompared, class EqualityFunc>
+    inline void erase_all_elements_that_matches_any_of_element_v2(const Slice<ElementTypeCompared>& p_compared_elements, const EqualityFunc& p_equality_func)
+    {
+        this->erase_if([&](const ElementValue& p_element) {
+            for (loop(i, 0, p_compared_elements.get_size()))
+            {
+                if (p_equality_func(p_element, p_compared_elements.get(i)))
+                {
+                    return 1;
+                }
+            };
+            return 0;
+        });
+    };
+
   private:
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {
@@ -312,87 +356,97 @@ template <class _Vector> struct iVector_v2
 };
 
 #define iVector_v2_functions_forward_declare(VectorType)                                                                                                                                               \
-    inline int8 insert_array_at(const Slice<ElementType>& p_elements, const uimax p_index)                                                                                                             \
+    inline t_ElementValue& get(const uimax p_index)                                                                                                                                                    \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.insert_array_at(p_elements, p_index);                                                                                                        \
+        return iVector_v2<VectorType>{*this}.get(p_index);                                                                                                                                             \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 insert_element_at(const ElementType& p_element, const uimax p_index)                                                                                                                   \
+    inline const t_ElementValue& get(const uimax p_index) const                                                                                                                                        \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.insert_element_at(p_element, p_index);                                                                                                       \
+        return iVector_v2<VectorType>{*this}.get(p_index);                                                                                                                                             \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 push_back_array(const Slice<ElementType>& p_elements)                                                                                                                                  \
+    inline int8 insert_array_at(const Slice<t_ElementValue>& p_elements, const uimax p_index)                                                                                                          \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_array(p_elements);                                                                                                                 \
+        return iVector_v2<VectorType>{*this}.insert_array_at(p_elements, p_index);                                                                                                                     \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)                                                                                      \
+    inline int8 insert_element_at(const t_ElementValue& p_element, const uimax p_index)                                                                                                                \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_array_2(p_elements_0, p_elements_1);                                                                                               \
+        return iVector_v2<VectorType>{*this}.insert_element_at(p_element, p_index);                                                                                                                    \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 push_back_array_3(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)                                              \
+    inline int8 push_back_array(const Slice<t_ElementValue>& p_elements)                                                                                                                               \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_array_3(p_elements_0, p_elements_1, p_elements_2);                                                                                 \
+        return iVector_v2<VectorType>{*this}.push_back_array(p_elements);                                                                                                                              \
+    };                                                                                                                                                                                                 \
+                                                                                                                                                                                                       \
+    inline int8 push_back_array_2(const Slice<t_ElementValue>& p_elements_0, const Slice<t_ElementValue>& p_elements_1)                                                                                \
+    {                                                                                                                                                                                                  \
+        return iVector_v2<VectorType>{*this}.push_back_array_2(p_elements_0, p_elements_1);                                                                                                            \
+    };                                                                                                                                                                                                 \
+                                                                                                                                                                                                       \
+    inline int8 push_back_array_3(const Slice<t_ElementValue>& p_elements_0, const Slice<t_ElementValue>& p_elements_1, const Slice<t_ElementValue>& p_elements_2)                                     \
+    {                                                                                                                                                                                                  \
+        return iVector_v2<VectorType>{*this}.push_back_array_3(p_elements_0, p_elements_1, p_elements_2);                                                                                              \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 push_back_array_empty(const uimax p_array_size)                                                                                                                                        \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_array_empty(p_array_size);                                                                                                         \
+        return iVector_v2<VectorType>{*this}.push_back_array_empty(p_array_size);                                                                                                                      \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 push_back_element_empty()                                                                                                                                                              \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_element_empty();                                                                                                                   \
+        return iVector_v2<VectorType>{*this}.push_back_element_empty();                                                                                                                                \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 push_back_element(const ElementType& p_element)                                                                                                                                        \
+    inline int8 push_back_element(const t_ElementValue& p_element)                                                                                                                                     \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.push_back_element(p_element);                                                                                                                \
+        return iVector_v2<VectorType>{*this}.push_back_element(p_element);                                                                                                                             \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)                                                                                                      \
+    inline int8 insert_array_at_always(const Slice<t_ElementValue>& p_elements, const uimax p_index)                                                                                                   \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.insert_array_at_always(p_elements, p_index);                                                                                                 \
+        return iVector_v2<VectorType>{*this}.insert_array_at_always(p_elements, p_index);                                                                                                              \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
-    inline int8 insert_element_at_always(const ElementType& p_element, const uimax p_index)                                                                                                            \
+    inline int8 insert_element_at_always(const t_ElementValue& p_element, const uimax p_index)                                                                                                         \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.insert_element_at_always(p_element, p_index);                                                                                                \
+        return iVector_v2<VectorType>{*this}.insert_element_at_always(p_element, p_index);                                                                                                             \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 erase_array_at(const uimax p_index, const uimax p_element_nb)                                                                                                                          \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.erase_array_at(p_index, p_element_nb);                                                                                                       \
+        return iVector_v2<VectorType>{*this}.erase_array_at(p_index, p_element_nb);                                                                                                                    \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 erase_element_at(const uimax p_index)                                                                                                                                                  \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.erase_element_at(p_index);                                                                                                                   \
+        return iVector_v2<VectorType>{*this}.erase_element_at(p_index);                                                                                                                                \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 pop_back_array(const uimax p_element_nb)                                                                                                                                               \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.pop_back_array(p_element_nb);                                                                                                                \
+        return iVector_v2<VectorType>{*this}.pop_back_array(p_element_nb);                                                                                                                             \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 pop_back()                                                                                                                                                                             \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.pop_back();                                                                                                                                  \
+        return iVector_v2<VectorType>{*this}.pop_back();                                                                                                                                               \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 erase_element_at_always(const uimax p_index)                                                                                                                                           \
     {                                                                                                                                                                                                  \
-        return iVector_v2<VectorType<ElementType>>{*this}.erase_element_at_always(p_index);                                                                                                            \
+        return iVector_v2<VectorType>{*this}.erase_element_at_always(p_index);                                                                                                                         \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline void erase_array_at_always(const uimax p_index, const uimax p_size)                                                                                                                         \
     {                                                                                                                                                                                                  \
-        iVector_v2<VectorType<ElementType>>{*this}.erase_array_at_always(p_index, p_size);                                                                                                             \
+        iVector_v2<VectorType>{*this}.erase_array_at_always(p_index, p_size);                                                                                                                          \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)                                                                                                                  \
     {                                                                                                                                                                                                  \
-        iVector_v2<VectorType<ElementType>>{*this}.erase_if(p_predicate);                                                                                                                              \
+        iVector_v2<VectorType>{*this}.erase_if(p_predicate);                                                                                                                                           \
     };

@@ -102,16 +102,6 @@ template <class ElementType> struct Vector
         return this->Memory.Memory[p_index];
     };
 
-    inline ElementType& get(const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.get(p_index);
-    };
-
-    inline const ElementType& get(const uimax p_index) const
-    {
-        return ((Vector<ElementType>*)this)->get(p_index);
-    };
-
     inline void set_unchecked(const uimax p_index, const ElementType& p_element_type)
     {
         this->Memory.get(p_index) = p_element_type;
@@ -127,90 +117,7 @@ template <class ElementType> struct Vector
         this->Size = 0;
     };
 
-    inline int8 insert_array_at(const Slice<ElementType>& p_elements, const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.insert_array_at(p_elements, p_index);
-    };
-
-    inline int8 insert_element_at(const ElementType& p_element, const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.insert_element_at(p_element, p_index);
-    };
-
-    inline int8 push_back_array(const Slice<ElementType>& p_elements)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_array(p_elements);
-    };
-
-    inline int8 push_back_array_2(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_array_2(p_elements_0, p_elements_1);
-    };
-
-    inline int8 push_back_array_3(const Slice<ElementType>& p_elements_0, const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_array_3(p_elements_0, p_elements_1, p_elements_2);
-    };
-
-    inline int8 push_back_array_empty(const uimax p_array_size)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_array_empty(p_array_size);
-    };
-
-    inline int8 push_back_element_empty()
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_element_empty();
-    };
-
-    inline int8 push_back_element(const ElementType& p_element)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.push_back_element(p_element);
-    };
-
-    inline int8 insert_array_at_always(const Slice<ElementType>& p_elements, const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.insert_array_at_always(p_elements, p_index);
-    };
-
-    inline int8 insert_element_at_always(const ElementType& p_element, const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.insert_element_at_always(p_element, p_index);
-    };
-
-    inline int8 erase_array_at(const uimax p_index, const uimax p_element_nb)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.erase_array_at(p_index, p_element_nb);
-    };
-
-    inline int8 erase_element_at(const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.erase_element_at(p_index);
-    };
-
-    inline int8 pop_back_array(const uimax p_element_nb)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.pop_back_array(p_element_nb);
-    };
-
-    inline int8 pop_back()
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.pop_back();
-    };
-
-    inline int8 erase_element_at_always(const uimax p_index)
-    {
-        return iVector_v2<Vector<ElementType>>{*this}.erase_element_at_always(p_index);
-    };
-
-    inline void erase_array_at_always(const uimax p_index, const uimax p_size)
-    {
-        iVector_v2<Vector<ElementType>>{*this}.erase_array_at_always(p_index, p_size);
-    };
-
-    template <class Predicate_t> inline void erase_if(const Predicate_t& p_predicate)
-    {
-        this->to_ivector().erase_if(p_predicate);
-    };
+    iVector_v2_functions_forward_declare(Vector<ElementType>);
 
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {
