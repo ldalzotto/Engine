@@ -42,7 +42,7 @@ template <class ElementType> struct Pool
 
     inline static Pool<ElementType> allocate(const uimax p_memory_capacity)
     {
-        return Pool<ElementType>{Memory_Vector::allocate(p_memory_capacity), FreeBlock_Vector::build_zero_size(cast(sToken*, NULL), 0)};
+        return Pool<ElementType>{Memory_Vector::allocate(p_memory_capacity), FreeBlock_Vector::build_zero_size((sToken*)NULL, 0)};
     };
 
     inline void free()

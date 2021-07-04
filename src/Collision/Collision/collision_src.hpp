@@ -148,8 +148,8 @@ inline CollisionDetectionStep CollisionDetectionStep::allocate()
 {
     return CollisionDetectionStep{
         Vector<BoxCollider_Token>::allocate(0), Vector<BoxCollider_Token>::allocate(0), Vector<BoxCollider_Token>::allocate(0), Vector<CollisionDetectorDeletionEvent>::allocate(0),
-        Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
-        Vector<IntersectionEvent>::allocate(0),  Vector<IntersectionEvent>::allocate(0),
+        Vector<IntersectionEvent>::allocate(0), Vector<IntersectionEvent>::allocate(0), Vector<IntersectionEvent>::allocate(0), Vector<IntersectionEvent>::allocate(0),
+        Vector<IntersectionEvent>::allocate(0), Vector<IntersectionEvent>::allocate(0),
     };
 };
 
@@ -370,7 +370,7 @@ inline void CollisionDetectionStep::generate_exit_collision_for_collider(Collisi
 
 inline void CollisionDetectionStep::process_deleted_collider_detectors(CollisionHeap2& p_collision_heap)
 {
-    for (vector_loop(&this->deleted_collider_detectors_from_last_step, i))
+    for (loop(i, 0, this->deleted_collider_detectors_from_last_step.Size))
     {
         CollisionDetectorDeletionEvent& l_deletion_event = this->deleted_collider_detectors_from_last_step.get(i);
         this->remove_references_to_colliderdetector(p_collision_heap, l_deletion_event.detector);
@@ -382,7 +382,7 @@ inline void CollisionDetectionStep::process_deleted_collider_detectors(Collision
 inline void CollisionDetectionStep::process_deleted_colliders(CollisionHeap2& p_collision_heap)
 {
     // dereferencing ColliderDetectors and Colliders.
-    for (vector_loop(&this->deleted_colliders_from_last_step, i))
+    for (loop(i, 0, this->deleted_colliders_from_last_step.Size))
     {
         BoxCollider_Token& l_deleted_collider = this->deleted_colliders_from_last_step.get(i);
         ColliderDetector_Token& l_collider_detector = p_collision_heap.get_colliderdetector_from_boxcollider(l_deleted_collider);
@@ -400,7 +400,7 @@ inline void CollisionDetectionStep::process_deleted_colliders(CollisionHeap2& p_
     // to notify all other ColliderDetectors that a collider has gone
     // Some exit events will be false positive (event sended but there was no collision at the first plane),
     // but that's not a problem as it will be ignored by the udpate_triggerstate_from_intersectionevents step.
-    for (vector_loop(&this->deleted_colliders_from_last_step, i))
+    for (loop(i, 0, this->deleted_colliders_from_last_step.Size))
     {
         BoxCollider_Token& l_disabled_box_collider_token = this->deleted_colliders_from_last_step.get(i);
         this->generate_exit_collision_for_collider(p_collision_heap, l_disabled_box_collider_token);
@@ -555,13 +555,13 @@ inline void CollisionDetectionStep::set_triggerstate_matchingWith_boxcollider(Co
 
 inline void CollisionDetectionStep::udpate_triggerstate_from_lastframe_intersectionevents(CollisionHeap2& p_collision_heap)
 {
-    for (vector_loop(&this->is_waitingfor_trigger_stay_detector, i))
+    for (loop(i, 0, this->is_waitingfor_trigger_stay_detector.Size))
     {
         IntersectionEvent& l_intersection_event = this->is_waitingfor_trigger_stay_detector.get(i);
         this->set_triggerstate_matchingWith_boxcollider(p_collision_heap, l_intersection_event.detector, l_intersection_event.other, Trigger::State::TRIGGER_STAY);
     }
 
-    for (vector_loop(&this->is_waitingfor_trigger_none_detector, i))
+    for (loop(i, 0, this->is_waitingfor_trigger_none_detector.Size))
     {
         IntersectionEvent& l_intersection_event = this->is_waitingfor_trigger_none_detector.get(i);
         this->set_triggerstate_matchingWith_boxcollider(p_collision_heap, l_intersection_event.detector, l_intersection_event.other, Trigger::State::NONE);
@@ -573,7 +573,7 @@ inline void CollisionDetectionStep::udpate_triggerstate_from_lastframe_intersect
 
 inline void CollisionDetectionStep::free_deleted_colliders(CollisionHeap2& p_collision_heap)
 {
-    for (vector_loop(&this->deleted_colliders_from_last_step, i))
+    for (loop(i, 0, this->deleted_colliders_from_last_step.Size))
     {
         p_collision_heap.free_boxcollider(this->deleted_colliders_from_last_step.get(i));
     }

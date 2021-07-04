@@ -10,9 +10,6 @@
 #define MULTILINE(...) #__VA_ARGS__
 #define MULTILINE_(...) MULTILINE(__VA_ARGS__)
 
-#define cast(Type, Value) ((Type)(Value))
-#define castv(Type, Value) *(Type*)(&Value)
-
 #define loop(Iteratorname, BeginNumber, EndNumber)                                                                                                                                                     \
     uimax Iteratorname = BeginNumber;                                                                                                                                                                  \
     Iteratorname < EndNumber;                                                                                                                                                                          \
@@ -31,23 +28,3 @@
     uimax Iteratorname = EndNumber - 1;                                                                                                                                                                \
     Iteratorname != ((uimax)BeginNumber - 1);                                                                                                                                                          \
     --Iteratorname
-
-#define vector_loop(VectorVariable, Iteratorname)                                                                                                                                                      \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (VectorVariable)->Size;                                                                                                                                                             \
-    Iteratorname++
-#define vector_loop_reverse(VectorVariable, Iteratorname)                                                                                                                                              \
-    uimax Iteratorname = (VectorVariable)->Size - 1;                                                                                                                                                   \
-    Iteratorname != ((uimax)-1);                                                                                                                                                                       \
-    --Iteratorname
-
-#define pool_loop(PoolVariable, Iteratorname)                                                                                                                                                          \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (PoolVariable)->get_size();                                                                                                                                                         \
-    Iteratorname++
-
-#define varyingvector_loop(VaryingVectorVariable, Iteratorname)                                                                                                                                        \
-    uimax Iteratorname = 0;                                                                                                                                                                            \
-    Iteratorname < (VaryingVectorVariable)->get_size();                                                                                                                                                \
-    Iteratorname++
-

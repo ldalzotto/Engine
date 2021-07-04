@@ -8,9 +8,6 @@ template <class ElementType> struct Slice
     uimax Size;
     ElementType* Begin;
 
-    using _ElementValue = ElementType;
-    using _SizeType = uimax;
-
     inline static Slice<ElementType> build_default()
     {
         return Slice<ElementType>{0, NULL};
@@ -33,22 +30,22 @@ template <class ElementType> struct Slice
 
     inline static Slice<int8> build_asint8(ElementType* p_memory, const uimax p_begin, const uimax p_end)
     {
-        return Slice<int8>{sizeof(ElementType) * (p_end - p_begin), cast(int8*, (p_memory + p_begin))};
+        return Slice<int8>{sizeof(ElementType) * (p_end - p_begin), (int8*)(p_memory + p_begin)};
     };
 
     inline Slice<int8> build_asint8() const
     {
-        return Slice<int8>{sizeof(ElementType) * this->Size, cast(int8*, this->Begin)};
+        return Slice<int8>{sizeof(ElementType) * this->Size, (int8*)this->Begin};
     };
 
     inline static Slice<int8> build_asint8_memory_elementnb(const ElementType* p_memory, const uimax p_element_nb)
     {
-        return Slice<int8>{sizeof(ElementType) * p_element_nb, cast(int8*, p_memory)};
+        return Slice<int8>{sizeof(ElementType) * p_element_nb, (int8*)p_memory};
     };
 
     inline static Slice<int8> build_asint8_memory_singleelement(const ElementType* p_memory)
     {
-        return Slice<int8>{sizeof(ElementType), cast(int8*, p_memory)};
+        return Slice<int8>{sizeof(ElementType), (int8*)p_memory};
     };
 
     inline uimax get_size() const
@@ -88,13 +85,13 @@ template <class ElementType> struct Slice
 
     inline int8 compare(const Slice<ElementType>& p_other) const
     {
-        return memory_compare(cast(int8*, this->Begin), cast(int8*, p_other.Begin), p_other.Size * sizeof(ElementType));
+        return memory_compare((int8*)this->Begin, (int8*)p_other.Begin, p_other.Size * sizeof(ElementType));
     };
 
     inline int8* move_memory(const Slice<ElementType>& p_source)
     {
 #if __DEBUG
-        return memory_move_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_source.Begin), p_source.Size * sizeof(ElementType));
+        return memory_move_safe((int8*)this->Begin, this->Size * sizeof(ElementType), (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
 #else
         return memory_move((int8*)this->Begin, (int8*)p_source.Begin, p_source.Size * sizeof(ElementType));
 #endif
@@ -123,7 +120,7 @@ template <class ElementType> struct Slice
     inline void copy_memory(const Slice<ElementType>& p_elements)
     {
 #if __DEBUG
-        memory_cpy_safe(cast(int8*, this->Begin), this->Size * sizeof(ElementType), cast(int8*, p_elements.Begin), p_elements.Size * sizeof(ElementType));
+        memory_cpy_safe((int8*)this->Begin, this->Size * sizeof(ElementType), (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
 #else
         memory_cpy((int8*)this->Begin, (int8*)p_elements.Begin, p_elements.Size * sizeof(ElementType));
 #endif
@@ -162,6 +159,11 @@ template <class ElementType> struct Slice
     {
         this->copy_memory_at_index_2(p_copy_index, p_elements_1, p_elements_2);
         this->copy_memory_at_index(p_copy_index + p_elements_1.Size + p_elements_2.Size, p_elements_3);
+    };
+
+    template <class CastedType> inline Slice<CastedType> cast()
+    {
+        return slice_cast<CastedType>(this->build_asint8());
     };
 
     inline void zero()
@@ -207,6 +209,11 @@ template <class ElementType> struct Slice
     };
 };
 
+template <> template <class CastedType> Slice<CastedType> Slice<int8>::cast()
+{
+    return slice_cast<CastedType>(*this);
+};
+
 inline Slice<int8> slice_int8_build_rawstr(const int8* p_str)
 {
     return Slice<int8>::build_memory_elementnb((int8*)p_str, strlen(p_str));
@@ -217,6 +224,7 @@ inline Slice<int8> slice_int8_build_rawstr_with_null_termination(const int8* p_s
     return Slice<int8>::build_memory_elementnb((int8*)p_str, strlen(p_str) + 1);
 };
 
+// TODO -> rename to not use
 template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8>& p_slice)
 {
 #if __DEBUG
@@ -226,7 +234,7 @@ template <class CastedType> inline Slice<CastedType> slice_cast(const Slice<int8
     }
 #endif
 
-    return Slice<CastedType>{cast(uimax, p_slice.Size / sizeof(CastedType)), cast(CastedType*, p_slice.Begin)};
+    return Slice<CastedType>{(uimax)(p_slice.Size / sizeof(CastedType)), (CastedType*)p_slice.Begin};
 };
 
 template <class CastedType> inline CastedType* slice_cast_singleelement(const Slice<int8>& p_slice)
@@ -237,7 +245,7 @@ template <class CastedType> inline CastedType* slice_cast_singleelement(const Sl
         abort();
     }
 #endif
-    return cast(CastedType*, p_slice.Begin);
+    return (CastedType*)p_slice.Begin;
 };
 
 template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(const Slice<int8>& p_slice, const uimax p_element_nb)
@@ -249,18 +257,8 @@ template <class CastedType> inline Slice<CastedType> slice_cast_fixedelementnb(c
     }
 #endif
 
-    return slice_build_memory_elementnb(cast(CastedType*, p_slice.Begin), p_element_nb);
+    return slice_build_memory_elementnb((CastedType*)p_slice.Begin, p_element_nb);
 };
-
-#if __TOKEN
-#define sliceoftoken_cast(CastedType, SourceSlice)                                                                                                                                                     \
-    Slice<Token<CastedType>>                                                                                                                                                                           \
-    {                                                                                                                                                                                                  \
-        (SourceSlice).Size, (Token<CastedType>*)(SourceSlice).Begin                                                                                                                                    \
-    }
-#else
-#define sliceoftoken_cast(CastedType, SourceSlice) SourceSlice
-#endif
 
 template <class ElementType, uimax Size_t> struct SliceN
 {

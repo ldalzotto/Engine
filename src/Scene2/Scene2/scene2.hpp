@@ -377,7 +377,7 @@ struct Scene
 
     template <class ComponentRemovedCallbackFunc> inline void consume_component_events()
     {
-        for (vector_loop(&this->scene_events.component_removed_events, i))
+        for (loop(i, 0, this->scene_events.component_removed_events.Size))
         {
             SceneEvents::ComponentRemovedEvent& l_component_event = this->scene_events.component_removed_events.get(i);
             ComponentRemovedCallbackFunc::on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
@@ -386,7 +386,7 @@ struct Scene
     };
     template <class ComponentRemovedCallbackObj> inline void consume_component_events_stateful(const ComponentRemovedCallbackObj& p_closure)
     {
-        for (vector_loop(&this->scene_events.component_removed_events, i))
+        for (loop(i, 0, this->scene_events.component_removed_events.Size))
         {
             SceneEvents::ComponentRemovedEvent& l_component_event = this->scene_events.component_removed_events.get(i);
             p_closure.on_component_removed(this, this->get_node(l_component_event.node), l_component_event.value);
@@ -526,7 +526,7 @@ struct Scene
     };
     inline void destroy_orphan_nodes()
     {
-        for (vector_loop(&this->scene_events.orphan_nodes_to_be_destroyed, i))
+        for (loop(i, 0, this->scene_events.orphan_nodes_to_be_destroyed.Size))
         {
             Node_Token l_node_to_destroy = this->scene_events.orphan_nodes_to_be_destroyed.get(i);
             this->tree.remove_node(this->tree.get_node(l_node_to_destroy));

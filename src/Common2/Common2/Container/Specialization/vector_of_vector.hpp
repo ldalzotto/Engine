@@ -44,7 +44,7 @@ struct VectorOfVector_VectorHeader
 
     template <class ElementType> inline Slice<ElementType> get_vector_to_capacity() const
     {
-        return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, cast(int8*, this) + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
+        return Slice<ElementType>::build_memory_elementnb((ElementType*)((int8*)this + sizeof(VectorOfVector_VectorHeader)), this->Capacity);
     };
 };
 
@@ -104,8 +104,8 @@ template <class ElementType> struct VectorOfVector
     inline Slice<ElementType> get(const uimax p_index)
     {
         Slice<int8> l_element = this->varying_vector.get_element(p_index);
-        VectorOfVector_VectorHeader* l_header = cast(VectorOfVector_VectorHeader*, l_element.Begin);
-        return Slice<ElementType>::build_memory_elementnb(cast(ElementType*, l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin), l_header->Size);
+        VectorOfVector_VectorHeader* l_header = (VectorOfVector_VectorHeader*)l_element.Begin;
+        return Slice<ElementType>::build_memory_elementnb((ElementType*)l_element.slide_rv(VectorOfVector_VectorHeader::get_vector_offset()).Begin, l_header->Size);
     };
 
     inline void set(const uimax p_index, const Slice<ElementType>& p_element)
@@ -116,7 +116,7 @@ template <class ElementType> struct VectorOfVector
 
     inline VectorOfVector_VectorHeader* get_vectorheader(const uimax p_index)
     {
-        return cast(VectorOfVector_VectorHeader*, this->varying_vector.get_element(p_index).Begin);
+        return (VectorOfVector_VectorHeader*)this->varying_vector.get_element(p_index).Begin;
     };
 
     inline void element_push_back_element(const uimax p_nested_vector_index, const ElementType& p_element)

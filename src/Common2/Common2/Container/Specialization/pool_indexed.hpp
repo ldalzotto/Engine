@@ -42,7 +42,7 @@ template <class ElementType> struct PoolIndexed
     inline void release_element(const sToken p_element)
     {
         this->Memory.release_element(p_element);
-        for (vector_loop(&this->Indices, i))
+        for (loop(i, 0, this->Indices.Size))
         {
             if (token_equals(this->Indices.get(i), p_element))
             {

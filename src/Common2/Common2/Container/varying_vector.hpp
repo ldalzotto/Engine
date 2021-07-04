@@ -59,7 +59,7 @@ struct VaryingVector
 
     template <class ElementType> inline void push_back_element(const ElementType& p_element)
     {
-        this->push_back(Slice<int8>::build_memory_elementnb(cast(int8*, &p_element), sizeof(ElementType)));
+        this->push_back(Slice<int8>::build_memory_elementnb((int8*)&p_element, sizeof(ElementType)));
     };
 
     inline void pop_back()

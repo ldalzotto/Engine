@@ -1,11 +1,11 @@
 #pragma once
 
+// TODO -> remove for iVector_v2
 template <class _Vector> struct iVector
 {
     _Vector& vector;
 
     using t_ElementValue = typename _Vector::t_ElementValue;
-    using t_SizeType = typename _Vector::t_SizeType;
 
     struct Assert
     {
@@ -18,7 +18,7 @@ template <class _Vector> struct iVector
         };
     };
 
-    inline t_SizeType get_size() const
+    inline uimax get_size() const
     {
         return this->vector.get_size();
     };

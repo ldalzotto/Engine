@@ -123,7 +123,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_push_back_array
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
 
@@ -137,14 +137,14 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // push_back_array_empty
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         p_vector.push_back_array_empty(5);
         assert_true(p_vector.get_size() == (l_old_size + (uimax)5));
     }
 
     // vector_push_back_element
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         uimax l_element = 25;
         p_vector.push_back_element(l_element);
         assert_true(p_vector.get_size() == l_old_size + 1);
@@ -153,7 +153,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_insert_array_at
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         uimax l_elements[5] = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = Slice<uimax>::build_memory_elementnb(l_elements, 5);
         p_vector.insert_array_at(l_elements_slice, 0);
@@ -172,29 +172,29 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
         // Middle insertion
         for (loop_int16(i, 3, 8))
         {
-            assert_true((p_vector.get(i)) == l_elements[i - cast(uimax, 3)]);
+            assert_true((p_vector.get(i)) == l_elements[i - 3]);
         }
         for (loop_int16(i, 8, 10))
         {
-            assert_true((p_vector.get(i)) == l_elements[i - cast(uimax, 5)]);
+            assert_true((p_vector.get(i)) == l_elements[i - 5]);
         }
     }
 
     // vector_insert_element_at
     {
         uimax l_element = 20;
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
 
         p_vector.insert_element_at(l_element, 7);
         assert_true(p_vector.get(7) == l_element);
         assert_true(p_vector.get_size() == l_old_size + 1);
 
-        p_vector.insert_element_at(cast(uimax, 20), 9);
+        p_vector.insert_element_at(20, 9);
     }
 
     // vector_erase_element_at
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         uimax l_erase_index = 1;
         uimax l_element_after = p_vector.get(l_erase_index + 1);
         p_vector.erase_element_at(1);
@@ -204,7 +204,7 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_erase_array_at
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         uimax l_erase_begin_index = 3;
         const uimax l_erase_nb = 6;
         const uimax l_old_element_check_nb = 3;
@@ -226,14 +226,14 @@ template <class Container> inline void ivector_test_v2(iVector<Container> p_vect
 
     // vector_pop_back
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         p_vector.pop_back();
         assert_true(p_vector.get_size() == l_old_size - 1);
     }
 
     // vector_pop_back_array
     {
-        typename iVector<Container>::t_SizeType l_old_size = p_vector.get_size();
+        uimax l_old_size = p_vector.get_size();
         p_vector.pop_back_array(3);
         assert_true(p_vector.get_size() == l_old_size - 3);
     }
@@ -394,15 +394,15 @@ inline void pool_test()
         uimax l_element = 4;
         Pool<uimax>::sToken l_token = l_pool_sizet.alloc_element(l_element);
 
-        l_pool_sizet.alloc_element(cast(uimax, 10));
-        l_pool_sizet.release_element(l_pool_sizet.alloc_element(cast(uimax, 10)));
-        l_pool_sizet.alloc_element(cast(uimax, 10));
+        l_pool_sizet.alloc_element(10);
+        l_pool_sizet.release_element(l_pool_sizet.alloc_element(10));
+        l_pool_sizet.alloc_element(10);
 
         assert_true(token_value(l_token) == 0);
         assert_true(l_pool_sizet.get(l_token) == l_element);
     }
 
-    for (pool_loop(&l_pool_sizet, i))
+    for (loop(i, 0, l_pool_sizet.get_size()))
     {
         l_pool_sizet.get(Pool<uimax>::sToken{i});
     }
@@ -466,7 +466,7 @@ inline void varyingvector_test()
         Slice<int8> l_element_inserted = l_varyingvector.get_element(l_inserted_index);
 
         assert_true(l_element_inserted.Size == sizeof(uimax));
-        assert_true(memory_compare(cast(const int8*, &l_element), l_element_inserted.Begin, l_element_inserted.Size));
+        assert_true(memory_compare((const int8*)&l_element, l_element_inserted.Begin, l_element_inserted.Size));
 
         Slice<uimax> l_casted_slice = slice_cast<uimax>(l_element_inserted);
         assert_true(l_casted_slice.Size == 1);
@@ -487,7 +487,7 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
@@ -505,7 +505,7 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
@@ -524,7 +524,7 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         assert_true(l_varyingvector.get_size() == 5);
@@ -541,7 +541,7 @@ inline void varyingvector_test()
     {
         for (loop(i, 0, 5))
         {
-            l_varyingvector.push_back_element(cast(uimax, i));
+            l_varyingvector.push_back_element((uimax)i);
         }
 
         uimax l_inserset_number = 30;
@@ -580,13 +580,14 @@ inline void varyingvector_test()
         l_varyingvector.element_writeto(2, 1 * sizeof(uimax), Slice<uimax>::build_asint8_memory_singleelement(&l_element_1));
 
         Slice<int8> l_varyingvector_element_2 = l_varyingvector.get_element(2);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.Begin) == l_element_0);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin) == l_element_1);
-        assert_true(*cast(uimax*, l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin) == l_element_2);
+        assert_true(*(uimax*)l_varyingvector_element_2.Begin == l_element_0);
+        assert_true(*(uimax*)l_varyingvector_element_2.slide_rv(sizeof(uimax)).Begin == l_element_1);
+        assert_true(*(uimax*)l_varyingvector_element_2.slide_rv(2 * sizeof(uimax)).Begin == l_element_2);
     }
 
     {
-        for (varyingvector_loop(&l_varyingvector, i))
+
+        for (loop(i, 0, l_varyingvector.get_size()))
         {
             l_varyingvector.get_element(i);
         }
@@ -959,15 +960,15 @@ inline void ntree_test()
 {
     NTree<uimax> l_uimax_tree = NTree<uimax>::allocate_default();
 
-    NTree<uimax>::sToken l_root = l_uimax_tree.push_root_value(cast(uimax, 0));
-    l_uimax_tree.push_value(cast(uimax, 1), l_root);
-    NTree<uimax>::sToken l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-    NTree<uimax>::sToken l_3_node = l_uimax_tree.push_value(cast(uimax, 3), l_root);
+    NTree<uimax>::sToken l_root = l_uimax_tree.push_root_value(0);
+    l_uimax_tree.push_value(1, l_root);
+    NTree<uimax>::sToken l_2_node = l_uimax_tree.push_value(2, l_root);
+    NTree<uimax>::sToken l_3_node = l_uimax_tree.push_value(3, l_root);
 
-    l_uimax_tree.push_value(cast(uimax, 4), l_2_node);
-    l_uimax_tree.push_value(cast(uimax, 5), l_2_node);
+    l_uimax_tree.push_value(4, l_2_node);
+    l_uimax_tree.push_value(5, l_2_node);
 
-    NTree<uimax>::sToken l_6_node = l_uimax_tree.push_value(cast(uimax, 6), l_3_node);
+    NTree<uimax>::sToken l_6_node = l_uimax_tree.push_value(6, l_3_node);
 
     {
         assert_true(l_uimax_tree.Memory.get_size() == 7);
@@ -1044,9 +1045,9 @@ inline void ntree_test()
 
     // add_child
     {
-        l_2_node = l_uimax_tree.push_value(cast(uimax, 2), l_root);
-        NTree<uimax>::sToken l_2_1_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
-        NTree<uimax>::sToken l_2_2_node = l_uimax_tree.push_value(cast(uimax, 3), l_2_node);
+        l_2_node = l_uimax_tree.push_value(2, l_root);
+        NTree<uimax>::sToken l_2_1_node = l_uimax_tree.push_value(3, l_2_node);
+        NTree<uimax>::sToken l_2_2_node = l_uimax_tree.push_value(3, l_2_node);
 
         assert_true(l_uimax_tree.add_child_silent(l_3_node, l_2_2_node));
 
@@ -1788,7 +1789,7 @@ inline void serialize_deserialize_binary_test()
 
     {
         BinaryDeserializer l_deserializer = BinaryDeserializer::build(l_binary_data.Memory.slice);
-        Slice<uimax> l_slice_deserialized = slice_cast<uimax>(l_deserializer.slice());
+        Slice<uimax> l_slice_deserialized = l_deserializer.slice().cast<uimax>();
 
         assert_true(l_slice.Size == l_slice_deserialized.Size);
         assert_true(l_slice.compare(l_slice_deserialized));

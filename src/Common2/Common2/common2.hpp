@@ -48,8 +48,8 @@
 
 #include "./Memory/token.hpp"
 #include "./Memory/memory.hpp"
-#include "./Memory/slice.hpp"
-#include "./Memory/span.hpp"
+#include "./Container/Slice/slice.hpp"
+#include "./Container/Span/span.hpp"
 
 #include "./Thread/thread.hpp"
 #include "./Clock/clock.hpp"
@@ -60,13 +60,14 @@
 #include "./Functional/sort.hpp"
 #include "./Functional/slice_algorithm.hpp"
 
-#include "./Container/Interface/ivector.hpp"
+#include "./Container/Vector/Interface/ivector.hpp"
+#include "./Container/Vector/Interface/ivector_v2.hpp"
 #include "./Container/Interface/ipool.hpp"
 #include "./Container/Interface/iheap.hpp"
 #include "./Container/Interface/istring.hpp"
 
-#include "./Container/vector.hpp"
-#include "./Container/vector_slice.hpp"
+#include "./Container/Vector/vector.hpp"
+#include "./Container/Vector/vector_slice.hpp"
 #include "./Container/hashmap.hpp"
 #include "./Container/pool.hpp"
 #include "./Container/varying_slice.hpp"

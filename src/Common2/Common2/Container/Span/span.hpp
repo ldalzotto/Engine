@@ -30,7 +30,7 @@ template <class ElementType> struct Span
 
     inline static Span<ElementType> allocate(const uimax p_capacity)
     {
-        return Span<ElementType>{p_capacity, cast(ElementType*, heap_malloc(p_capacity * sizeof(ElementType)))};
+        return Span<ElementType>{p_capacity, (ElementType*)heap_malloc(p_capacity * sizeof(ElementType))};
     };
 
     inline static Span<ElementType> allocate_slice(const Slice<ElementType>& p_elements)
@@ -47,7 +47,6 @@ template <class ElementType> struct Span
         return l_span;
     };
 
-
     inline static Span<ElementType> allocate_slice_3(const Slice<ElementType>& p_elements_1, const Slice<ElementType>& p_elements_2, const Slice<ElementType>& p_elements_3)
     {
         Span<ElementType> l_span = Span<ElementType>::allocate(p_elements_1.Size + p_elements_2.Size + p_elements_3.Size);
@@ -57,7 +56,7 @@ template <class ElementType> struct Span
 
     inline static Span<ElementType> callocate(const uimax p_capacity)
     {
-        return Span<ElementType>{p_capacity, cast(ElementType*, heap_calloc(p_capacity * sizeof(ElementType)))};
+        return Span<ElementType>{p_capacity, (ElementType*)heap_calloc(p_capacity * sizeof(ElementType))};
     };
 
     inline ElementType& get(const uimax p_index)
@@ -72,7 +71,7 @@ template <class ElementType> struct Span
     {
         if (p_new_capacity > this->Capacity)
         {
-            ElementType* l_newMemory = (ElementType*)heap_realloc(cast(int8*, this->Memory), p_new_capacity * sizeof(ElementType));
+            ElementType* l_newMemory = (ElementType*)heap_realloc((int8*)this->Memory, p_new_capacity * sizeof(ElementType));
             if (l_newMemory != NULL)
             {
                 *this = Span<ElementType>::build(l_newMemory, p_new_capacity);
@@ -119,7 +118,7 @@ template <class ElementType> struct Span
 
     inline void free()
     {
-        heap_free(cast(int8*, this->Memory));
+        heap_free((int8*)this->Memory);
         *this = Span<ElementType>::build(NULL, 0);
     };
 };

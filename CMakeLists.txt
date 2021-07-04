@@ -12,7 +12,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-missing-braces)
 endif ()
 
-
 # OR ("${CMAKE_BUILD_TYPE_INIT}" STREQUAL "Debug")
 if (("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "Debug") OR ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
     set(IS_DEBUG true)

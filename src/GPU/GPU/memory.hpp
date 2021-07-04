@@ -852,7 +852,7 @@ struct BufferEvents
 
     inline void remove_buffer_host_references(const BufferHost_Token p_buffer_host)
     {
-        for (vector_loop_reverse(&this->write_buffer_host_to_buffer_gpu_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_host_to_buffer_gpu_events.Size))
         {
             WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
             if (token_equals(l_event.source_buffer, p_buffer_host))
@@ -861,7 +861,7 @@ struct BufferEvents
                 this->write_buffer_host_to_buffer_gpu_events.erase_element_at_always(i);
             }
         }
-        for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_gpu_to_buffer_host_events.Size))
         {
             WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
             if (token_equals(l_event.target_buffer, p_buffer_host))
@@ -869,7 +869,7 @@ struct BufferEvents
                 this->write_buffer_gpu_to_buffer_host_events.erase_element_at_always(i);
             }
         }
-        for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_host_to_image_gpu_events.Size))
         {
             WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
             if (token_equals(l_event.source_buffer, p_buffer_host))
@@ -878,7 +878,7 @@ struct BufferEvents
                 this->write_buffer_host_to_image_gpu_events.erase_element_at_always(i);
             }
         }
-        for (vector_loop_reverse(&this->write_image_gpu_to_buffer_host_events, i))
+        for (loop_reverse(i, 0, this->write_image_gpu_to_buffer_host_events.Size))
         {
             WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
             if (token_equals(l_event.target_buffer, p_buffer_host))
@@ -890,7 +890,7 @@ struct BufferEvents
 
     inline void remove_buffer_gpu_references(const BufferGPU_Token p_buffer_gpu)
     {
-        for (vector_loop_reverse(&this->write_buffer_gpu_to_buffer_host_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_gpu_to_buffer_host_events.Size))
         {
             WriteBufferGPUToBufferHost& l_event = this->write_buffer_gpu_to_buffer_host_events.get(i);
             if (token_equals(l_event.source_buffer, p_buffer_gpu))
@@ -899,7 +899,7 @@ struct BufferEvents
             }
         }
 
-        for (vector_loop_reverse(&this->write_buffer_host_to_buffer_gpu_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_host_to_buffer_gpu_events.Size))
         {
             WriteBufferHostToBufferGPU& l_event = this->write_buffer_host_to_buffer_gpu_events.get(i);
             if (token_equals(l_event.target_buffer, p_buffer_gpu))
@@ -915,7 +915,7 @@ struct BufferEvents
 
     inline void remove_image_host_references(const ImageHost_Token p_image_host)
     {
-        for (vector_loop_reverse(&this->image_host_allocate_events, i))
+        for (loop_reverse(i, 0, this->image_host_allocate_events.Size))
         {
             AllocatedImageHost& l_event = this->image_host_allocate_events.get(i);
             if (token_equals(l_event.image, p_image_host))
@@ -927,7 +927,7 @@ struct BufferEvents
 
     inline void remove_image_gpu_references(const ImageGPU_Token p_image_gpu)
     {
-        for (vector_loop_reverse(&this->write_buffer_host_to_image_gpu_events, i))
+        for (loop_reverse(i, 0, this->write_buffer_host_to_image_gpu_events.Size))
         {
             WriteBufferHostToImageGPU& l_event = this->write_buffer_host_to_image_gpu_events.get(i);
             if (token_equals(l_event.target_image, p_image_gpu))
@@ -940,7 +940,7 @@ struct BufferEvents
             }
         }
 
-        for (vector_loop_reverse(&this->write_image_gpu_to_buffer_host_events, i))
+        for (loop_reverse(i, 0, this->write_image_gpu_to_buffer_host_events.Size))
         {
             WriteImageGPUToBufferHost& l_event = this->write_image_gpu_to_buffer_host_events.get(i);
             if (token_equals(l_event.source_image, p_image_gpu))
@@ -949,7 +949,7 @@ struct BufferEvents
             }
         }
 
-        for (vector_loop_reverse(&this->image_gpu_allocate_events, i))
+        for (loop_reverse(i, 0, this->image_gpu_allocate_events.Size))
         {
             AllocatedImageGPU& l_event = this->image_gpu_allocate_events.get(i);
             if (token_equals(l_event.image, p_image_gpu))
