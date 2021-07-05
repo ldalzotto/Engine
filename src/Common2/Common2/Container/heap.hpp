@@ -136,7 +136,7 @@ struct HeapPaged
 
         inline VectorOfVector<SliceIndex>::Element_iVector_v2& get_freechunks()
         {
-            this->tmp_shadow_vec = this->heapPaged->FreeChunks.element_as_iVector_v2(this->index);
+            this->tmp_shadow_vec = this->heapPaged->FreeChunks.get_as_ivector(this->index);
             return tmp_shadow_vec;
         };
 
@@ -214,7 +214,7 @@ struct HeapPaged
 
     inline void release_element(const HeapPagedToken& p_token)
     {
-        this->FreeChunks.element_push_back_element(p_token.PageIndex, this->AllocatedChunks.get(p_token.token));
+        this->FreeChunks.get_as_ivector(p_token.PageIndex).push_back_element(this->AllocatedChunks.get(p_token.token));
         this->AllocatedChunks.release_element(p_token.token);
     };
 

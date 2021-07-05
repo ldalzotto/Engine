@@ -1,7 +1,5 @@
 #pragma once
 
-#include "vector_of_vector.hpp"
-
 template <class ElementType> struct PoolOfVector;
 namespace PoolOfVector_Types
 {
@@ -83,7 +81,7 @@ template <class ElementType> struct PoolOfVector
         this->token_not_free_check(p_token);
 #endif
 
-        this->Memory.element_clear(token_value(p_token));
+        this->Memory.get_as_ivector(token_value(p_token)).clear();
         this->FreeBlocks.push_back_element(p_token);
     };
 
@@ -102,7 +100,7 @@ template <class ElementType> struct PoolOfVector
         this->token_not_free_check(p_token);
 #endif
 
-        this->Memory.element_push_back_element(token_value(p_token), p_element);
+        this->Memory.get_as_ivector(token_value(p_token)).push_back_element(p_element);
     };
 
     inline void element_erase_element_at(const sToken p_token, const uimax p_index)
@@ -110,7 +108,8 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_erase_element_at(token_value(p_token), p_index);
+
+        this->Memory.get_as_ivector(token_value(p_token)).erase_element_at(p_index);
     };
 
     inline void element_erase_element_at_always(const sToken p_token, const uimax p_index)
@@ -118,7 +117,8 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_erase_element_at_always(token_value(p_token), p_index);
+
+        this->Memory.get_as_ivector(token_value(p_token)).erase_element_at_always(p_index);
     };
 
     inline void element_clear(const sToken p_token)
@@ -127,7 +127,7 @@ template <class ElementType> struct PoolOfVector
 #if __DEBUG
         this->token_not_free_check(p_token);
 #endif
-        this->Memory.element_clear(token_value(p_token));
+        this->Memory.get_as_ivector(token_value(p_token)).clear();
     };
 
     struct Element_iVector

@@ -660,7 +660,7 @@ inline void vectorofvector_test()
             l_index = l_vectorofvector_uimax.varying_vector.get_size() - 2;
             assert_true(l_index == i + 2);
 
-            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.get_as_ivector(l_index);
             iVector<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
             l_entry.push_back_element(l_element);
 
@@ -685,7 +685,7 @@ inline void vectorofvector_test()
 
         // uimax l_inserted_element = 200;
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
-        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.get_as_ivector(l_index);
         iVector<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
         l_entry.erase_element_at(1);
         Slice<uimax> l_vector = l_entry.to_slice();
@@ -703,7 +703,7 @@ inline void vectorofvector_test()
         }
 
         uimax l_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
-        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_index);
+        VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.get_as_ivector(l_index);
         iVector<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
 
         uimax l_elements[3] = {100, 120, 140};
@@ -762,7 +762,7 @@ inline void vectorofvector_test()
         l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
 
         l_vectorofvector_uimax.push_back_element_empty();
-        l_vectorofvector_uimax.element_push_back_element(0, 10);
+        l_vectorofvector_uimax.get_as_ivector(0).push_back_element(10);
 
         l_vectorofvector_uimax.insert_empty_at(0);
 
@@ -788,7 +788,7 @@ inline void vectorofvector_test()
         }
 
         {
-            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(0);
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.get_as_ivector(0);
             iVector<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
             l_entry.push_back_element(9);
             assert_true(l_entry.get_size() == 4);
@@ -814,7 +814,7 @@ inline void vectorofvector_test()
         SliceN<uimax, 4> l_indices = {2, 7, 0, 5};
         for (loop(i, 0, l_indices.Size()))
         {
-            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.element_as_iVector_v2(l_indices.get(i));
+            VectorOfVector<uimax>::Element_iVector_v2 __entry = l_vectorofvector_uimax.get_as_ivector(l_indices.get(i));
             iVector<VectorOfVector<uimax>::Element_iVector_v2> l_entry = iVector<VectorOfVector<uimax>::Element_iVector_v2>{__entry};
             ivector_test_v2(l_entry);
         }

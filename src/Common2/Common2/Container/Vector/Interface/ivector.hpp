@@ -373,7 +373,7 @@ template <class _Vector> struct iVector
     };
 };
 
-#define iVector_v2_functions_forward_declare(VectorType)                                                                                                                                               \
+#define iVector_functions_forward_declare(VectorType)                                                                                                                                                  \
     inline t_ElementValue& get(const uimax p_index)                                                                                                                                                    \
     {                                                                                                                                                                                                  \
         return iVector<VectorType>{*this}.get(p_index);                                                                                                                                                \
@@ -387,6 +387,11 @@ template <class _Vector> struct iVector
     inline int8 empty() const                                                                                                                                                                          \
     {                                                                                                                                                                                                  \
         return iVector<VectorType>{*(VectorType*)this}.empty();                                                                                                                                        \
+    };                                                                                                                                                                                                 \
+                                                                                                                                                                                                       \
+    inline void clear()                                                                                                                                                                                \
+    {                                                                                                                                                                                                  \
+        return iVector<VectorType>{*this}.clear();                                                                                                                                                     \
     };                                                                                                                                                                                                 \
                                                                                                                                                                                                        \
     inline int8 insert_array_at(const Slice<t_ElementValue>& p_elements, const uimax p_index)                                                                                                          \

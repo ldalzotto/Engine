@@ -60,20 +60,22 @@
 #include "./Functional/sort.hpp"
 #include "./Functional/slice_algorithm.hpp"
 
-#include "./Container/Vector/Interface/ivector_v2.hpp"
+#include "./Container/Vector/Interface/ivector.hpp"
 #include "./Container/Interface/ipool.hpp"
 #include "./Container/Interface/iheap.hpp"
 #include "./Container/Interface/istring.hpp"
 
 #include "./Container/Vector/vector.hpp"
 #include "./Container/Vector/vector_slice.hpp"
-#include "./Container/hashmap.hpp"
-#include "./Container/pool.hpp"
+
 #include "./Container/varying_slice.hpp"
 #include "./Container/varying_vector.hpp"
+#include "./Container/Vector/vector_of_vector.hpp"
+
+#include "./Container/hashmap.hpp"
+#include "./Container/pool.hpp"
 #include "./Container/string.hpp"
 
-#include "./Container/Specialization/vector_of_vector.hpp"
 #include "./Container/Specialization/pool_of_vector.hpp"
 #include "./Container/Specialization/pool_indexed.hpp"
 #include "./Container/Specialization/pool_hashed_counted.hpp"

@@ -100,12 +100,7 @@ template <class ElementType> struct Vector
         this->get(p_index) = p_element_type;
     };
 
-    inline void clear()
-    {
-        this->Size = 0;
-    };
-
-    iVector_v2_functions_forward_declare(Vector<ElementType>);
+    iVector_functions_forward_declare(Vector<ElementType>);
 
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {

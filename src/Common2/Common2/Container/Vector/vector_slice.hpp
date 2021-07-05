@@ -33,11 +33,6 @@ template <class ElementType> struct VectorSlice
         return this->Memory.Begin[p_index];
     };
 
-    inline void clear()
-    {
-        this->Size = 0;
-    };
-
     inline void set_unchecked(const uimax p_index, const ElementType& p_element_type)
     {
         this->Memory.get(p_index) = p_element_type;
@@ -48,7 +43,7 @@ template <class ElementType> struct VectorSlice
         this->get(p_index) = p_element_type;
     };
 
-    iVector_v2_functions_forward_declare(VectorSlice<ElementType>);
+    iVector_functions_forward_declare(VectorSlice<ElementType>);
 
     inline void move_memory_down(const uimax p_break_index, const uimax p_move_delta)
     {

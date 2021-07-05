@@ -59,7 +59,7 @@ struct SceneAsset
         l_element.slide(sizeof(SceneAssetComponent::value_size));
         l_element.copy_memory(p_component_value_memory);
 
-        this->node_to_components.element_push_back_element(token_value(p_node), token_build<SliceIndex>(this->component_assets.get_size() - 1));
+        this->node_to_components.get_as_ivector(token_value(p_node)).push_back_element(token_build<SliceIndex>(this->component_assets.get_size() - 1));
     };
 
     template <class ComponentType> inline void add_component_typed(const Token<NTree<transform>::Node> p_node, const ComponentType& p_component)
