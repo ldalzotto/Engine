@@ -1,77 +1,77 @@
 
 #define __SOCKET_ENABLED 1
-#include "Common2/common2.hpp"
-
-template <class ElementType> inline void assert_span_unitialized(Span<ElementType>* p_span)
-{
-    assert_true(p_span->Capacity == 0);
-    assert_true(p_span->Memory == NULL);
-};
+// #include "Common2/common2.hpp"
+#include "Common2/common2_v2.hpp"
 
 inline void slice_span_test()
 {
-    Span<uimax> l_span_sizet = Span<uimax>::build(NULL, 0);
+    gSpan<uimax> l_span_sizet = gSpan<uimax>::build(0, 0);
 
     // When resizing the span, new memory is allocated
     {
         uimax l_new_capacity = 10;
-        l_span_sizet.resize(10);
-        assert_true(l_span_sizet.Capacity == l_new_capacity);
-        assert_true(l_span_sizet.Memory != NULL);
+        l_span_sizet.resize(10, gheap);
+        assert_true(l_span_sizet.size == l_new_capacity);
+        assert_true(l_span_sizet.memory != 0);
     }
 
     // When freeing the span, it's structure is resetted
     {
-        l_span_sizet.free();
-        assert_span_unitialized(&l_span_sizet);
+        l_span_sizet.free(gheap);
+        assert_true(l_span_sizet.size == 0);
+        assert_true(l_span_sizet.memory == 0);
     }
 
     // Move memory
     {
-        l_span_sizet.resize(10);
+        l_span_sizet.resize(10, gheap);
 
-        l_span_sizet.get(0) = 3;
-        l_span_sizet.get(1) = 5;
-        l_span_sizet.get(3) = 10;
+        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice(gheap);
+        *l_slice_sizet.get(0) = 3;
+        *l_slice_sizet.get(1) = 5;
+        *l_slice_sizet.get(3) = 10;
 
-        l_span_sizet.slice.move_memory_down(1, 3, 1);
-        assert_true(l_span_sizet.get(4) == 10);
+        l_slice_sizet.move_memory_down(1, 3, 1);
+        assert_true(*l_slice_sizet.get(4) == 10);
 
-        l_span_sizet.slice.move_memory_up(1, 4, 2);
-        assert_true(l_span_sizet.get(2) == 10);
+        l_slice_sizet.move_memory_up(1, 4, 2);
+        assert_true(*l_slice_sizet.get(2) == 10);
 
-        assert_true(l_span_sizet.get(0) == 3);
-        assert_true(l_span_sizet.get(1) == 5);
+        assert_true(*l_slice_sizet.get(0) == 3);
+        assert_true(*l_slice_sizet.get(1) == 5);
 
-        l_span_sizet.slice.move_memory_up(2, 2, 2);
+        l_slice_sizet.move_memory_up(2, 2, 2);
 
-        assert_true(l_span_sizet.get(0) == 10);
-        assert_true(l_span_sizet.get(1) == 10);
+        assert_true(*l_slice_sizet.get(0) == 10);
+        assert_true(*l_slice_sizet.get(1) == 10);
     }
 
-    l_span_sizet.free();
+    l_span_sizet.free(gheap);
 
     {
-        l_span_sizet = Span<uimax>::allocate(10);
-
+        l_span_sizet = gSpan<uimax>::allocate(10, gheap);
+        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice(gheap);
         SliceN<uimax, 4> l_slice_1 = {0, 1, 2, 3};
         SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
-        l_span_sizet.slice.copy_memory_at_index_2(1, slice_from_slicen(&l_slice_1), slice_from_slicen(&l_slice_2));
 
-        assert_true(l_span_sizet.slice.slide_rv(1).compare(slice_from_slicen(&l_slice_1)));
-        assert_true(l_span_sizet.slice.slide_rv(5).compare(slice_from_slicen(&l_slice_2)));
+        l_slice_sizet.copy_memory_at_index_2_1v_2v(1, slice_from_slicen(&l_slice_1), slice_from_slicen(&l_slice_2));
 
-        l_span_sizet.free();
+        assert_true(l_slice_sizet.slide_rv(1).compare_0v(slice_from_slicen(&l_slice_1)));
+        assert_true(l_slice_sizet.slide_rv(5).compare_0v(slice_from_slicen(&l_slice_2)));
+
+        l_span_sizet.free(gheap);
     }
     {
         SliceN<uimax, 4> l_slice = {15, 26, 78, 10};
-        l_span_sizet = Span<uimax>::allocate_slice(slice_from_slicen(&l_slice));
-        assert_true(l_span_sizet.Capacity == 4);
-        assert_true(l_span_sizet.slice.compare(slice_from_slicen(&l_slice)));
+        l_span_sizet = gSpan<uimax>::allocate_slice_0v(slice_from_slicen(&l_slice), gheap);
+        assert_true(l_span_sizet.size == 4);
+        assert_true(l_span_sizet.to_slice(gheap).compare_0v(slice_from_slicen(&l_slice)));
 
-        l_span_sizet.free();
+        l_span_sizet.free(gheap);
     }
 };
+
+#if 0
 
 inline void slice_functional_algorithm_test(){// find
                                               {Slice<int8> l_char_slice = slice_int8_build_rawstr("Don't Count Your Chickens Before They Hatch.");
@@ -2355,10 +2355,13 @@ inline void command_buffer_pattern_test()
     l_command_pool.free();
     l_command_execution.free();
 };
+#endif
 
 int main(int argc, int8** argv)
 {
     slice_span_test();
+
+#if 0
     slice_functional_algorithm_test();
     base64_test();
     vector_test();
@@ -2390,8 +2393,10 @@ int main(int argc, int8** argv)
     native_window();
     database_test();
     command_buffer_pattern_test();
+#endif
 
-    memleak_ckeck();
+    gheap.heap->memleak_ckeck();
+    // memleak_ckeck();
 }
 
 #include "Common2/common2_external_implementation.hpp"

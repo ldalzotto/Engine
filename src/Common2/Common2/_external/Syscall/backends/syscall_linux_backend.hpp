@@ -86,7 +86,9 @@ void mutex_native_free(mutex_native& p_mutex)
 #endif
 };
 
-// Mutex - END
+    // Mutex - END
+
+#if 0
 
 // Thread - BEGIN
 
@@ -117,7 +119,7 @@ int8 thread_native_wait_for_end(const thread_native p_thread, const uimax p_time
     if (pthread_timedjoin_np((pthread_t)p_thread.ptr, (void**)&l_return, &l_time) == 0)
     {
         int8 l_return_local = *l_return;
-        heap_free((int8*)l_return);
+        gheap.free((int8*)l_return);
         return l_return_local;
     }
     return 1;
@@ -147,6 +149,8 @@ void thread_native_on_main_function_finished(const int8 p_return)
 
     // Thread - END
 
+#endif
+
     // Backtrace - BEGIN
 
 #include <execinfo.h>
@@ -157,6 +161,8 @@ void backtrace_capture(void* p_backtrace_array, const uimax p_backtrace_array_si
 };
 
     // Backtrace - END
+
+#if 0
 
     // File - BEGIN
 
@@ -421,7 +427,8 @@ void window_native_get_window_client_dimensions(const window_native p_window_han
     xlib_status_handle(XGetGeometry(g_display_info.display, (Window)p_window_handle.ptr, &l_root_window, &l_position_x, &l_position_y, out_client_width, out_client_height, &l_border_widht, &l_depth));
 };
 
-inline void _window_native_test_wait_for_resize_event(const window_native p_window, const int32 p_width, const int32 p_height){
+inline void _window_native_test_wait_for_resize_event(const window_native p_window, const int32 p_width, const int32 p_height)
+{
     XEvent l_event;
 
     while (1)
@@ -619,3 +626,4 @@ int8 socket_native_is_error_is_msgsize_type(const int32 p_error)
     // for linux, such error doesn't exists, so we always return 0 indicating that it is not a msgsize type error.
     return 0;
 };
+#endif
