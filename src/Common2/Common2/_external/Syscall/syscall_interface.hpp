@@ -26,7 +26,8 @@ time_t clock_native_currenttime_mics();
 
 struct mutex_native
 {
-    union {
+    union
+    {
         int8 memory[__mutex_native_v2_size];
         int8* ptr;
     };

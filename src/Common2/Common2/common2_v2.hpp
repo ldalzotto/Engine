@@ -183,8 +183,8 @@ template <class _Heap, class _Heap_Token> struct iHeap
     };
 };
 
-#define MEM_LEAK_MAX_POINTER_COUNTER 10000
-#define MEM_LEAK_MAX_BACKTRACE 64
+constexpr int32 MEM_LEAK_MAX_POINTER_COUNTER = 10000;
+constexpr int8 MEM_LEAK_MAX_BACKTRACE = 64;
 
 typedef int8* ptr_counter_t[MEM_LEAK_MAX_POINTER_COUNTER];
 typedef void* backtrace_t[MEM_LEAK_MAX_BACKTRACE];
@@ -324,10 +324,8 @@ struct GlobalHeap
     };
 };
 
-#define TGlobalHeap GlobalHeap, GlobalHeapToken
-
 GlobalHeap _g_heap;
-iHeap<TGlobalHeap> gheap = iHeap<TGlobalHeap>{&_g_heap};
+iHeap<GlobalHeap, GlobalHeapToken> gheap = iHeap<GlobalHeap, GlobalHeapToken>{&_g_heap};
 
 struct GlobalHeapNoAlloc
 {
@@ -357,10 +355,8 @@ struct GlobalHeapNoAlloc
     };
 };
 
-#define TGlobalHeapNoAlloc GlobalHeapNoAlloc, GlobalHeapToken
-
 GlobalHeapNoAlloc _g_heap_noalloc;
-iHeap<TGlobalHeapNoAlloc> gheapnoalloc = iHeap<TGlobalHeapNoAlloc>{&_g_heap_noalloc};
+iHeap<GlobalHeapNoAlloc, GlobalHeapToken> gheapnoalloc = iHeap<GlobalHeapNoAlloc, GlobalHeapToken>{&_g_heap_noalloc};
 
 inline int8* memory_cpy(int8* p_dst, const uimax p_dst_size, const int8* p_src, const uimax p_size)
 {
@@ -527,7 +523,7 @@ template <class ElementType> struct Slice
         }
 #endif
 
-        return build(this->memory, (uimax)(this->size / sizeof(CastedElementType)), sizeof(CastedElementType));
+        return Slice<CastedElementType>::build((CastedElementType*)this->memory, (uimax)((this->size * sizeof(ElementType)) / sizeof(CastedElementType)));
     };
 
     void zero()
@@ -658,6 +654,35 @@ template <class ElementType, uimax Size_t> struct SliceN
 template <class ElementType, uimax Size_t> inline Slice<ElementType> slice_from_slicen(SliceN<ElementType, Size_t>* p_slice_n)
 {
     return Slice<ElementType>{Size_t, (ElementType*)p_slice_n->Memory};
+};
+
+/*
+    A SliceIndex is just a begin and end uimax
+*/
+struct SliceIndex
+{
+    uimax begin;
+    uimax size;
+
+    static SliceIndex build(uimax p_begin, uimax p_size)
+    {
+        SliceIndex l_slice_index;
+        l_slice_index.begin = p_begin;
+        l_slice_index.size = p_size;
+        return l_slice_index;
+    };
+
+    static SliceIndex build_default()
+    {
+        return build(0, 0);
+    };
+
+    void slice_two(uimax p_break_point, SliceIndex* out_left, SliceIndex* out_right)
+    {
+        uimax l_source_initial_size = this->size;
+        *out_left = SliceIndex::build(this->begin, p_break_point - this->begin);
+        *out_right = SliceIndex::build(p_break_point, l_source_initial_size - out_left->size);
+    };
 };
 
 #endif
@@ -831,13 +856,6 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
         return this->to_slice(p_heap).get(p_index);
     };
 
-#if 0
-    void realloc(uimax p_new_capacity, iHeap_s p_heap)
-    {
-        this->memory.resize(l_new_capacity, p_heap);
-    };
-#endif
-
     void push_back_element_empty(iHeap_s p_heap)
     {
         uimax l_new_capacity = memory_resize_until_capacity_met_get_new_capacity(this->memory.size, this->size + 1);
@@ -954,6 +972,30 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
         this->size += p_elements_0->size;
     };
 
+    void insert_array_at_always(Slice<ElementType>* p_elements, uimax p_index, iHeap_s p_heap)
+    {
+        if (p_index == this->size)
+        {
+            this->push_back_array(p_elements, p_heap);
+        }
+        else
+        {
+            this->insert_array_at(p_elements, p_index, p_heap);
+        }
+    };
+
+    void insert_element_at_always(ElementType* p_element, uimax p_index, iHeap_s p_heap)
+    {
+        if (p_index == this->size)
+        {
+            this->push_back_element(p_element, p_heap);
+        }
+        else
+        {
+            this->insert_element_at(p_element, p_index, p_heap);
+        }
+    };
+
     void erase_element_at(uimax p_index, iHeap_s p_heap)
     {
 #if __DEBUG
@@ -1009,6 +1051,255 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
 
 #endif
 
+#ifndef HEAP_VECTOR_H
+#define HEAP_VECTOR_H
+
+/*
+    A iVaryingVector is a Vector which elements can have different sizes.
+    Elements are accessed via the chunks lookup table.
+    Memory is continuous.
+    Memory operations on nested elements are done by calling _element_XXX functions.
+*/
+template <class _Heap, class _Heap_Token> struct iVaryingVector
+{
+    using iHeap_s = iHeap<_Heap, _Heap_Token>;
+
+    iVector<int8, _Heap, _Heap_Token> memory;
+    iVector<SliceIndex, _Heap, _Heap_Token> chunks;
+
+    static iVaryingVector build(iVector<int8, _Heap, _Heap_Token>* p_memory, iVector<SliceIndex, _Heap, _Heap_Token>* p_chunks)
+    {
+        iVaryingVector l_heap_vector;
+        l_heap_vector.chunks = *p_chunks;
+        l_heap_vector.memory = *p_memory;
+        return l_heap_vector;
+    };
+
+    static iVaryingVector allocate(uimax p_memory_array_initial_capacity, uimax p_chunk_array_initial_capacity, iHeap_s p_heap)
+    {
+        iVaryingVector l_heap_vector;
+        l_heap_vector.memory = iVector<int8, _Heap, _Heap_Token>::allocate(p_memory_array_initial_capacity, p_heap);
+        l_heap_vector.chunks = iVector<SliceIndex, _Heap, _Heap_Token>::allocate(p_chunk_array_initial_capacity, p_heap);
+        return l_heap_vector;
+    };
+
+    static iVaryingVector allocate_default(iHeap_s p_heap)
+    {
+        return allocate(0, 0, p_heap);
+    };
+
+    void free(iHeap_s p_heap)
+    {
+        this->memory.free(p_heap);
+        this->chunks.free(p_heap);
+    };
+
+    uimax get_size()
+    {
+        return this->chunks.size;
+    };
+
+    Slice<int8> get(uimax p_index, iHeap_s p_heap)
+    {
+        SliceIndex* l_chunk = this->chunks.get(p_index, p_heap);
+        return Slice<int8>::build_memory_offset_elementnb(this->memory.get_memory(p_heap), l_chunk->begin, l_chunk->size);
+    };
+
+    template <class ElementType> Slice<ElementType> get_casted(uimax p_index, iHeap_s p_heap)
+    {
+        return this->get(p_index, p_heap).template cast<ElementType>();
+    };
+
+    void push_back_element(Slice<int8>* p_bytes, iHeap_s p_heap)
+    {
+        SliceIndex l_chunk = SliceIndex::build(this->memory.size, p_bytes->size);
+        this->memory.push_back_array(p_bytes, p_heap);
+        this->chunks.push_back_element(&l_chunk, p_heap);
+    };
+
+    void push_back_element_0v(Slice<int8> p_bytes, iHeap_s p_heap)
+    {
+        return this->push_back_element(&p_bytes, p_heap);
+    };
+
+    void push_back_element_empty(uimax p_size, iHeap_s p_heap)
+    {
+        SliceIndex l_chunk = SliceIndex::build(this->memory.size, p_size);
+        this->memory.push_back_array_empty(p_size, p_heap);
+        this->chunks.push_back_element(&l_chunk, p_heap);
+    };
+
+    void pop_back(iHeap_s p_heap)
+    {
+        this->memory.pop_back_array(this->chunks.get(this->chunks.size - 1, p_heap)->size);
+        this->chunks.pop_back_element();
+    };
+
+    void erase_element_at(uimax p_index, iHeap_s p_heap)
+    {
+        SliceIndex* l_chunk = this->chunks.get(p_index, p_heap);
+        this->memory.erase_array_at(l_chunk->begin, l_chunk->size, p_heap);
+
+        for (loop(i, p_index, this->chunks.size))
+        {
+            this->chunks.get(i, p_heap)->begin -= l_chunk->size;
+        };
+        this->chunks.erase_element_at(p_index, p_heap);
+    };
+
+    void erase_element_at_always(uimax p_index, iHeap_s p_heap)
+    {
+#if __DEBUG
+        assert_true(p_index < this->get_size());
+#endif
+
+        if (p_index == this->get_size() - 1)
+        {
+            this->pop_back(p_heap);
+        }
+        else
+        {
+            this->erase_element_at(p_index, p_heap);
+        }
+    };
+
+    void erase_array_at(uimax p_index, uimax p_element_nb, iHeap_s p_heap)
+    {
+        SliceIndex l_removed_chunk = SliceIndex::build_default();
+
+        for (loop(i, p_index, p_index + p_element_nb))
+        {
+            l_removed_chunk.size += this->chunks.get(i, p_heap)->size;
+        };
+
+        SliceIndex* l_first_chunk = this->chunks.get(p_index, p_heap);
+        l_removed_chunk.begin = l_first_chunk->begin;
+
+        this->memory.erase_array_at(l_removed_chunk.begin, l_removed_chunk.size, p_heap);
+
+        for (loop(i, p_index + p_element_nb, this->chunks.size))
+        {
+            this->chunks.get(i, p_heap)->begin -= l_removed_chunk.size;
+        };
+
+        this->chunks.erase_array_at(p_index, p_element_nb, p_heap);
+    };
+
+    /*
+        Expand the size of the chunk by pushing the p_pushed_element Slice value.
+    */
+    void element_expand_with_value(uimax p_index, Slice<int8>* p_pushed_element, iHeap_s p_heap)
+    {
+        SliceIndex* l_updated_chunk = this->chunks.get(p_index, p_heap);
+
+#if __DEBUG
+        assert_true(p_pushed_element->size != 0);
+#endif
+
+        uimax l_size_delta = p_pushed_element->size;
+
+        this->memory.insert_array_at_always(p_pushed_element, l_updated_chunk->begin + l_updated_chunk->size, p_heap);
+        l_updated_chunk->size += l_size_delta;
+
+        for (loop(i, p_index + 1, this->chunks.size))
+        {
+            this->chunks.get(i, p_heap)->begin += l_size_delta;
+        }
+    };
+
+    void element_expand_with_value_2v(uimax p_index, Slice<int8> p_pushed_element, iHeap_s p_heap)
+    {
+        this->element_expand_with_value(p_index, &p_pushed_element, p_heap);
+    };
+
+    /*
+        Expand the size of the VaryingVector chunk by pushing zeroed values of p_delta size.
+    */
+    void element_expand_delta(uimax p_index, uimax p_delta, iHeap_s p_heap)
+    {
+        // !!\ We push an empty slice of the size of delta at the end of the p_index chunk
+        this->element_expand_with_value_2v(p_index, Slice<int8>::build((int8*)this, p_delta), p_heap);
+    };
+
+    void element_expand(uimax p_index, uimax p_new_size, iHeap_s p_heap)
+    {
+#if __DEBUG
+        assert_true(p_new_size > 0);
+#endif
+
+        SliceIndex* l_updated_chunk = this->chunks.get(p_index, p_heap);
+
+#if __DEBUG
+        assert_true(p_new_size > l_updated_chunk->size);
+#endif
+
+        this->element_expand_delta(p_index, p_new_size - l_updated_chunk->size);
+    };
+
+    void element_shrink_delta(uimax p_index, uimax p_size_delta, iHeap_s p_heap)
+    {
+        SliceIndex* l_updated_chunk = this->chunks.get(p_index, p_heap);
+
+#if __DEBUG
+        assert_true(p_size_delta != 0);
+        assert_true(p_size_delta <= l_updated_chunk->size);
+#endif
+
+        this->memory.erase_array_at(l_updated_chunk->begin + l_updated_chunk->size - p_size_delta, p_size_delta, p_heap);
+        l_updated_chunk->size -= p_size_delta;
+
+        for (loop(i, p_index + 1, this->chunks.size))
+        {
+            this->chunks.get(i, p_heap)->begin -= p_size_delta;
+        }
+    };
+};
+
+#endif
+
+#ifndef VECTOR_OF_VECTOR_H
+#define VECTOR_OF_VECTOR_H
+
+/*
+    A VectorOfVector is a chain of resizable Vector allocated on the same memory block.
+*/
+// TODO -> think
+template <class ElementType, class _Heap, class _Heap_Token> struct iVectorOfVector
+{
+    struct Header
+    {
+        uimax Size;
+        uimax Capacity;
+    };
+
+    struct ElementHeap
+    {
+        iHeap<_Heap, _Heap_Token> heap;
+        iVectorOfVector* vector_of_vector;
+        uimax element_index;
+
+        uimax malloc(uimax p_size)
+        {
+            abort();
+        };
+
+        void free(uimax p_size)
+        {
+            abort();
+        };
+
+        uimax realloc(uimax p_size)
+        {
+            this->vector_of_vector->varying_vector.element_expand(this->element_index, p_size, this->heap);
+            return this->element_index;
+        };
+    };
+
+    iVaryingVector<_Heap, _Heap_Token> varying_vector;
+};
+
+#endif
+
 // TODO -> re enable ?
 #if 0
 #ifndef FUNCIONAL_H
@@ -1038,7 +1329,7 @@ template <class ElementType, class Remover, class _Heap, class _Heap_Token> stru
 
 #endif
 
-template <class ElementType> using Span = iSpan<ElementType, TGlobalHeap>;
-template <class ElementType> using Vector = iVector<ElementType, TGlobalHeap>;
-
-template <class ElementType> using VectorSlice = iVector<ElementType, TGlobalHeapNoAlloc>;
+template <class ElementType> using Span = iSpan<ElementType, GlobalHeap, GlobalHeapToken>;
+template <class ElementType> using Vector = iVector<ElementType, GlobalHeap, GlobalHeapToken>;
+using VaryingVector = iVaryingVector<GlobalHeap, GlobalHeapToken>;
+template <class ElementType> using VectorSlice = iVector<ElementType, GlobalHeapNoAlloc, GlobalHeapToken>;
