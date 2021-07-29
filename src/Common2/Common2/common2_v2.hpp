@@ -142,6 +142,7 @@ template <class ElementType> struct Mutex
     inline void free()
     {
         mutex_native_lock(this->_mutex);
+        mutex_native_unlock(this->_mutex);
         mutex_native_free(this->_mutex);
     };
 
@@ -191,79 +192,44 @@ typedef void* backtrace_t[MEM_LEAK_MAX_BACKTRACE];
 
 // #include "dbghelp.h"
 
-using GlobalHeapToken = int8*;
-
-struct GlobalHeap
+struct Memleak
 {
-
     // Not using mutex but a hash based nested table ?
     // -> NO, because some resource may be allocated from one thread and dealocated a different one
-    Mutex<ptr_counter_t> ptr_counter = Mutex<ptr_counter_t>::allocate();
-    backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER] = {};
+    Mutex<ptr_counter_t> ptr_counter;
+    backtrace_t backtraces[MEM_LEAK_MAX_POINTER_COUNTER];
 
-    GlobalHeapToken malloc(size_t p_size)
+    static Memleak allocate()
     {
-#if __MEMLEAK
-        return push_ptr_to_tracked((int8*)::malloc(p_size));
-#else
-        return (int8*)::malloc(p_size);
-#endif
-    };
-    void free(GlobalHeapToken p_memory)
-    {
-#if __MEMLEAK
-        remove_ptr_to_tracked(p_memory);
-#endif
-        ::free(p_memory);
+        Memleak l_memleak;
+        l_memleak.ptr_counter = l_memleak.ptr_counter.allocate();
+        return l_memleak;
     };
 
-    GlobalHeapToken calloc(uimax p_size)
+    void free()
     {
-#if __MEMLEAK
-        return (GlobalHeapToken)push_ptr_to_tracked((int8*)::calloc(1, p_size));
-#else
-        return (GlobalHeapToken)::calloc(1, p_size);
-#endif
-    };
-
-    int8 realloc(GlobalHeapToken p_memory, uimax p_new_size, GlobalHeapToken* out_token)
-    {
-#if __MEMLEAK
-        remove_ptr_to_tracked(p_memory);
-#endif
-        int8* l_new_memory = (int8*)::realloc(p_memory, p_new_size);
-#if __MEMLEAK
-        if (l_new_memory != NULL)
-        {
-            push_ptr_to_tracked(l_new_memory);
-        }
-#endif
-        *out_token = l_new_memory;
-        return l_new_memory != NULL;
-    };
-
-    template <class ElementType> ElementType* get_memory(GlobalHeapToken p_memory)
-    {
-        return (ElementType*)p_memory;
+        this->ptr_counter.free();
     };
 
     int8* push_ptr_to_tracked(int8* p_ptr)
     {
+        int8 l_backtrace_pushed = 0;
         int8* l_return = NULL;
-        ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        this->ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
             for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
             {
                 if (p_ptr_counter[i] == NULL)
                 {
                     p_ptr_counter[i] = p_ptr;
-                    backtrace_capture(backtraces[i], MEM_LEAK_MAX_BACKTRACE);
+                    backtrace_capture(this->backtraces[i], MEM_LEAK_MAX_BACKTRACE);
                     l_return = p_ptr;
+                    l_backtrace_pushed = 1;
                     break;
                 }
             }
         });
 
-        if (l_return)
+        if (l_backtrace_pushed)
         {
             return l_return;
         }
@@ -274,7 +240,7 @@ struct GlobalHeap
     void remove_ptr_to_tracked(int8* p_ptr)
     {
         int8 l_successful = 0;
-        ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        this->ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
             for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
             {
                 if (p_ptr_counter[i] == p_ptr)
@@ -294,10 +260,10 @@ struct GlobalHeap
         abort();
     };
 
-    void memleak_ckeck()
+    void check()
     {
 #if __MEMLEAK
-        ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
+        this->ptr_counter.acquire([&](ptr_counter_t p_ptr_counter) {
             for (uimax i = 0; i < MEM_LEAK_MAX_POINTER_COUNTER; i++)
             {
                 if (p_ptr_counter[i] != NULL)
@@ -324,7 +290,79 @@ struct GlobalHeap
     };
 };
 
-GlobalHeap _g_heap;
+using GlobalHeapToken = int8*;
+
+struct GlobalHeap
+{
+#if __MEMLEAK
+    Memleak memleak;
+#endif
+
+    static GlobalHeap allocate()
+    {
+        GlobalHeap l_global_heap;
+        l_global_heap.memleak = l_global_heap.memleak.allocate();
+        return l_global_heap;
+    };
+
+    void free_heap()
+    {
+        this->memleak.free();
+    };
+
+    GlobalHeapToken malloc(size_t p_size)
+    {
+#if __MEMLEAK
+        return this->memleak.push_ptr_to_tracked((int8*)::malloc(p_size));
+#else
+        return (int8*)::malloc(p_size);
+#endif
+    };
+    void free(GlobalHeapToken p_memory)
+    {
+#if __MEMLEAK
+        this->memleak.remove_ptr_to_tracked(p_memory);
+#endif
+        ::free(p_memory);
+    };
+
+    GlobalHeapToken calloc(uimax p_size)
+    {
+#if __MEMLEAK
+        return (GlobalHeapToken)this->memleak.push_ptr_to_tracked((int8*)::calloc(1, p_size));
+#else
+        return (GlobalHeapToken)::calloc(1, p_size);
+#endif
+    };
+
+    int8 realloc(GlobalHeapToken p_memory, uimax p_new_size, GlobalHeapToken* out_token)
+    {
+#if __MEMLEAK
+        this->memleak.remove_ptr_to_tracked(p_memory);
+#endif
+        int8* l_new_memory = (int8*)::realloc(p_memory, p_new_size);
+#if __MEMLEAK
+        if (l_new_memory != NULL)
+        {
+            this->memleak.push_ptr_to_tracked(l_new_memory);
+        }
+#endif
+        *out_token = l_new_memory;
+        return l_new_memory != NULL;
+    };
+
+    template <class ElementType> ElementType* get_memory(GlobalHeapToken p_memory)
+    {
+        return (ElementType*)p_memory;
+    };
+
+    void memleak_check()
+    {
+        this->memleak.check();
+    };
+};
+
+GlobalHeap _g_heap = GlobalHeap::allocate();
 iHeap<GlobalHeap, GlobalHeapToken> gheap = iHeap<GlobalHeap, GlobalHeapToken>{&_g_heap};
 
 struct GlobalHeapNoAlloc
@@ -516,10 +554,21 @@ template <class ElementType> struct Slice
 
     template <class CastedElementType> Slice<CastedElementType> cast()
     {
+
 #if __DEBUG
-        if ((this->size % sizeof(CastedElementType)) != 0)
+        if (sizeof(ElementType) <= sizeof(CastedElementType))
         {
-            abort();
+            if ((this->size % sizeof(CastedElementType)) != 0)
+            {
+                abort();
+            }
+        }
+        else
+        {
+            if ((sizeof(CastedElementType) % this->size) != 0)
+            {
+                abort();
+            }
         }
 #endif
 
@@ -776,6 +825,27 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
         l_return.size = 0;
         l_return.memory = iSpan<ElementType, _Heap, _Heap_Token>::allocate(p_initial_capacity, p_heap);
         return l_return;
+    };
+
+    static iVector allocate_slice(Slice<ElementType>* p_elements, iHeap_s p_heap)
+    {
+        iVector l_return;
+        l_return.size = p_elements->size;
+        l_return.memory = iSpan<ElementType, _Heap, _Heap_Token>::allocate_slice(p_elements, p_heap);
+        return l_return;
+    };
+
+    static iVector allocate_slice_0v(Slice<ElementType> p_elements, iHeap_s p_heap)
+    {
+        return allocate_slice(&p_elements, p_heap);
+    };
+
+    static iVector build_default()
+    {
+        iVector l_vector;
+        l_vector.size = 0;
+        l_vector.memory = l_vector.memory.build(0, 0);
+        return l_vector;
     };
 
     static iVector build_zero_size(_Heap_Token p_memory, uimax p_initial_capacity)
@@ -1252,10 +1322,16 @@ template <class _Heap, class _Heap_Token> struct iVaryingVector
     };
 };
 
-// TODO -> adding memleak check here too ?
+using iHeapVector_Token = uimax;
+
 template <class _Heap, class _Heap_Token> struct iHeapVector
 {
     using iHeap_s = iHeap<_Heap, _Heap_Token>;
+
+#if __MEMLEAK
+    Memleak* memleak;
+#endif
+
     iHeap_s heap;
     iVaryingVector<_Heap, _Heap_Token> varying_vector;
 
@@ -1264,70 +1340,73 @@ template <class _Heap, class _Heap_Token> struct iHeapVector
         iHeapVector l_heap_vector;
         l_heap_vector.heap = p_heap;
         l_heap_vector.varying_vector = l_heap_vector.varying_vector.allocate_default(p_heap);
+
+#if __MEMLEAK
+        l_heap_vector.memleak = (Memleak*)gheap.malloc(sizeof(Memleak));
+        *l_heap_vector.memleak = (*l_heap_vector.memleak).allocate();
+#endif
         return l_heap_vector;
     };
 
     void free(iHeap_s p_heap)
     {
         this->varying_vector.free(p_heap);
+
+#if __MEMLEAK
+        this->memleak->check();
+        this->memleak->free();
+        p_heap.free((int8*)this->memleak);
+        this->memleak = 0;
+#endif
     };
 
-    uimax malloc(uimax p_size)
+    iHeapVector_Token malloc(uimax p_size)
     {
         this->varying_vector.push_back_element_empty(p_size, this->heap);
-        return this->varying_vector.get_size() - 1;
+        iHeapVector_Token l_memory = this->varying_vector.get_size() - 1;
+
+#if __MEMLEAK
+        this->memleak->push_ptr_to_tracked((int8*)l_memory);
+#endif
+
+        return l_memory;
     };
 
-    int8 realloc(uimax p_memory, uimax p_size, uimax* out_token)
+    int8 realloc(iHeapVector_Token p_memory, uimax p_size, iHeapVector_Token* out_token)
     {
         this->varying_vector.element_expand(p_memory, p_size, this->heap);
         *out_token = p_memory;
         return 1;
     };
 
-    void free(uimax p_memory)
+    void free(iHeapVector_Token p_memory)
     {
         this->varying_vector.erase_element_at_always(p_memory, this->heap);
+
+#if __MEMLEAK
+        this->memleak->remove_ptr_to_tracked((int8*)p_memory);
+#endif
     };
 
-    template <class ElementType> ElementType* get_memory(uimax p_memory)
+    template <class ElementType> ElementType* get_memory(iHeapVector_Token p_memory)
     {
         return this->varying_vector.get(p_memory, this->heap).template cast<ElementType>().memory;
+
+        // Cast is unsafe here because the varying_vector slice size doesn't always a number of ElementType.
+        // This is because the varying_vector memory has it's own growth.
+        // return (ElementType*)this->varying_vector.get(p_memory, this->heap).memory;
     };
 };
-
-#endif
-
-// TODO -> re enable ?
-#if 0
-#ifndef FUNCIONAL_H
-#define FUNCIONAL_H
-
-template <class ElementType, class Accessor, class _Heap, class _Heap_Token> struct iAccessor
-{
-    Accessor accessor;
-
-    uimax get_size()
-    {
-        return this->container.get_size();
-    };
-
-    ElementType* get(uimax p_index, iHeap<_Heap, _Heap_Token> p_heap)
-    {
-        this->accessor->get(p_index, p_heap);
-    };
-};
-
-template <class ElementType, class Remover, class _Heap, class _Heap_Token> struct iRemover
-{
-    Remover remover;
-};
-
-#endif
 
 #endif
 
 template <class ElementType> using Span = iSpan<ElementType, GlobalHeap, GlobalHeapToken>;
 template <class ElementType> using Vector = iVector<ElementType, GlobalHeap, GlobalHeapToken>;
+template <class ElementType, class _Heap, class _Heap_Token> using iVectorNested = iVector<ElementType, iHeapVector<_Heap, _Heap_Token>, iHeapVector_Token>;
+template <class ElementType, class _Heap, class _Heap_Token> using iVectorNested1 = iVectorNested<iVectorNested<ElementType, _Heap, _Heap_Token>, _Heap, _Heap_Token>;
+
 using VaryingVector = iVaryingVector<GlobalHeap, GlobalHeapToken>;
 template <class ElementType> using VectorSlice = iVector<ElementType, GlobalHeapNoAlloc, GlobalHeapToken>;
+using HeapVector = iHeapVector<GlobalHeap, GlobalHeapToken>;
+template <class ElementType> using VectorNested = iVectorNested<ElementType, GlobalHeap, GlobalHeapToken>;
+template <class ElementType> using VectorNested1 = iVectorNested1<ElementType, GlobalHeap, GlobalHeapToken>;

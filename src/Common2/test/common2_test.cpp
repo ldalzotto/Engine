@@ -633,35 +633,41 @@ inline void varyingslice_test()
     }
 };
 
+#endif
+
 inline void vectorofvector_test()
 {
-    VectorOfVector<uimax> l_vectorofvector_uimax = VectorOfVector<uimax>::allocate_default();
+
+    HeapVector __heap_vector;
+    __heap_vector = __heap_vector.allocate_default(gheap);
+    iHeap<HeapVector, iHeapVector_Token> l_heap_vector = iHeap<HeapVector, iHeapVector_Token>{&__heap_vector};
+    VectorNested1<uimax> l_vectorofvector_uimax = l_vectorofvector_uimax.allocate(0, l_heap_vector);
 
     // vectorofvector_push_back vectorofvector_push_back_element
     {
-        Span<uimax> l_sizets = Span<uimax>::allocate(10);
-        for (loop(i, 0, l_sizets.Capacity))
+        Span<uimax> l_sizets = Span<uimax>::allocate(10, gheap);
+        for (loop(i, 0, l_sizets.size))
         {
-            l_sizets.slice.get(i) = i;
+            *l_sizets.get(i, gheap) = i;
         }
 
-        l_vectorofvector_uimax.push_back_element_empty();
+        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::build_default(), l_heap_vector);
+        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate_slice_0v(l_sizets.to_slice(gheap), l_heap_vector), l_heap_vector);
+        uimax l_requested_index = l_vectorofvector_uimax.size - 1;
+        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::build_default(), l_heap_vector);
 
-        l_vectorofvector_uimax.push_back_element(l_sizets.slice);
-        uimax l_requested_index = l_vectorofvector_uimax.varying_vector.get_size() - 1;
-        Slice<uimax> l_element = l_vectorofvector_uimax.get(l_requested_index);
-
-        l_vectorofvector_uimax.push_back_element_empty();
-
-        assert_true(l_vectorofvector_uimax.get_vectorheader(l_requested_index)->Capacity == l_sizets.Capacity);
-        for (loop(i, 0, l_sizets.Capacity))
+        VectorNested<uimax>* l_element = l_vectorofvector_uimax.get(l_requested_index, l_heap_vector);
+        assert_true(l_element->memory.size == l_sizets.size);
+        for (loop(i, 0, l_sizets.size))
         {
-            assert_true(l_element.get(i) == i);
+            assert_true(*(l_element->get(i, l_heap_vector)) == i);
         }
 
-        l_sizets.free();
+        l_sizets.free(gheap);
     }
 
+// TODO
+#if 0
     // vectorofvector_element_push_back_element
     {
         uimax l_index;
@@ -820,8 +826,17 @@ inline void vectorofvector_test()
         }
     }
 
-    l_vectorofvector_uimax.free();
+#endif
+
+    for (loop_reverse(i, 0, l_vectorofvector_uimax.size))
+    {
+        l_vectorofvector_uimax.get(i, l_heap_vector)->free(l_heap_vector);
+    };
+    l_vectorofvector_uimax.free(l_heap_vector);
+    __heap_vector.free(gheap);
 };
+
+#if 0
 
 inline void poolofvector_test()
 {
@@ -2392,47 +2407,6 @@ inline void command_buffer_pattern_test()
 };
 #endif
 
-template <class ElementType> using nnVector = iVector<ElementType, iHeapVector<GlobalHeap, GlobalHeapToken>, uimax>;
-
-void tmp_test()
-{
-    iHeapVector<GlobalHeap, GlobalHeapToken> __heap;
-    __heap = __heap.allocate_default(gheap);
-    iHeap<iHeapVector<GlobalHeap, GlobalHeapToken>, uimax> _heap;
-    _heap.heap = &__heap;
-
-    nnVector<nnVector<uimax>> l_nested_vector;
-    l_nested_vector = l_nested_vector.allocate(0, _heap);
-
-    {
-        nnVector<uimax> l_local;
-        l_local = l_local.allocate(10, _heap);
-        l_local.push_back_element_0v(20, _heap);
-        l_nested_vector.push_back_element(&l_local, _heap);
-    }
-    {
-        nnVector<uimax> l_local;
-        l_local = l_local.allocate(10, _heap);
-        l_local.push_back_element_0v(40, _heap);
-        l_nested_vector.push_back_element(&l_local, _heap);
-    }
-
-    l_nested_vector.get(0, _heap)->push_back_element_0v(60, _heap);
-
-    {
-        nnVector<uimax>* l_vector = l_nested_vector.get(0, _heap);
-        assert_true(*l_vector->get(0, _heap) == 20);
-        assert_true(*l_vector->get(1, _heap) == 60);
-
-        l_vector = l_nested_vector.get(1, _heap);
-        assert_true(*l_vector->get(0, _heap) == 40);
-    }
-
-    l_nested_vector.free(_heap);
-
-    __heap.free(gheap);
-};
-
 int main(int argc, int8** argv)
 {
     slice_span_test();
@@ -2441,6 +2415,7 @@ int main(int argc, int8** argv)
     vector_slice_test();
 
     varyingvector_test();
+    vectorofvector_test();
 
 #if 0
     slice_functional_algorithm_test();
@@ -2474,10 +2449,7 @@ int main(int argc, int8** argv)
     command_buffer_pattern_test();
 #endif
 
-    tmp_test();
-
-    gheap.heap->memleak_ckeck();
-    // memleak_ckeck();
+    gheap.heap->memleak_check();
 }
 
 #include "Common2/common2_external_implementation.hpp"
