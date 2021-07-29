@@ -2392,6 +2392,47 @@ inline void command_buffer_pattern_test()
 };
 #endif
 
+template <class ElementType> using nnVector = iVector<ElementType, iHeapVector<GlobalHeap, GlobalHeapToken>, uimax>;
+
+void tmp_test()
+{
+    iHeapVector<GlobalHeap, GlobalHeapToken> __heap;
+    __heap = __heap.allocate_default(gheap);
+    iHeap<iHeapVector<GlobalHeap, GlobalHeapToken>, uimax> _heap;
+    _heap.heap = &__heap;
+
+    nnVector<nnVector<uimax>> l_nested_vector;
+    l_nested_vector = l_nested_vector.allocate(0, _heap);
+
+    {
+        nnVector<uimax> l_local;
+        l_local = l_local.allocate(10, _heap);
+        l_local.push_back_element_0v(20, _heap);
+        l_nested_vector.push_back_element(&l_local, _heap);
+    }
+    {
+        nnVector<uimax> l_local;
+        l_local = l_local.allocate(10, _heap);
+        l_local.push_back_element_0v(40, _heap);
+        l_nested_vector.push_back_element(&l_local, _heap);
+    }
+
+    l_nested_vector.get(0, _heap)->push_back_element_0v(60, _heap);
+
+    {
+        nnVector<uimax>* l_vector = l_nested_vector.get(0, _heap);
+        assert_true(*l_vector->get(0, _heap) == 20);
+        assert_true(*l_vector->get(1, _heap) == 60);
+
+        l_vector = l_nested_vector.get(1, _heap);
+        assert_true(*l_vector->get(0, _heap) == 40);
+    }
+
+    l_nested_vector.free(_heap);
+
+    __heap.free(gheap);
+};
+
 int main(int argc, int8** argv)
 {
     slice_span_test();
@@ -2432,6 +2473,8 @@ int main(int argc, int8** argv)
     database_test();
     command_buffer_pattern_test();
 #endif
+
+    tmp_test();
 
     gheap.heap->memleak_ckeck();
     // memleak_ckeck();

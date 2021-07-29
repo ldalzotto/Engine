@@ -629,8 +629,6 @@ template <class ElementType> struct Slice
         this->copy_memory_at_index_2(p_copy_index, p_elements_1, p_elements_2);
         this->copy_memory_at_index(p_copy_index + p_elements_1->size + p_elements_2->size, p_elements_3);
     };
-
-#undef iHeap_s
 };
 
 template <class ElementType, uimax Size_t> struct SliceN
@@ -692,7 +690,8 @@ struct SliceIndex
 
 template <class ElementType, class _Heap, class _Heap_Token> struct iSpan
 {
-#define iHeap_s iHeap<_Heap, _Heap_Token>
+    using iHeap_s = iHeap<_Heap, _Heap_Token>;
+
     uimax size;
     _Heap_Token memory;
 
@@ -757,7 +756,6 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iSpan
     {
         return p_heap.template get_memory<ElementType>(this->memory);
     };
-#undef iHeap_s
 };
 
 #endif
@@ -767,9 +765,10 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iSpan
 
 template <class ElementType, class _Heap, class _Heap_Token> struct iVector
 {
-#define iHeap_s iHeap<_Heap, _Heap_Token>
-    iSpan<ElementType, _Heap, _Heap_Token> memory;
+    using iHeap_s = iHeap<_Heap, _Heap_Token>;
+
     uimax size;
+    iSpan<ElementType, _Heap, _Heap_Token> memory;
 
     static iVector allocate(uimax p_initial_capacity, iHeap_s p_heap)
     {
@@ -1045,8 +1044,6 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
             return this->erase_element_at(p_index, p_heap);
         }
     };
-
-#undef iHeap_s
 };
 
 #endif
@@ -1233,7 +1230,7 @@ template <class _Heap, class _Heap_Token> struct iVaryingVector
         assert_true(p_new_size > l_updated_chunk->size);
 #endif
 
-        this->element_expand_delta(p_index, p_new_size - l_updated_chunk->size);
+        this->element_expand_delta(p_index, p_new_size - l_updated_chunk->size, p_heap);
     };
 
     void element_shrink_delta(uimax p_index, uimax p_size_delta, iHeap_s p_heap)
@@ -1255,47 +1252,48 @@ template <class _Heap, class _Heap_Token> struct iVaryingVector
     };
 };
 
-#endif
-
-#ifndef VECTOR_OF_VECTOR_H
-#define VECTOR_OF_VECTOR_H
-
-/*
-    A VectorOfVector is a chain of resizable Vector allocated on the same memory block.
-*/
-// TODO -> think
-template <class ElementType, class _Heap, class _Heap_Token> struct iVectorOfVector
+// TODO -> adding memleak check here too ?
+template <class _Heap, class _Heap_Token> struct iHeapVector
 {
-    struct Header
-    {
-        uimax Size;
-        uimax Capacity;
-    };
-
-    struct ElementHeap
-    {
-        iHeap<_Heap, _Heap_Token> heap;
-        iVectorOfVector* vector_of_vector;
-        uimax element_index;
-
-        uimax malloc(uimax p_size)
-        {
-            abort();
-        };
-
-        void free(uimax p_size)
-        {
-            abort();
-        };
-
-        uimax realloc(uimax p_size)
-        {
-            this->vector_of_vector->varying_vector.element_expand(this->element_index, p_size, this->heap);
-            return this->element_index;
-        };
-    };
-
+    using iHeap_s = iHeap<_Heap, _Heap_Token>;
+    iHeap_s heap;
     iVaryingVector<_Heap, _Heap_Token> varying_vector;
+
+    static iHeapVector allocate_default(iHeap_s p_heap)
+    {
+        iHeapVector l_heap_vector;
+        l_heap_vector.heap = p_heap;
+        l_heap_vector.varying_vector = l_heap_vector.varying_vector.allocate_default(p_heap);
+        return l_heap_vector;
+    };
+
+    void free(iHeap_s p_heap)
+    {
+        this->varying_vector.free(p_heap);
+    };
+
+    uimax malloc(uimax p_size)
+    {
+        this->varying_vector.push_back_element_empty(p_size, this->heap);
+        return this->varying_vector.get_size() - 1;
+    };
+
+    int8 realloc(uimax p_memory, uimax p_size, uimax* out_token)
+    {
+        this->varying_vector.element_expand(p_memory, p_size, this->heap);
+        *out_token = p_memory;
+        return 1;
+    };
+
+    void free(uimax p_memory)
+    {
+        this->varying_vector.erase_element_at_always(p_memory, this->heap);
+    };
+
+    template <class ElementType> ElementType* get_memory(uimax p_memory)
+    {
+        return this->varying_vector.get(p_memory, this->heap).template cast<ElementType>().memory;
+    };
 };
 
 #endif
