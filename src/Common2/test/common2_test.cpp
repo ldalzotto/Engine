@@ -651,10 +651,10 @@ inline void vectorofvector_test()
             *l_sizets.get(i, gheap) = i;
         }
 
-        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::build_default(), l_heap_vector);
+        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate(0, l_heap_vector), l_heap_vector);
         l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate_slice_0v(l_sizets.to_slice(gheap), l_heap_vector), l_heap_vector);
         uimax l_requested_index = l_vectorofvector_uimax.size - 1;
-        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::build_default(), l_heap_vector);
+        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate(0, l_heap_vector), l_heap_vector);
 
         VectorNested<uimax>* l_element = l_vectorofvector_uimax.get(l_requested_index, l_heap_vector);
         assert_true(l_element->memory.size == l_sizets.size);
@@ -666,30 +666,31 @@ inline void vectorofvector_test()
         l_sizets.free(gheap);
     }
 
-// TODO
-#if 0
     // vectorofvector_element_push_back_element
     {
         uimax l_index;
         for (loop(i, 0, 2))
         {
-            l_vectorofvector_uimax.push_back_element_empty();
+            l_vectorofvector_uimax.push_back_element_empty(l_heap_vector);
 
             uimax l_element = 30;
-            l_index = l_vectorofvector_uimax.varying_vector.get_size() - 2;
-            l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
-            Slice<uimax> l_element_nested = l_vectorofvector_uimax.get(l_index);
-            assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            l_index = l_vectorofvector_uimax.size - 2;
+            VectorNested<uimax>* l_nested_vector = l_vectorofvector_uimax.get(l_index, l_heap_vector);
+            l_nested_vector->push_back_element(&l_element, l_heap_vector);
+            l_nested_vector = l_vectorofvector_uimax.get(l_index, l_heap_vector);
+            assert_true(l_nested_vector->size == 1);
+            assert_true(*l_nested_vector->get(0, l_heap_vector) == l_element);
 
             l_element = 35;
-            l_vectorofvector_uimax.element_clear(l_index);
-            l_vectorofvector_uimax.element_push_back_element(l_index, l_element);
-            assert_true(l_element_nested.Size == 1);
-            assert_true(l_element_nested.get(0) == l_element);
+            l_nested_vector->clear();
+            l_nested_vector->push_back_element(&l_element, l_heap_vector);
+            assert_true(l_nested_vector->size == 1);
+            assert_true(*l_nested_vector->get(0, l_heap_vector) == l_element);
         }
     }
 
+// TODO
+#if 0
     // vectorofvector_element_insert_element_at
     {
         uimax l_elements[3] = {100, 120, 140};
@@ -830,7 +831,8 @@ inline void vectorofvector_test()
 
     for (loop_reverse(i, 0, l_vectorofvector_uimax.size))
     {
-        l_vectorofvector_uimax.get(i, l_heap_vector)->free(l_heap_vector);
+        VectorNested<uimax>* l_nested = l_vectorofvector_uimax.get(i, l_heap_vector);
+        l_nested->free(l_heap_vector);
     };
     l_vectorofvector_uimax.free(l_heap_vector);
     __heap_vector.free(gheap);

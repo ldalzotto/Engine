@@ -840,14 +840,6 @@ template <class ElementType, class _Heap, class _Heap_Token> struct iVector
         return allocate_slice(&p_elements, p_heap);
     };
 
-    static iVector build_default()
-    {
-        iVector l_vector;
-        l_vector.size = 0;
-        l_vector.memory = l_vector.memory.build(0, 0);
-        return l_vector;
-    };
-
     static iVector build_zero_size(_Heap_Token p_memory, uimax p_initial_capacity)
     {
         iVector l_return;
@@ -1390,11 +1382,11 @@ template <class _Heap, class _Heap_Token> struct iHeapVector
 
     template <class ElementType> ElementType* get_memory(iHeapVector_Token p_memory)
     {
-        return this->varying_vector.get(p_memory, this->heap).template cast<ElementType>().memory;
+        // return this->varying_vector.get(p_memory, this->heap).template cast<ElementType>().memory;
 
         // Cast is unsafe here because the varying_vector slice size doesn't always a number of ElementType.
         // This is because the varying_vector memory has it's own growth.
-        // return (ElementType*)this->varying_vector.get(p_memory, this->heap).memory;
+        return (ElementType*)this->varying_vector.get(p_memory, this->heap).memory;
     };
 };
 
