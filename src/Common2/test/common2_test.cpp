@@ -5,28 +5,29 @@
 
 inline void slice_span_test()
 {
-    Span<uimax> l_span_sizet = Span<uimax>::build(0, 0);
+    Span<uimax> l_span_sizet;
+    l_span_sizet.allocate(0, &_g_heap);
 
     // When resizing the span, new memory is allocated
     {
         uimax l_new_capacity = 10;
-        l_span_sizet.resize(10, gheap);
+        l_span_sizet.resize(10);
         assert_true(l_span_sizet.size == l_new_capacity);
         assert_true(l_span_sizet.memory != 0);
     }
 
     // When freeing the span, it's structure is resetted
     {
-        l_span_sizet.free(gheap);
+        l_span_sizet.free();
         assert_true(l_span_sizet.size == 0);
         assert_true(l_span_sizet.memory == 0);
     }
 
     // Move memory
     {
-        l_span_sizet.resize(10, gheap);
+        l_span_sizet.resize(10);
 
-        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice(gheap);
+        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice();
         *l_slice_sizet.get(0) = 3;
         *l_slice_sizet.get(1) = 5;
         *l_slice_sizet.get(3) = 10;
@@ -46,11 +47,11 @@ inline void slice_span_test()
         assert_true(*l_slice_sizet.get(1) == 10);
     }
 
-    l_span_sizet.free(gheap);
+    l_span_sizet.free();
 
     {
-        l_span_sizet = Span<uimax>::allocate(10, gheap);
-        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice(gheap);
+        l_span_sizet.allocate(10, &_g_heap);
+        Slice<uimax> l_slice_sizet = l_span_sizet.to_slice();
         SliceN<uimax, 4> l_slice_1 = {0, 1, 2, 3};
         SliceN<uimax, 4> l_slice_2 = {5, 6, 7, 8};
 
@@ -59,15 +60,15 @@ inline void slice_span_test()
         assert_true(l_slice_sizet.slide_rv(1).compare_0v(slice_from_slicen(&l_slice_1)));
         assert_true(l_slice_sizet.slide_rv(5).compare_0v(slice_from_slicen(&l_slice_2)));
 
-        l_span_sizet.free(gheap);
+        l_span_sizet.free();
     }
     {
         SliceN<uimax, 4> l_slice = {15, 26, 78, 10};
-        l_span_sizet = Span<uimax>::allocate_slice_0v(slice_from_slicen(&l_slice), gheap);
+        l_span_sizet.allocate_slice_0v(slice_from_slicen(&l_slice), &_g_heap);
         assert_true(l_span_sizet.size == 4);
-        assert_true(l_span_sizet.to_slice(gheap).compare_0v(slice_from_slicen(&l_slice)));
+        assert_true(l_span_sizet.to_slice().compare_0v(slice_from_slicen(&l_slice)));
 
-        l_span_sizet.free(gheap);
+        l_span_sizet.free();
     }
 };
 
@@ -119,7 +120,8 @@ inline void base64_test()
 
 #endif
 
-template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVector<uimax, _Vector_Heap, _Vector_Heap_Token>* p_vector, iHeap<_Vector_Heap, _Vector_Heap_Token> p_heap)
+// TODO -> using functional objects
+template <class _Allocator> void ivector_test_v2(iVector<uimax, _Allocator>* p_vector)
 {
 #if 0
 #endif
@@ -131,18 +133,18 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
         SliceN<uimax, 5> l_elements = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = slice_from_slicen(&l_elements);
 
-        p_vector->push_back_array(&l_elements_slice, p_heap);
+        p_vector->push_back_array(&l_elements_slice);
         assert_true(p_vector->size == l_old_size + l_elements.size());
         for (loop(i, l_old_size, p_vector->size))
         {
-            assert_true(*p_vector->get(i, p_heap) == *l_elements.get(i - l_old_size));
+            assert_true(*p_vector->get(i) == *l_elements.get(i - l_old_size));
         }
     }
 
     // push_back_array_empty
     {
         uimax l_old_size = p_vector->size;
-        p_vector->push_back_array_empty(5, p_heap);
+        p_vector->push_back_array_empty(5);
         assert_true(p_vector->size == (l_old_size + (uimax)5));
     }
 
@@ -150,9 +152,9 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
     {
         uimax l_old_size = p_vector->size;
         uimax l_element = 25;
-        p_vector->push_back_element(&l_element, p_heap);
+        p_vector->push_back_element(&l_element);
         assert_true(p_vector->size == l_old_size + 1);
-        assert_true(*p_vector->get(p_vector->size - 1, p_heap) == l_element);
+        assert_true(*p_vector->get(p_vector->size - 1) == l_element);
     }
 
     // vector_insert_array_at
@@ -160,27 +162,27 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
         uimax l_old_size = p_vector->size;
         SliceN<uimax, 5> l_elements = {0, 1, 2, 3, 4};
         Slice<uimax> l_elements_slice = slice_from_slicen(&l_elements);
-        p_vector->insert_array_at(&l_elements_slice, 0, p_heap);
+        p_vector->insert_array_at(&l_elements_slice, 0);
         assert_true(p_vector->size == l_old_size + 5);
         for (loop(i, 0, 5))
         {
-            assert_true(*p_vector->get(i, p_heap) == (uimax)i);
+            assert_true(*p_vector->get(i) == (uimax)i);
         }
 
-        p_vector->insert_array_at(&l_elements_slice, 3, p_heap);
+        p_vector->insert_array_at(&l_elements_slice, 3);
         assert_true(p_vector->size == l_old_size + 10);
         for (loop(i, 0, 3))
         {
-            assert_true(*(p_vector->get(i, p_heap)) == *l_elements.get(i));
+            assert_true(*(p_vector->get(i)) == *l_elements.get(i));
         }
         // Middle insertion
         for (loop(i, 3, 8))
         {
-            assert_true(*(p_vector->get(i, p_heap)) == *l_elements.get(i - 3));
+            assert_true(*(p_vector->get(i)) == *l_elements.get(i - 3));
         }
         for (loop(i, 8, 10))
         {
-            assert_true(*(p_vector->get(i, p_heap)) == *l_elements.get(i - 5));
+            assert_true(*(p_vector->get(i)) == *l_elements.get(i - 5));
         }
     }
 
@@ -189,21 +191,21 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
         uimax l_element = 20;
         uimax l_old_size = p_vector->size;
 
-        p_vector->insert_element_at(&l_element, 7, p_heap);
-        assert_true(*p_vector->get(7, p_heap) == l_element);
+        p_vector->insert_element_at(&l_element, 7);
+        assert_true(*p_vector->get(7) == l_element);
         assert_true(p_vector->size == l_old_size + 1);
 
-        p_vector->insert_element_at_0v(20, 9, p_heap);
+        p_vector->insert_element_at_0v(20, 9);
     }
 
     // vector_erase_element_at
     {
         uimax l_old_size = p_vector->size;
         uimax l_erase_index = 1;
-        uimax l_element_after = *p_vector->get(l_erase_index + 1, p_heap);
-        p_vector->erase_element_at(1, p_heap);
+        uimax l_element_after = *p_vector->get(l_erase_index + 1);
+        p_vector->erase_element_at(1);
         assert_true(p_vector->size == l_old_size - 1);
-        assert_true(*p_vector->get(1, p_heap) == l_element_after);
+        assert_true(*p_vector->get(1) == l_element_after);
     }
 
     // vector_erase_array_at
@@ -216,15 +218,15 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
         uimax l_old_values[l_old_element_check_nb];
         for (loop(i, l_erase_begin_index + l_erase_nb, (l_erase_begin_index + l_erase_nb) + l_old_element_check_nb))
         {
-            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = *p_vector->get(i, p_heap);
+            l_old_values[i - (l_erase_begin_index + l_erase_nb)] = *p_vector->get(i);
         }
 
-        p_vector->erase_array_at(l_erase_begin_index, l_erase_nb, p_heap);
+        p_vector->erase_array_at(l_erase_begin_index, l_erase_nb);
 
         assert_true(p_vector->size == l_old_size - l_erase_nb);
         for (loop(i, 0, l_old_element_check_nb))
         {
-            assert_true(*p_vector->get(l_erase_begin_index + i, p_heap) == l_old_values[i]);
+            assert_true(*p_vector->get(l_erase_begin_index + i) == l_old_values[i]);
         }
     }
 
@@ -245,45 +247,45 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
     // format
     {
         p_vector->clear();
-        p_vector->push_back_element_0v(0, p_heap);
-        p_vector->push_back_element_0v(1, p_heap);
-        p_vector->push_back_element_0v(2, p_heap);
-        p_vector->push_back_element_0v(2, p_heap);
-        p_vector->push_back_element_0v(3, p_heap);
+        p_vector->push_back_element_0v(0);
+        p_vector->push_back_element_0v(1);
+        p_vector->push_back_element_0v(2);
+        p_vector->push_back_element_0v(2);
+        p_vector->push_back_element_0v(3);
         assert_true(p_vector->size == 5);
         for (loop_reverse(i, 0, p_vector->size))
         {
-            uimax* l_element = p_vector->get(i, p_heap);
+            uimax* l_element = p_vector->get(i);
             if (*l_element == 2)
             {
-                p_vector->erase_element_at_always(i, p_heap);
+                p_vector->erase_element_at_always(i);
             }
         }
 
         // TODO -> re enable ?
         // p_vector.erase_all_elements_that_matches_element_v2((uimax)2, Equality::Default{});
         assert_true(p_vector->size == 3);
-        assert_true(*p_vector->get(2, p_heap) == 3);
+        assert_true(*p_vector->get(2) == 3);
     }
 
     {
         p_vector->clear();
-        p_vector->push_back_element_0v(0, p_heap);
-        p_vector->push_back_element_0v(1, p_heap);
-        p_vector->push_back_element_0v(2, p_heap);
-        p_vector->push_back_element_0v(2, p_heap);
-        p_vector->push_back_element_0v(3, p_heap);
+        p_vector->push_back_element_0v(0);
+        p_vector->push_back_element_0v(1);
+        p_vector->push_back_element_0v(2);
+        p_vector->push_back_element_0v(2);
+        p_vector->push_back_element_0v(3);
         assert_true(p_vector->size == 5);
         SliceN<uimax, 2> l_erased_elements = {0, 2};
 
         for (loop_reverse(i, 0, p_vector->size))
         {
-            uimax* l_element = p_vector->get(i, p_heap);
+            uimax* l_element = p_vector->get(i);
             for (loop(j, 0, l_erased_elements.size()))
             {
                 if (*l_erased_elements.get(j) == *l_element)
                 {
-                    p_vector->erase_element_at_always(i, p_heap);
+                    p_vector->erase_element_at_always(i);
                     break;
                 }
             }
@@ -292,17 +294,18 @@ template <class _Vector_Heap, class _Vector_Heap_Token> void ivector_test_v2(iVe
         // TODO -> re enable ?
         // p_vector.erase_all_elements_that_matches_any_of_element_v2(slice_from_slicen(&l_erased_elements), Equality::Default{});
         assert_true(p_vector->size == 2);
-        assert_true(*p_vector->get(0, p_heap) == 1);
-        assert_true(*p_vector->get(1, p_heap) == 3);
+        assert_true(*p_vector->get(0) == 1);
+        assert_true(*p_vector->get(1) == 3);
     }
 };
 
 inline void vector_test()
 {
-    Vector<uimax> l_vector_sizet = Vector<uimax>::build_zero_size(NULL, 0);
+    Vector<uimax> l_vector_sizet;
+    l_vector_sizet.allocate(0, &_g_heap);
     // shadow_vector_test(l_vector_sizet);
-    ivector_test_v2(&l_vector_sizet, gheap);
-    l_vector_sizet.free(gheap);
+    ivector_test_v2(&l_vector_sizet);
+    l_vector_sizet.free();
     // When freeing the vcetor, it's structure is resetted
     {
         assert_true(l_vector_sizet.size == 0);
@@ -313,15 +316,18 @@ inline void vector_test()
 
 inline void vector_slice_test()
 {
-    Span<uimax> l_vector_sizet_buffer = Span<uimax>::allocate(100, gheap);
-    VectorSlice<uimax> l_vector_sizet = VectorSlice<uimax>::build_memory(l_vector_sizet_buffer.memory, l_vector_sizet_buffer.size, 0);
-    ivector_test_v2(&l_vector_sizet, gheapnoalloc);
-    l_vector_sizet_buffer.free(gheap);
+    Span<uimax> l_vector_sizet_buffer;
+    l_vector_sizet_buffer.allocate(100, &_g_heap);
+    VectorSlice<uimax> l_vector_sizet;
+    l_vector_sizet.build_memory(l_vector_sizet_buffer.memory, l_vector_sizet_buffer.size, &_g_heap_noalloc);
+    ivector_test_v2(&l_vector_sizet);
+    l_vector_sizet_buffer.free();
 };
 
 void varyingvector_test()
 {
-    VaryingVector l_heap_vector = VaryingVector::allocate_default(gheap);
+    VaryingVector l_heap_vector;
+    l_heap_vector.allocate_default(&_g_heap);
 
     // HeapVector_push_back
     {
@@ -329,10 +335,10 @@ void varyingvector_test()
 
         const int8* l_10_element = "abcdefhikl";
         Slice<int8> l_slice = Slice<int8>::build_rawstr(l_10_element);
-        l_heap_vector.push_back_element(&l_slice, gheap);
+        l_heap_vector.push_back_element(&l_slice);
 
         assert_true(l_heap_vector.get_size() == 1);
-        Slice<int8> l_element_0 = l_heap_vector.get(0, gheap);
+        Slice<int8> l_element_0 = l_heap_vector.get(0);
         assert_true(l_element_0.size == 10);
         assert_true(l_slice.compare(&l_element_0));
     }
@@ -340,17 +346,17 @@ void varyingvector_test()
     // push_back_empty
     {
         uimax l_slice_size = 5;
-        l_heap_vector.push_back_element_empty(l_slice_size, gheap);
-        assert_true(l_heap_vector.get(l_heap_vector.get_size() - 1, gheap).size == l_slice_size);
+        l_heap_vector.push_back_element_empty(l_slice_size);
+        assert_true(l_heap_vector.get(l_heap_vector.get_size() - 1).size == l_slice_size);
     }
 
     // HeapVector_push_back_element
     {
         uimax l_element = 20;
-        l_heap_vector.push_back_element_0v(Slice<uimax>::build(&l_element, 1).cast<int8>(), gheap);
+        l_heap_vector.push_back_element_0v(Slice<uimax>::build(&l_element, 1).cast<int8>());
 
         uimax l_inserted_index = l_heap_vector.get_size() - 1;
-        Slice<int8> l_element_inserted = l_heap_vector.get(l_inserted_index, gheap);
+        Slice<int8> l_element_inserted = l_heap_vector.get(l_inserted_index);
 
         assert_true(l_element_inserted.size == sizeof(uimax));
         assert_true(memory_compare((const int8*)&l_element, (const int8*)l_element_inserted.memory, l_element_inserted.size));
@@ -362,50 +368,50 @@ void varyingvector_test()
     // HeapVector_pop_back
     {
         uimax l_old_size = l_heap_vector.get_size();
-        l_heap_vector.pop_back(gheap);
+        l_heap_vector.pop_back();
         assert_true(l_heap_vector.get_size() == (l_old_size - 1));
     }
 
-    l_heap_vector.free(gheap);
-    l_heap_vector = VaryingVector::allocate_default(gheap);
+    l_heap_vector.free();
+    l_heap_vector.allocate_default(&_g_heap);
 
     // HeapVector_erase_element_at
     {
         for (loop(i, 0, 5))
         {
-            l_heap_vector.push_back_element_0v(Slice<uimax>::build(&i, 1).cast<int8>(), gheap);
+            l_heap_vector.push_back_element_0v(Slice<uimax>::build(&i, 1).cast<int8>());
         }
 
         assert_true(l_heap_vector.get_size() == 5);
-        l_heap_vector.erase_element_at(2, gheap);
+        l_heap_vector.erase_element_at(2);
         assert_true(l_heap_vector.get_size() == 4);
 
-        assert_true(*l_heap_vector.get(2, gheap).cast<uimax>().get(0) == 3);
-        assert_true(*l_heap_vector.get(3, gheap).cast<uimax>().get(0) == 4);
+        assert_true(*l_heap_vector.get(2).cast<uimax>().get(0) == 3);
+        assert_true(*l_heap_vector.get(3).cast<uimax>().get(0) == 4);
     }
 
-    l_heap_vector.free(gheap);
-    l_heap_vector = VaryingVector::allocate_default(gheap);
+    l_heap_vector.free();
+    l_heap_vector.allocate_default(&_g_heap);
 
     // erase_element_at_always
     {
         for (loop(i, 0, 5))
         {
             Slice<int8> l_element = Slice<uimax>::build(&i, 1).cast<int8>();
-            l_heap_vector.push_back_element(&l_element, gheap);
+            l_heap_vector.push_back_element(&l_element);
         }
 
         assert_true(l_heap_vector.get_size() == 5);
-        l_heap_vector.erase_element_at_always(2, gheap);
-        l_heap_vector.erase_element_at_always(l_heap_vector.get_size() - 1, gheap);
+        l_heap_vector.erase_element_at_always(2);
+        l_heap_vector.erase_element_at_always(l_heap_vector.get_size() - 1);
         assert_true(l_heap_vector.get_size() == 3);
 
-        assert_true(*l_heap_vector.get(1, gheap).cast<uimax>().get(0) == 1);
-        assert_true(*l_heap_vector.get(2, gheap).cast<uimax>().get(0) == 3);
+        assert_true(*l_heap_vector.get(1).cast<uimax>().get(0) == 1);
+        assert_true(*l_heap_vector.get(2).cast<uimax>().get(0) == 3);
     }
 
-    l_heap_vector.free(gheap);
-    l_heap_vector = VaryingVector::allocate_default(gheap);
+    l_heap_vector.free();
+    l_heap_vector.allocate_default(&_g_heap);
 
 // TODO
 #if 0
@@ -486,7 +492,7 @@ void varyingvector_test()
     }
 
 #endif
-    l_heap_vector.free(gheap);
+    l_heap_vector.free();
     assert_true(l_heap_vector.get_size() == 0);
 };
 
@@ -639,31 +645,37 @@ inline void vectorofvector_test()
 {
 
     HeapVector __heap_vector;
-    __heap_vector = __heap_vector.allocate_default(gheap);
-    iHeap<HeapVector, iHeapVector_Token> l_heap_vector = iHeap<HeapVector, iHeapVector_Token>{&__heap_vector};
-    VectorNested1<uimax> l_vectorofvector_uimax = l_vectorofvector_uimax.allocate(0, l_heap_vector);
+    __heap_vector.allocate_default(&_g_heap);
+    VectorNested1<uimax> l_vectorofvector_uimax;
+    l_vectorofvector_uimax.allocate(0, &__heap_vector);
 
     // vectorofvector_push_back vectorofvector_push_back_element
     {
-        Span<uimax> l_sizets = Span<uimax>::allocate(10, gheap);
+        Span<uimax> l_sizets;
+        l_sizets.allocate(10, &_g_heap);
         for (loop(i, 0, l_sizets.size))
         {
-            *l_sizets.get(i, gheap) = i;
+            *l_sizets.get(i) = i;
         }
 
-        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate(0, l_heap_vector), l_heap_vector);
-        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate_slice_0v(l_sizets.to_slice(gheap), l_heap_vector), l_heap_vector);
-        uimax l_requested_index = l_vectorofvector_uimax.size - 1;
-        l_vectorofvector_uimax.push_back_element_0v(VectorNested<uimax>::allocate(0, l_heap_vector), l_heap_vector);
+        VectorNested<uimax> l_nested_vector;
+        l_nested_vector.allocate(0, &__heap_vector);
+        l_vectorofvector_uimax.push_back_element(&l_nested_vector);
+        l_nested_vector.allocate_slice_0v(l_sizets.to_slice(), &__heap_vector);
+        l_vectorofvector_uimax.push_back_element(&l_nested_vector);
 
-        VectorNested<uimax>* l_element = l_vectorofvector_uimax.get(l_requested_index, l_heap_vector);
+        uimax l_requested_index = l_vectorofvector_uimax.size - 1;
+        l_nested_vector.allocate(0, &__heap_vector);
+        l_vectorofvector_uimax.push_back_element(&l_nested_vector);
+
+        VectorNested<uimax>* l_element = l_vectorofvector_uimax.get(l_requested_index);
         assert_true(l_element->memory.size == l_sizets.size);
         for (loop(i, 0, l_sizets.size))
         {
-            assert_true(*(l_element->get(i, l_heap_vector)) == i);
+            assert_true(*(l_element->get(i)) == i);
         }
 
-        l_sizets.free(gheap);
+        l_sizets.free();
     }
 
     // vectorofvector_element_push_back_element
@@ -671,21 +683,21 @@ inline void vectorofvector_test()
         uimax l_index;
         for (loop(i, 0, 2))
         {
-            l_vectorofvector_uimax.push_back_element_empty(l_heap_vector);
+            l_vectorofvector_uimax.push_back_element_empty();
 
             uimax l_element = 30;
             l_index = l_vectorofvector_uimax.size - 2;
-            VectorNested<uimax>* l_nested_vector = l_vectorofvector_uimax.get(l_index, l_heap_vector);
-            l_nested_vector->push_back_element(&l_element, l_heap_vector);
-            l_nested_vector = l_vectorofvector_uimax.get(l_index, l_heap_vector);
+            VectorNested<uimax>* l_nested_vector = l_vectorofvector_uimax.get(l_index);
+            l_nested_vector->push_back_element(&l_element);
+            l_nested_vector = l_vectorofvector_uimax.get(l_index);
             assert_true(l_nested_vector->size == 1);
-            assert_true(*l_nested_vector->get(0, l_heap_vector) == l_element);
+            assert_true(*l_nested_vector->get(0) == l_element);
 
             l_element = 35;
             l_nested_vector->clear();
-            l_nested_vector->push_back_element(&l_element, l_heap_vector);
+            l_nested_vector->push_back_element(&l_element);
             assert_true(l_nested_vector->size == 1);
-            assert_true(*l_nested_vector->get(0, l_heap_vector) == l_element);
+            assert_true(*l_nested_vector->get(0) == l_element);
         }
     }
 
@@ -831,11 +843,11 @@ inline void vectorofvector_test()
 
     for (loop_reverse(i, 0, l_vectorofvector_uimax.size))
     {
-        VectorNested<uimax>* l_nested = l_vectorofvector_uimax.get(i, l_heap_vector);
-        l_nested->free(l_heap_vector);
+        VectorNested<uimax>* l_nested = l_vectorofvector_uimax.get(i);
+        l_nested->free();
     };
-    l_vectorofvector_uimax.free(l_heap_vector);
-    __heap_vector.free(gheap);
+    l_vectorofvector_uimax.free();
+    __heap_vector.free();
 };
 
 #if 0
@@ -2409,8 +2421,30 @@ inline void command_buffer_pattern_test()
 };
 #endif
 
+void test_function()
+{
+    auto __ptr = _g_heap.malloc(sizeof(uimax) * 10);
+    uimax* l_ptr = _g_heap.get_memory<uimax>(__ptr);
+
+    Slice<uimax> slice;
+    slice.memory = l_ptr;
+    slice.size = 10;
+
+    for (loop(i, 0, slice.size))
+    {
+        *slice.get(i) = i;
+    }
+
+    assert_true(l_ptr[0] == 0);
+
+    _g_heap.free(__ptr);
+};
+
 int main(int argc, int8** argv)
 {
+    test_function();
+
+#if 0
     slice_span_test();
 
     vector_test();
@@ -2451,7 +2485,8 @@ int main(int argc, int8** argv)
     command_buffer_pattern_test();
 #endif
 
-    gheap.heap->memleak_check();
+#endif
+    _g_heap.memleak_check();
 }
 
 #include "Common2/common2_external_implementation.hpp"
